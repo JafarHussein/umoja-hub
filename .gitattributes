@@ -1,0 +1,15 @@
+# Enforce LF line endings for all text files across all environments.
+# This prevents the "LF will be replaced by CRLF" warnings on Windows
+# and ensures consistent diffs regardless of contributor OS.
+
+* text=auto eol=lf
+
+# Explicitly binary — never touch line endings
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary

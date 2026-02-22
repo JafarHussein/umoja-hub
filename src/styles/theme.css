@@ -1,0 +1,53 @@
+/* UmojaHub Design System — CSS Custom Properties
+ * These mirror tailwind.config.ts exactly.
+ * Use Tailwind token classes in components — not these variables directly.
+ * These exist for non-Tailwind contexts (e.g. SVG, Canvas, third-party libs). */
+
+:root {
+  /* Surfaces */
+  --color-surface-primary: #0d1117;
+  --color-surface-elevated: #161b22;
+  --color-surface-secondary: #1f2937;
+
+  /* Accent */
+  --color-accent-green: #007f4e;
+
+  /* Text */
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-disabled: #484f58;
+
+  /* Typography */
+  --font-heading: var(--font-sora), sans-serif;
+  --font-body: var(--font-ibm-plex-sans), sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+
+  /* Font sizes (strict 6-point scale) */
+  --text-t1: 32px;
+  --text-t2: 24px;
+  --text-t3: 20px;
+  --text-t4: 16px;
+  --text-t5: 14px;
+  --text-t6: 12px;
+
+  /* Spacing (8pt grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Border radius */
+  --radius-base: 6px;
+  --radius-sm: 4px;
+  --radius-xs: 2px;
+
+  /* Elevation — border only, no drop shadows */
+  --border-elevation: 1px solid rgba(255, 255, 255, 0.05);
+
+  /* Motion */
+  --duration-micro: 150ms;
+  --duration-panel: 250ms;
+  --easing-standard: ease-in-out;
+}

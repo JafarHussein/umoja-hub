@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="32" viewBox="0 0 160 32" fill="none" role="img" aria-label="UmojaHub">
+  <!-- Mark: three nodes forming a triangle with connecting lines -->
+  <g transform="translate(0, 4)">
+    <!-- Connecting lines (drawn first, behind nodes) -->
+    <line x1="12" y1="4" x2="22" y2="19" stroke="#007F4E" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="12" y1="4" x2="2" y2="19" stroke="#007F4E" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="2" y1="19" x2="22" y2="19" stroke="#007F4E" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Nodes -->
+    <circle cx="12" cy="4" r="2.5" fill="#007F4E"/>
+    <circle cx="2" cy="19" r="2.5" fill="#007F4E"/>
+    <circle cx="22" cy="19" r="2.5" fill="#007F4E"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="34" y="22" font-family="Sora, sans-serif" font-size="18" font-weight="600" fill="#E6EDF3" letter-spacing="-0.3">Umoja</text>
+  <text x="100" y="22" font-family="Sora, sans-serif" font-size="18" font-weight="600" fill="#007F4E" letter-spacing="-0.3">Hub</text>
+</svg>

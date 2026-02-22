@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  quality:
+    name: Type Check · Lint · Test · Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+        env:
+          # Provide stub values for env validation in test environment
+          MONGODB_URI: mongodb://localhost:27017/umojahub-test
+          NEXTAUTH_SECRET: test-secret-for-ci-only
+          NEXTAUTH_URL: http://localhost:3000
+          GROQ_API_KEY: test
+          OPENAI_API_KEY: test
+          GITHUB_APP_ID: '1'
+          GITHUB_APP_PRIVATE_KEY: test
+          GITHUB_APP_INSTALLATION_ID: '1'
+          MPESA_CONSUMER_KEY: test
+          MPESA_CONSUMER_SECRET: test
+          MPESA_SHORTCODE: '174379'
+          MPESA_PASSKEY: test
+          MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
+          SENDGRID_API_KEY: test
+          SENDGRID_FROM_EMAIL: test@test.com
+          AFRICASTALKING_API_KEY: test
+          AFRICASTALKING_USERNAME: sandbox
+          OPEN_WEATHER_MAP_API_KEY: test
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY: test
+          CLOUDINARY_API_SECRET: test
+          CRON_SECRET: test-cron-secret
+
+      - name: Check coverage thresholds
+        run: npm run test:coverage
+        env:
+          MONGODB_URI: mongodb://localhost:27017/umojahub-test
+          NEXTAUTH_SECRET: test-secret-for-ci-only
+          NEXTAUTH_URL: http://localhost:3000
+          GROQ_API_KEY: test
+          OPENAI_API_KEY: test
+          GITHUB_APP_ID: '1'
+          GITHUB_APP_PRIVATE_KEY: test
+          GITHUB_APP_INSTALLATION_ID: '1'
+          MPESA_CONSUMER_KEY: test
+          MPESA_CONSUMER_SECRET: test
+          MPESA_SHORTCODE: '174379'
+          MPESA_PASSKEY: test
+          MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
+          SENDGRID_API_KEY: test
+          SENDGRID_FROM_EMAIL: test@test.com
+          AFRICASTALKING_API_KEY: test
+          AFRICASTALKING_USERNAME: sandbox
+          OPEN_WEATHER_MAP_API_KEY: test
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY: test
+          CLOUDINARY_API_SECRET: test
+          CRON_SECRET: test-cron-secret
+
+      - name: Build
+        run: npm run build
+        env:
+          MONGODB_URI: mongodb://localhost:27017/umojahub-test
+          NEXTAUTH_SECRET: test-secret-for-ci-only
+          NEXTAUTH_URL: http://localhost:3000
+          GROQ_API_KEY: test
+          OPENAI_API_KEY: test
+          GITHUB_APP_ID: '1'
+          GITHUB_APP_PRIVATE_KEY: test
+          GITHUB_APP_INSTALLATION_ID: '1'
+          MPESA_CONSUMER_KEY: test
+          MPESA_CONSUMER_SECRET: test
+          MPESA_SHORTCODE: '174379'
+          MPESA_PASSKEY: test
+          MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
+          SENDGRID_API_KEY: test
+          SENDGRID_FROM_EMAIL: test@test.com
+          AFRICASTALKING_API_KEY: test
+          AFRICASTALKING_USERNAME: sandbox
+          OPEN_WEATHER_MAP_API_KEY: test
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY: test
+          CLOUDINARY_API_SECRET: test
+          CRON_SECRET: test-cron-secret

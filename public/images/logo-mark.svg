@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" aria-label="UmojaHub mark">
+  <!-- Three nodes triangle mark -->
+  <line x1="12" y1="3" x2="21" y2="18" stroke="#007F4E" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="3" x2="3" y2="18" stroke="#007F4E" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="3" y1="18" x2="21" y2="18" stroke="#007F4E" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="12" cy="3" r="2.5" fill="#007F4E"/>
+  <circle cx="3" cy="18" r="2.5" fill="#007F4E"/>
+  <circle cx="21" cy="18" r="2.5" fill="#007F4E"/>
+</svg>

@@ -1,0 +1,87 @@
+# =============================================================================
+# UmojaHub — .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Secrets — never commit
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+node_modules/
+.pnp
+.pnp.js
+
+# -----------------------------------------------------------------------------
+# Build outputs
+# -----------------------------------------------------------------------------
+.next/
+out/
+build/
+dist/
+
+# -----------------------------------------------------------------------------
+# Test outputs
+# -----------------------------------------------------------------------------
+coverage/
+
+# -----------------------------------------------------------------------------
+# TypeScript build cache
+# -----------------------------------------------------------------------------
+*.tsbuildinfo
+next-env.d.ts
+
+# -----------------------------------------------------------------------------
+# Vercel
+# -----------------------------------------------------------------------------
+.vercel
+
+# -----------------------------------------------------------------------------
+# Default Next.js boilerplate SVGs — not part of UmojaHub branding
+public/file.svg
+public/globe.svg
+public/next.svg
+public/vercel.svg
+public/window.svg
+
+# OS and editor artefacts
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.pem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# -----------------------------------------------------------------------------
+# Claude Code operating files — AI tool config, not project source
+# -----------------------------------------------------------------------------
+.claude/
+
+# -----------------------------------------------------------------------------
+# Internal planning and architecture documents
+# These live in the repo root for reference during development but are
+# not part of the application source. Exclude from version control so the
+# commit history stays focused on application code only.
+# -----------------------------------------------------------------------------
+API_CONTRACTS.md
+BUSINESS_LOGIC.md
+CLAUDE.md
+ENV_REFERENCE.md
+ERRORS.md
+EXECUTION_PLAN.md
+INSTRUCTIONS.md
+PHASE_IMPLEMENTATION_MASTER.md
+SCHEMA_REFERENCE.md
+SEED_DATA.md
+umojahub_all_documentation.md

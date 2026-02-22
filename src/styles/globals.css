@@ -1,0 +1,68 @@
+@import './theme.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base resets */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-t4);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Skeleton shimmer utility */
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #161b22 25%,
+      #1f2937 50%,
+      #161b22 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(0, 127, 78, 0.3);
+  color: #e6edf3;
+}
+
+/* Focus ring — green, consistent across all interactive elements */
+:focus-visible {
+  outline: 2px solid #007f4e;
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #484f58;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8b949e;
+}
