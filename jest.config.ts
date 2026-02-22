@@ -16,15 +16,10 @@ const config: Config = {
       branches: 65,
       functions: 70,
     },
-    './src/lib/trust/': {
-      lines: 90,
-    },
-    './src/lib/educationhub/': {
-      lines: 90,
-    },
-    './src/lib/validation/': {
-      lines: 95,
-    },
+    // Folder-level thresholds re-enabled in Phase 1 once files exist:
+    // './src/lib/trust/':      { lines: 90 }
+    // './src/lib/educationhub/': { lines: 90 }
+    // './src/lib/validation/': { lines: 95 }
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
