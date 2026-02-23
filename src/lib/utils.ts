@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import { BCRYPT_SALT_ROUNDS } from '@/types';
 
 // ---------------------------------------------------------------------------
 // AppError — structured application error with HTTP status and error code
@@ -57,11 +59,23 @@ export function requireRole(
   ...roles: string[]
 ): void {
   if (!session) {
-    throw new AppError('Unauthorized', 401, 'AUTH_UNAUTHORIZED');
+    throw new AppError('Authentication required. Please sign in.', 401, 'AUTH_REQUIRED');
   }
   if (!session.user.role || !roles.includes(session.user.role)) {
     throw new AppError('Forbidden', 403, 'AUTH_FORBIDDEN');
   }
+}
+
+// ---------------------------------------------------------------------------
+// hashPassword / verifyPassword — bcrypt wrappers
+// ---------------------------------------------------------------------------
+
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+}
+
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 // ---------------------------------------------------------------------------

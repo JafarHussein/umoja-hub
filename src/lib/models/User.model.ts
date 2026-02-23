@@ -91,6 +91,8 @@ export interface IUserDocument extends Document {
   role: string;
   county: string;
   status: string;
+  createdAt: Date;
+  updatedAt: Date;
   farmerData?: {
     verificationStatus: string;
     isVerified: boolean;

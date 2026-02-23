@@ -7,14 +7,14 @@ export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url'
 export interface IInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   type?: InputType;
   label?: string;
-  error?: string;
-  hint?: string;
+  error?: string | undefined;
+  hint?: string | undefined;
 }
 
 export interface ITextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
-  error?: string;
-  hint?: string;
+  error?: string | undefined;
+  hint?: string | undefined;
 }
 
 const baseInputClasses = [
