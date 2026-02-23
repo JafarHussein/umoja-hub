@@ -39,8 +39,9 @@ marketplaceListingSchema.set('toJSON', {
   },
 });
 
-const MarketplaceListing =
-  mongoose.models.MarketplaceListing ??
+type MarketplaceListingDoc = mongoose.InferSchemaType<typeof marketplaceListingSchema>;
+const MarketplaceListing: mongoose.Model<MarketplaceListingDoc> =
+  (mongoose.models['MarketplaceListing'] as mongoose.Model<MarketplaceListingDoc>) ??
   mongoose.model('MarketplaceListing', marketplaceListingSchema);
 
 export default MarketplaceListing;

@@ -49,5 +49,7 @@ orderSchema.set('toJSON', {
   },
 });
 
-const Order = mongoose.models.Order ?? mongoose.model('Order', orderSchema);
+type OrderDoc = mongoose.InferSchemaType<typeof orderSchema>;
+const Order: mongoose.Model<OrderDoc> =
+  (mongoose.models['Order'] as mongoose.Model<OrderDoc>) ?? mongoose.model('Order', orderSchema);
 export default Order;

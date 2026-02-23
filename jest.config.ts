@@ -15,7 +15,7 @@ const config: Config = {
     // Phase 1: validation schemas only. Phase 3+: trust/. Phase 5+: educationhub/. Phase 8: global.
     global: {},
     './src/lib/validation/': { lines: 95, branches: 90, functions: 95 },
-    // './src/lib/trust/':        { lines: 90 }  — added in Phase 3
+    './src/lib/trust/':        { lines: 90 },
     // './src/lib/educationhub/': { lines: 90 }  — added in Phase 5
   },
   collectCoverageFrom: [

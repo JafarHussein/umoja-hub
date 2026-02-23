@@ -29,7 +29,8 @@ priceAlertSchema.set('toJSON', {
   },
 });
 
-const PriceAlert =
-  mongoose.models.PriceAlert ?? mongoose.model('PriceAlert', priceAlertSchema);
+type PriceAlertDoc = mongoose.InferSchemaType<typeof priceAlertSchema>;
+const PriceAlert: mongoose.Model<PriceAlertDoc> =
+  (mongoose.models['PriceAlert'] as mongoose.Model<PriceAlertDoc>) ?? mongoose.model('PriceAlert', priceAlertSchema);
 
 export default PriceAlert;

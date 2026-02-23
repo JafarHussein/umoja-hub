@@ -42,8 +42,9 @@ farmerTrustScoreSchema.set('toJSON', {
   },
 });
 
-const FarmerTrustScore =
-  mongoose.models.FarmerTrustScore ??
+type FarmerTrustScoreDoc = mongoose.InferSchemaType<typeof farmerTrustScoreSchema>;
+const FarmerTrustScore: mongoose.Model<FarmerTrustScoreDoc> =
+  (mongoose.models['FarmerTrustScore'] as mongoose.Model<FarmerTrustScoreDoc>) ??
   mongoose.model('FarmerTrustScore', farmerTrustScoreSchema);
 
 export default FarmerTrustScore;

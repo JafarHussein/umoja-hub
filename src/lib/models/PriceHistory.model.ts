@@ -23,7 +23,8 @@ priceHistorySchema.set('toJSON', {
   },
 });
 
-const PriceHistory =
-  mongoose.models.PriceHistory ?? mongoose.model('PriceHistory', priceHistorySchema);
+type PriceHistoryDoc = mongoose.InferSchemaType<typeof priceHistorySchema>;
+const PriceHistory: mongoose.Model<PriceHistoryDoc> =
+  (mongoose.models['PriceHistory'] as mongoose.Model<PriceHistoryDoc>) ?? mongoose.model('PriceHistory', priceHistorySchema);
 
 export default PriceHistory;

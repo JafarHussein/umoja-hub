@@ -40,7 +40,10 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
 
-  if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
+  // Mongoose duplicate key — check code directly so it works with both real
+  // MongoServerError instances and the plain Error objects used in unit tests.
+  const mongoCode = (error as { code?: number }).code;
+  if (mongoCode === 11000) {
     return NextResponse.json(
       { error: 'Duplicate entry', code: 'DB_DUPLICATE' },
       { status: 409 }

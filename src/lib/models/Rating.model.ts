@@ -21,5 +21,7 @@ ratingSchema.set('toJSON', {
   },
 });
 
-const Rating = mongoose.models.Rating ?? mongoose.model('Rating', ratingSchema);
+type RatingDoc = mongoose.InferSchemaType<typeof ratingSchema>;
+const Rating: mongoose.Model<RatingDoc> =
+  (mongoose.models['Rating'] as mongoose.Model<RatingDoc>) ?? mongoose.model('Rating', ratingSchema);
 export default Rating;
