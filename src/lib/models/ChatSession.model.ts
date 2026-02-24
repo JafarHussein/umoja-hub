@@ -30,7 +30,9 @@ chatSessionSchema.set('toJSON', {
   },
 });
 
-const ChatSession =
-  mongoose.models.ChatSession ?? mongoose.model('ChatSession', chatSessionSchema);
+type ChatSessionDoc = mongoose.InferSchemaType<typeof chatSessionSchema>;
+const ChatSession: mongoose.Model<ChatSessionDoc> =
+  (mongoose.models['ChatSession'] as mongoose.Model<ChatSessionDoc>) ??
+  mongoose.model('ChatSession', chatSessionSchema);
 
 export default ChatSession;

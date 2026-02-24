@@ -32,8 +32,9 @@ knowledgeArticleSchema.set('toJSON', {
   },
 });
 
-const KnowledgeArticle =
-  mongoose.models.KnowledgeArticle ??
+type KnowledgeArticleDoc = mongoose.InferSchemaType<typeof knowledgeArticleSchema>;
+const KnowledgeArticle: mongoose.Model<KnowledgeArticleDoc> =
+  (mongoose.models['KnowledgeArticle'] as mongoose.Model<KnowledgeArticleDoc>) ??
   mongoose.model('KnowledgeArticle', knowledgeArticleSchema);
 
 export default KnowledgeArticle;

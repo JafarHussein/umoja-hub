@@ -35,8 +35,9 @@ verifiedSupplierSchema.set('toJSON', {
   },
 });
 
-const VerifiedSupplier =
-  mongoose.models.VerifiedSupplier ??
+type VerifiedSupplierDoc = mongoose.InferSchemaType<typeof verifiedSupplierSchema>;
+const VerifiedSupplier: mongoose.Model<VerifiedSupplierDoc> =
+  (mongoose.models['VerifiedSupplier'] as mongoose.Model<VerifiedSupplierDoc>) ??
   mongoose.model('VerifiedSupplier', verifiedSupplierSchema);
 
 export default VerifiedSupplier;

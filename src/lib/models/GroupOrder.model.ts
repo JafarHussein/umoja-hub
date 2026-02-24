@@ -41,7 +41,9 @@ groupOrderSchema.set('toJSON', {
   },
 });
 
-const GroupOrder =
-  mongoose.models.GroupOrder ?? mongoose.model('GroupOrder', groupOrderSchema);
+type GroupOrderDoc = mongoose.InferSchemaType<typeof groupOrderSchema>;
+const GroupOrder: mongoose.Model<GroupOrderDoc> =
+  (mongoose.models['GroupOrder'] as mongoose.Model<GroupOrderDoc>) ??
+  mongoose.model('GroupOrder', groupOrderSchema);
 
 export default GroupOrder;

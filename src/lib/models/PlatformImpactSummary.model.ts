@@ -32,8 +32,9 @@ platformImpactSummarySchema.set('toJSON', {
   },
 });
 
-const PlatformImpactSummary =
-  mongoose.models.PlatformImpactSummary ??
+type PlatformImpactSummaryDoc = mongoose.InferSchemaType<typeof platformImpactSummarySchema>;
+const PlatformImpactSummary: mongoose.Model<PlatformImpactSummaryDoc> =
+  (mongoose.models['PlatformImpactSummary'] as mongoose.Model<PlatformImpactSummaryDoc>) ??
   mongoose.model('PlatformImpactSummary', platformImpactSummarySchema);
 
 export default PlatformImpactSummary;

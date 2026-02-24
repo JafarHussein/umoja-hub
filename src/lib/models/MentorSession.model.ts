@@ -31,7 +31,9 @@ mentorSessionSchema.set('toJSON', {
   },
 });
 
-const MentorSession =
-  mongoose.models.MentorSession ?? mongoose.model('MentorSession', mentorSessionSchema);
+type MentorSessionDoc = mongoose.InferSchemaType<typeof mentorSessionSchema>;
+const MentorSession: mongoose.Model<MentorSessionDoc> =
+  (mongoose.models['MentorSession'] as mongoose.Model<MentorSessionDoc>) ??
+  mongoose.model('MentorSession', mentorSessionSchema);
 
 export default MentorSession;

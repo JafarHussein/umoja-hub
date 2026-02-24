@@ -23,7 +23,9 @@ farmerGroupSchema.set('toJSON', {
   },
 });
 
-const FarmerGroup =
-  mongoose.models.FarmerGroup ?? mongoose.model('FarmerGroup', farmerGroupSchema);
+type FarmerGroupDoc = mongoose.InferSchemaType<typeof farmerGroupSchema>;
+const FarmerGroup: mongoose.Model<FarmerGroupDoc> =
+  (mongoose.models['FarmerGroup'] as mongoose.Model<FarmerGroupDoc>) ??
+  mongoose.model('FarmerGroup', farmerGroupSchema);
 
 export default FarmerGroup;

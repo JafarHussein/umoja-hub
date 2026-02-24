@@ -27,7 +27,9 @@ marketInsightSchema.set('toJSON', {
   },
 });
 
-const MarketInsight =
-  mongoose.models.MarketInsight ?? mongoose.model('MarketInsight', marketInsightSchema);
+type MarketInsightDoc = mongoose.InferSchemaType<typeof marketInsightSchema>;
+const MarketInsight: mongoose.Model<MarketInsightDoc> =
+  (mongoose.models['MarketInsight'] as mongoose.Model<MarketInsightDoc>) ??
+  mongoose.model('MarketInsight', marketInsightSchema);
 
 export default MarketInsight;
