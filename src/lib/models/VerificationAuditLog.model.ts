@@ -37,8 +37,9 @@ verificationAuditLogSchema.set('toJSON', {
   },
 });
 
-const VerificationAuditLog =
-  mongoose.models.VerificationAuditLog ??
+type VerificationAuditLogDoc = mongoose.InferSchemaType<typeof verificationAuditLogSchema>;
+const VerificationAuditLog: mongoose.Model<VerificationAuditLogDoc> =
+  (mongoose.models['VerificationAuditLog'] as mongoose.Model<VerificationAuditLogDoc>) ??
   mongoose.model('VerificationAuditLog', verificationAuditLogSchema);
 
 export default VerificationAuditLog;

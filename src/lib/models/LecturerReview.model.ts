@@ -34,7 +34,9 @@ lecturerReviewSchema.set('toJSON', {
   },
 });
 
-const LecturerReview =
-  mongoose.models.LecturerReview ?? mongoose.model('LecturerReview', lecturerReviewSchema);
+type LecturerReviewDoc = mongoose.InferSchemaType<typeof lecturerReviewSchema>;
+const LecturerReview: mongoose.Model<LecturerReviewDoc> =
+  (mongoose.models['LecturerReview'] as mongoose.Model<LecturerReviewDoc>) ??
+  mongoose.model('LecturerReview', lecturerReviewSchema);
 
 export default LecturerReview;

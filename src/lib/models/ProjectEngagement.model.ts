@@ -84,8 +84,9 @@ projectEngagementSchema.set('toJSON', {
   },
 });
 
-const ProjectEngagement =
-  mongoose.models.ProjectEngagement ??
+type ProjectEngagementDoc = mongoose.InferSchemaType<typeof projectEngagementSchema>;
+const ProjectEngagement: mongoose.Model<ProjectEngagementDoc> =
+  (mongoose.models['ProjectEngagement'] as mongoose.Model<ProjectEngagementDoc>) ??
   mongoose.model('ProjectEngagement', projectEngagementSchema);
 
 export default ProjectEngagement;

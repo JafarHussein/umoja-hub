@@ -29,8 +29,9 @@ lecturerEffectivenessSchema.set('toJSON', {
   },
 });
 
-const LecturerEffectiveness =
-  mongoose.models.LecturerEffectiveness ??
+type LecturerEffectivenessDoc = mongoose.InferSchemaType<typeof lecturerEffectivenessSchema>;
+const LecturerEffectiveness: mongoose.Model<LecturerEffectivenessDoc> =
+  (mongoose.models['LecturerEffectiveness'] as mongoose.Model<LecturerEffectivenessDoc>) ??
   mongoose.model('LecturerEffectiveness', lecturerEffectivenessSchema);
 
 export default LecturerEffectiveness;

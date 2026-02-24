@@ -337,13 +337,15 @@ describe('lecturerReviewSchema', () => {
     ).toBe(false);
   });
 
-  it('rejects comment with 49 words (below minimum)', () => {
+  it('accepts comment with 49 words (Zod only validates non-empty; server-side enforces 50-word minimum)', () => {
+    // Word count enforcement is done server-side to return VALIDATION_COMMENT_TOO_SHORT
+    // Zod only validates structural correctness (non-empty string)
     const result = lecturerReviewSchema.safeParse({
       decision: 'VERIFIED',
       scores: validScores,
       comments: { ...validComments, problemUnderstanding: makeWords(49) },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('accepts comment with exactly 50 words', () => {

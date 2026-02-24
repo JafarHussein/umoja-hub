@@ -33,7 +33,9 @@ peerReviewSchema.set('toJSON', {
   },
 });
 
-const PeerReview =
-  mongoose.models.PeerReview ?? mongoose.model('PeerReview', peerReviewSchema);
+type PeerReviewDoc = mongoose.InferSchemaType<typeof peerReviewSchema>;
+const PeerReview: mongoose.Model<PeerReviewDoc> =
+  (mongoose.models['PeerReview'] as mongoose.Model<PeerReviewDoc>) ??
+  mongoose.model('PeerReview', peerReviewSchema);
 
 export default PeerReview;

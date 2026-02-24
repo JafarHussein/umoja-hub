@@ -1,11 +1,5 @@
 import { z } from 'zod';
-import { ProjectTrack, StudentTier, LecturerDecision, REVIEW_MIN_WORD_COUNT } from '@/types';
-
-const countWords = (text: string): number =>
-  text
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length > 0).length;
+import { ProjectTrack, StudentTier, LecturerDecision } from '@/types';
 
 export const briefRequestSchema = z.object({
   track: z.enum([ProjectTrack.OPEN_SOURCE, ProjectTrack.AI_BRIEF]),
@@ -66,34 +60,12 @@ export const lecturerReviewSchema = z
       aiUsage: z.number().int().min(1).max(5),
     }),
     comments: z.object({
-      problemUnderstanding: z
-        .string()
-        .trim()
-        .refine(
-          (val) => countWords(val) >= REVIEW_MIN_WORD_COUNT,
-          `Problem understanding comment must be at least ${REVIEW_MIN_WORD_COUNT} words`
-        ),
-      solutionQuality: z
-        .string()
-        .trim()
-        .refine(
-          (val) => countWords(val) >= REVIEW_MIN_WORD_COUNT,
-          `Solution quality comment must be at least ${REVIEW_MIN_WORD_COUNT} words`
-        ),
-      processQuality: z
-        .string()
-        .trim()
-        .refine(
-          (val) => countWords(val) >= REVIEW_MIN_WORD_COUNT,
-          `Process quality comment must be at least ${REVIEW_MIN_WORD_COUNT} words`
-        ),
-      aiUsage: z
-        .string()
-        .trim()
-        .refine(
-          (val) => countWords(val) >= REVIEW_MIN_WORD_COUNT,
-          `AI usage comment must be at least ${REVIEW_MIN_WORD_COUNT} words`
-        ),
+      // Structural validation only — word count enforcement is done server-side
+      // to return VALIDATION_COMMENT_TOO_SHORT with per-field error codes
+      problemUnderstanding: z.string().trim().min(1, 'Problem understanding comment is required'),
+      solutionQuality: z.string().trim().min(1, 'Solution quality comment is required'),
+      processQuality: z.string().trim().min(1, 'Process quality comment is required'),
+      aiUsage: z.string().trim().min(1, 'AI usage comment is required'),
       overallFeedback: z.string().trim().optional(),
     }),
     rejectionReason: z.string().trim().optional(),

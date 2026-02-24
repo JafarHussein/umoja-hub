@@ -40,8 +40,9 @@ briefContextLibrarySchema.set('toJSON', {
   },
 });
 
-const BriefContextLibrary =
-  mongoose.models.BriefContextLibrary ??
+type BriefContextLibraryDoc = mongoose.InferSchemaType<typeof briefContextLibrarySchema>;
+const BriefContextLibrary: mongoose.Model<BriefContextLibraryDoc> =
+  (mongoose.models['BriefContextLibrary'] as mongoose.Model<BriefContextLibraryDoc>) ??
   mongoose.model('BriefContextLibrary', briefContextLibrarySchema);
 
 export default BriefContextLibrary;

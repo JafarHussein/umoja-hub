@@ -71,8 +71,9 @@ studentPortfolioStatusSchema.set('toJSON', {
   },
 });
 
-const StudentPortfolioStatus =
-  mongoose.models.StudentPortfolioStatus ??
+type StudentPortfolioStatusDoc = mongoose.InferSchemaType<typeof studentPortfolioStatusSchema>;
+const StudentPortfolioStatus: mongoose.Model<StudentPortfolioStatusDoc> =
+  (mongoose.models['StudentPortfolioStatus'] as mongoose.Model<StudentPortfolioStatusDoc>) ??
   mongoose.model('StudentPortfolioStatus', studentPortfolioStatusSchema);
 
 export default StudentPortfolioStatus;
