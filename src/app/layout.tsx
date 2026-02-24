@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Sora, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
+import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
 
 const sora = Sora({
@@ -50,7 +51,7 @@ export default function RootLayout({
       className={`${sora.variable} ${ibmPlexSans.variable} ${jetbrainsMono.variable}`}
     >
       <body className="bg-surface-primary text-text-primary font-body antialiased">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

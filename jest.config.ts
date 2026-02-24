@@ -11,15 +11,12 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   coverageThreshold: {
-    global: {
-      lines: 70,
-      branches: 65,
-      functions: 70,
-    },
-    // Folder-level thresholds re-enabled in Phase 1 once files exist:
-    // './src/lib/trust/':      { lines: 90 }
-    // './src/lib/educationhub/': { lines: 90 }
-    // './src/lib/validation/': { lines: 95 }
+    // Global thresholds grow incrementally as coverage builds across phases.
+    // Phase 1: validation schemas only. Phase 3+: trust/. Phase 5+: educationhub/. Phase 8: global.
+    global: {},
+    './src/lib/validation/': { lines: 95, branches: 90, functions: 95 },
+    './src/lib/trust/':        { lines: 90 },
+    // './src/lib/educationhub/': { lines: 90 }  — added in Phase 5
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',

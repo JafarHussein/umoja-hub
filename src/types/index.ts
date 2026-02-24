@@ -1,4 +1,3 @@
-// ---------------------------------------------------------------------------
 // Shared enums — import from here, never use magic strings in the codebase
 // ---------------------------------------------------------------------------
 
@@ -31,16 +30,15 @@ export enum OrderPaymentStatus {
 }
 
 export enum OrderFulfillmentStatus {
-  AWAITING_FULFILLMENT = 'AWAITING_FULFILLMENT',
+  AWAITING_PAYMENT = 'AWAITING_PAYMENT',
   IN_FULFILLMENT = 'IN_FULFILLMENT',
+  RECEIVED = 'RECEIVED',
   COMPLETED = 'COMPLETED',
   DISPUTED = 'DISPUTED',
-  CANCELLED = 'CANCELLED',
 }
 
 export enum ListingStatus {
   AVAILABLE = 'AVAILABLE',
-  RESERVED = 'RESERVED',
   SOLD_OUT = 'SOLD_OUT',
   INACTIVE = 'INACTIVE',
 }
@@ -85,7 +83,9 @@ export enum ProjectTrack {
 }
 
 export enum ProjectStatus {
+  BRIEF_GENERATED = 'BRIEF_GENERATED',
   IN_PROGRESS = 'IN_PROGRESS',
+  SUBMITTED = 'SUBMITTED',
   UNDER_PEER_REVIEW = 'UNDER_PEER_REVIEW',
   UNDER_LECTURER_REVIEW = 'UNDER_LECTURER_REVIEW',
   VERIFIED = 'VERIFIED',
@@ -106,13 +106,63 @@ export enum PriceHistorySource {
 }
 
 export enum KnowledgeCategory {
-  INPUT_VERIFICATION = 'INPUT_VERIFICATION',
+  FERTILIZER_VERIFICATION = 'FERTILIZER_VERIFICATION',
+  SEED_VERIFICATION = 'SEED_VERIFICATION',
   ANIMAL_HEALTH = 'ANIMAL_HEALTH',
-  MARKET_STANDARDS = 'MARKET_STANDARDS',
-  POST_HARVEST = 'POST_HARVEST',
+  PEST_DISEASE = 'PEST_DISEASE',
   SEASONAL_CALENDAR = 'SEASONAL_CALENDAR',
-  SOIL_HEALTH = 'SOIL_HEALTH',
-  WATER_MANAGEMENT = 'WATER_MANAGEMENT',
+  POST_HARVEST = 'POST_HARVEST',
+  MARKET_DYNAMICS = 'MARKET_DYNAMICS',
+  NEW_METHODS = 'NEW_METHODS',
+}
+
+export enum SupplierInputCategory {
+  FERTILIZER = 'FERTILIZER',
+  SEED = 'SEED',
+  PESTICIDE = 'PESTICIDE',
+  VETERINARY = 'VETERINARY',
+  EQUIPMENT = 'EQUIPMENT',
+}
+
+export enum SupplierVerificationStatus {
+  PENDING = 'PENDING',
+  VERIFIED = 'VERIFIED',
+  SUSPENDED = 'SUSPENDED',
+}
+
+export enum GroupStatus {
+  ACTIVE = 'ACTIVE',
+  DISSOLVED = 'DISSOLVED',
+}
+
+export enum GroupOrderStatus {
+  OPEN = 'OPEN',
+  MINIMUM_MET = 'MINIMUM_MET',
+  CLOSED = 'CLOSED',
+  FULFILLED = 'FULFILLED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PriceAlertNotificationMethod {
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  BOTH = 'BOTH',
+}
+
+export enum PeerReviewStatus {
+  ASSIGNED = 'ASSIGNED',
+  SUBMITTED = 'SUBMITTED',
+  WAIVED = 'WAIVED',
+}
+
+export enum FulfillmentType {
+  PICKUP = 'PICKUP',
+  DELIVERY = 'DELIVERY',
+}
+
+export enum BuyerContactPreference {
+  PHONE = 'PHONE',
+  PLATFORM_MESSAGE = 'PLATFORM_MESSAGE',
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +175,7 @@ export const KENYAN_COUNTIES = [
   'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga',
   'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia',
   'Lamu', 'Machakos', 'Makueni', 'Mandera', 'Marsabit',
-  'Meru', 'Migori', 'Mombasa', 'Murang\'a', 'Nairobi',
+  'Meru', 'Migori', 'Mombasa', "Murang'a", 'Nairobi',
   'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua',
   'Nyeri', 'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River',
   'Tharaka-Nithi', 'Trans Nzoia', 'Turkana', 'Uasin Gishu', 'Vihiga',
