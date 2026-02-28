@@ -8,6 +8,7 @@ import User from '@/lib/models/User.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import { cropListingSchema } from '@/lib/validation/farmerSchema';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
+import { moderateContent } from '@/lib/integrations/openaiService';
 import { Role, PriceHistorySource, ListingStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -152,11 +153,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       buyerContactPreference,
     } = parsed.data;
 
+    // Content moderation — block flagged descriptions before storage
+    if (description) {
+      const flagged = await moderateContent(description);
+      if (flagged) {
+        return NextResponse.json(
+          { error: 'Content did not pass moderation checks.', code: 'AI_CONTENT_FLAGGED' },
+          { status: 422 },
+        );
+      }
+    }
+
     const listing = await MarketplaceListing.create({
       farmerId: session!.user.id,
       title,
       cropName,
-      description,
+      ...(description !== undefined && { description }),
       quantityAvailable,
       unit,
       currentPricePerUnit,

@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { hashPassword, handleApiError, AppError, logger } from '@/lib/utils';
 import { registerSchema } from '@/lib/validation/authSchema';
+import { applyRateLimit } from '@/lib/rateLimit';
 import { Role } from '@/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Rate limiting — 10 requests per IP per minute
+  const rateLimitResponse = applyRateLimit(req);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const body: unknown = await req.json();
 

@@ -9,10 +9,12 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // unsafe-eval removed — not required by Next.js 15 production builds
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' res.cloudinary.com data: blob:",
+      // blob: removed — not required; data: kept for inline SVG/favicon
+      "img-src 'self' res.cloudinary.com data:",
       "connect-src 'self' https://api.groq.com https://api.openai.com",
       "frame-ancestors 'none'",
     ].join('; '),

@@ -139,3 +139,56 @@ export async function generateBrief(prompt: string): Promise<GeneratedBrief> {
     'EDUCATION_BRIEF_GENERATION_FAILED'
   );
 }
+
+// ---------------------------------------------------------------------------
+// moderateContent — OpenAI Moderation API
+// ---------------------------------------------------------------------------
+
+interface IModerationResponse {
+  results?: Array<{ flagged: boolean }>;
+}
+
+/**
+ * Check user-generated text against OpenAI's content moderation API.
+ *
+ * Fail-open design: if the moderation API is unreachable or returns an error,
+ * the function returns false (not flagged) to avoid blocking legitimate content.
+ * This matches the graceful-degradation rule for external API calls.
+ *
+ * @returns true if content is flagged (block it), false if safe or on API failure
+ */
+export async function moderateContent(text: string): Promise<boolean> {
+  const apiKey = env('OPENAI_API_KEY');
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/moderations', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ input: text }),
+    });
+
+    if (!res.ok) {
+      logger.warn('openaiService', 'Moderation API non-200 — proceeding without moderation', {
+        status: res.status,
+      });
+      return false;
+    }
+
+    const data = (await res.json()) as IModerationResponse;
+    const flagged = data.results?.[0]?.flagged === true;
+
+    if (flagged) {
+      logger.warn('openaiService', 'Content flagged by moderation API');
+    }
+
+    return flagged;
+  } catch (error) {
+    logger.error('openaiService', 'Moderation API call failed — proceeding without moderation', {
+      error,
+    });
+    return false;
+  }
+}

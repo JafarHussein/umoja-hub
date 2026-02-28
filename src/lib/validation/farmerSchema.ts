@@ -35,7 +35,8 @@ export const cropListingSchema = z.object({
     .string()
     .trim()
     .min(20, 'Description must be at least 20 characters')
-    .max(1000),
+    .max(1000)
+    .optional(),
   quantityAvailable: z.number().min(0, 'Quantity cannot be negative'),
   unit: z.enum([
     ListingUnit.KG,
