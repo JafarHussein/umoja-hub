@@ -16,18 +16,54 @@ const DASHBOARD_BY_ROLE: Record<Role, string> = {
   ADMIN: '/dashboard/admin/verification-queue',
 };
 
+function validateEmail(value: string): string {
+  if (!value.trim()) return 'Email address is required.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Enter a valid email address.';
+  return '';
+}
+
+function validatePassword(value: string): string {
+  if (!value) return 'Password is required.';
+  return '';
+}
+
 export default function LoginPage(): React.ReactElement {
   const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+
+  // Per-field errors (shown after blur or submit attempt)
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  // Whether the user has already tried submitting (show all errors after first attempt)
+  const [submitted, setSubmitted] = useState(false);
+
+  const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  function handleEmailBlur(): void {
+    setEmailError(validateEmail(email));
+  }
+
+  function handlePasswordBlur(): void {
+    setPasswordError(validatePassword(password));
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+    setSubmitted(true);
+    setApiError('');
 
+    // Run client-side validation first
+    const eErr = validateEmail(email);
+    const pErr = validatePassword(password);
+    setEmailError(eErr);
+    setPasswordError(pErr);
+    if (eErr || pErr) return;
+
+    setIsLoading(true);
     try {
       const result = await signIn('credentials', {
         redirect: false,
@@ -36,21 +72,23 @@ export default function LoginPage(): React.ReactElement {
       });
 
       if (!result?.ok) {
-        setError('Invalid email or password. Please check your credentials and try again.');
+        setApiError('Incorrect email or password. Check your credentials and try again.');
         return;
       }
 
-      // Fetch the session to read the role and redirect accordingly
       const session = await getSession();
       const role = session?.user?.role as Role | undefined;
       const destination = role ? (DASHBOARD_BY_ROLE[role] ?? '/dashboard') : '/dashboard';
       router.push(destination);
     } catch {
-      setError('Something went wrong. Please try again.');
+      setApiError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }
+
+  // Show a gentle "complete the form" prompt if they click submit before touching fields
+  const showCompletionHint = submitted && (emailError || passwordError);
 
   return (
     <div className="min-h-screen bg-surface-primary flex items-center justify-center px-4">
@@ -70,12 +108,21 @@ export default function LoginPage(): React.ReactElement {
             Enter your credentials to access your dashboard.
           </p>
 
-          {error && (
+          {apiError && (
             <div
               role="alert"
               className="mb-4 px-4 py-3 rounded-sm bg-red-950/40 border border-red-800/50 font-body text-t5 text-red-400"
             >
-              {error}
+              {apiError}
+            </div>
+          )}
+
+          {showCompletionHint && !apiError && (
+            <div
+              role="alert"
+              className="mb-4 px-4 py-3 rounded-sm bg-yellow-950/40 border border-yellow-800/50 font-body text-t5 text-yellow-400"
+            >
+              Please fix the errors below before signing in.
             </div>
           )}
 
@@ -85,9 +132,13 @@ export default function LoginPage(): React.ReactElement {
               label="Email address"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(validateEmail(e.target.value));
+              }}
+              onBlur={handleEmailBlur}
+              error={emailError}
               autoComplete="email"
-              required
             />
 
             <Input
@@ -95,9 +146,13 @@ export default function LoginPage(): React.ReactElement {
               label="Password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) setPasswordError(validatePassword(e.target.value));
+              }}
+              onBlur={handlePasswordBlur}
+              error={passwordError}
               autoComplete="current-password"
-              required
             />
 
             <Button
@@ -105,7 +160,6 @@ export default function LoginPage(): React.ReactElement {
               variant="primary"
               size="lg"
               isLoading={isLoading}
-              disabled={!email || !password}
               className="w-full mt-2"
             >
               Sign in
