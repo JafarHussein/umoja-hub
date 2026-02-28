@@ -188,10 +188,36 @@ OPENWEATHERMAP_API_KEY=your_owm_key
 ### Running Locally
 
 ```bash
-npm run dev
+npm run db:seed   # Populate demo data (requires Atlas IP allowlist)
+npm run dev       # Start on http://localhost:3000
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Demo Credentials
+
+After running `npm run db:seed`:
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@umojahub.co.ke | Admin@Umoja2024! |
+| Farmer (TRUSTED · 87) | wanjiku.kamau@gmail.com | Farmer@2024! |
+| Farmer (PREMIUM · 94) | kipchoge.mutai@gmail.com | Farmer@2024! |
+| Buyer | kamau.githinji@gmail.com | Buyer@2024! |
+| Student (INTERMEDIATE) | amina.waweru@strathmore.edu | Student@2024! |
+| Student (BEGINNER) | brian.otieno@students.uonbi.ac.ke | Student@2024! |
+| Lecturer | g.ndungu@uonbi.ac.ke | Lecturer@2024! |
+
+### Development Commands
+
+```bash
+npm run type-check     # TypeScript check (zero errors required)
+npm run lint           # ESLint
+npm run test           # Jest unit + integration (425 tests)
+npm run test:coverage  # Coverage report
+npm run test:e2e       # Playwright E2E (7 journeys, requires running server)
+npm run build          # Production build
+```
 
 ### Building for Production
 
