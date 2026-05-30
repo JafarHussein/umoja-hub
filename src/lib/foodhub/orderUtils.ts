@@ -1,17 +1,14 @@
-/**
- * Order utility functions for the Food Hub.
- * Order reference ID generation per BUSINESS_LOGIC.md §6.
- */
-
-import Order from '@/lib/models/Order.model';
 import { generateOrderReferenceId as formatId } from '@/lib/utils';
 
-/**
- * Generates a unique order reference ID in the format UMJ-YYYY-XXXXXX.
- * Uses the current order count to produce a sequential, zero-padded ID.
- * Example: UMJ-2025-000042
- */
+// Generates a unique order reference ID in the format UMJ-YYYY-XXXXXX.
+// Uses an atomic MongoDB $inc counter to prevent race-condition duplicates
+// that would arise from the previous countDocuments()-based approach.
 export async function generateOrderReferenceId(): Promise<string> {
-  const count = await Order.countDocuments();
-  return formatId(count + 1);
+  const { default: Counter } = await import('@/lib/models/Counter.model');
+  const counter = await Counter.findOneAndUpdate(
+    { _id: 'order_ref_id' },
+    { $inc: { seq: 1 } },
+    { upsert: true, new: true }
+  );
+  return formatId(counter!.seq);
 }

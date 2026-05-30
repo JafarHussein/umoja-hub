@@ -24,6 +24,11 @@ export const groupOrderSchema = z.object({
     .max(MAX_GROUP_MEMBERS, `Maximum ${MAX_GROUP_MEMBERS} members allowed`),
 });
 
+export const groupOrderActionSchema = z.object({
+  action: z.enum(['JOIN', 'CLOSE', 'FULFILL', 'CANCEL']),
+});
+
 export type GroupCreationInput = z.infer<typeof groupCreationSchema>;
 export type GroupMemberInput = z.infer<typeof groupMemberSchema>;
 export type GroupOrderInput = z.infer<typeof groupOrderSchema>;
+export type GroupOrderActionInput = z.infer<typeof groupOrderActionSchema>;

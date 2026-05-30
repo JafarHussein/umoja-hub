@@ -10,9 +10,9 @@ import { logger } from '@/lib/utils';
 import { Role, OrderFulfillmentStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
-// POST /api/cron/impact-summary — Nightly platform impact summary
+// POST /api/cron/impact-summary — Hourly platform impact summary
 // Auth: Bearer CRON_SECRET
-// Schedule: nightly 11pm UTC (2am EAT)
+// Schedule: every hour (0 * * * * in vercel.json)
 // Per BUSINESS_LOGIC.md §10.3 — READ ONLY, single upsert at end
 // ---------------------------------------------------------------------------
 
