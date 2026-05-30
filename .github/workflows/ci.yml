@@ -10,6 +10,8 @@ jobs:
   quality:
     name: Type Check · Lint · Test · Build
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout repository
@@ -18,7 +20,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -47,8 +49,8 @@ jobs:
           MPESA_SHORTCODE: '174379'
           MPESA_PASSKEY: test
           MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
-          SENDGRID_API_KEY: test
-          SENDGRID_FROM_EMAIL: test@test.com
+          RESEND_API_KEY: test
+          RESEND_FROM_EMAIL: test@test.com
           AFRICASTALKING_API_KEY: test
           AFRICASTALKING_USERNAME: sandbox
           OPEN_WEATHER_MAP_API_KEY: test
@@ -73,8 +75,8 @@ jobs:
           MPESA_SHORTCODE: '174379'
           MPESA_PASSKEY: test
           MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
-          SENDGRID_API_KEY: test
-          SENDGRID_FROM_EMAIL: test@test.com
+          RESEND_API_KEY: test
+          RESEND_FROM_EMAIL: test@test.com
           AFRICASTALKING_API_KEY: test
           AFRICASTALKING_USERNAME: sandbox
           OPEN_WEATHER_MAP_API_KEY: test
@@ -99,8 +101,8 @@ jobs:
           MPESA_SHORTCODE: '174379'
           MPESA_PASSKEY: test
           MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
-          SENDGRID_API_KEY: test
-          SENDGRID_FROM_EMAIL: test@test.com
+          RESEND_API_KEY: test
+          RESEND_FROM_EMAIL: test@test.com
           AFRICASTALKING_API_KEY: test
           AFRICASTALKING_USERNAME: sandbox
           OPEN_WEATHER_MAP_API_KEY: test
