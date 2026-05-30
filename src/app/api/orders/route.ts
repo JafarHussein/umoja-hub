@@ -46,7 +46,7 @@ type UserLean = {
 // GET /api/orders — Authenticated user's orders (buyer or farmer view)
 // Auth: BUYER | FARMER
 // ---------------------------------------------------------------------------
-export async function GET(_req: NextRequest): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
 
@@ -65,15 +65,34 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const { searchParams } = new URL(req.url);
+    const cursor = searchParams.get('cursor');
+    const limit = Math.min(Number(searchParams.get('limit') ?? '20'), 100);
+
+    if (cursor && !mongoose.isValidObjectId(cursor)) {
+      return NextResponse.json(
+        { error: 'Invalid cursor value.', code: 'VALIDATION_FAILED' },
+        { status: 400 }
+      );
+    }
+
     const [{ default: User }, { default: Rating }] = await Promise.all([
       import('@/lib/models/User.model'),
       import('@/lib/models/Rating.model'),
     ]);
 
     if (role === Role.BUYER) {
-      const orders = (await Order.find({ buyerId: userId })
-        .sort({ createdAt: -1 })
+      const buyerFilter: Record<string, unknown> = { buyerId: userId };
+      if (cursor) buyerFilter['_id'] = { $lt: new mongoose.Types.ObjectId(cursor) };
+
+      const rawOrders = (await Order.find(buyerFilter)
+        .sort({ _id: -1 })
+        .limit(limit + 1)
         .lean()) as unknown as OrderLean[];
+
+      const hasMore = rawOrders.length > limit;
+      const orders = hasMore ? rawOrders.slice(0, limit) : rawOrders;
+      const nextCursor = hasMore ? (orders.at(-1)?._id?.toString() ?? null) : null;
 
       const ratedIds = (await Rating.distinct('orderId', { buyerId: userId })) as unknown[];
       const ratedSet = new Set(ratedIds.map(String));
@@ -105,22 +124,31 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
             createdAt: order.createdAt.toISOString(),
           };
         }),
+        nextCursor,
       });
     }
 
     // FARMER role
-    const orders = (await Order.find({ farmerId: userId })
-      .sort({ createdAt: -1 })
+    const farmerFilter: Record<string, unknown> = { farmerId: userId };
+    if (cursor) farmerFilter['_id'] = { $lt: new mongoose.Types.ObjectId(cursor) };
+
+    const rawFarmerOrders = (await Order.find(farmerFilter)
+      .sort({ _id: -1 })
+      .limit(limit + 1)
       .lean()) as unknown as OrderLean[];
 
-    const buyerIds = [...new Set(orders.map((o) => o.buyerId.toString()))];
+    const farmerHasMore = rawFarmerOrders.length > limit;
+    const farmerOrders = farmerHasMore ? rawFarmerOrders.slice(0, limit) : rawFarmerOrders;
+    const farmerNextCursor = farmerHasMore ? (farmerOrders.at(-1)?._id?.toString() ?? null) : null;
+
+    const buyerIds = [...new Set(farmerOrders.map((o) => o.buyerId.toString()))];
     const buyers = (await User.find({ _id: { $in: buyerIds } })
       .select('firstName lastName')
       .lean()) as unknown as UserLean[];
     const buyerMap = new Map(buyers.map((b) => [b._id.toString(), b]));
 
     return NextResponse.json({
-      orders: orders.map((order) => {
+      orders: farmerOrders.map((order) => {
         const buyer = buyerMap.get(order.buyerId.toString());
         return {
           _id: order._id.toString(),
@@ -141,6 +169,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
           createdAt: order.createdAt.toISOString(),
         };
       }),
+      nextCursor: farmerNextCursor,
     });
   } catch (error) {
     return handleApiError(error);

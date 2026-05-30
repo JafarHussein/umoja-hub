@@ -28,6 +28,7 @@ const requiredEnvVars = [
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
   'CRON_SECRET',
+  'WEBHOOK_SECRET',
 ] as const;
 
 type RequiredEnvVar = (typeof requiredEnvVars)[number];

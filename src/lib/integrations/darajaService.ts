@@ -140,7 +140,7 @@ export async function initiateSTKPush(params: ISTKPushParams): Promise<ISTKPushR
     PartyA: phone,
     PartyB: shortcode,
     PhoneNumber: phone,
-    CallBackURL: `${callbackUrl}?secret=${env('CRON_SECRET')}`,
+    CallBackURL: `${callbackUrl}?secret=${env('WEBHOOK_SECRET')}`,
     AccountReference: params.orderId,
     TransactionDesc: params.description.slice(0, 13), // Daraja max 13 chars
   };

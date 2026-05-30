@@ -347,8 +347,9 @@ describe('GET /api/groups/[groupId]/orders/[orderId]', () => {
       select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(makeGroup()) }),
     });
     const order = makeGroupOrder();
+    const mockLean = { lean: jest.fn().mockResolvedValue(order) };
     mockGroupOrderFindOne.mockReturnValue({
-      populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(order) }),
+      populate: jest.fn().mockReturnValue({ populate: jest.fn().mockReturnValue(mockLean) }),
     });
 
     const res = await GET(makeGetRequest(), {
@@ -363,8 +364,9 @@ describe('GET /api/groups/[groupId]/orders/[orderId]', () => {
   it('returns group order for admin without membership check', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(ADMIN_SESSION);
     const order = makeGroupOrder();
+    const mockLeanAdmin = { lean: jest.fn().mockResolvedValue(order) };
     mockGroupOrderFindOne.mockReturnValue({
-      populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(order) }),
+      populate: jest.fn().mockReturnValue({ populate: jest.fn().mockReturnValue(mockLeanAdmin) }),
     });
 
     const res = await GET(makeGetRequest(), {
@@ -394,7 +396,7 @@ describe('GET /api/groups/[groupId]/orders/[orderId]', () => {
   it('returns 404 when order does not exist', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(ADMIN_SESSION);
     mockGroupOrderFindOne.mockReturnValue({
-      populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+      populate: jest.fn().mockReturnValue({ populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }),
     });
 
     const res = await GET(makeGetRequest(), {

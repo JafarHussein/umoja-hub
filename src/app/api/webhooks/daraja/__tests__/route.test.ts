@@ -46,7 +46,7 @@ jest.mock('@/lib/integrations/darajaService', () => ({
 
 jest.mock('@/lib/env', () => ({
   env: jest.fn().mockImplementation((key: string) => {
-    if (key === 'CRON_SECRET') return 'TEST_CRON_SECRET';
+    if (key === 'WEBHOOK_SECRET') return 'test-webhook-secret';
     return '';
   }),
 }));
@@ -54,7 +54,7 @@ jest.mock('@/lib/env', () => ({
 import { POST } from '../route';
 
 function makeWebhookRequest(payload: unknown): NextRequest {
-  return new NextRequest('http://localhost/api/webhooks/daraja?secret=TEST_CRON_SECRET', {
+  return new NextRequest('http://localhost/api/webhooks/daraja?secret=test-webhook-secret', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

@@ -191,6 +191,7 @@ export async function GET(req: NextRequest, { params }: Params): Promise<NextRes
 
     const groupOrder = await GroupOrder.findOne({ _id: orderId, groupId })
       .populate('supplierId', 'businessName county')
+      .populate('participatingMembers.userId', 'firstName lastName')
       .lean();
 
     if (!groupOrder) {
