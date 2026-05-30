@@ -28,3 +28,12 @@ export const articleSchema = z.object({
 });
 
 export type ArticleInput = z.infer<typeof articleSchema>;
+
+export const patchArticleSchema = z.object({
+  isPublished: z.boolean().optional(),
+  title: z.string().trim().min(5, 'Title must be at least 5 characters').max(200).optional(),
+  content: z.string().trim().min(100, 'Content must be at least 100 characters').optional(),
+  cropTags: z.array(z.string().trim().min(1)).optional(),
+});
+
+export type PatchArticleInput = z.infer<typeof patchArticleSchema>;
