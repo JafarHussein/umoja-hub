@@ -6,6 +6,7 @@ import { darajaCallbackSchema } from '@/lib/validation/orderSchema';
 import { verifyDarajaSignature } from '@/lib/integrations/darajaService';
 import { sendSMS } from '@/lib/integrations/smsService';
 import { logger } from '@/lib/utils';
+import { env } from '@/lib/env';
 import { OrderPaymentStatus, OrderFulfillmentStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +21,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const ack = { ResultCode: 0, ResultDesc: 'Acknowledged' };
 
   try {
+    // Step 0: Validate webhook secret — rejects forged callbacks before reading body
+    const secret = req.nextUrl.searchParams.get('secret');
+    if (!secret || secret !== env('CRON_SECRET')) {
+      logger.warn('daraja', 'Webhook called with invalid or missing secret');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const body: unknown = await req.json();
 
     // Step 1: Verify signature (always first)

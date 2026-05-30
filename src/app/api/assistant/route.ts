@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
+import { connectDB } from '@/lib/db';
 import { handleApiError, requireRole } from '@/lib/utils';
 import { farmAssistantChat } from '@/lib/integrations/groqService';
 import { Role, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
@@ -24,6 +26,7 @@ const assistantRequestSchema = z.object({
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    await connectDB();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER);
 
@@ -39,6 +42,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const { message, sessionId } = parsed.data;
     const farmerId = session!.user.id;
+
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const { default: ChatSession } = await import('@/lib/models/ChatSession.model');
+    let messageCount = 0;
+    if (mongoose.isValidObjectId(farmerId)) {
+      const rateResult = await ChatSession.aggregate<{ total: number }>([
+        {
+          $match: {
+            farmerId: new mongoose.Types.ObjectId(farmerId),
+            lastActivityAt: { $gte: tenMinutesAgo },
+          },
+        },
+        { $unwind: '$messages' },
+        { $match: { 'messages.timestamp': { $gte: tenMinutesAgo }, 'messages.role': 'user' } },
+        { $count: 'total' },
+      ]);
+      messageCount = rateResult[0]?.total ?? 0;
+    }
+    if (messageCount >= 10) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please wait before sending more messages.', code: 'RATE_LIMITED' },
+        { status: 429 }
+      );
+    }
 
     // farmAssistantChat handles all DB and external calls; never throws to caller
     const result = await farmAssistantChat(message, farmerId, sessionId);

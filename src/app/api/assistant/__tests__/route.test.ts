@@ -25,6 +25,14 @@ jest.mock('@/lib/integrations/groqService', () => ({
   farmAssistantChat: jest.fn(),
 }));
 
+// Mock ChatSession — rate limit check; default returns 0 messages (under limit)
+jest.mock('@/lib/models/ChatSession.model', () => ({
+  __esModule: true,
+  default: {
+    aggregate: jest.fn().mockResolvedValue([]),
+  },
+}));
+
 import { getServerSession } from 'next-auth';
 import { farmAssistantChat } from '@/lib/integrations/groqService';
 import { POST } from '../route';
