@@ -23,7 +23,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     // Step 0: Validate webhook secret — rejects forged callbacks before reading body
     const secret = req.nextUrl.searchParams.get('secret');
-    if (!secret || secret !== env('CRON_SECRET')) {
+    if (!secret || secret !== env('WEBHOOK_SECRET')) {
       logger.warn('daraja', 'Webhook called with invalid or missing secret');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }

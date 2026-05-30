@@ -58,6 +58,7 @@ jobs:
           CLOUDINARY_API_KEY: test
           CLOUDINARY_API_SECRET: test
           CRON_SECRET: test-cron-secret
+          WEBHOOK_SECRET: test-webhook-secret
 
       - name: Check coverage thresholds
         run: npm run test:coverage
@@ -84,6 +85,7 @@ jobs:
           CLOUDINARY_API_KEY: test
           CLOUDINARY_API_SECRET: test
           CRON_SECRET: test-cron-secret
+          WEBHOOK_SECRET: test-webhook-secret
 
       - name: Build
         run: npm run build
@@ -110,3 +112,4 @@ jobs:
           CLOUDINARY_API_KEY: test
           CLOUDINARY_API_SECRET: test
           CRON_SECRET: test-cron-secret
+          WEBHOOK_SECRET: test-webhook-secret

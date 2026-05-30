@@ -122,6 +122,7 @@ export async function GET(
     const orders = await GroupOrder.find({ groupId } as object)
       .sort({ createdAt: -1 })
       .populate('supplierId', 'businessName county')
+      .populate('participatingMembers.userId', 'firstName lastName')
       .lean();
 
     return NextResponse.json({ data: orders });

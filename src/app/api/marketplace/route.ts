@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
@@ -42,7 +43,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       filter['currentPricePerUnit'] = priceFilter;
     }
     if (cursor) {
-      filter['_id'] = { $lt: cursor }; // Newest first pagination
+      if (!mongoose.isValidObjectId(cursor)) {
+        return NextResponse.json(
+          { error: 'Invalid cursor value.', code: 'VALIDATION_FAILED' },
+          { status: 400 }
+        );
+      }
+      filter['_id'] = { $lt: new mongoose.Types.ObjectId(cursor) };
     }
 
     const listings = await MarketplaceListing.find(filter)
