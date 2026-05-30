@@ -27,6 +27,14 @@ jest.mock('@/lib/models/User.model', () => ({
   default: { findById: jest.fn((...args: unknown[]) => mockUserFindById(...args)) },
 }));
 
+const mockListingFindByIdAndUpdate = jest.fn().mockResolvedValue({});
+jest.mock('@/lib/models/MarketplaceListing.model', () => ({
+  __esModule: true,
+  default: {
+    findByIdAndUpdate: jest.fn((...args: unknown[]) => mockListingFindByIdAndUpdate(...args)),
+  },
+}));
+
 jest.mock('@/lib/integrations/smsService', () => ({
   sendSMS: jest.fn().mockResolvedValue({ success: true }),
 }));
@@ -89,7 +97,9 @@ const mockOrder = {
   orderReferenceId: 'UMJ-2025-000001',
   farmerId: 'farmer-123',
   buyerId: 'buyer-456',
+  listingId: 'listing-999',
   cropName: 'Tomatoes',
+  quantityOrdered: 10,
   totalAmountKES: 6500,
   mpesaCheckoutRequestId: 'checkout-req-001',
 };
@@ -142,7 +152,7 @@ describe('POST /api/webhooks/daraja', () => {
     );
   });
 
-  it('returns HTTP 200 on payment failure — no order update to PAID', async () => {
+  it('returns HTTP 200 on payment failure — marks FAILED and restores inventory', async () => {
     mockOrderFindOne.mockResolvedValueOnce({
       ...mockOrder,
       mpesaCheckoutRequestId: 'checkout-req-002',
@@ -158,6 +168,11 @@ describe('POST /api/webhooks/daraja', () => {
     expect(mockOrderFindByIdAndUpdate).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ paymentStatus: 'FAILED' })
+    );
+    // Inventory must be restored when payment fails
+    expect(mockListingFindByIdAndUpdate).toHaveBeenCalledWith(
+      'listing-999',
+      expect.objectContaining({ $inc: { quantityAvailable: 10 } })
     );
   });
 

@@ -8,7 +8,8 @@ import { AppError, handleApiError, requireRole } from '@/lib/utils';
 import { Role } from '@/types';
 
 // ---------------------------------------------------------------------------
-// GET /api/marketplace/[listingId] — Get a single listing (public)
+// GET /api/marketplace/[listingId] — Single listing with farmer + trust data
+// Auth: public
 // ---------------------------------------------------------------------------
 
 export async function GET(
@@ -21,10 +22,47 @@ export async function GET(
 
     const listing = await MarketplaceListing.findById(listingId).lean();
     if (!listing) {
-      throw new AppError('This listing does not exist or has been removed.', 404, 'FARMER_LISTING_NOT_FOUND');
+      throw new AppError(
+        'This listing does not exist or has been removed.',
+        404,
+        'FARMER_LISTING_NOT_FOUND'
+      );
     }
 
-    return NextResponse.json({ data: listing });
+    const farmerId = String(listing.farmerId);
+
+    const [{ default: User }, { default: FarmerTrustScore }] = await Promise.all([
+      import('@/lib/models/User.model'),
+      import('@/lib/models/FarmerTrustScore.model'),
+    ]);
+
+    const [farmer, trustScore] = await Promise.all([
+      User.findById(farmerId)
+        .select('firstName lastName county phoneNumber farmerData.isVerified')
+        .lean(),
+      FarmerTrustScore.findOne({ farmerId }).select('compositeScore tier').lean(),
+    ]);
+
+    return NextResponse.json({
+      data: {
+        ...listing,
+        farmer: farmer
+          ? {
+              firstName: (farmer as { firstName?: string }).firstName ?? '—',
+              lastName: (farmer as { lastName?: string }).lastName ?? '',
+              county: (farmer as { county?: string }).county ?? '',
+              phoneNumber: (farmer as { phoneNumber?: string }).phoneNumber ?? '',
+              isVerified: (farmer as { farmerData?: { isVerified?: boolean } }).farmerData?.isVerified ?? false,
+            }
+          : null,
+        trustScore: trustScore
+          ? {
+              compositeScore: (trustScore as { compositeScore?: number }).compositeScore ?? 0,
+              tier: (trustScore as { tier?: string }).tier ?? 'NEW',
+            }
+          : null,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }
@@ -62,12 +100,20 @@ export async function PATCH(
 
     const listing = await MarketplaceListing.findById(listingId);
     if (!listing) {
-      throw new AppError('This listing does not exist or has been removed.', 404, 'FARMER_LISTING_NOT_FOUND');
+      throw new AppError(
+        'This listing does not exist or has been removed.',
+        404,
+        'FARMER_LISTING_NOT_FOUND'
+      );
     }
 
     // Farmers can only edit their own listings
     if (String(listing.farmerId) !== session!.user.id) {
-      throw new AppError('You do not have permission to perform this action.', 403, 'AUTH_FORBIDDEN');
+      throw new AppError(
+        'You do not have permission to perform this action.',
+        403,
+        'AUTH_FORBIDDEN'
+      );
     }
 
     const updated = await MarketplaceListing.findByIdAndUpdate(listingId, parsed.data, {

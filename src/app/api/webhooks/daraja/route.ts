@@ -7,7 +7,7 @@ import { verifyDarajaSignature } from '@/lib/integrations/darajaService';
 import { sendSMS } from '@/lib/integrations/smsService';
 import { logger } from '@/lib/utils';
 import { env } from '@/lib/env';
-import { OrderPaymentStatus, OrderFulfillmentStatus } from '@/types';
+import { OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/daraja — M-Pesa STK Push callback from Safaricom
@@ -59,14 +59,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Step 4: Handle payment failure (ResultCode !== 0)
+    // Restore listing inventory so the stock is available to other buyers.
     if (ResultCode !== 0) {
-      await Order.findByIdAndUpdate(order._id, {
-        paymentStatus: OrderPaymentStatus.FAILED,
-      });
-      logger.info('daraja', 'Payment failed or cancelled', {
+      const { default: MarketplaceListing } = await import('@/lib/models/MarketplaceListing.model');
+      await Promise.all([
+        Order.findByIdAndUpdate(order._id, { paymentStatus: OrderPaymentStatus.FAILED }),
+        MarketplaceListing.findByIdAndUpdate(order.listingId, {
+          $inc: { quantityAvailable: order.quantityOrdered },
+          listingStatus: ListingStatus.AVAILABLE,
+        }),
+      ]);
+      logger.info('daraja', 'Payment failed or cancelled — inventory restored', {
         CheckoutRequestID,
         ResultCode,
         orderId: String(order._id),
+        listingId: String(order.listingId),
+        quantityRestored: order.quantityOrdered,
       });
       return NextResponse.json(ack);
     }

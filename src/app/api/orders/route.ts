@@ -8,7 +8,18 @@ import { createOrderSchema } from '@/lib/validation/orderSchema';
 import { generateOrderReferenceId } from '@/lib/foodhub/orderUtils';
 import { initiateSTKPush } from '@/lib/integrations/darajaService';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
+import mongoose from 'mongoose';
 import { Role, OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus } from '@/types';
+
+type ListingLean = {
+  _id: mongoose.Types.ObjectId;
+  listingStatus: string;
+  cropName: string;
+  farmerId: mongoose.Types.ObjectId;
+  currentPricePerUnit: number;
+  unit: string;
+  quantityAvailable: number;
+};
 
 type OrderLean = {
   _id: { toString(): string };
@@ -164,8 +175,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await connectDB();
 
-    // Validate listing exists and is available
-    const listing = await MarketplaceListing.findById(listingId);
+    // Step 1: Readable validation — specific error messages before touching DB state
+    const listing = (await MarketplaceListing.findById(listingId)
+      .select('listingStatus cropName farmerId currentPricePerUnit unit quantityAvailable')
+      .lean()) as ListingLean | null;
+
     if (!listing) {
       throw new AppError(
         'This listing does not exist or has been removed.',
@@ -173,17 +187,47 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'FARMER_LISTING_NOT_FOUND'
       );
     }
-
     if (listing.listingStatus !== ListingStatus.AVAILABLE) {
+      throw new AppError('This listing is no longer available.', 409, 'FARMER_LISTING_UNAVAILABLE');
+    }
+    if (quantityOrdered > listing.quantityAvailable) {
       throw new AppError(
-        'This listing is no longer available.',
+        'The requested quantity is no longer available.',
         409,
-        'FARMER_LISTING_UNAVAILABLE'
+        'ORDER_INSUFFICIENT_STOCK'
       );
     }
 
-    // Check available stock
-    if (quantityOrdered > listing.quantityAvailable) {
+    // Step 2: Atomic reserve — prevents race condition where two concurrent buyers both
+    // pass the check above before either write completes. The $gte filter doubles as a
+    // compare-and-swap: if another request decremented stock between Step 1 and here,
+    // findOneAndUpdate returns null and we surface a clean 409 instead of overselling.
+    const reserved = await MarketplaceListing.findOneAndUpdate(
+      {
+        _id: listingId,
+        listingStatus: ListingStatus.AVAILABLE,
+        quantityAvailable: { $gte: quantityOrdered },
+      },
+      [
+        {
+          $set: {
+            quantityAvailable: { $subtract: ['$quantityAvailable', quantityOrdered] },
+            // Auto-transition to SOLD_OUT when stock reaches exactly zero
+            listingStatus: {
+              $cond: {
+                if: { $lte: [{ $subtract: ['$quantityAvailable', quantityOrdered] }, 0] },
+                then: ListingStatus.SOLD_OUT,
+                else: '$listingStatus',
+              },
+            },
+          },
+        },
+      ],
+      { new: true }
+    );
+
+    if (!reserved) {
+      // Race condition: another buyer claimed the last stock between Step 1 and Step 2
       throw new AppError(
         'The requested quantity is no longer available.',
         409,
@@ -222,9 +266,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
       mpesaCheckoutRequestId = stkResult.CheckoutRequestID;
     } catch (stkError) {
-      // Clean up the order if STK Push fails
-      await Order.findByIdAndDelete(order._id);
-      logger.error('orders', 'STK Push failed, order rolled back', {
+      // Rollback: delete the order AND restore listing inventory atomically.
+      // listingStatus is unconditionally restored to AVAILABLE because we only reach
+      // this path when the listing was AVAILABLE at the time of reservation (Step 2 filter).
+      await Promise.all([
+        Order.findByIdAndDelete(order._id),
+        MarketplaceListing.findByIdAndUpdate(listingId, {
+          $inc: { quantityAvailable: quantityOrdered },
+          listingStatus: ListingStatus.AVAILABLE,
+        }),
+      ]);
+      logger.error('orders', 'STK Push failed — order and inventory rolled back', {
         orderReferenceId,
         error: stkError,
       });
