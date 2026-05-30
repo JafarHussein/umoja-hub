@@ -32,7 +32,7 @@
 
 UmojaHub is a dual-module, production-grade web platform built to address two deeply connected challenges facing communities in Kenya and across East Africa: **food insecurity** and the **gap between student education and real-world technical experience**.
 
-The platform is architected to feel like serious infrastructure — not a student project. Every design and engineering decision prioritizes trust, reliability, and performance on low-bandwidth connections common among Kenyan farmers and students.
+The platform is architected to feel like serious infrastructure — not a student project. Every design and engineering decision prioritises trust, reliability, and performance on low-bandwidth connections common among Kenyan farmers and students.
 
 > **"Build infrastructure that communities can trust, not technology for technology's sake."**
 
@@ -52,18 +52,22 @@ A comprehensive farmer empowerment platform addressing five specific, documented
 | **Price Intelligence** | Real-time and historical crop price comparisons against wholesale market benchmarks (Wakulima, Kongowea, City Market Nairobi). Platform Premium calculation shows farmers exactly what UmojaHub achieves versus traditional channels. |
 | **Group Tools** | Collective input purchasing through verified supplier connections. Group formation, member opt-in, and individual M-Pesa collection — no single farmer handles group funds. |
 
-### Module 2 — Education Hub (Experience Engine)
+### Module 2 — Education Hub
 
-A hands-on experience platform for computer science students. Not a learning management system — a credential engine. Students are matched with real open-source projects or AI-generated Kenyan-context briefs, complete structured professional documentation, and earn a publicly verifiable portfolio that employers can trust.
+A verification infrastructure layer for software project work by East African students. Not a learning management system, not a bootcamp, and not a grading system. Its function is narrow and specific: to produce an auditable, institutionally-reviewed record that a given student built a given project, understood what they built, and had that assessment confirmed by a credentialed academic reviewer.
+
+The output is a permanent, publicly verifiable record that employers can query directly. Every design decision protects the integrity of that record.
 
 | Area | Description |
 |---|---|
-| **Project Tracks** | Two tracks: GitHub open-source matching (via Octokit) and AI-generated Kenyan context project briefs (via GPT-4o). Both enforce structured Git workflow and five mandatory process documents. |
-| **Kenya Context Brief Library** | Admin-editable library of Kenyan industry scenarios (M-Pesa integrations, USSD, SACCO tools, agricultural platforms, community health). Every AI-generated brief reflects a real Kenyan constraint — 2G, mobile-first, offline-capable, low digital literacy. |
-| **Skills Passport** | Verified, evidence-linked skill records extracted from lecturer-approved projects. No self-reporting. Each skill entry shows the tier, date first verified, and the project that produced it. |
-| **Peer Review** | Structured two-dimension peer review (Code Quality + Documentation Clarity) required from the second project onward. Automated routing ensures reviewers are at equal or higher tier. |
-| **AI Mentor** | Socratic AI mentor (Groq / Llama 3) aware of the student's live project brief, constraints, and process documentation. Never writes code. Guides through questions, explanations, and documentation pointers. Every interaction is automatically appended to the student's AI Usage Log. |
-| **Lecturer Verification** | Human judgment gate with a structured four-dimension rubric and mandatory minimum comment length per score. Generates a public, login-free verification URL — the student's primary employer credential. |
+| **Project Tracks** | Two tracks: **Build & Deploy** (student designs, builds, and deploys an original project addressing a Kenya-context brief) and **AI Brief** (AI-generated brief from a curated Kenyan industry scenario library). Both tracks enforce structured Git workflow, document submission, and a live deployment requirement at Intermediate and Advanced tiers. |
+| **Kenya Context Brief Library** | Admin-maintained library of Kenyan industry scenarios — M-Pesa integrations, USSD tools, SACCO systems, agricultural platforms, community health, Huduma services. Every brief reflects real Kenyan operational constraints: mobile-first, low-bandwidth, MPESA-enabled, low digital literacy. |
+| **Process Documentation** | Three required documents per project: Problem Breakdown, Approach Plan, and Final Reflection. Minimum word counts scale with tier (200 / 350 / 500 words). An optional Blocker Log records genuine development obstacles and resolutions — its presence is positively weighted in the review rubric but is never a submission gate. |
+| **Skills Passport** | Verified, evidence-linked project records. Each entry shows the tier, track, verification date, reviewer name, and reviewer institution. No self-reporting — every entry requires a completed lecturer review cycle. |
+| **Peer Review** | Structured two-dimension peer review (Code Quality + Documentation Clarity) assigned to an eligible peer student. Eligibility requires at least one verified project at the same or higher tier. Reviews are assigned automatically and expire after seven days — engagements proceed to lecturer review regardless of peer review outcome. |
+| **AI Mentor** | Socratic AI mentor (Groq / Llama 3) scoped to the student's live project brief, constraints, and submitted documents. Does not generate code. Guides through questions, explanations, and documentation prompts. Session context is maintained for 90 days per engagement. |
+| **Lecturer Verification** | Human judgment gate with a structured four-dimension rubric. Lecturers must be admin-approved before they can review — approval requires verified institutional affiliation. The rubric assesses Problem Understanding, Solution Quality, Process Discipline, and Problem Ownership. Minimum comment word counts are enforced server-side per tier. A maximum of two revision cycles is permitted before an engagement is locked for admin review. |
+| **Employer Verification** | Every verified project receives a permanent public URL and a structured JSON endpoint. Both are login-free and display the reviewer's full name, title, and verified institution. |
 
 ---
 
@@ -94,17 +98,20 @@ A hands-on experience platform for computer science students. Not a learning man
 | Technology | Role |
 |---|---|
 | **Next.js API Routes** | All backend logic. One codebase, one deployment pipeline for MVP. |
-| **MongoDB Atlas** (Mongoose ODM) | Primary database from day one — M0 free tier for MVP, M10+ for production. No file-based database phase. |
+| **MongoDB Atlas** (Mongoose ODM) | Primary database. Replica set required for multi-document transactions (verification issuance). M0 free tier for development, M10+ for production. |
 | **NextAuth.js** | Credentials-based authentication with role-embedded JWT sessions. Five roles: Farmer, Buyer, Student, Lecturer, Admin. |
+| **Redis** (Upstash) | Distributed locks for concurrent operation safety (reviewer claim, brief generation, verification issuance), rate limiting, and pre-computed queue depth counters. |
 | **Zod** | Input validation schemas across all API routes. |
 
 ### Data Architecture
 
 The database is structured across three layers:
 
-1. **Event Layer** — Append-only records: `PriceHistory`, raw order and review submissions.
-2. **Score Layer** — Trigger-based recalculation via Mongoose post-save middleware: `FarmerTrustScore`, `StudentPortfolioStatus`, `LecturerEffectiveness`.
+1. **Event Layer** — Append-only records: `VerificationAuditLog`, `AdminActionLog`, `GitHubSnapshot`, `EngagementDocument` (all versions retained), `PriceHistory`, raw order and review submissions.
+2. **Score Layer** — Trigger-based recalculation: `FarmerTrustScore`, `StudentPortfolioStatus`, `LecturerEffectiveness`.
 3. **Insight Layer** — Scheduled pre-computed aggregations for instant dashboard rendering: `MarketInsight`, `PlatformImpactSummary`.
+
+The `VerificationAuditLog` and `AdminActionLog` collections are protected by a MongoDB collection-level validator that rejects all write operations except `insertOne`. Application code enforces the same constraint independently. Per-record SHA-256 hashes enable tamper detection without requiring blockchain infrastructure.
 
 ---
 
@@ -112,13 +119,13 @@ The database is structured across three layers:
 
 | Service | Purpose | Notes |
 |---|---|---|
-| **Safaricom Daraja v2** | M-Pesa STK Push checkout for all marketplace transactions and group order collections. | Sandbox for MVP. Idempotency check mandatory on webhook handler. |
+| **Safaricom Daraja v2** | M-Pesa STK Push checkout for all marketplace transactions and group order collections. | Sandbox for development. Idempotency check mandatory on webhook handler. |
 | **Groq API (Llama 3)** | Powers both the Farm Assistant (Food Security Hub) and the AI Mentor (Education Hub) via the same client but entirely different system prompts. | Free tier. |
-| **OpenAI GPT-4o** | Structured JSON project brief generation (Education Hub) and content moderation. | Enforced via `response_format` API parameter. |
-| **GitHub API (Octokit)** | Repository discovery and filtering for the open-source project matching track. | Authenticated GitHub App token. 5,000 req/hr limit. Results cached. |
+| **OpenAI GPT-4o** | AI brief generation for the AI Brief track (Education Hub) and content moderation for knowledge articles. | Enforced via `response_format` API parameter. |
+| **GitHub OAuth** | Student identity binding for the Education Hub. Verifies repository ownership and commit authorship at brief generation and project submission. Each student's personal OAuth token is used for snapshot capture — not a shared application token. | Required before brief generation. Account age gate enforced. |
 | **OpenWeatherMap** | 7-day county-level weather forecasts injected into Farm Assistant context and displayed on the farmer dashboard. | Free tier. |
 | **Cloudinary** | All image upload, transformation (WebP), and CDN delivery. Non-negotiable for bandwidth performance. | |
-| **SendGrid** | Transactional emails — verification status, order confirmations, lecturer notifications. | Free tier for MVP. |
+| **Resend** | Transactional emails — verification status updates, order confirmations, lecturer SLA reminders, peer review notifications. | |
 | **Africa's Talking** | SMS notifications to farmers — order confirmed, verification status, price alerts, group order deadlines. | Preferred over Twilio for Kenyan network routing and cost. |
 | **Kenya Markets Trust / KNBS** | Weekly ingestion of public wholesale market price data for the Price Intelligence benchmark. | |
 | **OpenStreetMap (Leaflet.js)** | Geocoding and map display for farmer pickup locations in the buyer discovery experience. | |
@@ -130,7 +137,8 @@ The database is structured across three layers:
 ### Prerequisites
 
 - Node.js 18+
-- A MongoDB Atlas account (M0 free tier is sufficient)
+- A MongoDB Atlas account with a replica set cluster (M10 or higher for production; M0 with replica set enabled for development)
+- An Upstash Redis account (free tier sufficient for development)
 - API keys for the external services listed above
 
 ### Installation
@@ -157,22 +165,31 @@ MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/umojahub
 NEXTAUTH_SECRET=your_secret
 NEXTAUTH_URL=http://localhost:3000
 
+# Redis
+UPSTASH_REDIS_REST_URL=your_upstash_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_token
+
 # AI Services
 GROQ_API_KEY=your_groq_key
 OPENAI_API_KEY=your_openai_key
 
-# GitHub
-GITHUB_APP_ID=your_app_id
-GITHUB_APP_PRIVATE_KEY=your_private_key
+# GitHub OAuth (Education Hub — student identity binding)
+GITHUB_CLIENT_ID=your_github_oauth_client_id
+GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
+
+# Verification Signing
+VERIFICATION_SIGNING_KEY=your_32_byte_random_hex_string
 
 # M-Pesa (Daraja)
 MPESA_CONSUMER_KEY=your_consumer_key
 MPESA_CONSUMER_SECRET=your_consumer_secret
-MPESA_SHORTCODE=your_shortcode
+MPESA_SHORTCODE=174379
 MPESA_PASSKEY=your_passkey
+MPESA_CALLBACK_URL=https://your-domain.vercel.app/api/webhooks/mpesa
 
 # Communications
-SENDGRID_API_KEY=your_sendgrid_key
+RESEND_API_KEY=your_resend_key
+RESEND_FROM_EMAIL=noreply@umojahub.co.ke
 AFRICASTALKING_API_KEY=your_at_key
 AFRICASTALKING_USERNAME=your_at_username
 
@@ -182,8 +199,15 @@ CLOUDINARY_API_KEY=your_cloudinary_key
 CLOUDINARY_API_SECRET=your_cloudinary_secret
 
 # Weather
-OPENWEATHERMAP_API_KEY=your_owm_key
+OPEN_WEATHER_MAP_API_KEY=your_owm_key
+
+# Cron
+CRON_SECRET=your_cron_secret
 ```
+
+> `VERIFICATION_SIGNING_KEY` must be a cryptographically random value of at least 32 bytes. Generate with `openssl rand -hex 32`. This key signs the HMAC on all public verification JSON responses. Never rotate without a migration plan — existing signatures must be recomputed on key change.
+
+> `MPESA_SHORTCODE` must be `174379` in all non-production environments. Never use a production shortcode in development.
 
 ### Running Locally
 
@@ -208,6 +232,8 @@ npm start
 /umoja-hub
 ├── public/
 │   └── images/                  # Static brand assets (logo, favicon)
+├── scripts/
+│   └── seed.ts                  # Database seed script (tsx scripts/seed.ts)
 ├── src/
 │   ├── app/
 │   │   ├── api/
@@ -219,47 +245,67 @@ npm start
 │   │   │   ├── prices/          # Price Intelligence + alerts
 │   │   │   ├── groups/          # Farmer groups + group buying orders
 │   │   │   ├── suppliers/       # Verified supplier directory
-│   │   │   ├── education/       # Briefs, mentor, projects, peer review, portfolio
+│   │   │   ├── education/       # Briefs, engagements, documents, peer review, queue
+│   │   │   ├── mentor/          # AI Mentor session management (Groq)
+│   │   │   ├── portfolio/       # Public student portfolio pages (ISR)
+│   │   │   ├── verify/          # Public verification JSON endpoint (live, no cache)
 │   │   │   ├── webhooks/        # M-Pesa Daraja callback handler
-│   │   │   └── admin/           # Admin verification workflows
+│   │   │   ├── cron/            # Scheduled jobs (SLA monitoring, abandonment, TTL)
+│   │   │   └── admin/           # Admin queues: farmer verification, lecturer approval,
+│   │   │                        # escalation management, platform health
 │   │   ├── dashboard/
 │   │   │   ├── farmer/          # Listings, orders, assistant, prices, group
-│   │   │   ├── student/         # Profile, projects, mentor, portfolio, peer reviews
-│   │   │   ├── lecturer/        # Pending project reviews
-│   │   │   └── admin/           # Verification queues, Knowledge Hub CMS
+│   │   │   ├── student/         # Engagements, documents, mentor, portfolio, peer reviews
+│   │   │   ├── lecturer/        # Review queue, claimed reviews, effectiveness metrics
+│   │   │   └── admin/           # Verification queues, escalation queue, platform health
 │   │   ├── knowledge/           # Public Knowledge Hub pages
 │   │   ├── marketplace/         # Public marketplace browsing
-│   │   └── experience/          # Public portfolio + per-project verification URLs
+│   │   ├── portfolio/           # Public student portfolio pages
+│   │   └── experience/          # Public per-project verification pages
 │   ├── components/
 │   │   ├── ui/                  # Atomic components (Button, Card, Badge)
 │   │   ├── shared/              # Header, Sidebar, LayoutWrapper
 │   │   ├── foodhub/             # Food Security Hub components
 │   │   └── educationhub/        # Education Hub components
-│   ├── data/
-│   │   ├── foodhub/             # Specialized data model definitions
-│   │   ├── educationhub/        # Education Hub data model definitions
-│   │   └── shared/              # User, Order, ProjectEngagement, AuditLog
 │   ├── lib/
-│   │   ├── db.ts                # MongoDB connection manager (pooled)
+│   │   ├── db.ts                # MongoDB connection manager (pooled singleton)
 │   │   ├── models/              # Mongoose model definitions (one per collection)
 │   │   ├── validation/          # Zod validation schemas
-│   │   ├── integrations/        # External API adapters
-│   │   │   ├── groqService.ts   # Farm Assistant + AI Mentor (shared client)
-│   │   │   ├── openaiService.ts # GPT-4o brief generation + moderation
-│   │   │   ├── githubService.ts # Octokit repository discovery
-│   │   │   ├── darajaService.ts # M-Pesa STK Push + webhook verification
+│   │   ├── services/
+│   │   │   ├── education/
+│   │   │   │   ├── engagementTransitionService.ts  # All engagement state transitions
+│   │   │   │   ├── verificationIssuanceService.ts  # Atomic 5-write verification transaction
+│   │   │   │   ├── peerReviewAssignmentService.ts  # Eligibility check + assignment
+│   │   │   │   ├── githubSnapshotService.ts        # Capture + authorship analysis
+│   │   │   │   └── briefGenerationService.ts       # Brief selection + generation
+│   │   │   └── signing/
+│   │   │       └── verificationSigningService.ts   # HMAC, payload hash, doc hash
+│   │   ├── audit/
+│   │   │   └── auditLogService.ts   # Append-only write pathway for audit collections
+│   │   ├── integrations/
+│   │   │   ├── groqService.ts       # Farm Assistant + AI Mentor (shared client)
+│   │   │   ├── openaiService.ts     # GPT-4o brief generation + moderation
+│   │   │   ├── githubService.ts     # OAuth token retrieval, snapshot capture
+│   │   │   ├── darajaService.ts     # M-Pesa STK Push + webhook verification
+│   │   │   ├── redisService.ts      # Distributed locks, rate limiting, counters
+│   │   │   ├── notificationService.ts  # Resend email + Africa's Talking SMS
 │   │   │   ├── weatherService.ts
-│   │   │   ├── smsService.ts
 │   │   │   ├── cloudinaryService.ts
 │   │   │   └── priceDataService.ts
 │   │   ├── trust/
 │   │   │   ├── farmerTrustCalculator.ts
 │   │   │   └── portfolioTierer.ts
-│   │   └── utils.ts
+│   │   ├── auth/
+│   │   │   └── options.ts       # NextAuth configuration
+│   │   ├── env.ts               # Boot-time environment variable validation
+│   │   └── utils.ts             # AppError, handleApiError, requireRole, logger
 │   ├── hooks/
 │   ├── styles/
 │   └── types/
-├── .env.local
+│       ├── index.ts             # Shared enums, constants, Kenyan counties
+│       ├── education.ts         # Education Hub interfaces
+│       └── foodhub.ts           # Food Security Hub interfaces
+├── .env.local.example
 ├── next.config.js
 ├── tailwind.config.ts
 ├── tsconfig.json
@@ -273,6 +319,7 @@ npm start
 UmojaHub's core value proposition is **verifiable trust** — for farmers, for employers, and for the platform itself.
 
 ### Food Security Hub — Farmer Trust Score
+
 The `FarmerTrustScore` (0–100) is a composite metric derived from:
 - Admin-reviewed identity verification (PENDING → APPROVED → REJECTED)
 - Completed transaction volume
@@ -281,15 +328,50 @@ The `FarmerTrustScore` (0–100) is a composite metric derived from:
 
 This score directly governs marketplace search ranking. A Verified Farmer Badge is surface-level; the trust score is the operative signal.
 
-### Education Hub — Verification Integrity
-Student portfolio verification rests on four pillars:
+### Education Hub — Verification Infrastructure
 
-1. **Cryptographic Proof of Authorship** — GitHub OAuth identity binding with commit history verified against server-side document timestamps.
-2. **Lecturer Sign-Off** — Human judgment gate with a four-dimension rubric. Minimum comment length per score dimension prevents rubber-stamping. Rejection is a valid and expected outcome.
-3. **Immutable Audit Trail** — `VerificationAuditLog` records every state change including SHA-256 hashes of submitted documents and GitHub commit timelines.
-4. **Public Verification URL** — `umojahub.co.ke/experience/verify/[projectId]` — accessible without login. The primary credential for employers.
+The Education Hub's integrity claim is narrow and specific:
 
-The **Verified Project Badge** is intentionally rare. The lecturer review process is the mechanism for maintaining its value.
+> *"This UmojaHub verification record confirms that the named student submitted project documentation, deployed working software, and had their work assessed by a platform-verified academic reviewer using a defined rubric. The reviewer's identity and institutional affiliation are on record. All submitted documents have been cryptographically hashed and cannot be retroactively altered. This record is permanent."*
+
+This claim rests on five mandatory pillars. If any pillar cannot be satisfied, the verification does not issue.
+
+#### Pillar 1 — Student Identity
+- Email address verified at registration
+- GitHub OAuth account bound at brief generation time
+- GitHub account age minimum: accounts under 7 days old are blocked; accounts under 30 days are flagged on the reviewer-facing submission view
+- Repository ownership validated: the submitted repository must be owned by the OAuth-bound GitHub account
+- Commit authorship validation: at least 60% of commits in the repository must be authored by the bound GitHub account's primary email. Below this threshold, a warning flag is visible to the reviewing lecturer.
+
+#### Pillar 2 — Lecturer Legitimacy
+- LECTURER accounts default to `PENDING_VERIFICATION` status at registration
+- Activation requires admin approval of a `LecturerVerificationRequest` — a structured form capturing institutional affiliation, institutional email address, title, and supporting evidence (staff ID or faculty profile URL)
+- Approved lecturers' names, titles, and institutions are displayed on all verification records and public portfolio pages
+- A lecturer cannot review an engagement where their institutional affiliation matches the student's known institution (conflict of interest block)
+- All approval and suspension actions are recorded in the append-only `AdminActionLog`
+
+#### Pillar 3 — Proof of Authorship
+- A `GitHubSnapshot` is captured server-side at submission time: commit count, last commit SHA, commit timeline hash, authorship percentage, account age at capture
+- For Intermediate and Advanced tiers: a live deployment URL is required at submission. The platform performs an HTTP HEAD check before accepting the submission.
+- Submitted document content is hashed (SHA-256) server-side immediately on receipt. These hashes are stored in the `VerificationAuditLog` and cannot be altered.
+- Document content is never accepted pre-hashed from the client.
+
+#### Pillar 4 — Review Governance
+- Peer review is assigned from an eligible pool (reviewer must have at least one verified project at the same or higher tier). If no eligible reviewer is available after 7 days, the peer review is automatically waived and the waiver reason is recorded.
+- Lecturer review uses a four-dimension rubric: **Problem Understanding**, **Solution Quality**, **Process Discipline**, and **Problem Ownership**. Minimum comment word counts are enforced server-side by tier (50 / 80 / 100 words per dimension).
+- A maximum of two `REVISION_REQUIRED` decisions are permitted per engagement. A third revision attempt transitions the engagement to `LOCKED` and creates an admin escalation.
+- Lecturers are capped at five concurrent active reviews to prevent overload and quality degradation.
+
+#### Pillar 5 — Auditability
+- Every verification decision writes an immutable record to `VerificationAuditLog`. This collection accepts only `insertOne` operations — enforced at both the application layer and the MongoDB collection validator.
+- Every record is hashed on write. A nightly reconciliation job samples records and recomputes hashes, alerting on any mismatch.
+- Every verified project has a permanent public verification URL and a structured JSON endpoint (`GET /api/verify/[code]`) signed with an HMAC for integrity.
+- Withdrawn verifications remain permanently accessible — they return a `WITHDRAWN` status, not a 404. The original audit log entry is never modified.
+
+#### What the Platform Does Not Claim
+UmojaHub verification does not certify the absence of AI tools in the student's workflow. It does not constitute a formal academic qualification, degree, or professional certification. It does not guarantee job performance. It certifies a defined review process was conducted and that the process record is authentic and tamper-evident.
+
+The four-dimension rubric's **Problem Ownership** dimension assesses whether the student demonstrates genuine intellectual investment in every aspect of the project — regardless of which tools they used. A student who used AI tools to assist with implementation but understands every decision they made, can explain every part of their code, and can articulate what failed and why, satisfies Problem Ownership. The rubric measures the outcome of understanding, not the method of construction.
 
 ---
 
@@ -297,43 +379,101 @@ The **Verified Project Badge** is intentionally rare. The lecturer review proces
 
 UmojaHub is deployed on **Vercel** with **MongoDB Atlas** as the database.
 
+- **Atlas Replica Set:** Required for multi-document transactions (verification issuance). A standalone Atlas instance is not sufficient for production.
 - **Atlas Region:** Must match the Vercel deployment region to minimise round-trip latency. Vercel defaults to `eu-west-1` (Ireland) — Atlas cluster should be set to the same region.
+- **Redis:** Upstash serverless Redis. Deploy in the same region as Vercel and Atlas.
 - **Environment Variables:** All API keys and secrets are managed through Vercel environment variables only. Never committed to source control.
 - **Image Delivery:** All user-uploaded assets route through Cloudinary immediately. No application-layer image storage.
 
-### Phase Progression
+### Infrastructure Requirements by Phase
 
-| Phase | Application | Database |
-|---|---|---|
-| **MVP / Pilot** | Vercel Free | MongoDB Atlas M0 (512MB) |
-| **Early Growth** | Vercel Pro | MongoDB Atlas M10+ |
-| **Scale** | Vercel Pro / Railway | MongoDB Atlas M10+, Cloudflare CDN |
+| Phase | Application | Database | Notes |
+|---|---|---|---|
+| **Development** | Local / Vercel Preview | MongoDB Atlas M0 (replica set enabled) | Replica set required even in development for transaction support |
+| **MVP / Pilot** | Vercel Hobby/Pro | MongoDB Atlas M10+, Upstash Redis free | M10 is the minimum Atlas tier with replica set and dedicated resources |
+| **Early Growth** | Vercel Pro | MongoDB Atlas M10+, Upstash Redis paid | Upgrade Redis when daily commands exceed 50,000 |
+| **Scale** | Vercel Pro | MongoDB Atlas M20+, Cloudflare CDN | Document content migration to object storage at this tier |
 
 ---
 
 ## Roadmap
 
-### MVP (Weeks 1–16)
+### Completed — Food Security Hub
 
-| Milestone | Scope |
+| Phase | Scope | Status |
+|---|---|---|
+| **Phase 1 — Core Infrastructure** | All 22 Mongoose models, TypeScript interfaces, Zod schemas | ✅ Complete |
+| **Phase 2 — Authentication** | NextAuth v4, RBAC, 5-role JWT, seed script, integration tests | ✅ Complete |
+| **Phase 3 — Food Hub Core** | Marketplace, M-Pesa STK Push, farmer trust score | ✅ Complete |
+| **Phase 4 — Food Hub Extended** | Knowledge Hub, Farm Assistant, Price Intelligence, Groups, Suppliers | ✅ Complete |
+
+---
+
+### Education Hub — Implementation Sequence
+
+#### Phase 0 — Prerequisites (Non-Technical)
+
+These prerequisites must be completed before any Education Hub code is written. The Education Hub must not launch without them.
+
+| Item | Owner | Hard Gate? |
+|---|---|---|
+| Recruit and confirm 20+ lecturers willing to review at launch | Business Development | Yes — no reviews without reviewers |
+| Build controlled institution vocabulary (from CUE registered list) | Admin | Yes — lecturer approval gate depends on it |
+| Enable MongoDB Atlas replica set on production cluster | Engineering | Yes — transactions required for verification issuance |
+| Deploy Redis (Upstash) in same region as Vercel | Engineering | Yes — distributed locks required from day one |
+| Register GitHub OAuth application | Engineering | Yes — GitHub binding is a trust pillar |
+| Seed BriefContextLibrary with minimum 20 active contexts | Content / Admin | Yes — brief generation blocked below 20 active contexts |
+| Generate and configure `VERIFICATION_SIGNING_KEY` | Engineering | Yes — HMAC signing required |
+| Draft Terms of Service covering audit log permanence | Legal / Admin | Yes — students must consent before submitting |
+| Begin CPD partnership conversation with Computer Society of Kenya | Business Development | No — but must start before launch |
+
+#### Phase 1 — Foundation (Weeks 1–5)
+
+| Week | Scope |
 |---|---|
-| **M1 — Foundation** (Weeks 1–3) | Next.js scaffolding, TypeScript strict mode, MongoDB Atlas + Mongoose, all collection schemas, NextAuth with 5 roles, design system. |
-| **M2 — Food Hub Core** (Weeks 4–7) | Farmer verification, listing CRUD, buyer browsing and filtering, M-Pesa sandbox checkout, order lifecycle, buyer ratings, dispute flag. |
-| **M3 — Food Hub Extended** (Weeks 8–10) | Knowledge Hub CMS, Farm Assistant (Groq + weather context), Price Intelligence dashboard. |
-| **M4 — Education Hub** (Weeks 11–14) | Student profiling, GitHub matching, AI brief generation with Kenya context library, process documentation, AI Mentor (Socratic), peer review, Skills Passport, lecturer review. |
-| **M5 — Integration & Polish** (Weeks 15–16) | Public employer portfolio page, admin dashboard, full visual polish, seed data, demonstration script. |
+| **Week 1** | Prisma schema for all Education Hub models. MongoDB validators for `VerificationAuditLog` (collection-level, outside Prisma). TTL indexes for `MentorSession`. Seed `BriefContextLibrary`. Admin UI: `LecturerVerificationRequest` approval queue. Clerk/NextAuth webhook handler for user creation sync. |
+| **Week 2** | GitHub OAuth binding flow. Account age gate enforcement. `POST /api/education/briefs` — brief generation with rate limiting and one-active-engagement constraint. Distributed lock for brief generation. |
+| **Week 3** | `PATCH .../start` — repository URL binding and transition to `IN_PROGRESS`. `PUT .../documents/[type]` — document submission with server-side word count enforcement. Blocker log endpoints. Student dashboard: brief view, document submission UI. |
+| **Week 4** | `GitHubSnapshotService` — capture, commit authorship computation, timeline analysis. Live demo URL validation (HTTP HEAD). `POST .../submit` — final submission endpoint. Peer review eligibility check. Peer review auto-assignment (async). `PEER_REVIEW_SKIPPED` waiver logic for Advanced tier. |
+| **Week 5** | Peer review claim and submission endpoints. Peer review expiry cron (`UNDER_PEER_REVIEW → PEER_REVIEW_SKIPPED` on deadline). Automatic `UNDER_LECTURER_REVIEW` transition. SLA timestamp management. |
 
-### Phase 2 (Post-MVP)
-- Price alert SMS automation
-- Group order M-Pesa split payment automation
-- Dispute resolution automation and M-Pesa reversal
-- LecturerEffectiveness scoring and anomaly flagging
-- Multi-student team projects with role assignment
-- Verification audit log cryptographic hashing
-- Weekly automated external price data ingestion
-- Farmer ratings of buyers
-- Peer review quality scoring
-- Institutional lecturer onboarding with invite links
+#### Phase 2 — Review Pipeline (Weeks 6–10)
+
+| Week | Scope |
+|---|---|
+| **Week 6** | Lecturer queue endpoint with track and capacity filtering. Review claim with distributed lock and conflict of interest check. Reviewer load cap enforcement (Redis counter + DB count). Full engagement detail view for claimed reviewer. |
+| **Week 7** | Lecturer review submission. Rubric version tracking. `REVISION_REQUIRED` pathway (revisionCount increment, notification). `DENIED` pathway. Revision limit enforcement → `LOCKED` transition. AdminEscalation creation for locked engagements. |
+| **Week 8** | Verification issuance transaction (5-write atomic). `VerificationAuditLog` write with `entryHash` computation. `VerificationArtifact` creation with verification code generation and HMAC signature. `StudentPortfolioStatus` upsert. `LecturerEffectiveness` update. |
+| **Week 9** | SLA monitoring cron (daily: detect `slaDeadlineAt` breaches, create `AdminEscalation`). Abandonment cron (daily: transition inactive engagements). Admin escalation queue and resolution endpoints. Engagement unlock pathway. |
+| **Week 10** | AI Mentor — Groq session management and message endpoint. System prompt construction from engagement context. Message rate limiting. End-to-end test: brief → submit → peer review → lecturer review → `VERIFIED` → artifact issued. |
+
+#### Phase 3 — Trust Surface (Weeks 11–14)
+
+| Week | Scope |
+|---|---|
+| **Week 11** | Public verification page (`/experience/verify/[code]`) — SSR, no cache. JSON verification endpoint (`GET /api/verify/[code]`) — rate limited, HMAC-signed response. Withdrawn verification handling. |
+| **Week 12** | Public portfolio page (`/portfolio/[studentId]`) — ISR, 5-minute revalidation. `PortfolioVisibility` model and student control endpoints. JSON-LD structured data. |
+| **Week 13** | Admin platform health dashboard: queue depth, average time-to-verification, SLA breach rate, brief completion rate. Reviewer quality monitoring cron (fast submissions, duplicate comments, score outliers). `SUSPICIOUS_REVIEWER` escalation. |
+| **Week 14** | Email notifications (all student and lecturer events). SLA reminder emails (24h, 48h before deadline). Final security review: rate limit testing, enumeration resistance, privilege escalation checks. Production deployment readiness. |
+
+---
+
+### Post-MVP — Phase 2 Features
+
+These features are deferred until the MVP has demonstrated operational stability and reviewer pool growth.
+
+| Feature | Trigger |
+|---|---|
+| Institution as first-class entity (Institution model, institution admin role) | 5+ universities actively using the platform |
+| Digital certificate issuance (PDF + web, QR code) | 500+ verified projects |
+| Cohort system (monthly intake windows, cohort peer matching) | 50+ active engagements per month |
+| Intelligent reviewer routing (track matching, load balancing, institution diversity) | 30+ active lecturers in the pool |
+| Cross-submission document similarity detection | 500+ submissions in the corpus |
+| On-demand ISR revalidation for portfolio pages | Employer complaints about stale portfolios |
+| Commit timeline visualisation on portfolio pages | Phase 2 general availability |
+| LecturerEffectiveness calibration sessions | 10+ active lecturers, stable review volume |
+| Grade export (CSV, KNQA-compatible format) | Formal institutional agreement in place |
+| CPD credit integration (Computer Society of Kenya) | Partnership agreement signed |
 
 ---
 
@@ -346,9 +486,12 @@ UmojaHub is deployed on **Vercel** with **MongoDB Atlas** as the database.
 | Farm Assistant | 100 completed conversations; repeat usage within 7 days |
 | Price Intelligence | Data available for top 10 crops across 5 counties |
 | Group Tools | 3 completed group buying orders from verified suppliers |
-| Education Hub | 5 student projects reviewed and verified by a lecturer |
-| Platform Trust | Zero documented fraud instances in MVP pilot cohort |
-| Adoption | 30 active farmers + 30 active students over a 3-month pilot |
+| Education Hub — Reviewer Pool | 20 admin-approved lecturers active at launch |
+| Education Hub — Engagements | 30 student projects submitted for review in the first month |
+| Education Hub — Verifications | 15 projects verified within the first two months |
+| Education Hub — Review SLA | 80% of submitted projects reviewed within 7 days |
+| Platform Trust | Zero documented verification fraud instances in MVP pilot cohort |
+| Platform Adoption | 30 active farmers + 30 active students over a 3-month pilot |
 
 ---
 
@@ -356,11 +499,13 @@ UmojaHub is deployed on **Vercel** with **MongoDB Atlas** as the database.
 
 Contributions are welcome. Please read the [CONTRIBUTING.md](CONTRIBUTING.md) guide before opening a pull request.
 
-- Branch from `main`, using the format `feature/your-feature-name` or `fix/issue-description`.
-- All commits must be atomic and descriptive.
+- Branch from `develop`: use the format `feature/scope-description`, `fix/issue-description`, `chore/description`, or `test/description`.
+- All commits must follow the format `type(scope): description` (max 72 chars, present tense). Types: `feat fix chore docs style refactor test perf`.
 - TypeScript strict mode must be maintained — no `any` types.
 - All API routes require Zod validation on inputs.
 - New Mongoose models must define indexes on all frequently queried fields.
+- Run `npm run type-check && npm run lint && npm run test` before opening a pull request.
+- PRs target `develop`. CI must pass before merge. Do not open PRs directly to `main`.
 
 ---
 

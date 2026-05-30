@@ -14,7 +14,8 @@
  *   7. BriefContextLibrary (singleton)
  *   8. MarketInsight records
  *   9. StudentPortfolioStatus records
- *  10. Log completion
+ *  10. Orders
+ *  11. Log completion
  */
 
 // ---------------------------------------------------------------------------
@@ -52,6 +53,9 @@ import {
   StudentTier,
   PortfolioStrength,
   BCRYPT_SALT_ROUNDS,
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+  FulfillmentType,
 } from '../src/types';
 
 // ---------------------------------------------------------------------------
@@ -66,6 +70,7 @@ import VerifiedSupplier from '../src/lib/models/VerifiedSupplier.model';
 import BriefContextLibrary from '../src/lib/models/BriefContextLibrary.model';
 import MarketInsight from '../src/lib/models/MarketInsight.model';
 import StudentPortfolioStatus from '../src/lib/models/StudentPortfolioStatus.model';
+import Order from '../src/lib/models/Order.model';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -196,8 +201,8 @@ async function seed(): Promise<void> {
       county: 'Kericho',
       status: 'ACTIVE',
       farmerData: {
-        verificationStatus: VerificationStatus.PENDING,
-        isVerified: false,
+        verificationStatus: VerificationStatus.APPROVED,
+        isVerified: true,
         cropsGrown: ['tea', 'maize'],
         livestockKept: ['dairy cows'],
         farmSizeAcres: 4,
@@ -339,6 +344,10 @@ async function seed(): Promise<void> {
   const kipchoge = userByEmail.get('kipchoge.mutai@gmail.com')!;
   const achieng = userByEmail.get('achieng.odhiambo@gmail.com')!;
   const njoroge = userByEmail.get('njoroge.mwangi@gmail.com')!;
+  const chebet = userByEmail.get('chebet.koech@gmail.com')!;
+  const kamau = userByEmail.get('kamau.githinji@gmail.com')!;
+  const fatuma = userByEmail.get('fatuma.hassan@gmail.com')!;
+  const peter = userByEmail.get('peter.otieno@gmail.com')!;
   const brian = userByEmail.get('brian.otieno@students.uonbi.ac.ke')!;
   const amina = userByEmail.get('amina.waweru@strathmore.edu')!;
   const dennis = userByEmail.get('dennis.kariuki@jkuat.ac.ke')!;
@@ -447,9 +456,32 @@ async function seed(): Promise<void> {
       tier: FarmerTrustTier.TRUSTED,
       lastCalculatedAt: now,
     },
+    {
+      farmerId: chebet._id,
+      verificationScore: 40,
+      transactionScore: {
+        completedOrders: 4,
+        totalVolumeKES: 18000,
+        scoreContribution: 7,
+      },
+      ratingScore: {
+        averageRating: 4.2,
+        totalRatings: 3,
+        scoreContribution: 13,
+      },
+      reliabilityScore: {
+        onTimeConfirmationRate: 0.88,
+        disputeCount: 0,
+        disputesRuledAgainst: 0,
+        scoreContribution: 9,
+      },
+      compositeScore: 69,
+      tier: FarmerTrustTier.ESTABLISHED,
+      lastCalculatedAt: now,
+    },
   ]);
 
-  log('Inserted 4 FarmerTrustScores.');
+  log('Inserted 5 FarmerTrustScores.');
 
   // -------------------------------------------------------------------------
   // 4. MarketplaceListings
@@ -457,7 +489,7 @@ async function seed(): Promise<void> {
 
   log('Inserting MarketplaceListings...');
 
-  await MarketplaceListing.insertMany([
+  const listings = await MarketplaceListing.insertMany([
     {
       farmerId: wanjiku._id,
       title: 'Grade A Tomatoes — Kirinyaga Central',
@@ -1385,6 +1417,74 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
   ]);
 
   log('Inserted 3 StudentPortfolioStatus records.');
+
+  // -------------------------------------------------------------------------
+  // 10. Orders
+  // -------------------------------------------------------------------------
+
+  log('Inserting Orders...');
+
+  await Order.insertMany([
+    {
+      orderReferenceId: 'ORD-2024-001',
+      listingId: listings[0]!._id,
+      farmerId: wanjiku._id,
+      buyerId: kamau._id,
+      cropName: 'Tomatoes',
+      quantityOrdered: 50,
+      unit: ListingUnit.KG,
+      pricePerUnit: 55,
+      totalAmountKES: 2750,
+      fulfillmentType: FulfillmentType.PICKUP,
+      paymentStatus: OrderPaymentStatus.PAID,
+      mpesaTransactionId: 'QF12AB3C45',
+      buyerPhone: '+254767890123',
+      fulfillmentStatus: OrderFulfillmentStatus.RECEIVED,
+      paidAt: new Date('2024-02-10T08:00:00Z'),
+      confirmedByFarmerAt: new Date('2024-02-10T09:30:00Z'),
+      receivedByBuyerAt: new Date('2024-02-10T14:00:00Z'),
+    },
+    {
+      orderReferenceId: 'ORD-2024-002',
+      listingId: listings[2]!._id,
+      farmerId: kipchoge._id,
+      buyerId: fatuma._id,
+      cropName: 'Maize',
+      quantityOrdered: 5,
+      unit: ListingUnit.BAG,
+      pricePerUnit: 3800,
+      totalAmountKES: 19000,
+      fulfillmentType: FulfillmentType.PICKUP,
+      paymentStatus: OrderPaymentStatus.PAID,
+      mpesaTransactionId: 'QG34CD5E67',
+      buyerPhone: '+254778901234',
+      fulfillmentStatus: OrderFulfillmentStatus.RECEIVED,
+      paidAt: new Date('2024-02-12T08:00:00Z'),
+      confirmedByFarmerAt: new Date('2024-02-12T10:00:00Z'),
+      receivedByBuyerAt: new Date('2024-02-13T14:00:00Z'),
+    },
+    {
+      orderReferenceId: 'ORD-2024-003',
+      listingId: listings[4]!._id,
+      farmerId: achieng._id,
+      buyerId: peter._id,
+      cropName: 'Kale',
+      quantityOrdered: 30,
+      unit: ListingUnit.KG,
+      pricePerUnit: 18,
+      totalAmountKES: 540,
+      fulfillmentType: FulfillmentType.PICKUP,
+      paymentStatus: OrderPaymentStatus.PAID,
+      mpesaTransactionId: 'QH56EF7G89',
+      buyerPhone: '+254789012345',
+      fulfillmentStatus: OrderFulfillmentStatus.RECEIVED,
+      paidAt: new Date('2024-02-15T08:00:00Z'),
+      confirmedByFarmerAt: new Date('2024-02-15T11:00:00Z'),
+      receivedByBuyerAt: new Date('2024-02-16T09:00:00Z'),
+    },
+  ]);
+
+  log('Inserted 3 Orders.');
 
   // -------------------------------------------------------------------------
   // Complete

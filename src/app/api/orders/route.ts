@@ -10,6 +10,132 @@ import { initiateSTKPush } from '@/lib/integrations/darajaService';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus } from '@/types';
 
+type OrderLean = {
+  _id: { toString(): string };
+  orderReferenceId: string;
+  cropName: string;
+  quantityOrdered: number;
+  unit: string;
+  totalAmountKES: number;
+  paymentStatus: OrderPaymentStatus;
+  fulfillmentStatus: OrderFulfillmentStatus;
+  mpesaCheckoutRequestId?: string;
+  farmerId: { toString(): string };
+  buyerId: { toString(): string };
+  createdAt: Date;
+};
+
+type UserLean = {
+  _id: { toString(): string };
+  firstName?: string;
+  lastName?: string;
+};
+
+// ---------------------------------------------------------------------------
+// GET /api/orders — Authenticated user's orders (buyer or farmer view)
+// Auth: BUYER | FARMER
+// ---------------------------------------------------------------------------
+export async function GET(_req: NextRequest): Promise<NextResponse> {
+  try {
+    await connectDB();
+
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      throw new AppError('Authentication required. Please sign in.', 401, 'AUTH_REQUIRED');
+    }
+
+    const { role, id: userId } = session.user;
+
+    if (role !== Role.BUYER && role !== Role.FARMER) {
+      throw new AppError(
+        'You do not have permission to perform this action.',
+        403,
+        'AUTH_FORBIDDEN'
+      );
+    }
+
+    const [{ default: User }, { default: Rating }] = await Promise.all([
+      import('@/lib/models/User.model'),
+      import('@/lib/models/Rating.model'),
+    ]);
+
+    if (role === Role.BUYER) {
+      const orders = (await Order.find({ buyerId: userId })
+        .sort({ createdAt: -1 })
+        .lean()) as unknown as OrderLean[];
+
+      const ratedIds = (await Rating.distinct('orderId', { buyerId: userId })) as unknown[];
+      const ratedSet = new Set(ratedIds.map(String));
+
+      const farmerIds = [...new Set(orders.map((o) => o.farmerId.toString()))];
+      const farmers = (await User.find({ _id: { $in: farmerIds } })
+        .select('firstName lastName')
+        .lean()) as unknown as UserLean[];
+      const farmerMap = new Map(farmers.map((f) => [f._id.toString(), f]));
+
+      return NextResponse.json({
+        orders: orders.map((order) => {
+          const farmer = farmerMap.get(order.farmerId.toString());
+          return {
+            _id: order._id.toString(),
+            orderReferenceId: order.orderReferenceId,
+            cropName: order.cropName,
+            quantityOrdered: order.quantityOrdered,
+            unit: order.unit,
+            totalAmountKES: order.totalAmountKES,
+            paymentStatus: order.paymentStatus,
+            fulfillmentStatus: order.fulfillmentStatus,
+            mpesaCheckoutRequestId: order.mpesaCheckoutRequestId ?? null,
+            farmer: {
+              firstName: farmer?.firstName ?? '—',
+              lastName: farmer?.lastName ?? '',
+            },
+            hasRated: ratedSet.has(order._id.toString()),
+            createdAt: order.createdAt.toISOString(),
+          };
+        }),
+      });
+    }
+
+    // FARMER role
+    const orders = (await Order.find({ farmerId: userId })
+      .sort({ createdAt: -1 })
+      .lean()) as unknown as OrderLean[];
+
+    const buyerIds = [...new Set(orders.map((o) => o.buyerId.toString()))];
+    const buyers = (await User.find({ _id: { $in: buyerIds } })
+      .select('firstName lastName')
+      .lean()) as unknown as UserLean[];
+    const buyerMap = new Map(buyers.map((b) => [b._id.toString(), b]));
+
+    return NextResponse.json({
+      orders: orders.map((order) => {
+        const buyer = buyerMap.get(order.buyerId.toString());
+        return {
+          _id: order._id.toString(),
+          orderReferenceId: order.orderReferenceId,
+          cropName: order.cropName,
+          quantityOrdered: order.quantityOrdered,
+          unit: order.unit,
+          totalAmountKES: order.totalAmountKES,
+          paymentStatus: order.paymentStatus,
+          fulfillmentStatus: order.fulfillmentStatus,
+          buyer: {
+            firstName: buyer?.firstName ?? '—',
+            lastName: buyer?.lastName ?? '',
+          },
+          canConfirmDispatch:
+            order.paymentStatus === OrderPaymentStatus.PAID &&
+            order.fulfillmentStatus === OrderFulfillmentStatus.AWAITING_PAYMENT,
+          createdAt: order.createdAt.toISOString(),
+        };
+      }),
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // POST /api/orders — Buyer creates an order and initiates M-Pesa STK Push
 // Auth: BUYER
