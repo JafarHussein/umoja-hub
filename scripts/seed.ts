@@ -1361,7 +1361,7 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
 
   log('Inserting StudentPortfolioStatus records...');
 
-  await StudentPortfolioStatus.insertMany([
+  await StudentPortfolioStatus.insertMany(([
     {
       studentId: brian._id,
       currentTier: StudentTier.BEGINNER,
@@ -1374,6 +1374,7 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
       stats: {
         verifiedProjectCount: 0,
         totalProjectCount: 0,
+        averageScore: 0,
         techStacksUsed: [],
         reviewerInstitutions: [],
       },
@@ -1392,6 +1393,7 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
       stats: {
         verifiedProjectCount: 0,
         totalProjectCount: 0,
+        averageScore: 0,
         techStacksUsed: ['React', 'Next.js', 'TypeScript', 'MongoDB'],
         reviewerInstitutions: [],
       },
@@ -1409,12 +1411,13 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
       stats: {
         verifiedProjectCount: 0,
         totalProjectCount: 0,
+        averageScore: 0,
         techStacksUsed: [],
         reviewerInstitutions: [],
       },
       lastRecalculatedAt: new Date(),
     },
-  ]);
+  ] as Parameters<typeof StudentPortfolioStatus.insertMany>[0]));
 
   log('Inserted 3 StudentPortfolioStatus records.');
 

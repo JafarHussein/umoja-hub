@@ -53,6 +53,7 @@ const studentPortfolioStatusSchema = new Schema(
     stats: {
       verifiedProjectCount: { type: Number, default: 0 },
       totalProjectCount: { type: Number, default: 0 },
+      averageScore: { type: Number, default: 0 },
       techStacksUsed: [{ type: String }],
       reviewerInstitutions: [{ type: String }],
     },
