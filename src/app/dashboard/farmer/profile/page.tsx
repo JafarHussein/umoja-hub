@@ -16,6 +16,10 @@ interface IFarmerData {
 interface ITrustScore {
   compositeScore: number;
   tier: FarmerTrustTier;
+  verificationScore: number;
+  transactionScore: number;
+  ratingScore: number;
+  reliabilityScore: number;
 }
 
 interface IFarmerProfile {
@@ -40,6 +44,11 @@ interface IVerifyForm {
 
 type PageState = 'loading' | 'ready' | 'error';
 type SubmitState = 'idle' | 'submitting' | 'error';
+type UploadState = 'idle' | 'uploading' | 'done' | 'error';
+
+interface ICloudinaryUploadResponse {
+  secure_url: string;
+}
 
 export default function FarmerProfilePage(): React.ReactElement {
   const { data: session, status } = useSession();
@@ -59,6 +68,9 @@ export default function FarmerProfilePage(): React.ReactElement {
   });
   const [verifyState, setVerifyState] = useState<SubmitState>('idle');
   const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (): Promise<void> => {
     setPageState('loading');
@@ -118,6 +130,42 @@ export default function FarmerProfilePage(): React.ReactElement {
     }
   }
 
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      setUploadError('Cloudinary is not configured. Contact support.');
+      setUploadState('error');
+      return;
+    }
+
+    setUploadState('uploading');
+    setUploadError(null);
+    setVerifyForm((prev) => ({ ...prev, documentImageUrl: '' }));
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = (await res.json()) as ICloudinaryUploadResponse;
+      setVerifyForm((prev) => ({ ...prev, documentImageUrl: data.secure_url }));
+      setUploadState('done');
+    } catch {
+      setUploadError('Upload failed. Try again.');
+      setUploadState('error');
+    }
+  }
+
   async function handleVerifySubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setVerifyError(null);
@@ -162,6 +210,13 @@ export default function FarmerProfilePage(): React.ReactElement {
   const canSubmitVerification =
     farmerData.verificationStatus === VerificationStatus.UNSUBMITTED ||
     farmerData.verificationStatus === VerificationStatus.REJECTED;
+
+  const scoreFactors: { label: string; score: number; max: number }[] = [
+    { label: 'Identity verification', score: trustScore.verificationScore, max: 40 },
+    { label: 'Transactions', score: trustScore.transactionScore, max: 25 },
+    { label: 'Buyer ratings', score: trustScore.ratingScore, max: 20 },
+    { label: 'Reliability', score: trustScore.reliabilityScore, max: 15 },
+  ];
 
   return (
     <div className="flex flex-col gap-8 p-4">
@@ -325,20 +380,28 @@ export default function FarmerProfilePage(): React.ReactElement {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="documentImageUrl" className="text-sm font-medium">
-                Document image URL
+              <label htmlFor="documentImage" className="text-sm font-medium">
+                Document image
               </label>
               <input
-                id="documentImageUrl"
-                type="url"
-                className="border border-gray-300 px-2 py-1 text-sm"
-                value={verifyForm.documentImageUrl}
-                onChange={(e) =>
-                  setVerifyForm((prev) => ({ ...prev, documentImageUrl: e.target.value }))
-                }
-                placeholder="https://res.cloudinary.com/..."
-                required
+                id="documentImage"
+                type="file"
+                accept="image/*"
+                className="text-sm"
+                onChange={(e) => void handleFileUpload(e)}
+                disabled={uploadState === 'uploading'}
               />
+              {uploadState === 'uploading' && (
+                <p className="text-xs text-gray-500">Uploading...</p>
+              )}
+              {uploadState === 'done' && (
+                <p className="text-xs text-green-700">Upload complete.</p>
+              )}
+              {uploadError !== null && (
+                <p role="alert" className="text-xs text-red-600">
+                  {uploadError}
+                </p>
+              )}
             </div>
 
             {verifyError !== null && (
@@ -349,7 +412,11 @@ export default function FarmerProfilePage(): React.ReactElement {
 
             <button
               type="submit"
-              disabled={verifyState === 'submitting'}
+              disabled={
+                verifyState === 'submitting' ||
+                uploadState === 'uploading' ||
+                verifyForm.documentImageUrl === ''
+              }
               className="self-start border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
             >
               {verifyState === 'submitting' ? 'Submitting...' : 'Submit for verification'}
@@ -357,6 +424,45 @@ export default function FarmerProfilePage(): React.ReactElement {
           </form>
         )}
       </section>
+
+      {/* ── Trust score breakdown — shown only when APPROVED ─────────────── */}
+      {farmerData.verificationStatus === VerificationStatus.APPROVED && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-base font-semibold">Trust Score Breakdown</h2>
+          <table className="border-collapse text-sm">
+            <tbody>
+              {scoreFactors.map(({ label, score, max }) => (
+                <tr key={label} className="border border-gray-300">
+                  <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50 w-48">
+                    {label}
+                  </th>
+                  <td className="px-3 py-2 border border-gray-300">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-gray-200">
+                        <div
+                          className="h-2 bg-gray-600"
+                          style={{ width: `${Math.round((score / max) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-600 w-14 text-right shrink-0">
+                        {score} / {max}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              <tr className="border border-gray-300">
+                <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">
+                  Composite score
+                </th>
+                <td className="px-3 py-2 border border-gray-300 font-medium">
+                  {trustScore.compositeScore} / 100 — {trustScore.tier}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      )}
     </div>
   );
 }

@@ -38,7 +38,9 @@ export async function GET(): Promise<NextResponse> {
     const onboarded = Boolean(user.farmerData?.cropsGrown?.length);
 
     const trustScore = await FarmerTrustScore.findOne({ farmerId: user._id })
-      .select('compositeScore tier')
+      .select(
+        'compositeScore tier verificationScore transactionScore.scoreContribution ratingScore.scoreContribution reliabilityScore.scoreContribution'
+      )
       .lean();
 
     return NextResponse.json({
@@ -56,8 +58,22 @@ export async function GET(): Promise<NextResponse> {
           isVerified: user.farmerData?.isVerified ?? false,
         },
         trustScore: trustScore
-          ? { compositeScore: trustScore.compositeScore, tier: trustScore.tier }
-          : { compositeScore: 0, tier: FarmerTrustTier.NEW },
+          ? {
+              compositeScore: trustScore.compositeScore,
+              tier: trustScore.tier,
+              verificationScore: trustScore.verificationScore ?? 0,
+              transactionScore: trustScore.transactionScore?.scoreContribution ?? 0,
+              ratingScore: trustScore.ratingScore?.scoreContribution ?? 0,
+              reliabilityScore: trustScore.reliabilityScore?.scoreContribution ?? 0,
+            }
+          : {
+              compositeScore: 0,
+              tier: FarmerTrustTier.NEW,
+              verificationScore: 0,
+              transactionScore: 0,
+              ratingScore: 0,
+              reliabilityScore: 0,
+            },
       },
       onboarded,
     });
