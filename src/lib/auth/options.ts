@@ -3,7 +3,7 @@ import type { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
-import { Role } from '@/types';
+import { Role, UserStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Type augmentation — extends NextAuth session and JWT with UmojaHub fields
@@ -73,6 +73,11 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
 
         if (!isValid) {
+          return null;
+        }
+
+        // Deny login for suspended or deleted accounts
+        if (user.status !== UserStatus.ACTIVE) {
           return null;
         }
 
