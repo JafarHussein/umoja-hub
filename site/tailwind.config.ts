@@ -6,26 +6,26 @@ const config: Config = {
     extend: {
       colors: {
         surface: {
-          primary: '#0C0C0E',
-          elevated: '#131318',
-          secondary: '#1A1A1F',
+          primary: '#FFFFFF',
+          elevated: '#F8F9FA',
+          secondary: '#EDF0F2',
         },
         track: {
-          gold: '#C19C42',
-          'gold-bg': '#1E1709',
-          blue: '#7788DD',
-          'blue-bg': '#0E1223',
+          gold: '#A67E2E',
+          'gold-bg': '#FDF9F0',
+          blue: '#5566C2',
+          'blue-bg': '#F2F4FC',
         },
         state: {
-          verified: '#40B26D',
-          terminated: '#C84B39',
+          verified: '#2C8A4E',
+          terminated: '#B53625',
         },
         text: {
-          primary: '#EAEAEA',
-          secondary: '#8B8B8B',
-          disabled: '#5C5C5C',
+          primary: '#111115',
+          secondary: '#4A4A52',
+          disabled: '#7C7C85',
         },
-        rule: '#303034',
+        rule: '#D2D4DA',
       },
       fontFamily: {
         editorial: ['var(--font-playfair)', 'Georgia', 'serif'],

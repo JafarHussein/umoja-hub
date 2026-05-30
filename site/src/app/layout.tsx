@@ -22,8 +22,9 @@ export default function RootLayout({ children }: { readonly children: React.Reac
     <html
       lang="en"
       className={`${playfair.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+      suppressHydrationWarning
     >
-      <body className="bg-surface-primary text-text-primary">
+      <body className="bg-surface-primary text-text-primary" suppressHydrationWarning>
         {children}
       </body>
     </html>
