@@ -34,7 +34,9 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 
     const queue = await ProjectEngagement.find(
       { status: ProjectStatus.UNDER_LECTURER_REVIEW } as object
-    ).lean();
+    )
+      .populate('studentId', 'firstName lastName')
+      .lean();
 
     logger.info('lecturer/queue', 'Review queue fetched', { lecturerId, count: queue.length });
 
