@@ -50,8 +50,18 @@ jest.mock('@/lib/integrations/darajaService', () => ({
   initiateSTKPush: jest.fn((...a: unknown[]) => mockInitiateSTKPush(...a)),
 }));
 
+jest.mock('@/lib/models/User.model', () => ({
+  __esModule: true,
+  default: {
+    findById: jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) }),
+    }),
+  },
+}));
+
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/options', () => ({ authOptions: {} }));
+jest.mock('@/lib/rateLimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue({ allowed: true }) }));
 
 import { getServerSession } from 'next-auth';
 import { POST } from '../route';

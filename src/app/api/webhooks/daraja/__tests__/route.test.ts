@@ -46,8 +46,8 @@ jest.mock('@/lib/integrations/darajaService', () => ({
 
 jest.mock('@/lib/env', () => ({
   env: jest.fn().mockImplementation((key: string) => {
-    if (key === 'WEBHOOK_SECRET') return 'test-webhook-secret';
-    return '';
+    if (key === 'ADMIN_PHONE_NUMBER') return '+254700000000';
+    return `test-${key}`;
   }),
 }));
 

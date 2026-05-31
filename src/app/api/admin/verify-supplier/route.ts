@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import VerifiedSupplier from '@/lib/models/VerifiedSupplier.model';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
+import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { Role, SupplierVerificationStatus } from '@/types';
 import { z } from 'zod';
 
@@ -56,6 +57,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       supplierId,
       adminId: session!.user.id,
     });
+
+    AdminAuditLog.create({
+      adminId: session!.user.id,
+      action: decision === 'VERIFIED' ? 'SUPPLIER_VERIFIED' : 'SUPPLIER_SUSPENDED',
+      targetId: supplierId,
+      targetType: 'VerifiedSupplier',
+    }).catch(() => {});
 
     return NextResponse.json({
       data: { supplierId, verificationStatus: newStatus },

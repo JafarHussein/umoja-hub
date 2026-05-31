@@ -31,6 +31,7 @@ marketplaceListingSchema.index({ pickupCounty: 1, listingStatus: 1 });
 marketplaceListingSchema.index({ currentPricePerUnit: 1 });
 marketplaceListingSchema.index({ isVerifiedListing: 1, listingStatus: 1 });
 marketplaceListingSchema.index({ createdAt: -1 });
+marketplaceListingSchema.index({ title: 'text', cropName: 'text', description: 'text' });
 
 marketplaceListingSchema.set('toJSON', {
   transform: (_: unknown, ret: Record<string, unknown>) => {

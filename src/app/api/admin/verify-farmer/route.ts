@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User.model';
 import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
+import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminVerifyFarmerSchema } from '@/lib/validation/farmerSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, VerificationStatus } from '@/types';
@@ -96,6 +97,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
         adminId: session!.user.id,
       });
 
+      AdminAuditLog.create({
+        adminId: session!.user.id,
+        action: 'FARMER_APPROVED',
+        targetId: farmerId,
+        targetType: 'User',
+      }).catch(() => {});
+
       // Non-blocking SMS notification
       const smsMessage = `UmojaHub: Congratulations ${farmer.firstName}! Your farmer account has been verified. You can now list your produce on the marketplace.`;
       sendSMS(farmer.phoneNumber, smsMessage).catch(() => {
@@ -107,6 +115,14 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
         adminId: session!.user.id,
         rejectionReason,
       });
+
+      AdminAuditLog.create({
+        adminId: session!.user.id,
+        action: 'FARMER_REJECTED',
+        targetId: farmerId,
+        targetType: 'User',
+        details: { rejectionReason },
+      }).catch(() => {});
 
       // Non-blocking SMS notification
       const smsMessage = `UmojaHub: Your verification was not approved. Reason: ${rejectionReason ?? 'Please contact support'}. Re-submit with correct documents.`;

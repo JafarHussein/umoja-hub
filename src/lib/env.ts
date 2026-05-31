@@ -25,7 +25,9 @@ const requiredEnvVars = [
   'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
   'NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET',
   'CRON_SECRET',
-  'WEBHOOK_SECRET',
+  'RESEND_API_KEY',
+  'RESEND_FROM_EMAIL',
+  'ADMIN_PHONE_NUMBER',
 ] as const;
 
 type RequiredEnvVar = (typeof requiredEnvVars)[number];

@@ -3,7 +3,7 @@ import { registerSchema, loginSchema } from '../authSchema';
 describe('registerSchema', () => {
   const validBase = {
     email: 'mwangi@example.com',
-    password: 'Secure123',
+    password: 'Secure123!',
     firstName: 'Kamau',
     lastName: 'Mwangi',
     phoneNumber: '0712345678',

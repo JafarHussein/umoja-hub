@@ -35,6 +35,27 @@ jest.mock('@/lib/models/User.model', () => ({
   },
 }));
 
+jest.mock('@/lib/models/Order.model', () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+    findByIdAndUpdate: jest.fn().mockResolvedValue({}),
+  },
+}));
+
+jest.mock('@/lib/models/MarketplaceListing.model', () => ({
+  __esModule: true,
+  default: {
+    findByIdAndUpdate: jest.fn().mockResolvedValue({}),
+  },
+}));
+
 // Mock smsService — non-blocking
 jest.mock('@/lib/integrations/smsService', () => ({
   sendSMS: jest.fn().mockResolvedValue({ success: true }),

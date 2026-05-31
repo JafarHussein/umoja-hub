@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
+import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminVerifyLecturerSchema } from '@/lib/validation/educationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role } from '@/types';
@@ -55,6 +56,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lecturerId,
       adminId: session!.user.id,
     });
+
+    AdminAuditLog.create({
+      adminId: session!.user.id,
+      action: 'LECTURER_VERIFIED',
+      targetId: lecturerId,
+      targetType: 'User',
+    }).catch(() => {});
 
     return NextResponse.json(
       { data: { lecturerId, isVerified: true } },

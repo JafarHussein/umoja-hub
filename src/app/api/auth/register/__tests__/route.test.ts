@@ -11,14 +11,20 @@ jest.mock('@/lib/db', () => ({
   connectDB: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('@/lib/integrations/emailService', () => ({
+  sendVerificationEmail: jest.fn().mockResolvedValue({ success: true }),
+}));
+
 const mockFindOne = jest.fn();
 const mockCreate = jest.fn();
+const mockFindByIdAndUpdate = jest.fn().mockResolvedValue(null);
 
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
     findOne: mockFindOne,
     create: mockCreate,
+    findByIdAndUpdate: mockFindByIdAndUpdate,
   },
 }));
 

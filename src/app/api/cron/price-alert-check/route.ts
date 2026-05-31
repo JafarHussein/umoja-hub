@@ -3,9 +3,11 @@ import { connectDB } from '@/lib/db';
 import PriceAlert from '@/lib/models/PriceAlert.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import User from '@/lib/models/User.model';
+import Order from '@/lib/models/Order.model';
+import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { sendSMS } from '@/lib/integrations/smsService';
 import { logger } from '@/lib/utils';
-import { PRICE_ALERT_COOLDOWN_HOURS } from '@/types';
+import { PRICE_ALERT_COOLDOWN_HOURS, OrderPaymentStatus, ListingStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // POST /api/cron/price-alert-check — Check active price alerts (every 15 min)
@@ -103,5 +105,44 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   logger.info('cron/price-alert-check', 'Price alert check complete', { checked, triggered });
 
-  return NextResponse.json({ data: { checked, triggered } });
+  // ---------------------------------------------------------------------------
+  // Stuck payment reconciliation
+  // Orders that have been PENDING_PAYMENT for >15 minutes without a Daraja
+  // callback are considered timed out. Mark FAILED and restore listing inventory.
+  // ---------------------------------------------------------------------------
+  const stuckCutoff = new Date(Date.now() - 15 * 60 * 1000);
+  const stuckOrders = await Order.find({
+    paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
+    createdAt: { $lt: stuckCutoff },
+  })
+    .select('_id orderReferenceId listingId quantityOrdered')
+    .limit(20)
+    .lean();
+
+  let reconciled = 0;
+
+  for (const stuckOrder of stuckOrders) {
+    await Promise.all([
+      Order.findByIdAndUpdate(stuckOrder._id, {
+        paymentStatus: OrderPaymentStatus.FAILED,
+      }),
+      MarketplaceListing.findByIdAndUpdate(stuckOrder.listingId, {
+        $inc: { quantityAvailable: stuckOrder.quantityOrdered },
+        listingStatus: ListingStatus.AVAILABLE,
+      }),
+    ]);
+
+    logger.info('cron/price-alert-check', 'Reconciled stuck payment order', {
+      orderId: String(stuckOrder._id),
+      orderRef: stuckOrder.orderReferenceId,
+    });
+
+    reconciled++;
+  }
+
+  if (reconciled > 0) {
+    logger.info('cron/price-alert-check', 'Stuck payment reconciliation complete', { reconciled });
+  }
+
+  return NextResponse.json({ data: { checked, triggered, reconciled } });
 }

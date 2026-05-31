@@ -9,7 +9,7 @@ import User from '@/lib/models/User.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import { cropListingSchema } from '@/lib/validation/farmerSchema';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
-import { Role, PriceHistorySource, ListingStatus } from '@/types';
+import { Role, PriceHistorySource, ListingStatus, UserStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/marketplace — Public listing browse with filters
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
+    const q = searchParams.get('q')?.trim();
     const cropName = searchParams.get('cropName');
     const county = searchParams.get('county');
     const minPrice = searchParams.get('minPrice');
@@ -33,7 +34,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       listingStatus: ListingStatus.AVAILABLE,
     };
 
-    if (cropName) filter['cropName'] = { $regex: new RegExp(cropName, 'i') };
+    if (q) {
+      // Text search — disables cursor pagination (text score sort incompatible with _id cursor)
+      filter['$text'] = { $search: q };
+    } else {
+      if (cropName) filter['cropName'] = { $regex: new RegExp(cropName, 'i') };
+      if (cursor) {
+        if (!mongoose.isValidObjectId(cursor)) {
+          return NextResponse.json(
+            { error: 'Invalid cursor value.', code: 'VALIDATION_FAILED' },
+            { status: 400 }
+          );
+        }
+        filter['_id'] = { $lt: new mongoose.Types.ObjectId(cursor) };
+      }
+    }
+
     if (county) filter['pickupCounty'] = county;
     if (verifiedOnly) filter['isVerifiedListing'] = true;
     if (minPrice || maxPrice) {
@@ -42,22 +58,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       if (maxPrice) priceFilter['$lte'] = Number(maxPrice);
       filter['currentPricePerUnit'] = priceFilter;
     }
-    if (cursor) {
-      if (!mongoose.isValidObjectId(cursor)) {
-        return NextResponse.json(
-          { error: 'Invalid cursor value.', code: 'VALIDATION_FAILED' },
-          { status: 400 }
-        );
-      }
-      filter['_id'] = { $lt: new mongoose.Types.ObjectId(cursor) };
-    }
 
-    const listings = await MarketplaceListing.find(filter)
-      .sort({ isVerifiedListing: -1, createdAt: -1 })
-      .limit(limit + 1)
-      .lean();
+    const listings = await (q
+      ? MarketplaceListing.find(filter)
+          .select({ score: { $meta: 'textScore' } })
+          .sort({ score: { $meta: 'textScore' } })
+          .limit(limit + 1)
+          .lean()
+      : MarketplaceListing.find(filter)
+          .sort({ isVerifiedListing: -1, createdAt: -1 })
+          .limit(limit + 1)
+          .lean());
 
-    const hasMore = listings.length > limit;
+    const hasMore = !q && listings.length > limit;
     const page = hasMore ? listings.slice(0, limit) : listings;
     const nextCursor = hasMore ? (page.at(-1)?._id?.toString() ?? null) : null;
     const total = await MarketplaceListing.countDocuments(filter);
@@ -136,8 +149,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await connectDB();
 
-    // Farmer must be verified to list produce
-    const farmer = await User.findById(session!.user.id).select('farmerData county').lean();
+    // Farmer must be verified to list produce, and account must be active
+    const farmer = await User.findById(session!.user.id).select('farmerData county status').lean();
+    if (farmer?.status !== UserStatus.ACTIVE) {
+      throw new AppError('Your account has been suspended.', 403, 'ACCOUNT_SUSPENDED');
+    }
     if (!farmer?.farmerData?.isVerified) {
       throw new AppError(
         'Your farmer account must be verified before you can list produce.',

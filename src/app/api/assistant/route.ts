@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { handleApiError, requireRole } from '@/lib/utils';
 import { farmAssistantChat } from '@/lib/integrations/groqService';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
 import { z } from 'zod';
 
@@ -42,6 +43,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const { message, sessionId } = parsed.data;
     const farmerId = session!.user.id;
+
+    if (!(await checkRateLimit(`assistant:${farmerId}`, 20, 60 * 60 * 1000)).allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit reached. Maximum 20 messages per hour.', code: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429 }
+      );
+    }
 
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const { default: ChatSession } = await import('@/lib/models/ChatSession.model');

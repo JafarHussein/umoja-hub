@@ -91,6 +91,7 @@ describe('POST /api/marketplace', () => {
         lean: jest.fn().mockResolvedValue({
           farmerData: { isVerified: false, cropsGrown: [] },
           county: 'Kiambu',
+          status: 'ACTIVE',
         }),
       }),
     });
@@ -110,6 +111,7 @@ describe('POST /api/marketplace', () => {
         lean: jest.fn().mockResolvedValue({
           farmerData: { isVerified: true, cropsGrown: ['tomatoes'] },
           county: 'Kiambu',
+          status: 'ACTIVE',
         }),
       }),
     });
@@ -146,6 +148,7 @@ describe('POST /api/marketplace', () => {
         lean: jest.fn().mockResolvedValue({
           farmerData: { isVerified: true },
           county: 'Kiambu',
+          status: 'ACTIVE',
         }),
       }),
     });
@@ -183,6 +186,7 @@ describe('POST /api/marketplace', () => {
         lean: jest.fn().mockResolvedValue({
           farmerData: { isVerified: true },
           county: 'Kiambu',
+          status: 'ACTIVE',
         }),
       }),
     });

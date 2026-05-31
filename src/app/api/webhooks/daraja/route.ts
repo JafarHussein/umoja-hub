@@ -11,7 +11,7 @@ import { OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus } from '@/typ
 
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/daraja — M-Pesa STK Push callback from Safaricom
-// Auth: Daraja signature verification (not session-based)
+// Auth: IP allowlisting enforced in middleware (Safaricom IP range only)
 // CRITICAL: Always return HTTP 200 — Daraja retries indefinitely on non-200
 // Idempotency: unique sparse index on mpesaTransactionId prevents duplicate writes
 // ---------------------------------------------------------------------------
@@ -21,13 +21,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const ack = { ResultCode: 0, ResultDesc: 'Acknowledged' };
 
   try {
-    // Step 0: Validate webhook secret — rejects forged callbacks before reading body
-    const secret = req.nextUrl.searchParams.get('secret');
-    if (!secret || secret !== env('WEBHOOK_SECRET')) {
-      logger.warn('daraja', 'Webhook called with invalid or missing secret');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
     const body: unknown = await req.json();
 
     // Step 1: Verify signature (always first)
@@ -76,6 +69,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         listingId: String(order.listingId),
         quantityRestored: order.quantityOrdered,
       });
+
+      sendSMS(
+        env('ADMIN_PHONE_NUMBER'),
+        `UmojaHub: Payment FAILED. Order ${order.orderReferenceId} (${order.cropName}, KES ${order.totalAmountKES}). Daraja code: ${ResultCode}.`
+      ).catch(() => {});
+
       return NextResponse.json(ack);
     }
 
