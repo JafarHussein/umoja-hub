@@ -74,7 +74,9 @@ describe('GET /api/lecturer/queue', () => {
 
   it('returns the review queue for a verified lecturer', async () => {
     mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
-    mockEngagementFind.mockReturnValue({ lean: jest.fn().mockResolvedValue(SAMPLE_ENGAGEMENTS) });
+    mockEngagementFind.mockReturnValue({
+      populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(SAMPLE_ENGAGEMENTS) }),
+    });
 
     const res = await GET(makeRequest());
     const body = await res.json() as { data: unknown[] };
@@ -88,7 +90,9 @@ describe('GET /api/lecturer/queue', () => {
 
   it('returns an empty array when no engagements are in the queue', async () => {
     mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
-    mockEngagementFind.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+    mockEngagementFind.mockReturnValue({
+      populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }),
+    });
 
     const res = await GET(makeRequest());
     const body = await res.json() as { data: unknown[] };
