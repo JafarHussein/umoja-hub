@@ -105,9 +105,14 @@ export const lecturerReviewSchema = z
     { message: 'Rejection reason is required when decision is DENIED', path: ['rejectionReason'] }
   );
 
+export const adminVerifyLecturerSchema = z.object({
+  lecturerId: z.string().min(1, 'Lecturer ID is required'),
+});
+
 export type BriefRequestInput = z.infer<typeof briefRequestSchema>;
 export type DocumentSubmissionInput = z.infer<typeof documentSubmissionSchema>;
 export type BlockerLogEntryInput = z.infer<typeof blockerLogEntrySchema>;
 export type AIUsageLogEntryInput = z.infer<typeof aiUsageLogEntrySchema>;
 export type PeerReviewInput = z.infer<typeof peerReviewSchema>;
 export type LecturerReviewInput = z.infer<typeof lecturerReviewSchema>;
+export type AdminVerifyLecturerInput = z.infer<typeof adminVerifyLecturerSchema>;
