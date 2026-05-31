@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
           (req?.headers?.['x-real-ip'] as string | undefined) ??
           'unknown';
 
-        if (!checkRateLimit(`login:${ip}`, 10, 15 * 60 * 1000).allowed) {
+        if (!(await checkRateLimit(`login:${ip}`, 10, 15 * 60 * 1000)).allowed) {
           return null;
         }
 
@@ -88,6 +88,11 @@ export const authOptions: NextAuthOptions = {
 
         // Deny login for suspended or deleted accounts
         if (user.status !== UserStatus.ACTIVE) {
+          return null;
+        }
+
+        // Deny login if email is not verified
+        if (!user.isEmailVerified) {
           return null;
         }
 
@@ -122,7 +127,7 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 24 * 60 * 60, // 24 hours
   },
 
   pages: {

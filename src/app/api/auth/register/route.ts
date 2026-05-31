@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { connectDB } from '@/lib/db';
 import { hashPassword, handleApiError, AppError, logger } from '@/lib/utils';
 import { registerSchema } from '@/lib/validation/authSchema';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { sendVerificationEmail } from '@/lib/integrations/emailService';
 import { Role } from '@/types';
 
 const RATE_LIMIT_MAX = 10;
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       req.headers.get('x-real-ip') ??
       'unknown';
 
-    if (!checkRateLimit(`register:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS).allowed) {
+    if (!(await checkRateLimit(`register:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)).allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
         { status: 429 }
@@ -56,6 +58,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       role,
       county,
       ...roleDefaults,
+    });
+
+    // Generate email verification token and store it (non-blocking email send)
+    const verificationToken = randomBytes(32).toString('hex');
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await UserModel.findByIdAndUpdate(user._id, {
+      emailVerificationToken: verificationToken,
+      emailVerificationExpiry: verificationExpiry,
+    });
+
+    sendVerificationEmail(email, verificationToken).catch(() => {
+      // Already logged inside emailService
     });
 
     logger.info('auth', 'New user registered', { userId: user._id.toString(), role });

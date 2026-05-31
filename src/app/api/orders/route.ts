@@ -8,8 +8,9 @@ import { createOrderSchema } from '@/lib/validation/orderSchema';
 import { generateOrderReferenceId } from '@/lib/foodhub/orderUtils';
 import { initiateSTKPush } from '@/lib/integrations/darajaService';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
+import { checkRateLimit } from '@/lib/rateLimit';
 import mongoose from 'mongoose';
-import { Role, OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus } from '@/types';
+import { Role, OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus, UserStatus } from '@/types';
 
 type ListingLean = {
   _id: mongoose.Types.ObjectId;
@@ -192,6 +193,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const session = await getServerSession(authOptions);
     requireRole(session, Role.BUYER);
 
+    if (!(await checkRateLimit(`orders:${session!.user.id}`, 5, 60 * 60 * 1000)).allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit reached. Maximum 5 orders per hour.', code: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429 }
+      );
+    }
+
     const body: unknown = await req.json();
     const parsed = createOrderSchema.safeParse(body);
 
@@ -209,6 +217,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { listingId, quantityOrdered, fulfillmentType, buyerPhone } = parsed.data;
 
     await connectDB();
+
+    // Enforce suspended buyer accounts — JWT is still valid but account may have been suspended
+    const { default: User } = await import('@/lib/models/User.model');
+    const buyer = await User.findById(session!.user.id).select('status').lean();
+    if (buyer?.status !== UserStatus.ACTIVE) {
+      throw new AppError('Your account has been suspended.', 403, 'ACCOUNT_SUSPENDED');
+    }
 
     // Step 1: Readable validation — specific error messages before touching DB state
     const listing = (await MarketplaceListing.findById(listingId)

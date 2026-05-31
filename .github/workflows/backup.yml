@@ -1,0 +1,57 @@
+name: Weekly Database Backup
+
+on:
+  schedule:
+    # Every Sunday at 02:00 UTC (05:00 EAT)
+    - cron: '0 2 * * 0'
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: MongoDB Atlas backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout backup repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.BACKUP_REPO_NAME }}
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backup-repo
+
+      - name: Install MongoDB Database Tools
+        run: |
+          wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" \
+            | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update -qq
+          sudo apt-get install -y mongodb-database-tools
+
+      - name: Run mongodump
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          ARCHIVE_NAME="backup-$(date +%Y%m%d-%H%M%S).gz"
+          mongodump --uri="$MONGODB_URI" --gzip --archive="backup-repo/$ARCHIVE_NAME"
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
+
+      - name: Prune old backups (keep last 4)
+        working-directory: backup-repo
+        run: |
+          # List backup files sorted newest-first, delete beyond 4
+          ls -t backup-*.gz 2>/dev/null | tail -n +5 | xargs -r rm -v
+
+      - name: Commit and push backup
+        working-directory: backup-repo
+        run: |
+          git config user.email "backup-bot@umojahub.com"
+          git config user.name "UmojaHub Backup Bot"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes to commit (backup file may be identical)"
+          else
+            git commit -m "backup: $ARCHIVE_NAME"
+            git push
+          fi

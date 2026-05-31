@@ -60,6 +60,11 @@ const userSchema = new Schema(
     role: { type: String, enum: Object.values(Role), required: true },
     county: { type: String, required: true },
     status: { type: String, enum: Object.values(UserStatus), default: UserStatus.ACTIVE },
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String, select: false },
+    emailVerificationExpiry: { type: Date, select: false },
+    passwordResetToken: { type: String, select: false },
+    passwordResetExpiry: { type: Date, select: false },
     farmerData: { type: farmerDataSchema, default: undefined },
     studentData: { type: studentDataSchema, default: undefined },
     lecturerData: { type: lecturerDataSchema, default: undefined },
@@ -91,6 +96,11 @@ export interface IUserDocument extends Document {
   role: string;
   county: string;
   status: string;
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpiry?: Date;
+  passwordResetToken?: string;
+  passwordResetExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
   farmerData?: {

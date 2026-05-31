@@ -8,7 +8,7 @@ import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB — Vercel payload ceiling is 4.5MB
 
 interface IUploadResult {
   url: string;
@@ -35,7 +35,7 @@ export async function uploadImage(file: File, folder: string): Promise<IUploadRe
   // File size validation
   if (file.size > MAX_FILE_SIZE_BYTES) {
     throw new AppError(
-      'Image must be smaller than 5MB.',
+      'Image must be smaller than 4MB.',
       400,
       'EXT_CLOUDINARY_FILE_TOO_LARGE'
     );

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { mentorChatSchema } from '@/lib/validation/educationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { env } from '@/lib/env';
 import { Role, ProjectStatus, MENTOR_SESSION_TTL_DAYS } from '@/types';
 import type { ProjectEngagementDoc } from '@/lib/models/ProjectEngagement.model';
@@ -63,6 +64,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await connectDB();
 
     const studentId = session!.user.id;
+
+    if (!(await checkRateLimit(`mentor:${studentId}`, 20, 60 * 60 * 1000)).allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit reached. Maximum 20 messages per hour.', code: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429 }
+      );
+    }
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
     const raw = await ProjectEngagement.findOne({
