@@ -68,7 +68,7 @@ export function Sidebar({ role, currentPath }: ISidebarProps): React.ReactElemen
   const navItems = navByRole[role] ?? [];
 
   return (
-    <aside className="flex flex-col w-56 min-h-screen bg-surface-elevated border-r border-white/5 shrink-0">
+    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface-elevated border-r border-white/5 shrink-0">
       {/* Wordmark */}
       <div className="flex items-center gap-2 px-4 h-14 border-b border-white/5 shrink-0">
         <div className="h-5 w-5 rounded-sm bg-accent-green shrink-0" />
