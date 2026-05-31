@@ -1,5 +1,13 @@
 import type { NextConfig } from 'next';
 
+// next-auth's parseUrl() throws if NEXTAUTH_URL is '' (empty string) at module load time.
+// Ensure it is always non-empty before build workers are spawned so they inherit the value.
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000';
+}
+
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
