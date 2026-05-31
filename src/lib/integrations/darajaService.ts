@@ -189,16 +189,23 @@ export async function initiateSTKPush(params: ISTKPushParams): Promise<ISTKPushR
 
 // ---------------------------------------------------------------------------
 // Webhook Signature Verification
-// Daraja does not use HMAC signatures — verification is via payload structure
-// and callback URL secrecy. In production, add IP allowlisting via Vercel Edge.
+//
+// Safaricom Daraja does NOT sign callbacks with HMAC or any other message
+// authentication code. Their security model relies on:
+//   1. HTTPS-only callback URLs (enforced by Vercel)
+//   2. Callback URL secrecy — the WEBHOOK_SECRET query param appended in
+//      initiateSTKPush acts as a shared secret; the webhook handler at
+//      /api/webhooks/daraja validates it before processing any payload.
+//   3. Production: IP allowlisting for Safaricom's callback IP ranges via
+//      Vercel Edge middleware (Phase 2 hardening).
+//
+// This function is retained for interface consistency. The meaningful
+// security check is the URL secret validated in the webhook route handler.
 // ---------------------------------------------------------------------------
 
 export function verifyDarajaSignature(
   _headers: Headers,
   _body: unknown
 ): boolean {
-  // For the MVP sandbox, the callback URL itself is the shared secret.
-  // Production hardening (Phase 7): Vercel Edge middleware restricts to Safaricom IP ranges.
-  // Return true here — webhook handler validates schema via Zod before processing.
   return true;
 }
