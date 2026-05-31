@@ -33,7 +33,25 @@ peerReviewSchema.set('toJSON', {
   },
 });
 
+export interface PeerReviewDoc {
+  engagementId: mongoose.Types.ObjectId;
+  reviewerId: mongoose.Types.ObjectId;
+  submittedAt?: Date;
+  status: string;
+  scores: {
+    codeQuality?: number;
+    documentationClarity?: number;
+  };
+  comments: {
+    codeQuality?: string;
+    documentationClarity?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const PeerReview =
-  mongoose.models.PeerReview ?? mongoose.model('PeerReview', peerReviewSchema);
+  (mongoose.models['PeerReview'] as mongoose.Model<PeerReviewDoc>) ??
+  mongoose.model<PeerReviewDoc>('PeerReview', peerReviewSchema);
 
 export default PeerReview;
