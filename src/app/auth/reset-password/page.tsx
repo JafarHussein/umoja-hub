@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
-export default function ResetPasswordPage(): React.ReactElement {
+function ResetPasswordForm(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token') ?? '';
@@ -56,6 +56,54 @@ export default function ResetPasswordPage(): React.ReactElement {
   }
 
   return (
+    <>
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 px-4 py-3 rounded-sm bg-red-950/40 border border-red-800/50 font-body text-t5 text-red-400"
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        <Input
+          type="password"
+          label="New password"
+          placeholder="••••••••"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          autoComplete="new-password"
+          required
+        />
+
+        <Input
+          type="password"
+          label="Confirm new password"
+          placeholder="••••••••"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
+          required
+        />
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          isLoading={isLoading}
+          disabled={!newPassword || !confirmPassword}
+          className="w-full mt-2"
+        >
+          Reset password
+        </Button>
+      </form>
+    </>
+  );
+}
+
+export default function ResetPasswordPage(): React.ReactElement {
+  return (
     <div className="min-h-screen bg-surface-primary flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8">
@@ -71,47 +119,9 @@ export default function ResetPasswordPage(): React.ReactElement {
             Choose a strong password for your account.
           </p>
 
-          {error && (
-            <div
-              role="alert"
-              className="mb-4 px-4 py-3 rounded-sm bg-red-950/40 border border-red-800/50 font-body text-t5 text-red-400"
-            >
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-            <Input
-              type="password"
-              label="New password"
-              placeholder="••••••••"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-              required
-            />
-
-            <Input
-              type="password"
-              label="Confirm new password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              required
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              isLoading={isLoading}
-              disabled={!newPassword || !confirmPassword}
-              className="w-full mt-2"
-            >
-              Reset password
-            </Button>
-          </form>
+          <Suspense fallback={null}>
+            <ResetPasswordForm />
+          </Suspense>
         </div>
 
         <p className="mt-4 text-center font-body text-t5 text-text-secondary">
