@@ -84,8 +84,33 @@ projectEngagementSchema.set('toJSON', {
   },
 });
 
+export interface ProjectEngagementDoc {
+  studentId: mongoose.Types.ObjectId;
+  track: string;
+  tier: string;
+  status: string;
+  brief?: Record<string, unknown>;
+  briefContextId?: mongoose.Types.ObjectId;
+  githubRepoUrl?: string;
+  githubRepoName?: string;
+  issueUrl?: string;
+  documents: {
+    problemBreakdown?: { content: string; hash: string; submittedAt: Date };
+    approachPlan?: { content: string; hash: string; submittedAt: Date };
+    blockerLog: unknown[];
+    aiUsageLog: unknown[];
+    finalReflection?: { content: string; hash: string; submittedAt: Date };
+  };
+  peerReviewId?: mongoose.Types.ObjectId;
+  lecturerReviewId?: mongoose.Types.ObjectId;
+  verificationUrl?: string;
+  verifiedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const ProjectEngagement =
-  mongoose.models.ProjectEngagement ??
-  mongoose.model('ProjectEngagement', projectEngagementSchema);
+  (mongoose.models['ProjectEngagement'] as mongoose.Model<ProjectEngagementDoc>) ??
+  mongoose.model<ProjectEngagementDoc>('ProjectEngagement', projectEngagementSchema);
 
 export default ProjectEngagement;
