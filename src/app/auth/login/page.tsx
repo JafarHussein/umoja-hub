@@ -11,7 +11,7 @@ import type { Role } from '@/types';
 const DASHBOARD_BY_ROLE: Record<Role, string> = {
   FARMER: '/dashboard/farmer/listings',
   BUYER: '/marketplace',
-  STUDENT: '/dashboard/student/projects/new',
+  STUDENT: '/dashboard/student',
   LECTURER: '/dashboard/lecturer/reviews/pending',
   ADMIN: '/dashboard/admin/verification-queue',
 };

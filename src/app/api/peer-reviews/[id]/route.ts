@@ -49,7 +49,13 @@ export async function GET(
       throw new AppError('Peer review assignment not found.', 404, 'DB_NOT_FOUND');
     }
 
-    return NextResponse.json({ data: review });
+    const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
+    const engagementId = (review as { engagementId: mongoose.Types.ObjectId }).engagementId;
+    const engagement = await ProjectEngagement.findById(engagementId)
+      .select('brief tier track documents.problemBreakdown documents.approachPlan documents.finalReflection status')
+      .lean();
+
+    return NextResponse.json({ data: { ...review, engagement: engagement ?? null } });
   } catch (error) {
     return handleApiError(error);
   }

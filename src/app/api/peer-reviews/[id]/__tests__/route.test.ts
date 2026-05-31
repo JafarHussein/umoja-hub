@@ -22,9 +22,13 @@ jest.mock('@/lib/models/PeerReview.model', () => ({
 }));
 
 const mockEngagementFindByIdAndUpdate = jest.fn().mockResolvedValue(undefined);
+const mockEngagementFindById = jest.fn().mockReturnValue({
+  select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+});
 jest.mock('@/lib/models/ProjectEngagement.model', () => ({
   __esModule: true,
   default: {
+    findById: jest.fn((...a: unknown[]) => mockEngagementFindById(...a)),
     findByIdAndUpdate: jest.fn((...a: unknown[]) => mockEngagementFindByIdAndUpdate(...a)),
   },
 }));
