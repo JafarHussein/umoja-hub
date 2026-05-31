@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   description:
     'Infrastructure for food security and technical talent in Kenya. A verified farmer marketplace and hands-on education platform for CS students.',
   keywords: ['Kenya', 'farmers', 'food security', 'education', 'marketplace', 'M-Pesa'],
-  metadataBase: new URL(process.env.NEXTAUTH_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
   openGraph: {
     type: 'website',
     locale: 'en_KE',
