@@ -1,6 +1,27 @@
 import mongoose, { Schema } from 'mongoose';
 import { StudentTier } from '@/types';
 
+export interface BriefContextLibraryDoc {
+  version: number;
+  updatedBy: mongoose.Types.ObjectId;
+  contexts: Array<{
+    id: string;
+    industryName: string;
+    description: string;
+    clientPersonaTemplate: {
+      businessTypes: string[];
+      counties: string[];
+      contexts: string[];
+    };
+    problemDomains: string[];
+    kenyanConstraints: string[];
+    exampleProjects: string[];
+    targetTiers: string[];
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const clientPersonaTemplateSchema = new Schema(
   {
     businessTypes: [{ type: String }],
@@ -41,7 +62,7 @@ briefContextLibrarySchema.set('toJSON', {
 });
 
 const BriefContextLibrary =
-  mongoose.models.BriefContextLibrary ??
-  mongoose.model('BriefContextLibrary', briefContextLibrarySchema);
+  (mongoose.models['BriefContextLibrary'] as mongoose.Model<BriefContextLibraryDoc>) ??
+  mongoose.model<BriefContextLibraryDoc>('BriefContextLibrary', briefContextLibrarySchema);
 
 export default BriefContextLibrary;
