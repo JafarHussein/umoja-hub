@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProjectTrack, StudentTier, LecturerDecision, REVIEW_MIN_WORD_COUNT } from '@/types';
+import { ProjectTrack, StudentTier, LecturerDecision, REVIEW_MIN_WORD_COUNT, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
 
 const countWords = (text: string): number =>
   text
@@ -109,6 +109,15 @@ export const adminVerifyLecturerSchema = z.object({
   lecturerId: z.string().min(1, 'Lecturer ID is required'),
 });
 
+export const mentorChatSchema = z.object({
+  message: z
+    .string()
+    .trim()
+    .min(1, 'Message is required')
+    .max(MAX_ASSISTANT_MESSAGE_CHARS, `Message must be at most ${MAX_ASSISTANT_MESSAGE_CHARS} characters`),
+  engagementId: z.string().min(1, 'Engagement ID is required'),
+});
+
 export type BriefRequestInput = z.infer<typeof briefRequestSchema>;
 export type DocumentSubmissionInput = z.infer<typeof documentSubmissionSchema>;
 export type BlockerLogEntryInput = z.infer<typeof blockerLogEntrySchema>;
@@ -116,3 +125,4 @@ export type AIUsageLogEntryInput = z.infer<typeof aiUsageLogEntrySchema>;
 export type PeerReviewInput = z.infer<typeof peerReviewSchema>;
 export type LecturerReviewInput = z.infer<typeof lecturerReviewSchema>;
 export type AdminVerifyLecturerInput = z.infer<typeof adminVerifyLecturerSchema>;
+export type MentorChatInput = z.infer<typeof mentorChatSchema>;
