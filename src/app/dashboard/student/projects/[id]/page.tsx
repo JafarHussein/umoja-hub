@@ -8,6 +8,12 @@ import { Role, ProjectStatus, ProjectTrack, StudentTier } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ProjectStatusStepper } from '@/components/education/ProjectStatusStepper';
+import { DocumentsTab } from '@/components/education/DocumentsTab';
+import { BlockersTab } from '@/components/education/BlockersTab';
+import { AIUsageTab } from '@/components/education/AIUsageTab';
+import type { DocumentType, IProcessDocument } from '@/components/education/DocumentsTab';
+import type { IBlockerEntry } from '@/components/education/BlockersTab';
+import type { IAIUsageEntry } from '@/components/education/AIUsageTab';
 
 // ── Brief type definitions ────────────────────────────────────────────────────
 
@@ -30,17 +36,47 @@ interface IOpenSourceBrief {
   proposedApproach: string;
 }
 
+// ── Engagement type ───────────────────────────────────────────────────────────
+
+interface IEngagementDocuments {
+  problemBreakdown?: IProcessDocument;
+  approachPlan?: IProcessDocument;
+  finalReflection?: IProcessDocument;
+  blockerLog: IBlockerEntry[];
+  aiUsageLog: IAIUsageEntry[];
+}
+
 interface IActiveEngagement {
   _id: string;
   track: ProjectTrack;
   tier: StudentTier;
   status: ProjectStatus;
   brief: Record<string, unknown>;
+  documents: IEngagementDocuments;
+  createdAt: string;
+}
+
+// Raw shape from API — documents arrays may be missing before normalization
+interface IRawEngagement {
+  _id: string;
+  track: ProjectTrack;
+  tier: StudentTier;
+  status: ProjectStatus;
+  brief: Record<string, unknown>;
+  documents?: {
+    problemBreakdown?: IProcessDocument;
+    approachPlan?: IProcessDocument;
+    finalReflection?: IProcessDocument;
+    blockerLog?: IBlockerEntry[];
+    aiUsageLog?: IAIUsageEntry[];
+  };
   createdAt: string;
 }
 
 type PageState = 'loading' | 'ready' | 'not_found' | 'error';
 type ActionState = 'idle' | 'beginning';
+type SubmitState = 'idle' | 'submitting';
+type WorkspaceTab = 'overview' | 'documents' | 'blockers' | 'ai-usage';
 
 type ComplexityVariant = 'success' | 'warning' | 'error';
 
@@ -49,6 +85,13 @@ const COMPLEXITY_VARIANT: Record<'LOW' | 'MEDIUM' | 'HIGH', ComplexityVariant> =
   MEDIUM: 'warning',
   HIGH: 'error',
 };
+
+const TAB_CONFIG: { id: WorkspaceTab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'documents', label: 'Documents' },
+  { id: 'blockers', label: 'Blockers' },
+  { id: 'ai-usage', label: 'AI Usage' },
+];
 
 // ── Loading skeleton ──────────────────────────────────────────────────────────
 
@@ -139,9 +182,7 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
           <ul className="space-y-1">
             {brief.coreRequirements.map((req, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="text-text-disabled mt-1 flex-shrink-0" aria-hidden="true">
-                  –
-                </span>
+                <span className="text-text-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
                 <span className="text-t5 font-body text-text-secondary">{req}</span>
               </li>
             ))}
@@ -157,9 +198,7 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
           <ul className="space-y-1">
             {brief.deliverables.map((d, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="text-text-disabled mt-1 flex-shrink-0" aria-hidden="true">
-                  –
-                </span>
+                <span className="text-text-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
                 <span className="text-t5 font-body text-text-secondary">{d}</span>
               </li>
             ))}
@@ -235,6 +274,29 @@ function OpenSourceBriefCard({ brief }: { brief: IOpenSourceBrief }): React.Reac
   );
 }
 
+// ── Overview tab content ──────────────────────────────────────────────────────
+
+function OverviewContent({ status }: { status: ProjectStatus }): React.ReactElement {
+  if (status === ProjectStatus.BRIEF_GENERATED) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-t4 font-body text-text-secondary">Workspace locked</p>
+        <p className="text-t5 font-body text-text-disabled mt-1">
+          Click &quot;Begin project&quot; to start working on your brief.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="p-6 text-center">
+      <p className="text-t4 font-body text-text-secondary">Project is active</p>
+      <p className="text-t5 font-body text-text-disabled mt-1">
+        Use the Documents, Blockers, and AI Usage tabs to track your work.
+      </p>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProjectWorkspacePage(): React.ReactElement {
@@ -246,6 +308,9 @@ export default function ProjectWorkspacePage(): React.ReactElement {
   const [engagement, setEngagement] = useState<IActiveEngagement | null>(null);
   const [actionState, setActionState] = useState<ActionState>('idle');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitState>('idle');
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('overview');
 
   const fetchEngagement = useCallback(async (): Promise<void> => {
     try {
@@ -254,12 +319,28 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         setPageState('error');
         return;
       }
-      const body = (await res.json()) as { data: IActiveEngagement | null };
+      const body = (await res.json()) as { data: IRawEngagement | null };
       if (!body.data || String(body.data._id) !== params.id) {
         setPageState('not_found');
         return;
       }
-      setEngagement(body.data);
+      const raw = body.data;
+      setEngagement({
+        ...raw,
+        documents: {
+          blockerLog: raw.documents?.blockerLog ?? [],
+          aiUsageLog: raw.documents?.aiUsageLog ?? [],
+          ...(raw.documents?.problemBreakdown && {
+            problemBreakdown: raw.documents.problemBreakdown,
+          }),
+          ...(raw.documents?.approachPlan && {
+            approachPlan: raw.documents.approachPlan,
+          }),
+          ...(raw.documents?.finalReflection && {
+            finalReflection: raw.documents.finalReflection,
+          }),
+        },
+      });
       setPageState('ready');
     } catch {
       setPageState('error');
@@ -279,6 +360,46 @@ export default function ProjectWorkspacePage(): React.ReactElement {
       void fetchEngagement();
     }
   }, [status, session, router, fetchEngagement]);
+
+  // ── Callbacks ───────────────────────────────────────────────────────────────
+
+  function handleDocumentSaved(type: DocumentType, saved: IProcessDocument): void {
+    setEngagement((prev) =>
+      prev
+        ? { ...prev, documents: { ...prev.documents, [type]: saved } }
+        : null
+    );
+  }
+
+  function handleBlockerAdded(entry: IBlockerEntry): void {
+    setEngagement((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: {
+              ...prev.documents,
+              blockerLog: [entry, ...prev.documents.blockerLog],
+            },
+          }
+        : null
+    );
+  }
+
+  function handleAIUsageAdded(entry: IAIUsageEntry): void {
+    setEngagement((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: {
+              ...prev.documents,
+              aiUsageLog: [entry, ...prev.documents.aiUsageLog],
+            },
+          }
+        : null
+    );
+  }
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
 
   async function handleBeginProject(): Promise<void> {
     if (!engagement) return;
@@ -306,6 +427,34 @@ export default function ProjectWorkspacePage(): React.ReactElement {
       setActionState('idle');
     }
   }
+
+  async function handleSubmitProject(): Promise<void> {
+    if (!engagement) return;
+    setSubmitState('submitting');
+    setSubmitError(null);
+
+    try {
+      const res = await fetch(`/api/education/engagements/${engagement._id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const body = (await res.json()) as { error?: string };
+        setSubmitError(body.error ?? 'Failed to submit. Please try again.');
+        setSubmitState('idle');
+        return;
+      }
+
+      setEngagement({ ...engagement, status: ProjectStatus.UNDER_PEER_REVIEW });
+      setSubmitState('idle');
+    } catch {
+      setSubmitError('Network error. Try again.');
+      setSubmitState('idle');
+    }
+  }
+
+  // ── Render guards ────────────────────────────────────────────────────────────
 
   if (status === 'loading' || pageState === 'loading') {
     return <PageSkeleton />;
@@ -354,6 +503,14 @@ export default function ProjectWorkspacePage(): React.ReactElement {
     ? ((brief as Partial<IAIBrief>).title ?? engagement.track)
     : ((brief as Partial<IOpenSourceBrief>).repoName ?? engagement.track);
 
+  const tabsUnlocked = engagement.status !== ProjectStatus.BRIEF_GENERATED;
+
+  const allDocsPresent = !!(
+    engagement.documents.problemBreakdown &&
+    engagement.documents.approachPlan &&
+    engagement.documents.finalReflection
+  );
+
   return (
     <div className="min-h-screen bg-surface-primary">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -379,7 +536,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         {/* Main grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-          {/* Left — brief + workspace */}
+          {/* Left — brief + workspace tabs */}
           <div className="md:col-span-8 space-y-6">
 
             {/* Brief card */}
@@ -389,50 +546,63 @@ export default function ProjectWorkspacePage(): React.ReactElement {
               <OpenSourceBriefCard brief={brief as unknown as IOpenSourceBrief} />
             )}
 
-            {/* Workspace tabs shell */}
+            {/* Workspace tabs */}
             <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+
               {/* Tab bar */}
               <div className="flex border-b border-zinc-800/50">
-                {(['Overview', 'Documents', 'Blockers', 'AI Usage'] as const).map(
-                  (tab, i) => (
-                    <div
-                      key={tab}
+                {TAB_CONFIG.map(({ id, label }) => {
+                  const isActive = activeTab === id;
+                  const isLocked = id !== 'overview' && !tabsUnlocked;
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && setActiveTab(id)}
                       className={[
                         'px-4 py-2.5 text-t5 font-body border-b-2 transition-colors duration-150',
-                        i === 0
+                        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green focus-visible:ring-inset',
+                        isActive
                           ? 'border-accent-green text-text-primary'
-                          : 'border-transparent text-text-disabled cursor-not-allowed',
+                          : isLocked
+                          ? 'border-transparent text-text-disabled cursor-not-allowed'
+                          : 'border-transparent text-text-secondary hover:text-text-primary cursor-pointer',
                       ].join(' ')}
-                      aria-current={i === 0 ? 'true' : undefined}
+                      aria-current={isActive ? 'true' : undefined}
                     >
-                      {tab}
-                    </div>
-                  )
-                )}
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Tab content */}
-              <div className="p-6 text-center">
-                {engagement.status === ProjectStatus.BRIEF_GENERATED ? (
-                  <>
-                    <p className="text-t4 font-body text-text-secondary">
-                      Workspace locked
-                    </p>
-                    <p className="text-t5 font-body text-text-disabled mt-1">
-                      Click &quot;Begin project&quot; to start working on your brief.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-t4 font-body text-text-secondary">
-                      Project is active
-                    </p>
-                    <p className="text-t5 font-body text-text-disabled mt-1">
-                      Document submission and activity logs coming in the next release.
-                    </p>
-                  </>
-                )}
-              </div>
+              {activeTab === 'overview' && (
+                <OverviewContent status={engagement.status} />
+              )}
+              {activeTab === 'documents' && tabsUnlocked && (
+                <DocumentsTab
+                  engagementId={engagement._id}
+                  documents={engagement.documents}
+                  onDocumentSaved={handleDocumentSaved}
+                />
+              )}
+              {activeTab === 'blockers' && tabsUnlocked && (
+                <BlockersTab
+                  engagementId={engagement._id}
+                  initialBlockers={engagement.documents.blockerLog}
+                  onBlockerAdded={handleBlockerAdded}
+                />
+              )}
+              {activeTab === 'ai-usage' && tabsUnlocked && (
+                <AIUsageTab
+                  engagementId={engagement._id}
+                  initialEntries={engagement.documents.aiUsageLog}
+                  onEntryAdded={handleAIUsageAdded}
+                />
+              )}
             </div>
           </div>
 
@@ -453,6 +623,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                 Actions
               </p>
 
+              {/* BRIEF_GENERATED */}
               {engagement.status === ProjectStatus.BRIEF_GENERATED && (
                 <>
                   <Button
@@ -470,16 +641,38 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                 </>
               )}
 
+              {/* IN_PROGRESS */}
               {engagement.status === ProjectStatus.IN_PROGRESS && (
-                <p className="text-t5 font-body text-accent-green">Project is active</p>
+                <div className="space-y-2">
+                  <p className="text-t5 font-body text-accent-green">Project is active</p>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="w-full"
+                    disabled={!allDocsPresent || submitState === 'submitting'}
+                    onClick={() => void handleSubmitProject()}
+                  >
+                    {submitState === 'submitting' ? 'Submitting...' : 'Submit for review'}
+                  </Button>
+                  {!allDocsPresent && (
+                    <p className="text-t6 font-body text-text-disabled">
+                      Complete all 3 process documents to submit.
+                    </p>
+                  )}
+                  {submitError && (
+                    <p className="text-t6 font-body text-red-400">{submitError}</p>
+                  )}
+                </div>
               )}
 
+              {/* Review statuses */}
               {(engagement.status === ProjectStatus.SUBMITTED ||
                 engagement.status === ProjectStatus.UNDER_PEER_REVIEW ||
                 engagement.status === ProjectStatus.UNDER_LECTURER_REVIEW) && (
                 <p className="text-t5 font-body text-text-secondary">Awaiting review</p>
               )}
 
+              {/* REVISION_REQUIRED */}
               {engagement.status === ProjectStatus.REVISION_REQUIRED && (
                 <div className="p-3 bg-amber-950/20 border border-amber-900/30 rounded-[4px]">
                   <p className="text-t5 font-body text-amber-400">
@@ -488,10 +681,12 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                 </div>
               )}
 
+              {/* VERIFIED */}
               {engagement.status === ProjectStatus.VERIFIED && (
                 <p className="text-t5 font-body text-accent-green">Project verified</p>
               )}
 
+              {/* DENIED */}
               {engagement.status === ProjectStatus.DENIED && (
                 <div className="p-3 bg-red-950/20 border border-red-900/30 rounded-[4px]">
                   <p className="text-t5 font-body text-red-400">Project denied.</p>
