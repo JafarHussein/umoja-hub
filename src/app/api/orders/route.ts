@@ -34,6 +34,9 @@ type OrderLean = {
   farmerId: { toString(): string };
   buyerId: { toString(): string };
   createdAt: Date;
+  paidAt?: Date | null;
+  confirmedByFarmerAt?: Date | null;
+  receivedByBuyerAt?: Date | null;
 };
 
 type UserLean = {
@@ -122,6 +125,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             },
             hasRated: ratedSet.has(order._id.toString()),
             createdAt: order.createdAt.toISOString(),
+            paidAt: order.paidAt?.toISOString() ?? null,
+            confirmedByFarmerAt: order.confirmedByFarmerAt?.toISOString() ?? null,
+            receivedByBuyerAt: order.receivedByBuyerAt?.toISOString() ?? null,
           };
         }),
         nextCursor,

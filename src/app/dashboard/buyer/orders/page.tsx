@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, OrderPaymentStatus, OrderFulfillmentStatus } from '@/types';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 
 interface IBuyerOrder {
   _id: string;
@@ -14,7 +18,6 @@ interface IBuyerOrder {
   totalAmountKES: number;
   paymentStatus: OrderPaymentStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
-  mpesaCheckoutRequestId: string | null;
   farmer: { firstName: string; lastName: string };
   hasRated: boolean;
   createdAt: string;
@@ -24,18 +27,9 @@ interface IOrdersResponse {
   orders: IBuyerOrder[];
 }
 
-interface IPaymentStatusResponse {
-  paymentStatus: OrderPaymentStatus;
-  fulfillmentStatus: OrderFulfillmentStatus;
-}
-
-interface IRatingForm {
-  rating: number;
-  comment: string;
-}
-
 type PageState = 'loading' | 'ready' | 'error';
-type ActionState = 'idle' | 'submitting' | 'error';
+
+type BadgeVariant = 'success' | 'warning' | 'error' | 'neutral' | 'status' | 'tier-farmer' | 'tier-student' | 'project-status';
 
 const FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
   [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
@@ -45,20 +39,20 @@ const FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
   [OrderFulfillmentStatus.DISPUTED]: 'Disputed',
 };
 
+function resolveBadgeVariant(order: IBuyerOrder): BadgeVariant {
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED) return 'success';
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.DISPUTED) return 'error';
+  if (order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT) return 'warning';
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT) return 'neutral';
+  return 'neutral';
+}
+
 export default function BuyerOrdersPage(): React.ReactElement {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [orders, setOrders] = useState<IBuyerOrder[]>([]);
-  const [actionState, setActionState] = useState<Record<string, ActionState>>({});
-  const [actionError, setActionError] = useState<Record<string, string | null>>({});
-  const [ratingForms, setRatingForms] = useState<Record<string, IRatingForm>>({});
-
-  const ordersRef = useRef<IBuyerOrder[]>([]);
-  ordersRef.current = orders;
-
-  const pollingTimers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
   const fetchOrders = useCallback(async (): Promise<void> => {
     setPageState('loading');
@@ -87,299 +81,110 @@ export default function BuyerOrdersPage(): React.ReactElement {
     }
   }, [status, session, router, fetchOrders]);
 
-  // Start payment pollers for PENDING_PAYMENT orders on initial load
-  useEffect(() => {
-    if (pageState !== 'ready') return;
-
-    const timers = pollingTimers.current;
-    timers.forEach((timer) => clearInterval(timer));
-    timers.clear();
-
-    ordersRef.current.forEach((order) => {
-      if (order.paymentStatus !== OrderPaymentStatus.PENDING_PAYMENT) return;
-
-      const orderId = order._id;
-      const deadline = Date.now() + 90_000;
-
-      const timer = setInterval(() => {
-        if (Date.now() >= deadline) {
-          clearInterval(timers.get(orderId));
-          timers.delete(orderId);
-          return;
-        }
-        void (async () => {
-          try {
-            const res = await fetch(`/api/orders/${orderId}/payment-status`);
-            if (!res.ok) return;
-            const data = (await res.json()) as IPaymentStatusResponse;
-            if (data.paymentStatus !== OrderPaymentStatus.PENDING_PAYMENT) {
-              clearInterval(timers.get(orderId));
-              timers.delete(orderId);
-              setOrders((prev) =>
-                prev.map((o) =>
-                  o._id === orderId
-                    ? { ...o, paymentStatus: data.paymentStatus, fulfillmentStatus: data.fulfillmentStatus }
-                    : o
-                )
-              );
-            }
-          } catch {
-            // ignore transient poll errors
-          }
-        })();
-      }, 5_000);
-
-      timers.set(orderId, timer);
-    });
-
-    return () => {
-      timers.forEach((timer) => clearInterval(timer));
-      timers.clear();
-    };
-  }, [pageState]); // intentionally excludes orders — pollers start once on ready
-
-  async function handleMarkReceived(orderId: string): Promise<void> {
-    setActionState((prev) => ({ ...prev, [orderId]: 'submitting' }));
-    setActionError((prev) => ({ ...prev, [orderId]: null }));
-    try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fulfillmentStatus: OrderFulfillmentStatus.RECEIVED }),
-      });
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        throw new Error(body.error ?? 'Request failed.');
-      }
-      setActionState((prev) => ({ ...prev, [orderId]: 'idle' }));
-      setOrders((prev) =>
-        prev.map((o) =>
-          o._id === orderId ? { ...o, fulfillmentStatus: OrderFulfillmentStatus.COMPLETED } : o
-        )
-      );
-    } catch (err) {
-      setActionState((prev) => ({ ...prev, [orderId]: 'error' }));
-      setActionError((prev) => ({
-        ...prev,
-        [orderId]: err instanceof Error ? err.message : 'An error occurred.',
-      }));
-    }
-  }
-
-  async function handleRatingSubmit(
-    e: React.FormEvent<HTMLFormElement>,
-    orderId: string
-  ): Promise<void> {
-    e.preventDefault();
-    const form = ratingForms[orderId];
-    if (!form || form.rating === 0) return;
-
-    const key = `rating_${orderId}`;
-    setActionState((prev) => ({ ...prev, [key]: 'submitting' }));
-    setActionError((prev) => ({ ...prev, [key]: null }));
-    try {
-      const res = await fetch('/api/ratings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          rating: form.rating,
-          ...(form.comment.trim() && { comment: form.comment.trim() }),
-        }),
-      });
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        throw new Error(body.error ?? 'Rating submission failed.');
-      }
-      setActionState((prev) => ({ ...prev, [key]: 'idle' }));
-      setOrders((prev) =>
-        prev.map((o) => (o._id === orderId ? { ...o, hasRated: true } : o))
-      );
-    } catch (err) {
-      setActionState((prev) => ({ ...prev, [key]: 'error' }));
-      setActionError((prev) => ({
-        ...prev,
-        [key]: err instanceof Error ? err.message : 'An error occurred.',
-      }));
-    }
-  }
-
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
-    return <p className="p-4">Loading...</p>;
-  }
-
-  if (pageState === 'error') {
     return (
-      <div className="p-4 flex flex-col gap-2">
-        <p>Failed to load orders.</p>
-        <button type="button" onClick={() => void fetchOrders()}>
-          Retry
-        </button>
+      <div className="min-h-screen bg-surface-primary">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <ListSkeleton rows={5} />
+        </div>
       </div>
     );
   }
 
+  // ── Error ──────────────────────────────────────────────────────────────────
+  if (pageState === 'error') {
+    return (
+      <div className="min-h-screen bg-surface-primary">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-text-secondary">Failed to load orders.</p>
+            <div className="mt-3">
+              <Button variant="ghost" size="sm" onClick={() => void fetchOrders()}>
+                Retry
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Ready ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <h1 className="text-base font-semibold">My Orders</h1>
+    <div className="min-h-screen bg-surface-primary">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
-      {orders.length === 0 && (
-        <p className="text-sm text-gray-500">No orders yet.</p>
-      )}
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              Buyer · Dashboard
+            </p>
+            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+              My Orders
+            </h1>
+          </div>
+          <Link
+            href="/marketplace"
+            className="text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+          >
+            Browse marketplace →
+          </Link>
+        </div>
 
-      {orders.map((order) => {
-        const ratingKey = `rating_${order._id}`;
-        const ratingForm = ratingForms[order._id] ?? { rating: 0, comment: '' };
-        const isReceivingAction = actionState[order._id] === 'submitting';
-        const isRatingAction = actionState[ratingKey] === 'submitting';
-
-        return (
-          <div key={order._id} className="border border-gray-300 flex flex-col gap-0">
-            {/* ── Order summary row ─── */}
-            <table className="border-collapse text-sm w-full">
-              <tbody>
-                <tr className="border-b border-gray-300">
-                  <th className="px-3 py-2 text-left bg-gray-50 w-36 border-r border-gray-300">
-                    Ref
-                  </th>
-                  <td className="px-3 py-2 font-mono text-xs">{order.orderReferenceId}</td>
-                </tr>
-                <tr className="border-b border-gray-300">
-                  <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                    Farmer
-                  </th>
-                  <td className="px-3 py-2">
-                    {order.farmer.firstName} {order.farmer.lastName}
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-300">
-                  <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                    Crop
-                  </th>
-                  <td className="px-3 py-2">
-                    {order.cropName} — {order.quantityOrdered} {order.unit}
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-300">
-                  <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                    Amount
-                  </th>
-                  <td className="px-3 py-2">KES {order.totalAmountKES.toLocaleString()}</td>
-                </tr>
-                <tr className="border-b border-gray-300">
-                  <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                    Payment
-                  </th>
-                  <td className="px-3 py-2">{order.paymentStatus}</td>
-                </tr>
-                <tr>
-                  <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                    Status
-                  </th>
-                  <td className="px-3 py-2">
-                    {FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* ── Payment pending notice ─── */}
-            {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
-              <div className="px-3 py-2 border-t border-gray-300 text-sm text-gray-600">
-                Waiting for M-Pesa payment. Check your phone and enter your PIN.
-              </div>
-            )}
-
-            {/* ── Mark as received ─── */}
-            {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-              <div className="px-3 py-2 border-t border-gray-300 flex flex-col gap-1">
-                <button
-                  type="button"
-                  disabled={isReceivingAction}
-                  onClick={() => void handleMarkReceived(order._id)}
-                  className="self-start border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
-                >
-                  {isReceivingAction ? 'Confirming...' : 'Mark as received'}
-                </button>
-                {actionError[order._id] !== null && actionError[order._id] !== undefined && (
-                  <p role="alert" className="text-xs text-red-600">
-                    {actionError[order._id]}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* ── Star rating form ─── */}
-            {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED &&
-              !order.hasRated && (
-                <form
-                  className="px-3 py-3 border-t border-gray-300 flex flex-col gap-2"
-                  onSubmit={(e) => void handleRatingSubmit(e, order._id)}
-                >
-                  <p className="text-sm font-medium">Rate this farmer</p>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        className={[
-                          'text-lg leading-none px-1',
-                          ratingForm.rating >= star ? 'text-yellow-500' : 'text-gray-300',
-                        ].join(' ')}
-                        onClick={() =>
-                          setRatingForms((prev) => ({
-                            ...prev,
-                            [order._id]: { ...ratingForm, rating: star },
-                          }))
-                        }
-                        aria-label={`${star} star`}
-                      >
-                        ★
-                      </button>
-                    ))}
+        {/* Orders list */}
+        {orders.length === 0 ? (
+          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-10 text-center">
+            <p className="text-t4 font-body text-text-secondary">No orders yet.</p>
+            <p className="text-t5 font-body text-text-disabled mt-1">
+              Find produce from verified farmers in the marketplace.
+            </p>
+            <Link
+              href="/marketplace"
+              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+            >
+              Go to marketplace →
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+            {orders.map((order) => (
+              <Link
+                key={order._id}
+                href={`/dashboard/buyer/orders/${order._id}`}
+                className="block hover:bg-surface-secondary transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green focus-visible:ring-inset"
+              >
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-800/50 last:border-0">
+                  {/* Left: crop name + reference + farmer */}
+                  <div className="space-y-0.5 min-w-0 mr-4">
+                    <p className="text-t4 font-body font-medium text-text-primary truncate capitalize">
+                      {order.cropName}
+                    </p>
+                    <p className="text-t6 font-mono text-text-disabled">
+                      {order.orderReferenceId}
+                      {' · '}
+                      {order.farmer.firstName} {order.farmer.lastName}
+                    </p>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor={`comment-${order._id}`} className="text-sm">
-                      Comment <span className="text-gray-500">(optional)</span>
-                    </label>
-                    <textarea
-                      id={`comment-${order._id}`}
-                      rows={2}
-                      className="border border-gray-300 px-2 py-1 text-sm resize-none"
-                      value={ratingForm.comment}
-                      onChange={(e) =>
-                        setRatingForms((prev) => ({
-                          ...prev,
-                          [order._id]: { ...ratingForm, comment: e.target.value },
-                        }))
-                      }
+
+                  {/* Right: amount + status */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-t4 font-mono font-semibold text-text-primary tabular-nums">
+                      KES {order.totalAmountKES.toLocaleString()}
+                    </span>
+                    <Badge
+                      variant={resolveBadgeVariant(order)}
+                      label={FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus}
                     />
                   </div>
-                  {actionError[ratingKey] !== null && actionError[ratingKey] !== undefined && (
-                    <p role="alert" className="text-xs text-red-600">
-                      {actionError[ratingKey]}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={isRatingAction || ratingForm.rating === 0}
-                    className="self-start border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
-                  >
-                    {isRatingAction ? 'Submitting...' : 'Submit rating'}
-                  </button>
-                </form>
-              )}
-
-            {/* ── Already rated ─── */}
-            {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED &&
-              order.hasRated && (
-                <div className="px-3 py-2 border-t border-gray-300 text-sm text-gray-500">
-                  Rated
                 </div>
-              )}
+              </Link>
+            ))}
           </div>
-        );
-      })}
+        )}
+
+      </div>
     </div>
   );
 }
