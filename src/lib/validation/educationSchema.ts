@@ -109,6 +109,27 @@ export const adminVerifyLecturerSchema = z.object({
   lecturerId: z.string().min(1, 'Lecturer ID is required'),
 });
 
+const briefContextEntrySchema = z.object({
+  id: z.string().min(1, 'Context ID is required'),
+  industryName: z.string().min(1, 'Industry name is required'),
+  description: z.string().min(1, 'Description is required'),
+  clientPersonaTemplate: z.object({
+    businessTypes: z.array(z.string().min(1)),
+    counties: z.array(z.string().min(1)),
+    contexts: z.array(z.string().min(1)),
+  }),
+  problemDomains: z.array(z.string().min(1)),
+  kenyanConstraints: z.array(z.string().min(1)),
+  exampleProjects: z.array(z.string().min(1)),
+  targetTiers: z
+    .array(z.enum([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]))
+    .min(1, 'At least one target tier is required'),
+});
+
+export const briefContextLibraryUpdateSchema = z.object({
+  contexts: z.array(briefContextEntrySchema).min(1, 'At least one context is required'),
+});
+
 export const mentorChatSchema = z.object({
   message: z
     .string()
@@ -126,3 +147,4 @@ export type PeerReviewInput = z.infer<typeof peerReviewSchema>;
 export type LecturerReviewInput = z.infer<typeof lecturerReviewSchema>;
 export type AdminVerifyLecturerInput = z.infer<typeof adminVerifyLecturerSchema>;
 export type MentorChatInput = z.infer<typeof mentorChatSchema>;
+export type BriefContextLibraryUpdateInput = z.infer<typeof briefContextLibraryUpdateSchema>;
