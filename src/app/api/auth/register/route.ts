@@ -2,10 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { hashPassword, handleApiError, AppError, logger } from '@/lib/utils';
 import { registerSchema } from '@/lib/validation/authSchema';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Role } from '@/types';
+
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      req.headers.get('x-real-ip') ??
+      'unknown';
+
+    if (!checkRateLimit(`register:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS).allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429 }
+      );
+    }
+
     const body: unknown = await req.json();
 
     const parsed = registerSchema.safeParse(body);

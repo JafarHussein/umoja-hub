@@ -3,6 +3,7 @@ import type { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, UserStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -50,8 +51,17 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
 
-      async authorize(credentials): Promise<User | null> {
+      async authorize(credentials, req): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        const ip =
+          (req?.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+          (req?.headers?.['x-real-ip'] as string | undefined) ??
+          'unknown';
+
+        if (!checkRateLimit(`login:${ip}`, 10, 15 * 60 * 1000).allowed) {
           return null;
         }
 
