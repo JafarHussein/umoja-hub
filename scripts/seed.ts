@@ -38,6 +38,7 @@ loadEnvConfig(process.cwd());
 // Imports
 // ---------------------------------------------------------------------------
 
+import crypto from 'crypto';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { connectDB } from '../src/lib/db';
@@ -56,6 +57,11 @@ import {
   OrderPaymentStatus,
   OrderFulfillmentStatus,
   FulfillmentType,
+  ProjectTrack,
+  ProjectStatus,
+  PeerReviewStatus,
+  LecturerDecision,
+  PriceHistorySource,
 } from '../src/types';
 
 // ---------------------------------------------------------------------------
@@ -71,6 +77,13 @@ import BriefContextLibrary from '../src/lib/models/BriefContextLibrary.model';
 import MarketInsight from '../src/lib/models/MarketInsight.model';
 import StudentPortfolioStatus from '../src/lib/models/StudentPortfolioStatus.model';
 import Order from '../src/lib/models/Order.model';
+import ProjectEngagement from '../src/lib/models/ProjectEngagement.model';
+import PeerReview from '../src/lib/models/PeerReview.model';
+import LecturerReview from '../src/lib/models/LecturerReview.model';
+import LecturerEffectiveness from '../src/lib/models/LecturerEffectiveness.model';
+import Rating from '../src/lib/models/Rating.model';
+import PriceHistory from '../src/lib/models/PriceHistory.model';
+import VerificationAuditLog from '../src/lib/models/VerificationAuditLog.model';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -82,6 +95,16 @@ function log(msg: string): void {
 
 async function hashPw(pw: string): Promise<string> {
   return bcrypt.hash(pw, BCRYPT_SALT_ROUNDS);
+}
+
+function sha256(s: string): string {
+  return crypto.createHash('sha256').update(s).digest('hex');
+}
+
+function docDate(daysAgo: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,7 +344,7 @@ async function seed(): Promise<void> {
       status: 'ACTIVE',
       lecturerData: {
         universityAffiliation: 'Strathmore University — Faculty of Information Technology',
-        isVerified: true,
+        isVerified: false,
       },
     },
     // Admin
@@ -1422,12 +1445,461 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
   log('Inserted 3 StudentPortfolioStatus records.');
 
   // -------------------------------------------------------------------------
-  // 10. Orders
+  // 10. ProjectEngagements (3 demo states)
   // -------------------------------------------------------------------------
 
-  log('Inserting Orders...');
+  log('Inserting ProjectEngagements...');
 
-  await Order.insertMany([
+  const PB_CONTENT = `## Problem Statement
+Smallholder farmers in Kenya sell produce through intermediaries who capture 30–50% of the final retail price. Direct digital market access could close this gap.
+
+## Root Cause Analysis
+The gap exists due to: (1) information asymmetry between farmers and buyers on pricing, (2) lack of trust verification for both parties, (3) payment friction — cash-only has theft risk for high-value transactions.
+
+## Proposed Solution Scope
+A mobile-first marketplace where farmers post listings, buyers browse and pay via M-Pesa, and trust scores accumulate from transaction history. Scope is restricted to crops, not livestock.
+
+## Success Criteria
+- A farmer can list produce in under 5 minutes
+- A buyer can browse and initiate payment from any smartphone
+- M-Pesa confirmation is automated without manual farmer intervention`;
+
+  const AP_CONTENT = `## Technical Architecture
+Frontend: Next.js 15 with App Router, deployed on Vercel. Mobile-responsive Tailwind UI.
+Backend: API Routes (serverless) + MongoDB Atlas. No dedicated server.
+Payments: Daraja STK Push API for M-Pesa integration.
+Auth: NextAuth v4 with role-based JWT (FARMER, BUYER, ADMIN).
+
+## Implementation Phases
+Phase 1: Auth + user registration (2 weeks)
+Phase 2: Marketplace listings CRUD (1 week)
+Phase 3: Order flow + M-Pesa integration (2 weeks)
+Phase 4: Trust score computation (1 week)
+Phase 5: Testing, hardening, deployment (1 week)
+
+## Key Technical Risks
+1. Daraja sandbox reliability — mitigation: Ngrok for local webhook testing
+2. MongoDB cold-start latency — mitigation: connection pooling singleton
+3. M-Pesa PIN timeout (30s) — mitigation: client-side countdown with polling`;
+
+  const FR_CONTENT = `## What I Built
+A full-stack agricultural marketplace with M-Pesa payments, role-based authentication, and a trust scoring system. The platform has 15+ API endpoints, Mongoose models with proper indexing, and a Groq-powered AI farm assistant.
+
+## Biggest Technical Challenge
+Implementing atomic inventory reservation on order creation. The naive read-check-then-write pattern allows overselling under concurrent load. I solved it using MongoDB's findOneAndUpdate with a conditional $inc operator that atomically decrements stock and returns the pre-update count.
+
+## What I Would Do Differently
+I would implement Redis distributed locking from day one rather than relying on MongoDB atomicity alone. At higher concurrency, even findOneAndUpdate has limitations without proper session-level isolation.
+
+## Skills Demonstrated
+TypeScript strict mode with zero any types, Next.js App Router, MongoDB aggregation pipelines, M-Pesa Daraja API integration, and rate limiting.`;
+
+  const brianEngagement = await ProjectEngagement.create({
+    studentId: brian._id,
+    track: ProjectTrack.AI_BRIEF,
+    tier: StudentTier.BEGINNER,
+    status: ProjectStatus.VERIFIED,
+    brief: {
+      title: 'Agricultural Marketplace with M-Pesa Payments',
+      problem: 'Smallholder farmers lack direct market access and lose 30–50% of produce value to intermediaries.',
+      clientPersona: {
+        businessType: 'farmer cooperative',
+        county: 'Kirinyaga',
+        context: 'post-harvest loss reduction, direct buyer-farmer connectivity',
+      },
+      requirements: [
+        'Farmer produce listing and management',
+        'Buyer discovery and ordering',
+        'M-Pesa STK Push payment integration',
+        'Trust scoring from transaction history',
+      ],
+      constraints: ['Mobile-first', 'M-Pesa integration', 'Swahili UI option'],
+    },
+    documents: {
+      problemBreakdown: {
+        content: PB_CONTENT,
+        hash: sha256(PB_CONTENT),
+        submittedAt: docDate(28),
+      },
+      approachPlan: {
+        content: AP_CONTENT,
+        hash: sha256(AP_CONTENT),
+        submittedAt: docDate(21),
+      },
+      blockerLog: [
+        {
+          stuckOn: 'M-Pesa STK Push callback not reaching local dev environment',
+          resolution: 'Used Ngrok to expose localhost port 3000. Updated MPESA_CALLBACK_URL in .env.local to the Ngrok public URL.',
+          durationHours: 4,
+          loggedAt: docDate(20),
+        },
+      ],
+      aiUsageLog: [
+        {
+          toolUsed: 'ChatGPT-4o',
+          prompt: 'Explain MongoDB findOneAndUpdate with conditional update for atomic inventory decrement',
+          outputReceived: 'Explanation of using $inc with a conditional filter to atomically decrement only when sufficient stock exists, returning the pre-update document for verification.',
+          studentAction: 'Implemented the pattern using Mongoose findOneAndUpdate with returnDocument: before. Adapted the approach to also handle SOLD_OUT status transition.',
+          loggedAt: docDate(15),
+          source: 'MANUAL',
+        },
+      ],
+      finalReflection: {
+        content: FR_CONTENT,
+        hash: sha256(FR_CONTENT),
+        submittedAt: docDate(12),
+      },
+    },
+    verifiedAt: docDate(3),
+  });
+
+  await ProjectEngagement.findByIdAndUpdate(brianEngagement._id, {
+    verificationUrl: `/verify/${(brianEngagement._id as mongoose.Types.ObjectId).toHexString()}`,
+  });
+
+  const DENNIS_PB = `## Problem
+Students in Kenyan secondary schools struggle to track progress under the new Competency-Based Curriculum (CBC). Teachers maintain paper records which get lost or are inconsistent across the school.
+
+## Root Cause
+The CBC transition happened rapidly (2017–2023) without digital infrastructure. Schools remain paper-dependent.
+
+## Proposed Solution
+A mobile app for teachers to log student competency assessments, generate progress reports, and share summaries with parents via SMS — no app download required for parents.
+
+## Success Criteria
+- Teacher can log an assessment in under 2 minutes
+- Parent receives SMS summary weekly without downloading anything
+- County education officer can export aggregate reports`;
+
+  const DENNIS_AP = `## Architecture
+React Native (Expo) frontend for teachers. Node.js + MongoDB backend. Africa's Talking SMS API for parent notifications.
+
+## Implementation Plan
+Week 1-2: Auth + school/teacher setup
+Week 3-4: Student and competency database
+Week 5-6: Assessment logging UI
+Week 7: SMS parent notifications via Africa's Talking
+Week 8: Reporting and CSV export
+
+## Risks
+1. Expo managed workflow limitations — switch to bare workflow if needed
+2. Africa's Talking sandbox rate limits during load testing`;
+
+  const DENNIS_FR = `## Summary
+Built a CBC student tracking system with React Native, MongoDB, and Africa's Talking SMS integration for Kenyan secondary schools.
+
+## Key Learning
+React Native state management with AsyncStorage for offline support — critical for school environments with intermittent connectivity.
+
+## What I Would Improve
+Add biometric authentication for teacher login. Password reuse is a real risk in shared-device school environments where multiple teachers use the same tablet.`;
+
+  const dennisEngagement = await ProjectEngagement.create({
+    studentId: dennis._id,
+    track: ProjectTrack.AI_BRIEF,
+    tier: StudentTier.BEGINNER,
+    status: ProjectStatus.UNDER_LECTURER_REVIEW,
+    brief: {
+      title: 'CBC Student Competency Tracking System',
+      problem: 'Secondary school teachers in Kenya lack digital tools for CBC competency tracking and parent communication.',
+      clientPersona: {
+        businessType: 'public secondary school',
+        county: 'Kiambu',
+        context: 'CBC transition support, student performance monitoring',
+      },
+      requirements: [
+        'Teacher assessment logging interface',
+        'Student competency progress tracking',
+        'SMS parent notifications via Africa\'s Talking',
+        'Aggregate reporting for county education officers',
+      ],
+      constraints: ['Offline-capable', 'WhatsApp-first parent communication'],
+    },
+    documents: {
+      problemBreakdown: {
+        content: DENNIS_PB,
+        hash: sha256(DENNIS_PB),
+        submittedAt: docDate(14),
+      },
+      approachPlan: {
+        content: DENNIS_AP,
+        hash: sha256(DENNIS_AP),
+        submittedAt: docDate(10),
+      },
+      blockerLog: [
+        {
+          stuckOn: 'React Native AsyncStorage not persisting data after app restart in Expo Go',
+          resolution: 'Expo Go clears AsyncStorage on reload during development. Switched to expo-secure-store for persistent token storage.',
+          durationHours: 3,
+          loggedAt: docDate(9),
+        },
+      ],
+      aiUsageLog: [
+        {
+          toolUsed: 'Claude 3.5 Sonnet',
+          prompt: 'How do I structure a MongoDB schema for CBC competency strands with multiple assessment points per student?',
+          outputReceived: 'Suggested embedding assessment arrays within student documents with strand identifiers as keys, with a reference to a national competency taxonomy collection.',
+          studentAction: 'Used the embedded array pattern but added a separate CompetencyDefinition collection to avoid duplicating taxonomy data across every student document.',
+          loggedAt: docDate(8),
+          source: 'MANUAL',
+        },
+      ],
+      finalReflection: {
+        content: DENNIS_FR,
+        hash: sha256(DENNIS_FR),
+        submittedAt: docDate(5),
+      },
+    },
+  });
+
+  const AMINA_PB = `## Problem
+Kenya's informal waste pickers have no digital platform to connect with recycling aggregators. They sell materials at whatever price the buyer offers, with no price transparency or payment security.
+
+## Root Cause
+Waste pickers are often unregistered, unbanked, and lack smartphones. Aggregators prefer cash to avoid records. This creates a structural power imbalance that keeps picker incomes artificially low.
+
+## Proposed Solution
+A USSD-accessible platform (no smartphone required) where waste pickers register via national ID, log material weights, and receive M-Pesa micro-payments. Aggregators post current prices visible to pickers before they travel.
+
+## Success Criteria
+- Picker can check current prices and register a delivery via USSD (*123#)
+- M-Pesa payment arrives within 15 minutes of delivery confirmation
+- Aggregator has a full audit trail of all purchases`;
+
+  const AMINA_AP = `## Technical Design
+USSD interface: Africa's Talking USSD API. Backend: Node.js + MongoDB. Payments: Daraja B2C API.
+
+## User Flows
+Picker: Dial *123# → Select material → Enter weight → Confirm pickup point → Receive M-Pesa
+Aggregator: Web portal → Post prices → Confirm deliveries → View reports
+
+## GitHub Repository
+https://github.com/aminawaweru/waste-connect-ke
+
+## Implementation Status
+main: stable USSD flow
+feature/ussd-flow: multi-step menu refactor
+feature/mpesa-b2c: payment integration (in progress)`;
+
+  const AMINA_FR = `## What Was Built
+A USSD waste picker registration and pricing platform. The core USSD flow works end-to-end in the Africa's Talking sandbox environment.
+
+## Challenges
+Daraja B2C API requires a registered business shortcode which is not available in sandbox. Worked around this by mocking the B2C callback response locally and testing the full state machine.
+
+## Impact Potential
+If deployed, this could improve income predictability for Nairobi's estimated 30,000 informal waste pickers by providing price transparency before they invest time in transport to aggregator sites.`;
+
+  const aminaEngagement = await ProjectEngagement.create({
+    studentId: amina._id,
+    track: ProjectTrack.OPEN_SOURCE,
+    tier: StudentTier.INTERMEDIATE,
+    status: ProjectStatus.UNDER_PEER_REVIEW,
+    brief: {
+      title: 'Waste Connect KE — USSD Platform for Informal Recycling',
+      problem: 'Kenya\'s informal waste pickers lack price transparency and secure payment for recycled materials.',
+      githubRepoUrl: 'https://github.com/aminawaweru/waste-connect-ke',
+      requirements: [
+        'USSD interface accessible without smartphone',
+        'Waste picker registration via national ID',
+        'Real-time material price display',
+        'M-Pesa B2C micro-payment integration',
+      ],
+    },
+    githubRepoUrl: 'https://github.com/aminawaweru/waste-connect-ke',
+    documents: {
+      problemBreakdown: {
+        content: AMINA_PB,
+        hash: sha256(AMINA_PB),
+        submittedAt: docDate(7),
+      },
+      approachPlan: {
+        content: AMINA_AP,
+        hash: sha256(AMINA_AP),
+        submittedAt: docDate(5),
+      },
+      blockerLog: [
+        {
+          stuckOn: 'Africa\'s Talking USSD API returning session timeout in local testing',
+          resolution: 'USSD sessions have a strict 30-second timeout. Rewrote the menu handler to be stateless — storing session state in MongoDB with a 25-second TTL index instead of expecting AT to maintain state.',
+          durationHours: 6,
+          loggedAt: docDate(4),
+        },
+      ],
+      aiUsageLog: [
+        {
+          toolUsed: 'ChatGPT-4',
+          prompt: 'How to handle stateless USSD sessions with MongoDB session tracking in Node.js',
+          outputReceived: 'Pattern for storing USSD session state in MongoDB with TTL index matching the USSD timeout. Each menu step reads from DB, updates state, and responds to AT in under 3 seconds.',
+          studentAction: 'Implemented the pattern with a 25-second TTL (5-second buffer before AT timeout) and added a cleanup cron for orphaned sessions.',
+          loggedAt: docDate(3),
+          source: 'MANUAL',
+        },
+      ],
+      finalReflection: {
+        content: AMINA_FR,
+        hash: sha256(AMINA_FR),
+        submittedAt: docDate(2),
+      },
+    },
+  });
+
+  log('Inserted 3 ProjectEngagements.');
+
+  // -------------------------------------------------------------------------
+  // 11. PeerReviews
+  // -------------------------------------------------------------------------
+
+  log('Inserting PeerReviews...');
+
+  const peerComment = (strong: boolean): string =>
+    strong
+      ? 'The work demonstrates a solid understanding of the technical constraints specific to the Kenyan context. Design decisions are clearly explained and the process documentation is thorough enough that another developer could continue the work without additional briefing. Particularly impressed by the handling of connectivity edge cases.'
+      : 'The work covers the main technical points but lacks depth in some areas. More detail on the reasoning behind key architectural choices would strengthen this considerably. The process documentation reads as a retrospective rather than a live log — recommend logging blockers in real time going forward.';
+
+  const brianPeerReview = await PeerReview.create({
+    engagementId: brianEngagement._id,
+    reviewerId: dennis._id,
+    status: PeerReviewStatus.SUBMITTED,
+    submittedAt: docDate(8),
+    scores: { codeQuality: 4, documentationClarity: 5 },
+    comments: {
+      codeQuality: peerComment(true),
+      documentationClarity: peerComment(true),
+    },
+  });
+
+  const dennisPeerReview = await PeerReview.create({
+    engagementId: dennisEngagement._id,
+    reviewerId: amina._id,
+    status: PeerReviewStatus.SUBMITTED,
+    submittedAt: docDate(3),
+    scores: { codeQuality: 4, documentationClarity: 3 },
+    comments: {
+      codeQuality: peerComment(true),
+      documentationClarity: peerComment(false),
+    },
+  });
+
+  const aminaPeerReview = await PeerReview.create({
+    engagementId: aminaEngagement._id,
+    reviewerId: brian._id,
+    status: PeerReviewStatus.ASSIGNED,
+  });
+
+  await ProjectEngagement.findByIdAndUpdate(brianEngagement._id, { peerReviewId: brianPeerReview._id });
+  await ProjectEngagement.findByIdAndUpdate(dennisEngagement._id, { peerReviewId: dennisPeerReview._id });
+  await ProjectEngagement.findByIdAndUpdate(aminaEngagement._id, { peerReviewId: aminaPeerReview._id });
+
+  log('Inserted 3 PeerReviews.');
+
+  // -------------------------------------------------------------------------
+  // 12. LecturerReview + VerificationAuditLog + LecturerEffectiveness
+  // -------------------------------------------------------------------------
+
+  log('Inserting LecturerReview for Brian\'s VERIFIED engagement...');
+
+  const grace = userByEmail.get('g.ndungu@uonbi.ac.ke')!;
+
+  const lComment = (dim: string): string =>
+    `The ${dim} demonstrates solid understanding of the problem domain and the technical constraints of the Kenyan agricultural context. The student made well-reasoned design decisions and documented the rationale clearly. The implementation reflects practical knowledge of the technologies used, and the process documentation shows genuine engagement with the iterative development process rather than a retrospective write-up. A strong foundation for INTERMEDIATE tier work.`;
+
+  const lecturerReview = await LecturerReview.create({
+    engagementId: brianEngagement._id,
+    lecturerId: grace._id,
+    decision: LecturerDecision.VERIFIED,
+    scores: {
+      problemUnderstanding: 4,
+      solutionQuality: 4,
+      processQuality: 5,
+      aiUsage: 4,
+    },
+    comments: {
+      problemUnderstanding: lComment('problem breakdown'),
+      solutionQuality: lComment('solution architecture and implementation'),
+      processQuality: lComment('development process documentation including the blocker log'),
+      aiUsage: lComment('AI usage log and attribution practices'),
+      overallFeedback: 'Strong first project demonstrating both technical competence and contextual awareness. Ready for the INTERMEDIATE tier. For the next project, focus on a domain with more complex data relationships to push your schema design skills.',
+    },
+  });
+
+  await ProjectEngagement.findByIdAndUpdate(brianEngagement._id, { lecturerReviewId: lecturerReview._id });
+
+  await VerificationAuditLog.create({
+    engagementId: brianEngagement._id,
+    studentId: brian._id,
+    lecturerId: grace._id,
+    decision: LecturerDecision.VERIFIED,
+    documentHashes: {
+      problemBreakdown: sha256(PB_CONTENT),
+      approachPlan: sha256(AP_CONTENT),
+      finalReflection: sha256(FR_CONTENT),
+    },
+    reviewScores: {
+      problemUnderstanding: 4,
+      solutionQuality: 4,
+      processQuality: 5,
+      aiUsage: 4,
+    },
+    recordedAt: docDate(3),
+  });
+
+  await LecturerEffectiveness.create({
+    lecturerId: grace._id,
+    totalReviews: 1,
+    verifiedCount: 1,
+    deniedCount: 0,
+    revisionCount: 0,
+    averageScoresGiven: {
+      problemUnderstanding: 4,
+      solutionQuality: 4,
+      processQuality: 5,
+      aiUsage: 4,
+      overall: 4.25,
+    },
+    averageCommentWordCount: 62,
+    lastReviewAt: docDate(3),
+  });
+
+  log('Inserted LecturerReview, VerificationAuditLog, LecturerEffectiveness.');
+
+  // -------------------------------------------------------------------------
+  // 13. Update Brian's StudentPortfolioStatus (reflect verified project)
+  // -------------------------------------------------------------------------
+
+  await StudentPortfolioStatus.findOneAndUpdate(
+    { studentId: brian._id },
+    {
+      portfolioStrength: PortfolioStrength.DEVELOPING,
+      $push: {
+        verifiedProjects: {
+          engagementId: brianEngagement._id,
+          title: 'Agricultural Marketplace with M-Pesa Payments',
+          tier: StudentTier.BEGINNER,
+          techStack: ['Next.js', 'TypeScript', 'MongoDB', 'M-Pesa Daraja API'],
+          verifiedAt: docDate(3),
+          averageScore: 4.25,
+          lecturerInstitution: 'University of Nairobi',
+        },
+      },
+      'stats.verifiedProjectCount': 1,
+      'stats.totalProjectCount': 1,
+      'stats.averageScore': 4.25,
+      'stats.techStacksUsed': ['Next.js', 'TypeScript', 'MongoDB', 'M-Pesa Daraja API'],
+      'stats.reviewerInstitutions': ['University of Nairobi'],
+      lastRecalculatedAt: new Date(),
+    }
+  );
+
+  log('Updated Brian\'s StudentPortfolioStatus with verified project.');
+
+  // -------------------------------------------------------------------------
+  // 14. Ratings (for the 2 completed Food Hub orders)
+  // -------------------------------------------------------------------------
+
+  log('Inserting Ratings...');
+
+  const insertedOrders = await Order.insertMany([
     {
       orderReferenceId: 'ORD-2024-001',
       listingId: listings[0]!._id,
@@ -1487,7 +1959,97 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
     },
   ]);
 
-  log('Inserted 3 Orders.');
+  await Rating.insertMany([
+    {
+      orderId: insertedOrders[0]!._id,
+      farmerId: wanjiku._id,
+      buyerId: kamau._id,
+      rating: 5,
+      comment: 'Excellent tomatoes — exactly as described. Grade A quality and Wanjiku was very responsive on timing. Will definitely order again.',
+    },
+    {
+      orderId: insertedOrders[1]!._id,
+      farmerId: kipchoge._id,
+      buyerId: fatuma._id,
+      rating: 5,
+      comment: 'Kipchoge\'s maize is the best I\'ve found on this platform. 13.5% moisture as stated, clean bags, no complaints. Premium quality deserves premium rating.',
+    },
+  ]);
+
+  log('Inserted 3 Orders and 2 Ratings.');
+
+  // -------------------------------------------------------------------------
+  // 15. PriceHistory (2 records per major crop — creates visible chart data)
+  // -------------------------------------------------------------------------
+
+  log('Inserting PriceHistory records...');
+
+  await PriceHistory.insertMany([
+    {
+      cropName: 'Tomatoes',
+      county: 'Kirinyaga',
+      pricePerUnit: 48,
+      unit: ListingUnit.KG,
+      source: PriceHistorySource.LISTING_CREATED,
+      farmerId: wanjiku._id,
+      recordedAt: new Date('2024-01-15T08:00:00Z'),
+    },
+    {
+      cropName: 'Tomatoes',
+      county: 'Kirinyaga',
+      pricePerUnit: 55,
+      unit: ListingUnit.KG,
+      source: PriceHistorySource.ORDER_COMPLETED,
+      farmerId: wanjiku._id,
+      orderId: insertedOrders[0]!._id,
+      recordedAt: new Date('2024-02-10T14:00:00Z'),
+    },
+    {
+      cropName: 'Maize',
+      county: 'Uasin Gishu',
+      pricePerUnit: 3600,
+      unit: ListingUnit.BAG,
+      source: PriceHistorySource.LISTING_CREATED,
+      farmerId: kipchoge._id,
+      recordedAt: new Date('2024-01-20T08:00:00Z'),
+    },
+    {
+      cropName: 'Maize',
+      county: 'Uasin Gishu',
+      pricePerUnit: 3800,
+      unit: ListingUnit.BAG,
+      source: PriceHistorySource.ORDER_COMPLETED,
+      farmerId: kipchoge._id,
+      orderId: insertedOrders[1]!._id,
+      recordedAt: new Date('2024-02-13T14:00:00Z'),
+    },
+    {
+      cropName: 'Potatoes',
+      county: 'Nyandarua',
+      pricePerUnit: 2600,
+      unit: ListingUnit.BAG,
+      source: PriceHistorySource.LISTING_CREATED,
+      farmerId: njoroge._id,
+      recordedAt: new Date('2024-01-18T08:00:00Z'),
+    },
+    {
+      cropName: 'Potatoes',
+      county: 'Nyandarua',
+      pricePerUnit: 2800,
+      unit: ListingUnit.BAG,
+      source: PriceHistorySource.LISTING_CREATED,
+      farmerId: njoroge._id,
+      recordedAt: new Date('2024-02-01T08:00:00Z'),
+    },
+  ]);
+
+  log('Inserted 6 PriceHistory records.');
+
+  // -------------------------------------------------------------------------
+  // 16. Orders (moved — inserted above with Ratings)
+  // -------------------------------------------------------------------------
+
+  log('Inserted 3 Orders (see section 14).');
 
   // -------------------------------------------------------------------------
   // Complete
