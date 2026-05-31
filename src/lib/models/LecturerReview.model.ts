@@ -1,6 +1,28 @@
 import mongoose, { Schema } from 'mongoose';
 import { LecturerDecision } from '@/types';
 
+export interface LecturerReviewDoc {
+  engagementId: mongoose.Types.ObjectId;
+  lecturerId: mongoose.Types.ObjectId;
+  decision: string;
+  scores: {
+    problemUnderstanding: number;
+    solutionQuality: number;
+    processQuality: number;
+    aiUsage: number;
+  };
+  comments: {
+    problemUnderstanding: string;
+    solutionQuality: string;
+    processQuality: string;
+    aiUsage: string;
+    overallFeedback?: string;
+  };
+  rejectionReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const lecturerReviewSchema = new Schema(
   {
     engagementId: { type: Schema.Types.ObjectId, ref: 'ProjectEngagement', required: true },
@@ -35,6 +57,7 @@ lecturerReviewSchema.set('toJSON', {
 });
 
 const LecturerReview =
-  mongoose.models.LecturerReview ?? mongoose.model('LecturerReview', lecturerReviewSchema);
+  (mongoose.models['LecturerReview'] as mongoose.Model<LecturerReviewDoc>) ??
+  mongoose.model<LecturerReviewDoc>('LecturerReview', lecturerReviewSchema);
 
 export default LecturerReview;

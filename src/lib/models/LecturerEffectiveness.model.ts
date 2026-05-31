@@ -1,5 +1,24 @@
 import mongoose, { Schema } from 'mongoose';
 
+export interface LecturerEffectivenessDoc {
+  lecturerId: mongoose.Types.ObjectId;
+  totalReviews: number;
+  verifiedCount: number;
+  deniedCount: number;
+  revisionCount: number;
+  averageScoresGiven: {
+    problemUnderstanding: number;
+    solutionQuality: number;
+    processQuality: number;
+    aiUsage: number;
+    overall: number;
+  };
+  averageCommentWordCount: number;
+  lastReviewAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const lecturerEffectivenessSchema = new Schema(
   {
     lecturerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -30,7 +49,7 @@ lecturerEffectivenessSchema.set('toJSON', {
 });
 
 const LecturerEffectiveness =
-  mongoose.models.LecturerEffectiveness ??
-  mongoose.model('LecturerEffectiveness', lecturerEffectivenessSchema);
+  (mongoose.models['LecturerEffectiveness'] as mongoose.Model<LecturerEffectivenessDoc>) ??
+  mongoose.model<LecturerEffectivenessDoc>('LecturerEffectiveness', lecturerEffectivenessSchema);
 
 export default LecturerEffectiveness;

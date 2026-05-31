@@ -1,6 +1,25 @@
 import mongoose, { Schema } from 'mongoose';
 import { StudentTier, PortfolioStrength } from '@/types';
 
+export interface StudentPortfolioStatusDoc {
+  studentId: mongoose.Types.ObjectId;
+  currentTier: string;
+  portfolioStrength: string;
+  verifiedProjects: unknown[];
+  verifiedSkills: unknown[];
+  tierProgressionTimeline: unknown[];
+  stats: {
+    verifiedProjectCount: number;
+    totalProjectCount: number;
+    averageScore: number;
+    techStacksUsed: string[];
+    reviewerInstitutions: string[];
+  };
+  lastRecalculatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const verifiedProjectSchema = new Schema(
   {
     engagementId: { type: Schema.Types.ObjectId },
@@ -73,7 +92,7 @@ studentPortfolioStatusSchema.set('toJSON', {
 });
 
 const StudentPortfolioStatus =
-  mongoose.models.StudentPortfolioStatus ??
-  mongoose.model('StudentPortfolioStatus', studentPortfolioStatusSchema);
+  (mongoose.models['StudentPortfolioStatus'] as mongoose.Model<StudentPortfolioStatusDoc>) ??
+  mongoose.model<StudentPortfolioStatusDoc>('StudentPortfolioStatus', studentPortfolioStatusSchema);
 
 export default StudentPortfolioStatus;
