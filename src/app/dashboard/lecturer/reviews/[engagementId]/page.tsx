@@ -94,8 +94,8 @@ function PageSkeleton(): React.ReactElement {
           <div className="h-3 w-32 bg-surface-secondary rounded-sm animate-pulse" />
           <div className="h-7 w-56 bg-surface-secondary rounded-sm animate-pulse" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="md:col-span-7 space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
                 <div className="h-4 w-32 bg-surface-secondary rounded-sm animate-pulse" />
@@ -104,7 +104,7 @@ function PageSkeleton(): React.ReactElement {
               </div>
             ))}
           </div>
-          <div className="lg:col-span-5">
+          <div className="md:col-span-5">
             <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="h-10 bg-surface-secondary rounded-sm animate-pulse" />
@@ -257,10 +257,10 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
           {/* Left — student work */}
-          <div className="lg:col-span-7 space-y-4">
+          <div className="md:col-span-7 space-y-4">
 
             {/* Process documents */}
             <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
@@ -382,7 +382,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
           </div>
 
           {/* Right — review form or success */}
-          <div className="lg:col-span-5">
+          <div className="md:col-span-5">
             <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4">
               {submitted ? (
                 <div className="space-y-4 text-center py-4">
