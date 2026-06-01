@@ -534,61 +534,241 @@ Screenshots are captured at 2× resolution for retina displays and served via `n
 
 ---
 
-## 10. ANIMATION SYSTEM
+## 10. ANIMATION SYSTEM — GSAP
 
-### Animation tokens (add to tailwind.config.ts)
+### Authority
 
-```js
-// In theme.extend.keyframes:
-'fade-up': {
-  '0%': { opacity: '0', transform: 'translateY(8px)' },
-  '100%': { opacity: '1', transform: 'translateY(0)' },
-},
-// In theme.extend.animation:
-'fade-up': 'fade-up 200ms ease-out forwards',
-'fade-up-delayed': 'fade-up 200ms ease-out 100ms forwards',
+All website animations use **GSAP** (`gsap` + `@gsap/react`) as the single animation engine. CSS keyframe animations are banned on the website. Tailwind `animate-*` classes are only permitted for dashboard skeleton loaders — not on website pages.
+
+GSAP provides: sub-millisecond timing precision, ScrollTrigger for scroll-linked animation, proper React lifecycle integration via `useGSAP`, and built-in `matchMedia` for `prefers-reduced-motion` handling.
+
+### Packages
+
+```
+gsap            — core engine, ScrollTrigger plugin, all easing functions
+@gsap/react     — useGSAP hook (React 18/19 concurrent mode safe)
 ```
 
-### Intersection Observer pattern (for scroll-triggered reveals)
+### Setup — register ScrollTrigger once
 
 ```tsx
-// src/hooks/useInView.ts
-import { useEffect, useRef, useState } from 'react';
+// src/lib/gsap.ts  ← single registration point
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-export function useInView(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
-      { threshold }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold]);
+export { gsap, ScrollTrigger };
+```
 
-  return { ref, inView };
+Import GSAP exclusively from `@/lib/gsap` — never directly from `gsap`. This ensures the plugin is always registered before use.
+
+### useGSAP — the only permitted animation hook
+
+```tsx
+'use client';
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap, ScrollTrigger } from '@/lib/gsap';
+
+export function AnimatedSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    // All GSAP calls inside here are automatically cleaned up
+    // when the component unmounts. No manual cleanup required.
+    gsap.from(containerRef.current, {
+      opacity: 0,
+      y: 16,
+      duration: 0.4,
+      ease: 'power2.out',
+    });
+  }, { scope: containerRef });
+
+  return <div ref={containerRef}>...</div>;
 }
 ```
 
-### Respecting prefers-reduced-motion
+**Why `useGSAP` over `useEffect`**: `useGSAP` handles cleanup automatically (kills all tweens and ScrollTriggers created inside it on unmount), is safe with React 18/19 Strict Mode (no double-fire issues), and scopes selectors to the container ref.
+
+### prefers-reduced-motion — mandatory pattern
+
+Every GSAP animation block must use `gsap.matchMedia()`:
 
 ```tsx
-// All animation classes must be wrapped:
-const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-className={!prefersReduced ? 'animate-fade-up' : ''}
+useGSAP(() => {
+  const mm = gsap.matchMedia();
+
+  mm.add('(prefers-reduced-motion: no-preference)', () => {
+    // All animations here — only runs when motion is allowed
+    gsap.from('.step', {
+      opacity: 0,
+      y: 20,
+      duration: 0.4,
+      stagger: 0.1,
+      ease: 'power2.out',
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: 'top 80%',
+        once: true,
+      },
+    });
+  });
+
+  // No else block — elements are visible by default (not hidden with opacity:0)
+  // Reduced-motion visitors see content immediately, no layout shift
+}, { scope: containerRef });
 ```
 
-Or via CSS:
-```css
-@media (prefers-reduced-motion: reduce) {
-  .animate-fade-up,
-  .animate-fade-up-delayed {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+**Critical rule**: Never set initial `opacity: 0` in CSS or className. GSAP sets the from-state during animation setup. If GSAP does not run (reduced motion), elements remain fully visible.
+
+### Easing vocabulary — only these, nothing else
+
+| Ease | Use |
+|---|---|
+| `power2.out` | All entrance animations (fade-up, fade-in) |
+| `power3.out` | Process step reveals, lifecycle stage reveals |
+| `power2.inOut` | State transitions (nav scroll, anchor indicator) |
+| `none` | Counter animations (stat count-up) — linear |
+
+Banned eases: `bounce`, `elastic`, `back`, `expo`. These communicate playfulness, not precision.
+
+### Duration vocabulary
+
+| Duration | Use |
+|---|---|
+| `0.25` | Micro-interactions (hover states if used via GSAP) |
+| `0.4` | Single element entrance |
+| `0.6` | Section entrance (staggered group) |
+| `0.8` | Stat counter count-up |
+| `1.0` | Maximum — complex timeline sequences |
+
+Nothing exceeds 1 second. GSAP enables precision at these durations. CSS at these durations feels fast — GSAP at these durations feels crafted.
+
+### Stagger vocabulary
+
+When animating multiple elements in sequence (process steps, lifecycle stages, feature cards):
+
+```tsx
+gsap.from('.step', {
+  opacity: 0,
+  y: 16,
+  duration: 0.4,
+  stagger: 0.08,   // 80ms between each — tight, deliberate
+  ease: 'power2.out',
+});
+```
+
+Max stagger: `0.12` (120ms). Higher values make sequences feel slow and theatrical.
+
+### ScrollTrigger configuration defaults
+
+```tsx
+// Standard scroll-triggered reveal:
+scrollTrigger: {
+  trigger: element,
+  start: 'top 80%',    // fires when element top hits 80% down the viewport
+  once: true,           // NEVER replay on re-scroll — animation is one-shot
+  markers: false,       // NEVER leave markers in production
+}
+```
+
+`once: true` is mandatory on all entrance animations. Replaying entrance animations on re-scroll is a template website pattern — premium websites animate once.
+
+### Permitted animation types
+
+**1. Section entrance (fade up)**
+Applied to: major sections, cards, diagrams
+```tsx
+gsap.from(elements, { opacity: 0, y: 16, duration: 0.4, stagger: 0.08, ease: 'power2.out' });
+```
+
+**2. Process step sequence**
+Applied to: ProcessFlow component steps
+```tsx
+gsap.from('.process-step', {
+  opacity: 0,
+  x: -12,
+  duration: 0.4,
+  stagger: 0.1,
+  ease: 'power2.out',
+  scrollTrigger: { trigger: container, start: 'top 75%', once: true },
+});
+```
+
+**3. Lifecycle stage reveal**
+Applied to: vertical timeline stages on audience pages
+```tsx
+gsap.from('.lifecycle-stage', {
+  opacity: 0,
+  y: 12,
+  duration: 0.35,
+  stagger: 0.07,
+  ease: 'power2.out',
+  scrollTrigger: { trigger: container, start: 'top 80%', once: true },
+});
+```
+
+**4. Stat counter (count-up)**
+Applied to: LivePlatformStats numbers only
+```tsx
+gsap.to(counterElement, {
+  textContent: finalValue,
+  duration: 0.8,
+  ease: 'none',
+  snap: { textContent: 1 },
+  scrollTrigger: { trigger: statStrip, start: 'top 85%', once: true },
+});
+```
+
+**5. Nav scroll state**
+Applied to: WebsiteNav background on scroll — this one uses ScrollTrigger for the trigger but CSS transitions for the visual change (no layout shift risk):
+```tsx
+ScrollTrigger.create({
+  start: 'top -20',
+  onEnter: () => nav.classList.add('scrolled'),
+  onLeaveBack: () => nav.classList.remove('scrolled'),
+});
+```
+
+### Banned GSAP patterns
+
+```
+✗  gsap.to(element, { scale: 1.05 })     — no scale transforms
+✗  gsap.to(element, { rotation: ... })   — no rotation
+✗  duration > 1                          — too slow
+✗  ease: 'bounce' / 'elastic' / 'back'  — wrong personality
+✗  repeat: -1                            — no looping animations
+✗  yoyo: true                            — no back-and-forth
+✗  stagger > 0.12                        — too theatrical
+✗  markers: true in production           — debug only
+✗  GSAP in Server Components            — Client Components only
+✗  GSAP imported directly from 'gsap'   — always import from '@/lib/gsap'
+```
+
+### Client Component boundary
+
+GSAP requires the DOM. All components that use GSAP must be Client Components:
+
+```tsx
+'use client';  // ← mandatory on any file that imports from '@/lib/gsap'
+```
+
+Page-level components (`page.tsx`) remain Server Components. They import animated sub-components which are Client Components. This preserves SSR for all content while enabling GSAP for progressive enhancement.
+
+```tsx
+// page.tsx — Server Component
+import { ProcessFlowClient } from '@/components/website/ProcessFlow';
+
+export default function FarmersPage() {
+  return (
+    <main>
+      <StaticHeroSection />        {/* Server Component, no GSAP */}
+      <ProcessFlowClient steps={marketplaceSteps} />  {/* Client Component, GSAP */}
+    </main>
+  );
 }
 ```
 
