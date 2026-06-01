@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
-import { Sora, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
+import { Sora, IBM_Plex_Sans, JetBrains_Mono, Geist } from 'next/font/google';
 import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const sora = Sora({
   subsets: ['latin'],
@@ -48,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sora.variable} ${ibmPlexSans.variable} ${jetbrainsMono.variable}`}
+      className={cn(sora.variable, ibmPlexSans.variable, jetbrainsMono.variable, "font-sans", geist.variable)}
     >
       <body className="bg-surface-primary text-text-primary font-body antialiased">
         <Providers>{children}</Providers>

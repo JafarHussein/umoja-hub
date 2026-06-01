@@ -29,13 +29,18 @@ const config: Config = {
         mono: ['var(--font-jetbrains-mono)', 'monospace'],
       },
       fontSize: {
-        // Strict 6-point scale — no other sizes permitted in this project
+        // Strict 6-point scale — no other sizes permitted in dashboard components
         t1: ['32px', { lineHeight: '1.2', fontWeight: '600' }],
         t2: ['24px', { lineHeight: '1.3', fontWeight: '600' }],
         t3: ['20px', { lineHeight: '1.4', fontWeight: '500' }],
         t4: ['16px', { lineHeight: '1.5', fontWeight: '400' }],
         t5: ['14px', { lineHeight: '1.5', fontWeight: '400' }],
         t6: ['12px', { lineHeight: '1.4', fontWeight: '400' }],
+        // Website-only display scale — never use in dashboard components
+        'display-xl': ['64px', { lineHeight: '68px', fontWeight: '600', letterSpacing: '-0.02em' }],
+        'display-lg': ['48px', { lineHeight: '52px', fontWeight: '600', letterSpacing: '-0.02em' }],
+        'display-md': ['36px', { lineHeight: '42px', fontWeight: '600', letterSpacing: '-0.01em' }],
+        'display-sm': ['28px', { lineHeight: '36px', fontWeight: '600', letterSpacing: '-0.01em' }],
       },
       borderRadius: {
         DEFAULT: '6px',

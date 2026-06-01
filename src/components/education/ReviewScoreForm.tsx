@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { LecturerDecision, REVIEW_MIN_WORD_COUNT } from '@/types';
 
 export interface IReviewScoreFormProps {

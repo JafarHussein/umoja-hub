@@ -10,7 +10,7 @@ import {
   OrderFulfillmentStatus,
 } from '@/types';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 
 interface IBuyerOrder {

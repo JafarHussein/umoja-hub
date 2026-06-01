@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { Role, ProjectStatus, ProjectTrack, StudentTier } from '@/types';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { ProjectStatusStepper } from '@/components/education/ProjectStatusStepper';
 import { DocumentsTab } from '@/components/education/DocumentsTab';
 import { BlockersTab } from '@/components/education/BlockersTab';

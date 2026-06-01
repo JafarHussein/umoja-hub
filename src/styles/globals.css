@@ -1,4 +1,6 @@
 @import './theme.css';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,4 +67,32 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #8b949e;
+}
+
+@layer base {
+  /* Remap shadcn CSS variables to the UmojaHub design system — dark-only */
+  :root {
+    --background: #0D1117;
+    --foreground: #E6EDF3;
+    --card: #161B22;
+    --card-foreground: #E6EDF3;
+    --popover: #161B22;
+    --popover-foreground: #E6EDF3;
+    --primary: #007F4E;
+    --primary-foreground: #E6EDF3;
+    --secondary: #1F2937;
+    --secondary-foreground: #E6EDF3;
+    --muted: #161B22;
+    --muted-foreground: #8B949E;
+    --accent: #1F2937;
+    --accent-foreground: #E6EDF3;
+    --destructive: #DC2626;
+    --border: rgba(255, 255, 255, 0.08);
+    --input: #161B22;
+    --ring: #007F4E;
+    --radius: 6px;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
 }

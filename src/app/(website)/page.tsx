@@ -1,38 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'UmojaHub — Verified Agricultural Marketplace for East Africa',
+};
+
 export default function LandingPage(): React.ReactElement {
   return (
     <div className="min-h-screen bg-surface-primary">
-      {/* Nav */}
-      <header className="border-b border-zinc-800/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded-sm bg-accent-green shrink-0" />
-            <span className="font-heading text-t4 font-semibold">
-              <span className="text-text-primary">Umoja</span>
-              <span className="text-accent-green">Hub</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/auth/login"
-              className="font-body text-t5 text-text-secondary hover:text-text-primary transition-colors duration-150"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/auth/register"
-              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-sm bg-accent-green text-text-primary font-body text-t5 font-medium transition-all duration-150 hover:opacity-90"
-            >
-              Get started
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+      <section className="max-w-7xl mx-auto px-6 py-16 sm:py-24">
         <div className="max-w-3xl">
           <p className="font-mono text-t6 text-accent-green uppercase tracking-widest mb-4">
             Built for Kenya · Verified by design
@@ -62,21 +39,22 @@ export default function LandingPage(): React.ReactElement {
       </section>
 
       {/* Stats strip */}
-      <section className="border-y border-zinc-800/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+      <section className="border-y border-zinc-800/50" aria-label="Platform statistics">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-zinc-800/50">
             {[
-              { label: 'Verified Farmers', value: '5', unit: 'counties' },
-              { label: 'Active Listings', value: '10', unit: 'crops' },
-              { label: 'M-Pesa Orders', value: 'KES 22K+', unit: 'facilitated' },
-              { label: 'Student Projects', value: '3', unit: 'verified / in-review' },
+              { label: 'Verified Farmers', value: '—' },
+              { label: 'Counties Represented', value: '—' },
+              { label: 'Completed Orders', value: '—' },
+              { label: 'Verified Projects', value: '—' },
             ].map((stat) => (
               <div key={stat.label} className="px-4 sm:px-6 first:pl-0 last:pr-0 py-2">
                 <p className="font-mono text-t2 font-semibold text-text-primary tabular-nums">
                   {stat.value}
                 </p>
-                <p className="font-body text-t6 text-text-secondary mt-0.5">{stat.label}</p>
-                <p className="font-mono text-t6 text-text-disabled">{stat.unit}</p>
+                <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mt-1">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
@@ -84,7 +62,7 @@ export default function LandingPage(): React.ReactElement {
       </section>
 
       {/* Role sections */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-12">
+      <section className="max-w-7xl mx-auto px-6 py-16 space-y-12">
 
         {/* For Farmers */}
         <div className="grid sm:grid-cols-2 gap-6 items-start">
@@ -101,10 +79,10 @@ export default function LandingPage(): React.ReactElement {
               completed order.
             </p>
             <Link
-              href="/auth/register"
+              href="/for/farmers"
               className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-sm border border-zinc-800/50 text-text-secondary font-body text-t5 transition-all duration-150 hover:border-accent-green/50 hover:text-text-primary"
             >
-              Register as farmer
+              Learn more
             </Link>
           </div>
           <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
@@ -112,7 +90,7 @@ export default function LandingPage(): React.ReactElement {
               ['Verified farmer badge', 'Document verification by admin team'],
               ['Crop listings', 'Price per unit, pickup county, contact preference'],
               ['M-Pesa STK Push', 'Buyer pays directly — no cash handling'],
-              ['Trust score', 'Rises with every completed + rated order'],
+              ['Trust score', 'Rises with every completed and rated order'],
               ['Price intelligence', 'See what your crop is trading at in Nairobi'],
               ['AI Farm Assistant', 'Groq-powered agronomic advice and weather context'],
             ].map(([feature, detail]) => (
@@ -151,16 +129,16 @@ export default function LandingPage(): React.ReactElement {
                 Browse marketplace
               </Link>
               <Link
-                href="/auth/register"
+                href="/for/buyers"
                 className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-sm border border-zinc-800/50 text-text-secondary font-body text-t5 transition-all duration-150 hover:border-white/20 hover:text-text-primary"
               >
-                Register as buyer
+                Learn more
               </Link>
             </div>
           </div>
           <div className="sm:order-1 bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
             {[
-              ['Farmer trust tier', 'BRONZE → ESTABLISHED → TRUSTED → PREMIUM'],
+              ['Farmer trust tier', 'NEW → ESTABLISHED → TRUSTED → PREMIUM'],
               ['Verified listings only', 'Admin-verified farmers only appear in search'],
               ['M-Pesa checkout', 'STK Push — buyer pays from their phone'],
               ['Order tracking', 'Pending → Paid → Dispatched → Received'],
@@ -194,10 +172,10 @@ export default function LandingPage(): React.ReactElement {
               pass peer and lecturer review, and earn a verifiable portfolio credential.
             </p>
             <Link
-              href="/auth/register"
+              href="/for/students"
               className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-sm border border-zinc-800/50 text-text-secondary font-body text-t5 transition-all duration-150 hover:border-accent-green/50 hover:text-text-primary"
             >
-              Register as student
+              Learn more
             </Link>
           </div>
           <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
@@ -220,41 +198,6 @@ export default function LandingPage(): React.ReactElement {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-sm bg-accent-green shrink-0" />
-            <span className="font-heading text-t6 font-semibold text-text-secondary">
-              UmojaHub
-            </span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/marketplace"
-              className="font-body text-t6 text-text-disabled hover:text-text-secondary transition-colors duration-150"
-            >
-              Marketplace
-            </Link>
-            <Link
-              href="/knowledge"
-              className="font-body text-t6 text-text-disabled hover:text-text-secondary transition-colors duration-150"
-            >
-              Knowledge Hub
-            </Link>
-            <Link
-              href="/auth/login"
-              className="font-body text-t6 text-text-disabled hover:text-text-secondary transition-colors duration-150"
-            >
-              Sign in
-            </Link>
-          </div>
-          <p className="font-mono text-t6 text-text-disabled">
-            © 2026 UmojaHub
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

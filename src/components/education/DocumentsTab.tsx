@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Textarea } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 export type DocumentType = 'problemBreakdown' | 'approachPlan' | 'finalReflection';
 

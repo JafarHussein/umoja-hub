@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Role } from '@/types';
 
 const DASHBOARD_BY_ROLE: Record<Role, string> = {
