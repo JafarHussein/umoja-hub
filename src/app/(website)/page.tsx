@@ -21,7 +21,9 @@ export default async function HomePage(): Promise<React.ReactElement> {
     verifiedFarmers: 0,
     counties: 0,
     completedOrders: 0,
+    totalTransactionVolumeKES: 0,
     verifiedProjects: 0,
+    verifiedLecturers: 0,
     articles: 0,
     lastUpdated: new Date().toISOString(),
   }));

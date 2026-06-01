@@ -5,7 +5,9 @@ export interface TransparencyData {
   verifiedFarmers: number;
   counties: number;
   completedOrders: number;
+  totalTransactionVolumeKES: number;
   verifiedProjects: number;
+  verifiedLecturers: number;
   articles: number;
   lastUpdated: string;
 }
@@ -34,6 +36,10 @@ export async function getTransparencyData(): Promise<TransparencyData> {
       verifiedFarmerCount?: number;
       countiesRepresented?: number;
       completedOrderCount?: number;
+      totalTransactionVolumeKES?: number;
+    };
+    education?: {
+      lecturerCount?: number;
     };
     computedAt?: Date;
   } | null;
@@ -42,7 +48,9 @@ export async function getTransparencyData(): Promise<TransparencyData> {
     verifiedFarmers: snap?.food?.verifiedFarmerCount ?? 0,
     counties: snap?.food?.countiesRepresented ?? 0,
     completedOrders: snap?.food?.completedOrderCount ?? 0,
+    totalTransactionVolumeKES: snap?.food?.totalTransactionVolumeKES ?? 0,
     verifiedProjects,
+    verifiedLecturers: snap?.education?.lecturerCount ?? 0,
     articles,
     lastUpdated: snap?.computedAt?.toISOString() ?? new Date().toISOString(),
   };
