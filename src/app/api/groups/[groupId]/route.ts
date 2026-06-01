@@ -50,6 +50,7 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<NextRe
 
 export async function PATCH(req: NextRequest, { params }: Params): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const { groupId } = await params;
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER, Role.ADMIN);
@@ -123,6 +124,7 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
     const updated = await FarmerGroup.findByIdAndUpdate(groupId, update, { new: true });
 
     logger.info('groups', `Member ${action}`, {
+      requestId,
       groupId,
       targetUserId,
       actorId: session!.user.id,

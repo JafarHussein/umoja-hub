@@ -15,6 +15,7 @@ import { Role, MAX_GROUP_MEMBERS } from '@/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER);
 
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('groups', 'Farmer group created', {
+      requestId,
       groupId: group._id,
       farmerId: session!.user.id,
     });

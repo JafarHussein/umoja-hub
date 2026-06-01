@@ -65,6 +65,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.ADMIN);
 
@@ -98,11 +99,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         moderationFlagged = modData.results?.[0]?.flagged === true;
       } else {
         logger.warn('knowledge/articles', 'OpenAI moderation returned non-200, proceeding', {
+          requestId,
           status: modRes.status,
         });
       }
     } catch (modError) {
       logger.error('knowledge/articles', 'OpenAI moderation failed, proceeding without moderation', {
+        requestId,
         error: modError,
       });
     }
@@ -140,6 +143,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('knowledge/articles', 'Article created', {
+      requestId,
       articleId: article._id,
       slug,
       adminId: session!.user.id,

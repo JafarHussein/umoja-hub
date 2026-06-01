@@ -16,6 +16,7 @@ type Params = { params: Promise<{ alertId: string }> };
 
 export async function DELETE(_req: NextRequest, { params }: Params): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const { alertId } = await params;
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER);
@@ -36,6 +37,7 @@ export async function DELETE(_req: NextRequest, { params }: Params): Promise<Nex
     }
 
     logger.info('prices/alerts', 'Price alert deleted', {
+      requestId,
       alertId,
       farmerId: session!.user.id,
     });

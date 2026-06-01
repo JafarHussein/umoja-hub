@@ -46,6 +46,7 @@ export async function PATCH(
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const studentId = session!.user.id;
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
@@ -71,6 +72,7 @@ export async function PATCH(
     await ProjectEngagement.findByIdAndUpdate(id, { status: ProjectStatus.IN_PROGRESS });
 
     logger.info('education/engagements', 'Engagement started — BRIEF_GENERATED → IN_PROGRESS', {
+      requestId,
       engagementId: id,
       studentId,
     });

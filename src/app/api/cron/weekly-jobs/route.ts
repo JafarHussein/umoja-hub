@@ -35,7 +35,7 @@ function verifyCronSecret(req: NextRequest): boolean {
 // Sub-task 1: Delete expired chat and mentor sessions
 // Primary cleanup is handled by MongoDB TTL indexes; this is belt-and-suspenders.
 // ---------------------------------------------------------------------------
-async function runCleanupSessions(): Promise<{ chatDeleted: number; mentorDeleted: number }> {
+async function runCleanupSessions(requestId: string): Promise<{ chatDeleted: number; mentorDeleted: number }> {
   const now = new Date();
 
   const [chatResult, mentorResult] = await Promise.all([
@@ -47,6 +47,7 @@ async function runCleanupSessions(): Promise<{ chatDeleted: number; mentorDelete
   const mentorDeleted = mentorResult.deletedCount;
 
   logger.info('cron/weekly-jobs/cleanup-sessions', 'Session cleanup complete', {
+    requestId,
     chatSessionsDeleted: chatDeleted,
     mentorSessionsDeleted: mentorDeleted,
   });
@@ -58,7 +59,7 @@ async function runCleanupSessions(): Promise<{ chatDeleted: number; mentorDelete
 // Sub-task 2: Aggregate weekly market insights from PriceHistory
 // Batch size: 50 crop+county combinations per run (per BUSINESS_LOGIC.md §10.2)
 // ---------------------------------------------------------------------------
-async function runMarketInsight(): Promise<{ updated: number; weekOf: string }> {
+async function runMarketInsight(requestId: string): Promise<{ updated: number; weekOf: string }> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const weekOf = new Date();
   weekOf.setUTCHours(0, 0, 0, 0);
@@ -117,6 +118,7 @@ async function runMarketInsight(): Promise<{ updated: number; weekOf: string }> 
   }
 
   logger.info('cron/weekly-jobs/market-insight', 'Market insight update complete', {
+    requestId,
     cropCountyCombinationsUpdated: updated,
     weekOf: weekOf.toISOString(),
   });
@@ -128,7 +130,7 @@ async function runMarketInsight(): Promise<{ updated: number; weekOf: string }> 
 // Sub-task 3: Compute platform-wide impact summary (singleton upsert)
 // Per BUSINESS_LOGIC.md §10.3 — READ ONLY aggregations, single upsert at end
 // ---------------------------------------------------------------------------
-async function runImpactSummary(): Promise<{ computedAt: Date }> {
+async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }> {
   const [
     verifiedFarmerCount,
     activeBuyerCount,
@@ -215,6 +217,7 @@ async function runImpactSummary(): Promise<{ computedAt: Date }> {
   await PlatformImpactSummary.findOneAndUpdate({}, summary, { upsert: true, new: true });
 
   logger.info('cron/weekly-jobs/impact-summary', 'Platform impact summary updated', {
+    requestId,
     verifiedFarmerCount: summary.food.verifiedFarmerCount,
     completedOrderCount: summary.food.completedOrderCount,
     verifiedProjectCount: summary.education.verifiedProjectCount,
@@ -233,13 +236,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   await connectDB();
 
-  logger.info('cron/weekly-jobs', 'Starting weekly jobs');
+  const requestId = crypto.randomUUID();
+  logger.info('cron/weekly-jobs', 'Starting weekly jobs', { requestId });
 
-  const cleanupResult = await runCleanupSessions();
-  const insightResult = await runMarketInsight();
-  const impactResult = await runImpactSummary();
+  const cleanupResult = await runCleanupSessions(requestId);
+  const insightResult = await runMarketInsight(requestId);
+  const impactResult = await runImpactSummary(requestId);
 
-  logger.info('cron/weekly-jobs', 'All weekly jobs complete');
+  logger.info('cron/weekly-jobs', 'All weekly jobs complete', { requestId });
 
   return NextResponse.json({
     data: {

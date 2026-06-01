@@ -20,6 +20,7 @@ const verifySupplierSchema = z.object({
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.ADMIN);
 
@@ -54,6 +55,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('admin/verify-supplier', `Supplier ${decision.toLowerCase()}`, {
+      requestId,
       supplierId,
       adminId: session!.user.id,
     });

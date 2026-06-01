@@ -12,6 +12,7 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const ip =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
       req.headers.get('x-real-ip') ??
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // Already logged inside emailService
     });
 
-    logger.info('auth', 'New user registered', { userId: user._id.toString(), role });
+    logger.info('auth', 'New user registered', { requestId, userId: user._id.toString(), role });
 
     return NextResponse.json(
       {

@@ -16,6 +16,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL('/auth/login?error=invalid_token', req.url));
   }
 
+  const requestId = crypto.randomUUID();
   try {
     await connectDB();
 
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }).select('+emailVerificationToken +emailVerificationExpiry');
 
     if (!user) {
-      logger.warn('auth/verify-email', 'Invalid or expired token', { token: token.slice(0, 8) });
+      logger.warn('auth/verify-email', 'Invalid or expired token', { requestId, token: token.slice(0, 8) });
       return NextResponse.redirect(new URL('/auth/login?error=invalid_token', req.url));
     }
 
@@ -36,11 +37,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       $unset: { emailVerificationToken: 1, emailVerificationExpiry: 1 },
     });
 
-    logger.info('auth/verify-email', 'Email verified', { userId: user._id.toString() });
+    logger.info('auth/verify-email', 'Email verified', { requestId, userId: user._id.toString() });
 
     return NextResponse.redirect(new URL('/auth/login?verified=1', req.url));
   } catch (error) {
-    logger.error('auth/verify-email', 'Unexpected error during verification', { error });
+    logger.error('auth/verify-email', 'Unexpected error during verification', { requestId, error });
     return NextResponse.redirect(new URL('/auth/login?error=invalid_token', req.url));
   }
 }

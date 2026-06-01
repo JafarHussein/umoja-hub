@@ -49,6 +49,7 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.ADMIN);
 
@@ -94,6 +95,7 @@ export async function PATCH(
     }
 
     logger.info('knowledge/articles', 'Article updated', {
+      requestId,
       slug,
       adminId: session!.user.id,
       changes: Object.keys(update),

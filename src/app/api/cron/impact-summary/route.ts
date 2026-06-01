@@ -30,6 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   await connectDB();
 
+  const requestId = crypto.randomUUID();
   // --- Food Hub aggregations (read-only) ---
   const [
     verifiedFarmerCount,
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   await PlatformImpactSummary.findOneAndUpdate({}, summary, { upsert: true, new: true });
 
   logger.info('cron/impact-summary', 'Platform impact summary updated', {
+    requestId,
     verifiedFarmerCount: summary.food.verifiedFarmerCount,
     completedOrderCount: summary.food.completedOrderCount,
     verifiedProjectCount: summary.education.verifiedProjectCount,

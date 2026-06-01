@@ -26,6 +26,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   await connectDB();
 
+  const requestId = crypto.randomUUID();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const weekOf = new Date();
   weekOf.setUTCHours(0, 0, 0, 0);
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   logger.info('cron/market-insight', 'Market insight update complete', {
+    requestId,
     cropCountyCombinationsUpdated: updated,
     weekOf: weekOf.toISOString(),
   });

@@ -48,6 +48,7 @@ export async function POST(
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const studentId = session!.user.id;
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
@@ -84,7 +85,7 @@ export async function POST(
       null
     );
 
-    logger.info('education/engagements', 'AI usage logged', { engagementId: id, studentId, toolUsed });
+    logger.info('education/engagements', 'AI usage logged', { requestId, engagementId: id, studentId, toolUsed });
 
     return NextResponse.json({ data: entry }, { status: 201 });
   } catch (error) {

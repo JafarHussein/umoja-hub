@@ -50,6 +50,7 @@ export async function PATCH(
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const studentId = session!.user.id;
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
@@ -82,6 +83,7 @@ export async function PATCH(
     );
 
     logger.info('education/engagements', 'Document submitted', {
+      requestId,
       engagementId: id,
       studentId,
       documentType,

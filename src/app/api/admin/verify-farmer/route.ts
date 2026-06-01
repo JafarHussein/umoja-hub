@@ -18,6 +18,7 @@ import { sendSMS } from '@/lib/integrations/smsService';
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.ADMIN);
 
@@ -93,6 +94,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       trustScoreInitialized = true;
 
       logger.info('admin', 'Farmer verification approved', {
+        requestId,
         farmerId,
         adminId: session!.user.id,
       });
@@ -111,6 +113,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       });
     } else {
       logger.info('admin', 'Farmer verification rejected', {
+        requestId,
         farmerId,
         adminId: session!.user.id,
         rejectionReason,

@@ -14,6 +14,7 @@ import { Role } from '@/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER);
 
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('prices/alerts', 'Price alert created', {
+      requestId,
       alertId: alert._id,
       farmerId: session!.user.id,
       cropName: parsed.data.cropName,

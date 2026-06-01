@@ -19,6 +19,7 @@ import { OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus } from '@/typ
 export async function POST(req: NextRequest): Promise<NextResponse> {
   // Always return 200 to Safaricom, even on errors
   const ack = { ResultCode: 0, ResultDesc: 'Acknowledged' };
+  const requestId = crypto.randomUUID();
 
   try {
     const body: unknown = await req.json();
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Step 1: Verify signature (always first)
     const isValid = verifyDarajaSignature(req.headers, body);
     if (!isValid) {
-      logger.error('daraja', 'Invalid webhook signature', { body });
+      logger.error('daraja', 'Invalid webhook signature', { requestId, body });
       // Return 200 with non-zero ResultCode — Daraja will stop retrying
       return NextResponse.json({ ResultCode: 1, ResultDesc: 'Invalid signature' });
     }
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const parsed = darajaCallbackSchema.safeParse(body);
     if (!parsed.success) {
       logger.error('daraja', 'Invalid webhook payload schema', {
+        requestId,
         error: parsed.error.flatten(),
       });
       return NextResponse.json(ack); // Ack to prevent retries
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Step 3: Find order by checkout request ID
     const order = await Order.findOne({ mpesaCheckoutRequestId: CheckoutRequestID });
     if (!order) {
-      logger.warn('daraja', 'No order found for CheckoutRequestID', { CheckoutRequestID });
+      logger.warn('daraja', 'No order found for CheckoutRequestID', { requestId, CheckoutRequestID });
       return NextResponse.json(ack);
     }
 
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }),
       ]);
       logger.info('daraja', 'Payment failed or cancelled — inventory restored', {
+        requestId,
         CheckoutRequestID,
         ResultCode,
         orderId: String(order._id),
@@ -84,6 +87,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (!MpesaReceiptNumber) {
       logger.error('daraja', 'MpesaReceiptNumber missing from successful callback', {
+        requestId,
         CheckoutRequestID,
       });
       return NextResponse.json(ack);
@@ -93,6 +97,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const existingOrder = await Order.findOne({ mpesaTransactionId: MpesaReceiptNumber });
     if (existingOrder) {
       logger.warn('daraja', 'Duplicate webhook received — already processed', {
+        requestId,
         MpesaReceiptNumber,
       });
       return NextResponse.json({ ResultCode: 0, ResultDesc: 'Already processed' });
@@ -107,6 +112,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('daraja', 'Payment confirmed and order updated', {
+      requestId,
       orderId: String(order._id),
       MpesaReceiptNumber,
       farmerId: String(order.farmerId),
@@ -135,6 +141,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       } catch (err) {
         logger.error('daraja', 'SMS notification failed after payment', {
+          requestId,
           orderId: String(order._id),
           err,
         });
@@ -145,7 +152,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ ResultCode: 0, ResultDesc: 'Success' });
   } catch (error) {
-    logger.error('daraja', 'Unexpected error in webhook handler', { error });
+    logger.error('daraja', 'Unexpected error in webhook handler', { requestId, error });
     // CRITICAL: Still return 200 to prevent Daraja retries
     return NextResponse.json(ack);
   }

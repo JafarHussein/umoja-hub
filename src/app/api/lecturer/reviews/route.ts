@@ -63,6 +63,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const lecturerId = session!.user.id;
     const { default: User } = await import('@/lib/models/User.model');
 
@@ -204,6 +205,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
 
     logger.info('lecturer/reviews', 'Lecturer review submitted', {
+      requestId,
       lecturerId,
       engagementId,
       decision,

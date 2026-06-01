@@ -24,6 +24,7 @@ export async function PATCH(
   { params }: { params: Promise<{ orderId: string }> }
 ): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     if (!session) {
       throw new AppError('Authentication required. Please sign in.', 401, 'AUTH_REQUIRED');
@@ -106,7 +107,7 @@ export async function PATCH(
         confirmedByFarmerAt: now,
       });
 
-      logger.info('orders', 'Order confirmed by farmer', { orderId, farmerId });
+      logger.info('orders', 'Order confirmed by farmer', { requestId, orderId, farmerId });
     } else if (newStatus === OrderFulfillmentStatus.RECEIVED) {
       // Step 1: Update Order → COMPLETED
       await Order.findByIdAndUpdate(orderId, {
@@ -115,6 +116,7 @@ export async function PATCH(
       });
 
       logger.info('orders', 'Order marked RECEIVED, trigger chain initiated', {
+        requestId,
         orderId,
         farmerId,
         buyerId,
@@ -137,14 +139,14 @@ export async function PATCH(
             });
           }
         } catch (err) {
-          logger.error('orders', 'Failed to insert PriceHistory on completion', { orderId, err });
+          logger.error('orders', 'Failed to insert PriceHistory on completion', { requestId, orderId, err });
         }
 
         // Step 3: Recalculate farmer trust score
         try {
           await recalculate(farmerId);
         } catch (err) {
-          logger.error('orders', 'Failed to recalculate trust score', { farmerId, err });
+          logger.error('orders', 'Failed to recalculate trust score', { requestId, farmerId, err });
         }
 
         // Step 4: Check PriceAlert collection for matching crop/county alerts
@@ -173,15 +175,15 @@ export async function PATCH(
                 }
                 await PriceAlert.findByIdAndUpdate(alert._id, { lastTriggeredAt: now });
               } catch (alertErr) {
-                logger.error('orders', 'Failed to process price alert', { alertId: String(alert._id), alertErr });
+                logger.error('orders', 'Failed to process price alert', { requestId, alertId: String(alert._id), alertErr });
               }
             }
           }
         } catch (err) {
-          logger.error('orders', 'Failed to check price alerts', { orderId, err });
+          logger.error('orders', 'Failed to check price alerts', { requestId, orderId, err });
         }
       })().catch((err) => {
-        logger.error('orders', 'Trigger chain failed', { orderId, err });
+        logger.error('orders', 'Trigger chain failed', { requestId, orderId, err });
       });
     }
 

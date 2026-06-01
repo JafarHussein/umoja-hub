@@ -16,6 +16,7 @@ import { Role } from '@/types';
 
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.ADMIN);
 
@@ -30,7 +31,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     }
 
     const version = (library as { version?: number }).version;
-    logger.info('admin/brief-contexts', 'Library fetched', { version });
+    logger.info('admin/brief-contexts', 'Library fetched', { requestId, version });
 
     return NextResponse.json({ data: library });
   } catch (error) {
@@ -40,6 +41,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 
 export async function PUT(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.ADMIN);
 
@@ -75,6 +77,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('admin/brief-contexts', 'Library updated', {
+      requestId,
       adminId,
       version: newVersion,
       contextCount: parsed.data.contexts.length,

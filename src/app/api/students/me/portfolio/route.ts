@@ -14,6 +14,7 @@ import { Role, StudentTier, PortfolioStrength } from '@/types';
 
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.STUDENT);
 
@@ -27,7 +28,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     const portfolio = await StudentPortfolioStatus.findOne({ studentId } as object).lean();
 
     if (portfolio) {
-      logger.info('students/portfolio', 'Portfolio found', { studentId });
+      logger.info('students/portfolio', 'Portfolio found', { requestId, studentId });
       return NextResponse.json({ data: portfolio });
     }
 
@@ -49,7 +50,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
       lastRecalculatedAt: null,
     };
 
-    logger.info('students/portfolio', 'No portfolio record — returning scaffold', { studentId });
+    logger.info('students/portfolio', 'No portfolio record — returning scaffold', { requestId, studentId });
     return NextResponse.json({ data: scaffold });
   } catch (error) {
     return handleApiError(error);

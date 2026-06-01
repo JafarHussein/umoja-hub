@@ -93,6 +93,7 @@ export async function POST(
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const reviewerId = session!.user.id;
     const { default: PeerReview } = await import('@/lib/models/PeerReview.model');
 
@@ -138,6 +139,7 @@ export async function POST(
     );
 
     logger.info('peer-reviews', 'Peer review submitted', {
+      requestId,
       reviewId: id,
       reviewerId,
       engagementId: String((updated as { engagementId: mongoose.Types.ObjectId }).engagementId),

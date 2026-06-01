@@ -33,6 +33,7 @@ export async function POST(
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const studentId = session!.user.id;
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
@@ -106,6 +107,7 @@ export async function POST(
     }
 
     logger.info('education/engagements', 'Project submitted for peer review', {
+      requestId,
       engagementId: id,
       studentId,
       reviewerId: String(reviewer._id),

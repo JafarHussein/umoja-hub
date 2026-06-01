@@ -190,6 +190,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.BUYER);
 
@@ -327,6 +328,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }),
       ]);
       logger.error('orders', 'STK Push failed — order and inventory rolled back', {
+        requestId,
         orderReferenceId,
         error: stkError,
       });
@@ -337,6 +339,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await Order.findByIdAndUpdate(order._id, { mpesaCheckoutRequestId });
 
     logger.info('orders', 'Order created and STK Push initiated', {
+      requestId,
       orderReferenceId,
       buyerId: session!.user.id,
       farmerId: String(listing.farmerId),

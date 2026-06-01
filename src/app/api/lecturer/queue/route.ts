@@ -12,6 +12,7 @@ import { Role, ProjectStatus } from '@/types';
 
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.LECTURER);
 
@@ -38,7 +39,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
       .populate('studentId', 'firstName lastName')
       .lean();
 
-    logger.info('lecturer/queue', 'Review queue fetched', { lecturerId, count: queue.length });
+    logger.info('lecturer/queue', 'Review queue fetched', { requestId, lecturerId, count: queue.length });
 
     return NextResponse.json({ data: queue });
   } catch (error) {

@@ -27,6 +27,7 @@ const createRatingSchema = z.object({
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const session = await getServerSession(authOptions);
     requireRole(session, Role.BUYER);
 
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('ratings', 'Rating submitted', {
+      requestId,
       orderId,
       farmerId: String(order.farmerId),
       rating,
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const farmerId = String(order.farmerId);
     recalculate(farmerId).catch((err: unknown) => {
       logger.error('ratings', 'Trust score recalculation failed after rating', {
+        requestId,
         farmerId,
         err,
       });

@@ -63,6 +63,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const studentId = session!.user.id;
 
     if (!(await checkRateLimit(`mentor:${studentId}`, 20, 60 * 60 * 1000)).allowed) {
@@ -156,10 +157,10 @@ Keep responses concise and grounded in East African tech constraints (mobile-fir
         };
         assistantContent = data.choices?.[0]?.message?.content ?? MENTOR_FALLBACK;
       } else {
-        logger.warn('mentor/chat', 'Groq returned non-200', { status: groqRes.status, studentId });
+        logger.warn('mentor/chat', 'Groq returned non-200', { requestId, status: groqRes.status, studentId });
       }
     } catch (fetchError) {
-      logger.warn('mentor/chat', 'Groq fetch failed — returning fallback', { studentId, error: fetchError });
+      logger.warn('mentor/chat', 'Groq fetch failed — returning fallback', { requestId, studentId, error: fetchError });
     }
 
     mentorSession.messages.push({
@@ -174,6 +175,7 @@ Keep responses concise and grounded in East African tech constraints (mobile-fir
     await mentorSession.save();
 
     logger.info('mentor/chat', 'Mentor message sent', {
+      requestId,
       studentId,
       engagementId,
       sessionId: String(mentorSession._id),

@@ -20,6 +20,7 @@ export async function POST(
   { params }: { params: Promise<{ groupId: string }> }
 ): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const { groupId } = await params;
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER);
@@ -80,6 +81,7 @@ export async function POST(
     });
 
     logger.info('groups/orders', 'Group order proposed', {
+      requestId,
       groupOrderId: groupOrder._id,
       groupId,
       proposedBy: session!.user.id,

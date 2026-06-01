@@ -24,6 +24,7 @@ type Params = { params: Promise<{ groupId: string; orderId: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Params): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const { groupId, orderId } = await params;
     const session = await getServerSession(authOptions);
     requireRole(session, Role.FARMER, Role.ADMIN);
@@ -116,6 +117,7 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
       ) {
         groupOrder.status = GroupOrderStatus.MINIMUM_MET;
         logger.info('groups/orders', 'Minimum members met — auto-advancing status', {
+          requestId,
           orderId,
           participantCount: groupOrder.participatingMembers.length,
           minimumMembers: groupOrder.minimumMembers,
@@ -149,6 +151,7 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
     await groupOrder.save();
 
     logger.info('groups/orders', 'Group order action applied', {
+      requestId,
       action,
       orderId,
       groupId,

@@ -30,6 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   await connectDB();
 
+  const requestId = crypto.randomUUID();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const cooldownCutoff = new Date(
     Date.now() - PRICE_ALERT_COOLDOWN_HOURS * 60 * 60 * 1000
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
         triggered++;
         logger.info('cron/price-alert-check', 'Price alert triggered', {
+          requestId,
           alertId: alert._id,
           farmerId: alert.farmerId,
           cropName: alert.cropName,
@@ -103,7 +105,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  logger.info('cron/price-alert-check', 'Price alert check complete', { checked, triggered });
+  logger.info('cron/price-alert-check', 'Price alert check complete', { requestId, checked, triggered });
 
   // ---------------------------------------------------------------------------
   // Stuck payment reconciliation
@@ -133,6 +135,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ]);
 
     logger.info('cron/price-alert-check', 'Reconciled stuck payment order', {
+      requestId,
       orderId: String(stuckOrder._id),
       orderRef: stuckOrder.orderReferenceId,
     });
@@ -141,7 +144,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (reconciled > 0) {
-    logger.info('cron/price-alert-check', 'Stuck payment reconciliation complete', { reconciled });
+    logger.info('cron/price-alert-check', 'Stuck payment reconciliation complete', { requestId, reconciled });
   }
 
   return NextResponse.json({ data: { checked, triggered, reconciled } });

@@ -25,6 +25,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   await connectDB();
 
+  const requestId = crypto.randomUUID();
   const now = new Date();
 
   const [chatResult, mentorResult] = await Promise.all([
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const mentorDeleted = mentorResult.deletedCount;
 
   logger.info('cron/cleanup-sessions', 'Session cleanup complete', {
+    requestId,
     chatSessionsDeleted: chatDeleted,
     mentorSessionsDeleted: mentorDeleted,
   });

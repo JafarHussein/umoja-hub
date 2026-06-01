@@ -15,6 +15,7 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const requestId = crypto.randomUUID();
     const ip =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
       req.headers.get('x-real-ip') ??
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('auth/reset-password', 'Password reset completed', {
+      requestId,
       userId: user._id.toString(),
     });
 
