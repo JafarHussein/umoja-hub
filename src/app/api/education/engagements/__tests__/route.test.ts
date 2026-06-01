@@ -16,6 +16,14 @@ import { ProjectStatus } from '@/types';
 
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
+const mockUserFindById = jest.fn();
+jest.mock('@/lib/models/User.model', () => ({
+  __esModule: true,
+  default: {
+    findById: jest.fn((...a: unknown[]) => mockUserFindById(...a)),
+  },
+}));
+
 const mockEngagementFindOne = jest.fn();
 const mockEngagementCreate = jest.fn();
 jest.mock('@/lib/models/ProjectEngagement.model', () => ({
@@ -97,6 +105,9 @@ describe('POST /api/education/engagements', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(STUDENT_SESSION);
+    mockUserFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) }),
+    });
   });
 
   it('creates AI_BRIEF engagement and returns 201', async () => {

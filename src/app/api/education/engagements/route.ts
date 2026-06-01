@@ -7,7 +7,7 @@ import { briefRequestSchema } from '@/lib/validation/educationSchema';
 import { generateAIBrief, generateOpenSourceBrief } from '@/lib/integrations/openaiService';
 import type { BriefContextInput } from '@/lib/integrations/openaiService';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, ProjectTrack, ProjectStatus, StudentTier } from '@/types';
+import { Role, ProjectTrack, ProjectStatus, StudentTier, UserStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Active statuses: student may not start a new engagement while in any of these.
@@ -93,7 +93,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await connectDB();
 
+    const requestId = crypto.randomUUID();
     const studentId = session!.user.id;
+    const { default: User } = await import('@/lib/models/User.model');
+    const student = await User.findById(studentId).select('status').lean();
+    if (student?.status !== UserStatus.ACTIVE) {
+      throw new AppError('Your account has been suspended.', 403, 'ACCOUNT_SUSPENDED');
+    }
+
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
     // One-active-engagement guard
@@ -175,6 +182,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('education/engagements', 'Project engagement created', {
+      requestId,
       engagementId: String(engagement._id),
       studentId,
       track,
