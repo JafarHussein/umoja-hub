@@ -11,6 +11,11 @@ import bcrypt from 'bcryptjs';
 import { BCRYPT_SALT_ROUNDS, Role, UserStatus } from '../src/types';
 
 async function main(): Promise<void> {
+  const nodeEnv: unknown = process.env['NODE_ENV'];
+  if (nodeEnv !== 'seed') {
+    throw new Error('Set NODE_ENV=seed to run this script. This prevents accidental re-runs.');
+  }
+
   const uri = process.env['MONGODB_URI'];
   if (!uri) throw new Error('MONGODB_URI is required');
 
