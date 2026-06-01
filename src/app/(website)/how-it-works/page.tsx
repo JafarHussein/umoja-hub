@@ -2,6 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { AudiencePage } from '@/components/website/AudiencePage';
+import { EcosystemMap } from '@/components/website/EcosystemMap';
 import type { AnchorSection } from '@/components/website/SectionAnchor';
 
 export const metadata: Metadata = {
@@ -477,6 +478,8 @@ export default function HowItWorksPage(): React.ReactElement {
             sharing a login system — they are two sides of the same infrastructure problem.
           </p>
         </div>
+
+        <EcosystemMap />
       </section>
 
       {/* Section 2 — Food Security Hub Workflow */}

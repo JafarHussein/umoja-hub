@@ -2,6 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { AudiencePage } from '@/components/website/AudiencePage';
+import { TrustChainDiagram } from '@/components/website/TrustChainDiagram';
 import type { AnchorSection } from '@/components/website/SectionAnchor';
 
 export const metadata: Metadata = {
@@ -346,6 +347,8 @@ export default function TrustPage(): React.ReactElement {
             plus accumulated behavioural evidence. They do not reflect continuous real-time monitoring.
           </p>
         </div>
+
+        <TrustChainDiagram />
       </section>
 
       {/* Section 2 — Farmer Identity Verification */}
