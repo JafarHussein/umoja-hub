@@ -53,6 +53,29 @@ body {
   outline-offset: 2px;
 }
 
+/* ─── Website V2 scroll-entrance animation — progressive enhancement ─────────
+ * Default: fully visible. Content readable without JS on any network condition.
+ * body.is-hydrated is appended by a ~100-byte inline script in the website
+ * layout after DOMContentLoaded. Until that class exists every element is
+ * visible. IntersectionObserver then adds .in-view for capable devices. */
+.animate-on-scroll {
+  opacity: 1;
+  transition: opacity 300ms ease;
+}
+body.is-hydrated .animate-on-scroll {
+  opacity: 0;
+}
+body.is-hydrated .animate-on-scroll.in-view {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-scroll {
+    opacity: 1 !important;
+    transition: none !important;
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -93,6 +116,6 @@ body {
     --radius: 6px;
   }
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
 }

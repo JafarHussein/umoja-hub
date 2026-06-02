@@ -1,10 +1,23 @@
 import type { Metadata } from 'next';
-import { Sora, IBM_Plex_Sans, JetBrains_Mono, Geist } from 'next/font/google';
+import { Sora, IBM_Plex_Sans, JetBrains_Mono, Geist, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+});
 
 const sora = Sora({
   subsets: ['latin'],
@@ -51,7 +64,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(sora.variable, ibmPlexSans.variable, jetbrainsMono.variable, "font-sans", geist.variable)}
+      className={cn(
+        sora.variable,
+        ibmPlexSans.variable,
+        jetbrainsMono.variable,
+        geist.variable,
+        plusJakartaSans.variable,
+        geistMono.variable,
+        'font-sans'
+      )}
     >
       <body className="bg-surface-primary text-text-primary font-body antialiased">
         <Providers>{children}</Providers>

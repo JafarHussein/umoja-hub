@@ -1,5 +1,5 @@
 import { connectDB } from '@/lib/db';
-import { ProjectStatus } from '@/types';
+import { ProjectStatus, Role, VerificationStatus } from '@/types';
 
 export interface TransparencyData {
   verifiedFarmers: number;
@@ -9,6 +9,7 @@ export interface TransparencyData {
   verifiedProjects: number;
   verifiedLecturers: number;
   articles: number;
+  pendingVerificationCount: number;
   lastUpdated: string;
 }
 
@@ -19,16 +20,22 @@ export async function getTransparencyData(): Promise<TransparencyData> {
     { default: PlatformImpactSummary },
     { default: ProjectEngagement },
     { default: KnowledgeArticle },
+    { default: User },
   ] = await Promise.all([
     import('@/lib/models/PlatformImpactSummary.model'),
     import('@/lib/models/ProjectEngagement.model'),
     import('@/lib/models/KnowledgeArticle.model'),
+    import('@/lib/models/User.model'),
   ]);
 
-  const [snapshot, verifiedProjects, articles] = await Promise.all([
+  const [snapshot, verifiedProjects, articles, pendingVerificationCount] = await Promise.all([
     PlatformImpactSummary.findOne().lean(),
     ProjectEngagement.countDocuments({ status: ProjectStatus.VERIFIED }),
     KnowledgeArticle.countDocuments({ isPublished: true }),
+    User.countDocuments({
+      role: Role.FARMER,
+      'farmerData.verificationStatus': VerificationStatus.PENDING,
+    }),
   ]);
 
   const snap = snapshot as {
@@ -52,6 +59,7 @@ export async function getTransparencyData(): Promise<TransparencyData> {
     verifiedProjects,
     verifiedLecturers: snap?.education?.lecturerCount ?? 0,
     articles,
+    pendingVerificationCount,
     lastUpdated: snap?.computedAt?.toISOString() ?? new Date().toISOString(),
   };
 }

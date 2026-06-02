@@ -1,59 +1,62 @@
 import React from 'react';
 import Link from 'next/link';
 
-const columns = [
+interface FooterLink {
+  label: string;
+  href: string;
+}
+
+interface FooterColumn {
+  heading: string;
+  links: FooterLink[];
+}
+
+const COLUMNS: FooterColumn[] = [
   {
     heading: 'Platform',
     links: [
+      { label: 'How It Works', href: '/how-it-works' },
       { label: 'Marketplace', href: '/marketplace' },
       { label: 'Knowledge Hub', href: '/knowledge' },
-      { label: 'Education Hub', href: '/education' },
-      { label: 'How It Works', href: '/how-it-works' },
     ],
   },
   {
-    heading: 'For You',
+    heading: 'Food Security Hub',
     links: [
-      { label: 'Farmers', href: '/for/farmers' },
-      { label: 'Buyers', href: '/for/buyers' },
-      { label: 'Suppliers', href: '/for/suppliers' },
-      { label: 'Students', href: '/for/students' },
-      { label: 'Lecturers', href: '/for/lecturers' },
-      { label: 'Employers', href: '/for/employers' },
-      { label: 'Institutions', href: '/for/institutions' },
-      { label: 'NGOs', href: '/for/ngos' },
-      { label: 'Cooperatives', href: '/for/cooperatives' },
+      { label: 'For Farmers', href: '/for/farmers' },
+      { label: 'For Buyers', href: '/for/buyers' },
+      { label: 'For Suppliers', href: '/for/suppliers' },
+      { label: 'For Cooperatives', href: '/for/cooperatives' },
     ],
   },
   {
-    heading: 'Company',
+    heading: 'Education Hub',
     links: [
-      { label: 'About', href: '/about' },
-      { label: 'Transparency', href: '/transparency' },
+      { label: 'For Students', href: '/for/students' },
+      { label: 'For Lecturers', href: '/for/lecturers' },
+      { label: 'For Employers', href: '/for/employers' },
+      { label: 'For Institutions', href: '/for/institutions' },
+    ],
+  },
+  {
+    heading: 'Governance',
+    links: [
       { label: 'Trust & Verification', href: '/trust' },
-      { label: 'Security', href: '/security' },
+      { label: 'Transparency', href: '/transparency' },
+      { label: 'For NGOs & Government', href: '/for/ngos' },
+      { label: 'About UmojaHub', href: '/about' },
     ],
   },
-  {
-    heading: 'Support',
-    links: [
-      { label: 'Help Center', href: '/help' },
-      { label: 'FAQ', href: '/faq' },
-      { label: 'Terms of Service', href: '/legal/terms' },
-      { label: 'Privacy Policy', href: '/legal/privacy' },
-    ],
-  },
-] as const;
+];
 
 export function WebsiteFooter(): React.ReactElement {
   return (
-    <footer className="border-t border-zinc-800/50 bg-surface-primary">
+    <footer role="contentinfo" className="bg-ws-surface-dark border-t border-ws-border-dark">
       <div className="max-w-7xl mx-auto px-6 pt-12 pb-8">
-        {/* Link grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-12">
-          {columns.map((col) => (
+          {COLUMNS.map((col) => (
             <div key={col.heading}>
-              <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+              <p className="font-geist-mono text-ws-caption text-ws-text-faint uppercase mb-4">
                 {col.heading}
               </p>
               <ul className="flex flex-col gap-3">
@@ -61,7 +64,7 @@ export function WebsiteFooter(): React.ReactElement {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="font-body text-t5 text-text-secondary hover:text-text-primary transition-colors duration-150"
+                      className="font-geist text-ws-body-sm text-ws-text-dim hover:text-ws-text-bright transition-colors duration-150"
                     >
                       {link.label}
                     </Link>
@@ -72,15 +75,15 @@ export function WebsiteFooter(): React.ReactElement {
           ))}
         </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-zinc-800/50 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="border-t border-ws-border-dark pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-sm bg-accent-green shrink-0" />
-            <span className="font-heading text-t6 font-semibold text-text-secondary">
-              UmojaHub
+            <div className="h-3.5 w-3.5 rounded-sm bg-ws-hub-green shrink-0" aria-hidden />
+            <span className="font-display text-ws-label font-semibold">
+              <span className="text-ws-text-bright">Umoja</span>
+              <span className="text-ws-hub-green">Hub</span>
             </span>
           </div>
-          <p className="font-mono text-t6 text-text-disabled">
+          <p className="font-geist-mono text-ws-caption text-ws-text-faint">
             &copy; {new Date().getFullYear()} UmojaHub. Built for East Africa.
           </p>
         </div>

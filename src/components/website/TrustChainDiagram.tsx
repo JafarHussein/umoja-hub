@@ -164,7 +164,7 @@ export function TrustChainDiagram(): React.ReactElement {
             <p className="font-body text-t5 text-text-secondary leading-relaxed">
               The portfolio entry names the reviewer and their institution — independently
               searchable. The document hash confirms nothing was changed after the reviewer read it.
-              The peer scores show four independent dimensions, locked before the lecturer's
+              The peer scores show four independent dimensions, locked before the lecturer&apos;s
               assessment.
             </p>
           </div>

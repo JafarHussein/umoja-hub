@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/cn"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
@@ -136,3 +136,4 @@ export {
   SheetTitle,
   SheetDescription,
 }
+

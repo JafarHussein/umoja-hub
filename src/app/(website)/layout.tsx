@@ -18,14 +18,22 @@ export default function WebsiteLayout({
 }): React.ReactElement {
   return (
     <>
+      {/* Activates body.is-hydrated gate for progressive enhancement animations.
+          Content stays visible without JS; this script constrains then reveals
+          elements via IntersectionObserver as they enter the viewport. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){function i(){document.body.classList.add('is-hydrated');var o=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in-view');o.unobserve(e.target);}});},{threshold:0.1});document.querySelectorAll('.animate-on-scroll').forEach(function(e){o.observe(e);});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',i);}else{i();}})();`,
+        }}
+      />
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-surface-elevated focus:text-text-primary focus:font-body focus:text-t5 focus:rounded-sm focus:border focus:border-accent-green"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-ws-surface-dark-2 focus:text-ws-text-bright focus:font-geist focus:text-ws-body-sm focus:rounded-sm focus:border focus:border-ws-hub-green"
       >
         Skip to content
       </a>
       <WebsiteNav />
-      <main id="main-content" className="pt-16">
+      <main id="main-content" role="main" className="pt-16">
         {children}
       </main>
       <WebsiteFooter />
