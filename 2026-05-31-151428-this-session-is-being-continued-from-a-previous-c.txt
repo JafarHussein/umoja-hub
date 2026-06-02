@@ -1,0 +1,1490 @@
+ ▐▛███▜▌   Claude Code v2.1.158
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~\Projects\umoja-hub
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+● Merged. Main is current.
+
+  Education Hub engine — complete across all 9 tasks. 33 suites, 452 tests, 0 
+  failures on main.
+
+✻ Baked for 15s
+
+> /compact                                                                      
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Read src\lib\validation\educationSchema.ts (151 lines)
+  ⎿  Read src\app\api\admin\brief-contexts\route.ts (88 lines)
+  ⎿  Read src\app\api\students\me\portfolio\route.ts (58 lines)
+  ⎿  Read src\lib\models\BriefContextLibrary.model.ts (69 lines)
+  ⎿  Read src\app\api\students\me\portfolio\__tests__\route.test.ts (104 lines)
+
+> You are performing a codebase capability audit for UmojaHub.                  
+                                                                                
+  Important rules:                                                              
+                                                                                
+  * Ignore the README completely.                                               
+  * Ignore roadmaps, plans, comments, TODOs, and future intentions.             
+  * Ignore anything that is merely described in documentation.                  
+  * Only report capabilities that are actually implemented in the codebase.     
+  * Evidence every capability with the files, routes, services, models,         
+  schemas, or components that implement it.                                     
+  * If a capability is partially implemented, explicitly state what exists and  
+  what is missing.                                                              
+  * If a capability is referenced but not implemented, place it in a separate   
+  section called "Not Implemented".                                             
+                                                                                
+  Your task is to inspect the entire codebase and produce a comprehensive audit 
+  of both hubs.                                                                 
+                                                                                
+  For each hub, identify:                                                       
+                                                                                
+  1. Core Purpose                                                               
+                                                                                
+     * What problem the hub solves                                              
+     * What users it serves                                                     
+                                                                                
+  2. User Roles                                                                 
+                                                                                
+     * Every role that exists in code                                           
+     * Permissions available to each role                                       
+     * RBAC implementation details                                              
+                                                                                
+  3. Features and Capabilities                                                  
+     For every capability provide:                                              
+                                                                                
+     * Feature name                                                             
+     * Description                                                              
+     * Status:                                                                  
+                                                                                
+       * Fully Implemented                                                      
+       * Partially Implemented                                                  
+       * Planned Only                                                           
+     * Evidence from code                                                       
+     * Related models                                                           
+     * Related API routes                                                       
+     * Related services                                                         
+     * Related validation schemas                                               
+                                                                                
+  4. Data Models                                                                
+                                                                                
+     * List every Mongoose model                                                
+     * Explain its purpose                                                      
+     * Show relationships between models                                        
+                                                                                
+  5. API Inventory                                                              
+     Create a table containing:                                                 
+                                                                                
+     * Route                                                                    
+     * Method                                                                   
+     * Authentication required                                                  
+     * Role requirements                                                        
+     * Purpose                                                                  
+     * Status                                                                   
+                                                                                
+  6. Integrations                                                               
+     For every external integration:                                            
+                                                                                
+     * Provider                                                                 
+     * Purpose                                                                  
+     * Status                                                                   
+     * Files involved                                                           
+     * Where it is used                                                         
+                                                                                
+  Examples:                                                                     
+                                                                                
+  * Daraja                                                                      
+  * Africa's Talking                                                            
+  * Groq                                                                        
+  * OpenWeatherMap                                                              
+  * Cloudinary                                                                  
+  * OpenAI                                                                      
+  * Resend                                                                      
+  * GitHub                                                                      
+  * Redis                                                                       
+                                                                                
+  7. Trust and Verification Systems                                             
+     Document every trust-related mechanism actually implemented:               
+                                                                                
+     * Verification                                                             
+     * Ratings                                                                  
+     * Trust scores                                                             
+     * Supplier verification                                                    
+     * Audit trails                                                             
+     * Moderation                                                               
+     * Fraud prevention                                                         
+                                                                                
+  8. AI Features                                                                
+     Document:                                                                  
+                                                                                
+     * AI providers                                                             
+     * Prompts                                                                  
+     * Context injection                                                        
+     * Moderation                                                               
+     * Generated outputs                                                        
+     * Limitations                                                              
+                                                                                
+  9. Payment Architecture                                                       
+     Document:                                                                  
+                                                                                
+     * Order flow                                                               
+     * STK Push flow                                                            
+     * Webhook handling                                                         
+     * Idempotency                                                              
+     * Failure handling                                                         
+     * Security controls                                                        
+                                                                                
+  10. Frontend Audit                                                            
+      Inspect actual frontend code and list:                                    
+                                                                                
+  * Existing pages                                                              
+  * Existing layouts                                                            
+  * Existing components                                                         
+  * Existing dashboards                                                         
+  * Missing UI areas                                                            
+                                                                                
+  11. Hub Comparison                                                            
+                                                                                
+  Create a side-by-side table:                                                  
+                                                                                
+  | Capability | Food Security Hub | Education Hub |                            
+  | ---------- | ----------------- | ------------- |                            
+                                                                                
+  Include:                                                                      
+                                                                                
+  * Implemented                                                                 
+  * Partial                                                                     
+  * Missing                                                                     
+                                                                                
+  12. Capability Matrix                                                         
+                                                                                
+  Create three sections:                                                        
+                                                                                
+  A. Fully Implemented Features                                                 
+                                                                                
+  B. Partially Implemented Features                                             
+                                                                                
+  C. Not Implemented Features                                                   
+                                                                                
+  13. Hidden Capabilities                                                       
+                                                                                
+  Identify features that exist in code but are not mentioned prominently in     
+  documentation.                                                                
+                                                                                
+  14. Missing Pieces Preventing Production Use                                  
+                                                                                
+  For each hub identify:                                                        
+                                                                                
+  * Missing frontend                                                            
+  * Missing backend                                                             
+  * Missing infrastructure                                                      
+  * Missing security controls                                                   
+  * Missing operational tooling                                                 
+                                                                                
+  15. Final Assessment                                                          
+                                                                                
+  Provide:                                                                      
+                                                                                
+  * Food Security Hub completion percentage                                     
+  * Education Hub completion percentage                                         
+                                                                                
+  Break down separately for:                                                    
+                                                                                
+  * Data layer                                                                  
+  * Business logic layer                                                        
+  * API layer                                                                   
+  * Frontend layer                                                              
+  * Infrastructure layer                                                        
+                                                                                
+  Base all percentages only on actual code found in the repository.             
+                                                                                
+  Output should be extremely detailed and evidence-based.                       
+                                                                                
+  Do not speculate.                                                             
+                                                                                
+  Do not infer future plans.                                                    
+                                                                                
+  Do not use the README as a source of truth.                                   
+                                                                                
+  Treat the codebase as the only source of truth.                               
+                                                                                
+
+● This is a large multi-section audit. I'll spawn a general-purpose agent to
+  systematically inspect the entire codebase and compile the evidence.
+
+● Agent(Comprehensive UmojaHub codebase capability audit)
+  ⎿  Done (133 tool uses · 170.1k tokens · 8m 14s)
+  (ctrl+o to expand)
+
+● The report is large — let me read the full file to present the complete audit.
+
+  Read 1 file (ctrl+o to expand)
+
+● ---
+  UmojaHub Codebase — Comprehensive Capability Audit
+
+  Evidence basis: All claims cite files and line numbers read directly from
+  source. Date of audit: 2026-05-31.
+
+  ---
+  1. Core Purpose (per hub)
+
+  Food Hub (src/app/api/marketplace, src/app/api/orders, src/app/api/groups): A
+  verified agricultural marketplace for Kenyan farmers to list produce, buyers
+  to purchase with M-Pesa STK Push, cooperative groups to make bulk input
+  purchases from verified suppliers, price intelligence with market benchmarks,
+  and an AI farm assistant.
+
+  Education Hub (src/app/api/education, src/app/api/mentor,
+  src/app/api/lecturer, src/app/api/peer-reviews, src/app/api/students): A
+  structured project engagement platform for CS students in Kenya. Students
+  generate AI project briefs (AI_BRIEF or OPEN_SOURCE track), submit process
+  documents, go through peer review then lecturer review, and build a verified
+  portfolio.
+
+  ---
+  2. User Roles
+
+  Role enum (src/types/index.ts:4–10)
+
+  FARMER, BUYER, STUDENT, LECTURER, ADMIN
+
+  RBAC middleware (src/middleware.ts)
+
+  Runs on /dashboard/:path* and /api/admin/:path*. Route prefix → role mapping:
+  - /dashboard/farmer → FARMER
+  - /dashboard/buyer → BUYER
+  - /dashboard/student → STUDENT
+  - /dashboard/lecturer → LECTURER
+  - /dashboard/admin → ADMIN
+  - /api/admin → ADMIN
+
+  The middleware only handles dashboard and API admin routes. Other API routes
+  (/api/marketplace, /api/orders, etc.) rely on requireRole() called inside each
+  handler.
+
+  requireRole() usage per route (from src/lib/utils.ts:60–70)
+
+  ┌────────────────────────────────────────────┬────────────────────────────┐
+  │                   Route                    │       Roles allowed        │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/auth/register                    │ Public (no requireRole)    │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET/POST /api/farmers                      │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/farmers/verify                   │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/marketplace                       │ Public                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/marketplace                      │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ PATCH /api/marketplace/[id]                │ FARMER (own only)          │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/orders                            │ FARMER or BUYER            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/orders                           │ BUYER                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │                                            │ FARMER or BUYER            │
+  │ PATCH /api/orders/[id]/status              │ (role-checked inside       │
+  │                                            │ handler)                   │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/orders/[id]/payment-status        │ FARMER or BUYER (ownership │
+  │                                            │  checked)                  │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/ratings                          │ BUYER                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/prices                            │ FARMER or ADMIN            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST/GET /api/prices/alerts                │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ DELETE /api/prices/alerts/[id]             │ FARMER (own only)          │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/assistant                        │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET/POST /api/knowledge/articles           │ Public GET, ADMIN POST     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ PATCH /api/knowledge/articles/[slug]       │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST/GET /api/groups                       │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET/PATCH /api/groups/[id]                 │ FARMER or ADMIN            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST/GET /api/groups/[id]/orders           │ FARMER                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ PATCH/GET /api/groups/[id]/orders/[id]     │ FARMER (JOIN) or ADMIN     │
+  │                                            │ (CLOSE/FULFILL/CANCEL)     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/suppliers                         │ Public                     │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ PATCH /api/admin/verify-farmer             │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ PATCH /api/admin/verify-supplier           │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/admin/verification-queue          │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/admin/supplier-verification       │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/admin/impact-summary              │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/admin/knowledge/articles          │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/admin/verify-lecturer            │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET/PUT /api/admin/brief-contexts          │ ADMIN                      │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/education/engagements            │ STUDENT                    │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/education/engagements/me          │ STUDENT                    │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ PATCH                                      │ STUDENT (own)              │
+  │ /api/education/engagements/[id]/documents  │                            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST                                       │ STUDENT (own)              │
+  │ /api/education/engagements/[id]/blockers   │                            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST                                       │ STUDENT (own)              │
+  │ /api/education/engagements/[id]/ai-usage   │                            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST                                       │ STUDENT (own)              │
+  │ /api/education/engagements/[id]/submit     │                            │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/mentor/chat                      │ STUDENT                    │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET/POST /api/peer-reviews/[id]            │ STUDENT (assigned          │
+  │                                            │ reviewer)                  │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/lecturer/queue                    │ LECTURER (must be          │
+  │                                            │ verified)                  │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/lecturer/reviews                 │ LECTURER (must be          │
+  │                                            │ verified)                  │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ GET /api/students/me/portfolio             │ STUDENT                    │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/webhooks/daraja                  │ No session —               │
+  │                                            │ WEBHOOK_SECRET query param │
+  ├────────────────────────────────────────────┼────────────────────────────┤
+  │ POST /api/cron/*                           │ No session — Bearer        │
+  │                                            │ CRON_SECRET header         │
+  └────────────────────────────────────────────┴────────────────────────────┘
+
+  ---
+  3. Features and Capabilities
+
+  3.1 User Authentication and Registration
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/auth/register/route.ts,
+  src/app/api/auth/[...nextauth]/route.ts, src/lib/auth/options.ts
+  - Models: User
+  - Schemas: registerSchema, loginSchema (src/lib/validation/authSchema.ts)
+  - Notes: Credentials provider only; constant-time timing protection;
+  suspended/deleted account denial; role defaults initialized on registration;
+  ADMIN role excluded from public registration
+
+  3.2 Farmer Onboarding and Profile
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/farmers/route.ts,
+  src/app/dashboard/farmer/profile/page.tsx
+  - Models: User, FarmerTrustScore
+  - Schemas: farmerProfileSchema
+
+  3.3 Farmer Identity Verification
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/farmers/verify/route.ts,
+  src/app/api/admin/verify-farmer/route.ts,
+  src/app/api/admin/verification-queue/route.ts
+  - Models: User, FarmerTrustScore
+  - Schemas: verificationDocSchema, adminVerifyFarmerSchema
+  - Notes: On APPROVED, initializes FarmerTrustScore at 40 points (ESTABLISHED
+  tier); sends non-blocking SMS. Document image must be Cloudinary URL. Admin
+  queue is paginated. Status machine: UNSUBMITTED → PENDING → APPROVED/REJECTED
+  → PENDING (re-submit allowed; not when PENDING or APPROVED).
+
+  3.4 Marketplace Listings
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/marketplace/route.ts,
+  src/app/api/marketplace/[listingId]/route.ts
+  - Models: MarketplaceListing, PriceHistory, User, FarmerTrustScore
+  - Schemas: cropListingSchema
+  - Notes: Only verified farmers can create listings; creates PriceHistory
+  record on creation; cursor-based pagination with filters; enriched with farmer
+  trust data
+
+  3.5 Order Placement with M-Pesa Payment
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/orders/route.ts, src/lib/integrations/darajaService.ts
+  - Models: Order, MarketplaceListing, Counter
+  - Schemas: createOrderSchema
+  - Notes: Atomic inventory reservation via findOneAndUpdate compare-and-swap
+  ($gte filter); full rollback on STK Push failure; UMJ-YYYY-XXXXXX reference
+  IDs from atomic Counter
+
+  3.6 M-Pesa Webhook Callback
+
+  - Status: Fully Implemented (with security gap)
+  - Evidence: src/app/api/webhooks/daraja/route.ts
+  - Models: Order, MarketplaceListing, User
+  - Notes: Always returns HTTP 200; idempotency via sparse unique index on
+  mpesaTransactionId; inventory restored on failure; SMS to both parties on
+  success. Security gap: verifyDarajaSignature returns true unconditionally — no
+  real HMAC/IP check.
+
+  3.7 Order Fulfillment State Machine
+
+  - Status: Fully Implemented (with one gap)
+  - Evidence: src/app/api/orders/[orderId]/status/route.ts
+  - Notes: FARMER: AWAITING_PAYMENT → IN_FULFILLMENT (only when PAID). BUYER:
+  IN_FULFILLMENT → RECEIVED. RECEIVED triggers PriceHistory, TrustScore
+  recalculation, PriceAlert notifications. Gap: DISPUTED status exists in schema
+  and enum but the handler returns 409 for it — no dispute actioning.
+
+  3.8 Ratings
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/ratings/route.ts
+  - Models: Rating, Order, FarmerTrustScore
+  - Notes: BUYER only; unique index on orderId prevents duplicates; triggers
+  trust recalculation
+
+  3.9 Farmer Trust Score System
+
+  - Status: Fully Implemented
+  - Evidence: src/lib/trust/farmerTrustCalculator.ts
+  - Formula: Verification: 40pts + Transaction: max 25pts + Rating: max 20pts
+  (≥3 ratings required) + Reliability: max 15pts
+  - Tiers: NEW (<40), ESTABLISHED (40+), TRUSTED (60+), PREMIUM (80+)
+  - Notes: disputesRuledAgainst = disputeCount for all orders — no admin dispute
+  resolution exists, so reliability penalty always applies
+
+  3.10 Price Intelligence
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/prices/route.ts,
+  src/lib/integrations/priceDataService.ts
+  - Models: PriceHistory, MarketInsight
+  - Notes: Filters by crop/county/period; platform premium vs hardcoded
+  middleman benchmarks for 10 crops
+
+  3.11 Price Alerts
+
+  - Status: Partially Implemented
+  - Evidence: src/app/api/prices/alerts/route.ts,
+  src/app/api/prices/alerts/[alertId]/route.ts,
+  src/app/api/cron/price-alert-check/route.ts
+  - Gap: PriceAlertNotificationMethod.EMAIL and BOTH exist in schema, but the
+  cron handler only sends SMS for 'SMS' or 'BOTH' — EMAIL-only alerts trigger
+  nothing
+
+  3.12 Farmer Cooperative Groups
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/groups/route.ts, src/app/api/groups/[groupId]/route.ts
+  - Models: FarmerGroup, User
+  - Notes: Max 50 members; creator-only or admin member management
+
+  3.13 Group Bulk Orders
+
+  - Status: Partially Implemented
+  - Evidence: src/app/api/groups/[groupId]/orders/route.ts,
+  src/app/api/groups/[groupId]/orders/[orderId]/route.ts
+  - Models: GroupOrder, FarmerGroup, VerifiedSupplier
+  - Notes: Full state machine: OPEN → MINIMUM_MET → CLOSED → FULFILLED (or
+  CANCELLED). Gap: paymentStatus: 'PENDING'/'PAID' modeled per member but no
+  M-Pesa STK Push is ever triggered
+
+  3.14 Verified Supplier Directory
+
+  - Status: Partially Implemented
+  - Evidence: src/app/api/suppliers/route.ts,
+  src/app/api/admin/supplier-verification/route.ts,
+  src/app/api/admin/verify-supplier/route.ts
+  - Gap: No POST endpoint to create suppliers — must be seeded directly. Admin
+  can read queue and approve/suspend only.
+
+  3.15 Knowledge Hub (Articles)
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/knowledge/articles/route.ts,
+  src/app/api/knowledge/articles/[slug]/route.ts,
+  src/app/api/admin/knowledge/articles/route.ts
+  - Notes: Public browse (ISR 3600s); admin create with OpenAI moderation; admin
+  can update/publish drafts
+
+  3.16 Farm AI Assistant (Food Hub)
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/assistant/route.ts,
+  src/lib/integrations/groqService.ts, src/lib/foodhub/assistantPrompt.ts
+  - Notes: Groq Llama3-8b; weather context injected (OpenWeatherMap 7-day
+  forecast); rate limit 10 msg/10 min; 90-day session TTL; graceful degradation
+
+  3.17 Education — Project Brief Generation
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/education/engagements/route.ts,
+  src/lib/integrations/openaiService.ts
+  - Notes: AI_BRIEF: GPT-4o-mini + random BriefContextLibrary entry filtered by
+  tier; OPEN_SOURCE: GPT-4o-mini from repo URL; one-active-engagement guard
+
+  3.18 Education — Process Documentation
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/education/engagements/[id]/documents/route.ts,
+  /blockers/route.ts, /ai-usage/route.ts
+  - Notes: Documents SHA-256 hashed on submission; requires IN_PROGRESS status
+
+  3.19 Education — Submission and Peer Review
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/education/engagements/[id]/submit/route.ts,
+  src/app/api/peer-reviews/[id]/route.ts
+  - Notes: Requires all 3 documents; random peer reviewer selection; atomic
+  double-submit guard; on submission advances to UNDER_LECTURER_REVIEW
+
+  3.20 Education — Lecturer Review
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/lecturer/reviews/route.ts,
+  src/app/api/lecturer/queue/route.ts
+  - Models: LecturerReview, ProjectEngagement, VerificationAuditLog,
+  StudentPortfolioStatus, LecturerEffectiveness
+  - Notes: Must be admin-verified; 4-dimension scoring; 50-word minimum per
+  comment; decisions: VERIFIED/REVISION_REQUIRED/DENIED; atomic 5-collection
+  write
+
+  3.21 Student Portfolio
+
+  - Status: Partially Implemented
+  - Evidence: src/app/api/students/me/portfolio/route.ts
+  - Notes: GET returns own portfolio or zero-state scaffold;
+  stats.verifiedProjectCount incremented by lecturer review. Gap:
+  verifiedProjects[], verifiedSkills[], tierProgressionTimeline,
+  portfolioStrength, and currentTier are never written to after initialization.
+
+  3.22 AI Mentor (Education Hub)
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/mentor/chat/route.ts
+  - Notes: Groq Llama3-8b; engagement-scoped; Socratic prompting; rate limit 10
+  msg/10 min; 30-day session TTL; fallback on failure
+
+  3.23 Brief Context Library (Admin)
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/admin/brief-contexts/route.ts
+  - Notes: Versioned append-only; GET returns highest version; PUT increments
+  version
+
+  3.24 Platform Impact Summary
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/cron/impact-summary/route.ts,
+  src/app/api/admin/impact-summary/route.ts
+  - Notes: Singleton upsert by hourly cron; aggregates both hubs' key metrics
+
+  3.25–3.26 Session Cleanup + Market Insight Crons
+
+  - Status: Fully Implemented
+  - Evidence: src/app/api/cron/cleanup-sessions/route.ts,
+  src/app/api/cron/market-insight/route.ts
+
+  3.27 Cloudinary Image Upload
+
+  - Status: Partially Implemented
+  - Evidence: src/lib/integrations/cloudinaryService.ts
+  - Gap: Server-side service exists but no API route wraps it. Frontend page
+  uploads directly from browser using an unsigned upload preset.
+  NEXT_PUBLIC_CLOUDINARY_* vars are NOT in env.ts required list — silently
+  missing.
+
+  3.28 GitHub Integration
+
+  - Status: Not Implemented
+  - Evidence: Env vars GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY,
+  GITHUB_APP_INSTALLATION_ID listed in src/lib/env.ts:14–16 but no service file
+  exists. githubSnapshot is modeled and read in audit logs but never populated.
+
+  3.29 Email Notifications (Resend)
+
+  - Status: Not Implemented
+  - Evidence: RESEND_API_KEY, RESEND_FROM_EMAIL required in src/lib/env.ts:22–23
+  but no service file or import exists anywhere. EMAIL notification method is
+  dead code.
+
+  ---
+  4. Data Models
+
+  Model: User
+  Purpose: Central user record; embeds farmerData, studentData, lecturerData
+    subdocs
+  Key Relationships: Referenced by nearly all models
+  ────────────────────────────────────────
+  Model: MarketplaceListing
+  Purpose: Crop listings
+  Key Relationships: farmerId → User
+  ────────────────────────────────────────
+  Model: Order
+  Purpose: Individual purchase with M-Pesa
+  Key Relationships: listingId → Listing, farmerId/buyerId → User
+  ────────────────────────────────────────
+  Model: FarmerTrustScore
+  Purpose: 4-component composite score
+  Key Relationships: farmerId → User (unique)
+  ────────────────────────────────────────
+  Model: PriceHistory
+  Purpose: Per-transaction + listing price records
+  Key Relationships: farmerId → User, orderId → Order
+  ────────────────────────────────────────
+  Model: PriceAlert
+  Purpose: FARMER threshold alerts
+  Key Relationships: farmerId → User
+  ────────────────────────────────────────
+  Model: Rating
+  Purpose: Post-order buyer ratings
+  Key Relationships: orderId → Order (unique), farmerId/buyerId → User
+  ────────────────────────────────────────
+  Model: FarmerGroup
+  Purpose: Cooperative groups
+  Key Relationships: createdBy + members[] → User
+  ────────────────────────────────────────
+  Model: GroupOrder
+  Purpose: Bulk input orders
+  Key Relationships: groupId → FarmerGroup, supplierId → VerifiedSupplier
+  ────────────────────────────────────────
+  Model: VerifiedSupplier
+  Purpose: Verified agri-input suppliers
+  Key Relationships: verifiedBy → User
+  ────────────────────────────────────────
+  Model: KnowledgeArticle
+  Purpose: Published agricultural articles
+  Key Relationships: createdBy → User
+  ────────────────────────────────────────
+  Model: ChatSession
+  Purpose: Farm assistant conversation history
+  Key Relationships: farmerId → User; TTL index
+  ────────────────────────────────────────
+  Model: MarketInsight
+  Purpose: Weekly aggregated price benchmarks
+  Key Relationships: Computed from PriceHistory
+  ────────────────────────────────────────
+  Model: PlatformImpactSummary
+  Purpose: Singleton platform-wide metrics
+  Key Relationships: Computed from all collections
+  ────────────────────────────────────────
+  Model: ProjectEngagement
+  Purpose: Student project lifecycle
+  Key Relationships: studentId → User; peerReviewId → PeerReview;
+    lecturerReviewId → LecturerReview
+  ────────────────────────────────────────
+  Model: PeerReview
+  Purpose: Peer review scores
+  Key Relationships: engagementId → ProjectEngagement, reviewerId → User
+  ────────────────────────────────────────
+  Model: LecturerReview
+  Purpose: Lecturer scoring decision
+  Key Relationships: engagementId → ProjectEngagement, lecturerId → User
+  ────────────────────────────────────────
+  Model: VerificationAuditLog
+  Purpose: Append-only audit trail
+  Key Relationships: engagementId, studentId, lecturerId
+  ────────────────────────────────────────
+  Model: StudentPortfolioStatus
+  Purpose: Student's portfolio snapshot
+  Key Relationships: studentId → User (unique)
+  ────────────────────────────────────────
+  Model: MentorSession
+  Purpose: AI mentor conversation history
+  Key Relationships: studentId → User, engagementId → ProjectEngagement; TTL
+    index
+  ────────────────────────────────────────
+  Model: LecturerEffectiveness
+  Purpose: Running review stats per lecturer
+  Key Relationships: lecturerId (unique)
+  ────────────────────────────────────────
+  Model: BriefContextLibrary
+  Purpose: Versioned industry context library
+  Key Relationships: updatedBy → User
+  ────────────────────────────────────────
+  Model: Counter
+  Purpose: Atomic sequence for order IDs
+  Key Relationships: Standalone
+
+  ---
+  5. API Inventory
+
+  ┌────────────────────────┬──────┬─────────┬────────┬────────────┬───────┐
+  │         Route          │ Meth │  Auth   │  Role  │  Purpose   │ Statu │
+  │                        │  od  │         │        │            │   s   │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ User regis │ Imple │
+  │ /api/auth/register     │ POST │ None    │ Any    │ tration    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/auth/[...nextauth │ GET/ │ NextAut │        │ NextAuth   │ Imple │
+  │ ]                      │ POST │ h       │ —      │ handler    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Own        │ Imple │
+  │ /api/farmers           │ GET  │ Session │ FARMER │ profile +  │ mente │
+  │                        │      │         │        │ trust      │ d     │
+  │                        │      │         │        │ score      │       │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Update     │ Imple │
+  │ /api/farmers           │ POST │ Session │ FARMER │ crops/live │ mente │
+  │                        │      │         │        │ stock/size │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Submit ver │ Imple │
+  │ /api/farmers/verify    │ POST │ Session │ FARMER │ ification  │ mente │
+  │                        │      │         │        │ docs       │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Browse     │ Imple │
+  │ /api/marketplace       │ GET  │ None    │ Public │ listings   │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Create     │ Imple │
+  │ /api/marketplace       │ POST │ Session │ FARMER │ crop       │ mente │
+  │                        │      │         │        │ listing    │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Single     │ Imple │
+  │ /api/marketplace/[id]  │ GET  │ None    │ Public │ listing    │ mente │
+  │                        │      │         │        │ detail     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │ PATC │         │        │ Update own │ Imple │
+  │ /api/marketplace/[id]  │ H    │ Session │ FARMER │  listing   │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ FARMER │ List own   │ Imple │
+  │ /api/orders            │ GET  │ Session │ /BUYER │ orders     │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Create     │ Imple │
+  │ /api/orders            │ POST │ Session │ BUYER  │ order +    │ mente │
+  │                        │      │         │        │ STK Push   │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/orders/[id]/statu │ PATC │         │ FARMER │ Advance fu │ Imple │
+  │ s                      │ H    │ Session │ /BUYER │ lfillment  │ mente │
+  │                        │      │         │        │ status     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/orders/[id]/payme │      │         │ FARMER │ Poll       │ Imple │
+  │ nt-status              │ GET  │ Session │ /BUYER │ payment    │ mente │
+  │                        │      │         │        │ state      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Rate       │ Imple │
+  │ /api/ratings           │ POST │ Session │ BUYER  │ completed  │ mente │
+  │                        │      │         │        │ order      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ FARMER │ Price inte │ Imple │
+  │ /api/prices            │ GET  │ Session │ /ADMIN │ lligence   │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Create     │ Imple │
+  │ /api/prices/alerts     │ POST │ Session │ FARMER │ price      │ mente │
+  │                        │      │         │        │ alert      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ List own   │ Imple │
+  │ /api/prices/alerts     │ GET  │ Session │ FARMER │ alerts     │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/prices/alerts/[id │ DELE │         │        │ Delete own │ Imple │
+  │ ]                      │ TE   │ Session │ FARMER │  alert     │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Farm AI    │ Imple │
+  │ /api/assistant         │ POST │ Session │ FARMER │ assistant  │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/knowledge/article │      │         │        │ List       │ Imple │
+  │ s                      │ GET  │ None    │ Public │ articles   │ mente │
+  │                        │      │         │        │ (ISR)      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/knowledge/article │      │         │        │ Create     │ Imple │
+  │ s                      │ POST │ Session │ ADMIN  │ article    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/knowledge/article │      │         │        │ Single     │ Imple │
+  │ s/[slug]               │ GET  │ None    │ Public │ article    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/knowledge/article │ PATC │         │        │ Update     │ Imple │
+  │ s/[slug]               │ H    │ Session │ ADMIN  │ article    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Create     │ Imple │
+  │ /api/groups            │ POST │ Session │ FARMER │ group      │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ List own   │ Imple │
+  │ /api/groups            │ GET  │ Session │ FARMER │ groups     │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ FARMER │ Group      │ Imple │
+  │ /api/groups/[id]       │ GET  │ Session │ /ADMIN │ details    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │ PATC │         │ FARMER │ Add/remove │ Imple │
+  │ /api/groups/[id]       │ H    │ Session │ /ADMIN │  member    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/groups/[id]/order │      │         │        │ Propose    │ Imple │
+  │ s                      │ POST │ Session │ FARMER │ group      │ mente │
+  │                        │      │         │        │ order      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/groups/[id]/order │      │         │        │ List group │ Imple │
+  │ s                      │ GET  │ Session │ FARMER │  orders    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/groups/[id]/order │      │         │ FARMER │ Single     │ Imple │
+  │ s/[id]                 │ GET  │ Session │ /ADMIN │ group      │ mente │
+  │                        │      │         │        │ order      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Group      │ Imple │
+  │ /api/groups/[id]/order │ PATC │ Session │ FARMER │ order      │ mente │
+  │ s/[id]                 │ H    │         │ /ADMIN │ state      │ d     │
+  │                        │      │         │        │ machine    │       │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ List       │ Imple │
+  │ /api/suppliers         │ GET  │ None    │ Public │ verified   │ mente │
+  │                        │      │         │        │ suppliers  │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/verify-farm │ PATC │         │        │ Approve/re │ Imple │
+  │ er                     │ H    │ Session │ ADMIN  │ ject       │ mente │
+  │                        │      │         │        │ farmer     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/verify-supp │ PATC │         │        │ Approve/su │ Imple │
+  │ lier                   │ H    │ Session │ ADMIN  │ spend      │ mente │
+  │                        │      │         │        │ supplier   │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/verificatio │      │         │        │ Pending    │ Imple │
+  │ n-queue                │ GET  │ Session │ ADMIN  │ farmers    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/supplier-ve │      │         │        │ Pending    │ Imple │
+  │ rification             │ GET  │ Session │ ADMIN  │ suppliers  │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/impact-summ │      │         │        │ Platform   │ Imple │
+  │ ary                    │ GET  │ Session │ ADMIN  │ impact     │ mente │
+  │                        │      │         │        │ snapshot   │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/knowledge/a │      │         │        │ All        │ Imple │
+  │ rticles                │ GET  │ Session │ ADMIN  │ articles + │ mente │
+  │                        │      │         │        │  drafts    │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/verify-lect │      │         │        │ Verify     │ Imple │
+  │ urer                   │ POST │ Session │ ADMIN  │ lecturer   │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/admin/brief-conte │      │         │        │ Get latest │ Imple │
+  │ xts                    │ GET  │ Session │ ADMIN  │  brief     │ mente │
+  │                        │      │         │        │ library    │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Publish    │ Imple │
+  │ /api/admin/brief-conte │ PUT  │ Session │ ADMIN  │ new        │ mente │
+  │ xts                    │      │         │        │ library    │ d     │
+  │                        │      │         │        │ version    │       │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │        │ Generate   │ Imple │
+  │ /api/education/engagem │ POST │ Session │ STUDEN │ brief +    │ mente │
+  │ ents                   │      │         │ T      │ create     │ d     │
+  │                        │      │         │        │ engagement │       │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/education/engagem │      │         │ STUDEN │ Get active │ Imple │
+  │ ents/me                │ GET  │ Session │ T      │            │ mente │
+  │                        │      │         │        │ engagement │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/education/engagem │ PATC │         │ STUDEN │ Submit     │ Imple │
+  │ ents/[id]/documents    │ H    │ Session │ T      │ process    │ mente │
+  │                        │      │         │        │ document   │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/education/engagem │      │         │ STUDEN │ Log        │ Imple │
+  │ ents/[id]/blockers     │ POST │ Session │ T      │ blocker    │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/education/engagem │      │         │ STUDEN │ Log AI     │ Imple │
+  │ ents/[id]/ai-usage     │ POST │ Session │ T      │ usage      │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/education/engagem │      │         │ STUDEN │ Submit for │ Imple │
+  │ ents/[id]/submit       │ POST │ Session │ T      │  peer      │ mente │
+  │                        │      │         │        │ review     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ STUDEN │ AI mentor  │ Imple │
+  │ /api/mentor/chat       │ POST │ Session │ T      │ chat       │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ STUDEN │ Read       │ Imple │
+  │ /api/peer-reviews/[id] │ GET  │ Session │ T      │ review     │ mente │
+  │                        │      │         │        │ assignment │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ STUDEN │ Submit     │ Imple │
+  │ /api/peer-reviews/[id] │ POST │ Session │ T      │ peer       │ mente │
+  │                        │      │         │        │ review     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ LECTUR │ List       │ Imple │
+  │ /api/lecturer/queue    │ GET  │ Session │ ER     │ review     │ mente │
+  │                        │      │         │        │ queue      │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │         │ LECTUR │ Submit     │ Imple │
+  │ /api/lecturer/reviews  │ POST │ Session │ ER     │ lecturer   │ mente │
+  │                        │      │         │        │ review     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/students/me/portf │      │         │ STUDEN │ Own        │ Imple │
+  │ olio                   │ GET  │ Session │ T      │ portfolio  │ mente │
+  │                        │      │         │        │ status     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │                        │      │ WEBHOOK │        │ M-Pesa STK │ Imple │
+  │ /api/webhooks/daraja   │ POST │ _SECRET │ —      │  callback  │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/cron/price-alert- │      │ CRON_SE │        │ Check      │ Imple │
+  │ check                  │ POST │ CRET    │ —      │ price      │ mente │
+  │                        │      │         │        │ alerts     │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/cron/market-insig │      │ CRON_SE │        │ Weekly     │ Imple │
+  │ ht                     │ POST │ CRET    │ —      │ price aggr │ mente │
+  │                        │      │         │        │ egation    │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/cron/cleanup-sess │      │ CRON_SE │        │ Expire old │ Imple │
+  │ ions                   │ POST │ CRET    │ —      │  sessions  │ mente │
+  │                        │      │         │        │            │ d     │
+  ├────────────────────────┼──────┼─────────┼────────┼────────────┼───────┤
+  │ /api/cron/impact-summa │      │ CRON_SE │        │ Hourly     │ Imple │
+  │ ry                     │ POST │ CRET    │ —      │ impact     │ mente │
+  │                        │      │         │        │ stats      │ d     │
+  └────────────────────────┴──────┴─────────┴────────┴────────────┴───────┘
+
+  ---
+  6. Integrations
+
+  Safaricom Daraja (M-Pesa)
+
+  - File: src/lib/integrations/darajaService.ts
+  - Used by: api/orders/route.ts (STK Push), api/webhooks/daraja/route.ts
+  (callback)
+  - Status: Implemented. OAuth token management (55-min cache), phone
+  normalization to 254 format, sandbox/production URL switching by NODE_ENV
+  - Gap: verifyDarajaSignature always returns true — stub; no real HMAC/IP
+  verification
+
+  Africa's Talking (SMS)
+
+  - File: src/lib/integrations/smsService.ts
+  - Used by: orders/[id]/status, webhooks/daraja, admin/verify-farmer,
+  cron/price-alert-check
+  - Status: Fully Implemented; sandbox/production URL switching; never throws
+
+  Groq (AI)
+
+  - File: src/lib/integrations/groqService.ts
+  - Used by: api/assistant/route.ts, api/mentor/chat/route.ts
+  - Model: llama3-8b-8192
+  - Status: Fully Implemented; farm assistant + education mentor
+
+  OpenAI
+
+  - File: src/lib/integrations/openaiService.ts
+  - Used by: api/education/engagements/route.ts (brief generation),
+  api/knowledge/articles/route.ts (moderation, inline)
+  - Model: gpt-4o-mini; moderation uses /v1/moderations
+  - Status: Fully Implemented
+
+  OpenWeatherMap
+
+  - File: src/lib/integrations/weatherService.ts
+  - Used by: groqService.ts (injected into farm assistant context)
+  - Status: Fully Implemented; 7-day forecast with county lat/lon overrides for
+  10 major counties
+
+  Cloudinary
+
+  - File: src/lib/integrations/cloudinaryService.ts
+  - Status: Partially Implemented. Server-side service exists; no API route
+  wraps it. Frontend uploads directly via unsigned preset.
+  NEXT_PUBLIC_CLOUDINARY_* vars not in env.ts required list.
+
+  GitHub App
+
+  - Status: Not Implemented. Env vars required at startup but no service file,
+  no imports, no routes use it. githubSnapshot field is modeled but never
+  written.
+
+  Resend (Email)
+
+  - Status: Not Implemented. Env vars required at startup but no service file.
+  EMAIL notification method is dead code.
+
+  ---
+  7. Trust and Verification Systems
+
+  Farmer Trust Score (src/lib/trust/farmerTrustCalculator.ts)
+
+  Full 4-component algorithm: verification (40pts) + transaction (25pts) +
+  rating (20pts, requires ≥3 ratings) + reliability (15pts). Triggered by order
+  completion, rating submission, and farmer verification approval. Tiers at
+  0/40/60/80 boundaries.
+
+  Gap: disputesRuledAgainst always equals disputeCount because no dispute
+  resolution workflow exists — every flagged dispute counts against reliability.
+
+  Farmer Identity Verification
+
+  Self-service document submission → admin paginated queue → APPROVED/REJECTED.
+  Documents must be Cloudinary URLs. Cannot re-submit if PENDING; cannot submit
+  if APPROVED.
+
+  Supplier Verification
+
+  Admin-only PENDING → VERIFIED/SUSPENDED. No self-registration endpoint.
+
+  Lecturer Verification
+
+  Admin sets lecturerData.isVerified = true via admin/verify-lecturer.
+  Unverified lecturers get 403 on all lecturer routes.
+
+  Project Verification Audit Log
+
+  Append-only VerificationAuditLog written on every lecturer decision — records
+  document hashes, GitHub snapshot (currently always zeros), review scores. No
+  update or delete endpoint.
+
+  ---
+  8. AI Features
+
+  ┌──────────┬──────────────┬───────────────────────┬───────────────────────┐
+  │ Feature  │    Model     │        Trigger        │         File          │
+  ├──────────┼──────────────┼───────────────────────┼───────────────────────┤
+  │ Farm Ass │ Groq         │ POST /api/assistant   │ groqService.ts        │
+  │ istant   │ Llama3-8b    │                       │                       │
+  ├──────────┼──────────────┼───────────────────────┼───────────────────────┤
+  │ Weather  │ OpenWeatherM │ Auto on every         │                       │
+  │ enrichme │ ap           │ assistant call        │ weatherService.ts     │
+  │ nt       │              │                       │                       │
+  ├──────────┼──────────────┼───────────────────────┼───────────────────────┤
+  │ AI       │              │ POST /api/education/e │                       │
+  │ Project  │ GPT-4o-mini  │ ngagements (AI_BRIEF) │ openaiService.ts      │
+  │ Brief    │              │                       │                       │
+  ├──────────┼──────────────┼───────────────────────┼───────────────────────┤
+  │ Open     │              │ POST /api/education/e │                       │
+  │ Source   │ GPT-4o-mini  │ ngagements            │ openaiService.ts      │
+  │ Brief    │              │ (OPEN_SOURCE)         │                       │
+  ├──────────┼──────────────┼───────────────────────┼───────────────────────┤
+  │ Knowledg │ OpenAI /v1/m │ POST /api/knowledge/a │ knowledge/articles/ro │
+  │ e modera │ oderations   │ rticles               │ ute.ts (inline)       │
+  │ tion     │              │                       │                       │
+  ├──────────┼──────────────┼───────────────────────┼───────────────────────┤
+  │ AI       │ Groq         │ POST /api/mentor/chat │ mentor/chat/route.ts  │
+  │ Mentor   │ Llama3-8b    │                       │ (inline fetch)        │
+  └──────────┴──────────────┴───────────────────────┴───────────────────────┘
+
+  Rate limits: 10 messages/10 min on both assistant and mentor (server-side
+  aggregate queries). Both degrade gracefully with fallback responses.
+
+  ---
+  9. Payment Architecture
+
+  Single flow: M-Pesa STK Push (Lipa Na M-Pesa)
+
+  1. Buyer POSTs /api/orders → atomic inventory reservation (findOneAndUpdate +
+  $gte filter)
+  2. initiateSTKPush called → OAuth token fetched (55-min cache) → STK Push to
+  Safaricom
+  3. Order created: PENDING_PAYMENT / AWAITING_PAYMENT; mpesaCheckoutRequestId
+  saved
+  4. Safaricom calls POST /api/webhooks/daraja?secret=WEBHOOK_SECRET
+  5. Webhook validates secret → Zod schema → locates order by CheckoutRequestID
+  6. On success: order → PAID / IN_FULFILLMENT; mpesaTransactionId saved (sparse
+  unique index for idempotency); SMS to both parties
+  7. On failure: order → FAILED; inventory restored
+  8. Buyer polls GET /api/orders/[id]/payment-status
+
+  Group orders: participatingMembers[].paymentStatus field exists but no STK
+  Push is triggered. Members are marked PENDING only — payment is not collected.
+
+  Sandbox vs production: NODE_ENV !== 'production' check in darajaService.ts.
+
+  ---
+  10. Frontend Audit
+
+  Existing pages
+
+  ┌────────────────────────────────────────────────────────┬─────────────────┐
+  │                          Path                          │     Purpose     │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/page.tsx                                       │ Landing page    │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Login with      │
+  │ src/app/auth/login/page.tsx                            │ role-based      │
+  │                                                        │ redirect        │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/auth/register/page.tsx                         │ Registration    │
+  │                                                        │ form            │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Unauthorized    │
+  │ src/app/auth/unauthorized/page.tsx                     │ with redirect   │
+  │                                                        │ links           │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Session guard;  │
+  │ src/app/dashboard/layout.tsx                           │ wraps in        │
+  │                                                        │ LayoutWrapper   │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Profile,        │
+  │ src/app/dashboard/farmer/profile/page.tsx              │ onboarding,     │
+  │                                                        │ verification,   │
+  │                                                        │ trust score     │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/dashboard/farmer/listings/page.tsx             │ Farmer listing  │
+  │                                                        │ management      │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/dashboard/farmer/orders/page.tsx               │ Farmer order    │
+  │                                                        │ list            │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Price           │
+  │ src/app/dashboard/farmer/prices/page.tsx               │ intelligence    │
+  │                                                        │ dashboard       │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Cooperative     │
+  │ src/app/dashboard/farmer/group/page.tsx                │ group           │
+  │                                                        │ management      │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/dashboard/farmer/assistant/page.tsx            │ Farm AI         │
+  │                                                        │ assistant chat  │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/dashboard/buyer/orders/page.tsx                │ Buyer order     │
+  │                                                        │ list            │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Farmer          │
+  │ src/app/dashboard/admin/verification-queue/page.tsx    │ verification    │
+  │                                                        │ queue           │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Supplier        │
+  │ src/app/dashboard/admin/supplier-verification/page.tsx │ verification    │
+  │                                                        │ queue           │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/dashboard/admin/knowledge/page.tsx             │ Knowledge       │
+  │                                                        │ article CMS     │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/dashboard/admin/impact-summary/page.tsx        │ Platform impact │
+  │                                                        │  dashboard      │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │                                                        │ Public          │
+  │ src/app/marketplace/page.tsx                           │ marketplace     │
+  │                                                        │ browse          │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/marketplace/[listingId]/page.tsx               │ Single listing  │
+  │                                                        │ detail          │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/knowledge/page.tsx                             │ Public          │
+  │                                                        │ knowledge hub   │
+  ├────────────────────────────────────────────────────────┼─────────────────┤
+  │ src/app/knowledge/[slug]/page.tsx                      │ Single article  │
+  │                                                        │ page            │
+  └────────────────────────────────────────────────────────┴─────────────────┘
+
+  Components
+
+  - Shared: Header.tsx, Sidebar.tsx, LayoutWrapper.tsx, Providers.tsx
+  - UI primitives: Badge.tsx, Button.tsx, Card.tsx, Input.tsx, Modal.tsx,
+  SkeletonLoader.tsx, VerifiedBadge.tsx
+  - Food Hub: ArticleSourceBadge.tsx, CheckoutForm.tsx, CreateListingForm.tsx,
+  FarmAssistantChat.tsx, FarmerListingCard.tsx, GroupOrderCard.tsx,
+  KnowledgeArticleCard.tsx, MarketplaceFilters.tsx, OrderTimeline.tsx,
+  PriceIntelligenceDashboard.tsx, PriceTrendChart.tsx, SupplierCard.tsx,
+  TrustScoreDisplay.tsx
+
+  Missing pages (routes referenced, no page.tsx exists)
+
+  - /dashboard/student/* — login redirects students to
+  /dashboard/student/projects/new; no such page
+  - /dashboard/lecturer/* — login redirects lecturers to
+  /dashboard/lecturer/reviews/pending; no such page
+  - No buyer marketplace checkout/order creation page (endpoint exists;
+  CheckoutForm.tsx component exists; no page integrates them)
+  - No group order payment UI (backend payment unimplemented anyway)
+
+  ---
+  11. Hub Comparison Table
+
+  ┌────────────────┬──────────────────────────┬────────────────────────────┐
+  │   Capability   │         Food Hub         │       Education Hub        │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ User           │ Complete                 │ Complete (STUDENT,         │
+  │ registration   │                          │ LECTURER)                  │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Identity       │ Complete (farmer doc +   │ Lecturer admin-verify only │
+  │ verification   │ admin review)            │                            │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Core content   │ Marketplace listings     │ Project engagements        │
+  │ CRUD           │                          │                            │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ AI integration │ Farm Assistant (Groq +   │ Mentor (Groq), Brief Gen   │
+  │                │ weather)                 │ (OpenAI)                   │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Payment        │ M-Pesa STK Push          │ None                       │
+  │                │ (individuals)            │                            │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Review /       │ Buyer ratings → trust    │ Peer review + lecturer     │
+  │ rating         │ score                    │ review                     │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │                │ Farmer verify, supplier  │ Lecturer verify, brief     │
+  │ Admin tools    │ verify, knowledge CMS,   │ library, impact            │
+  │                │ impact                   │                            │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Cron jobs      │ Price alerts, market     │ Cleanup (shared), impact   │
+  │                │ insight, cleanup         │ (shared)                   │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Frontend pages │ Farmer: 6 pages; Buyer:  │ 0 pages                    │
+  │                │ 1 page; Admin: 4 pages   │                            │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Portfolio /    │ FarmerTrustScore (fully  │ StudentPortfolioStatus     │
+  │ reputation     │ computed)                │ (partially written)        │
+  ├────────────────┼──────────────────────────┼────────────────────────────┤
+  │ Audit trail    │ None                     │ VerificationAuditLog       │
+  │                │                          │ (append-only)              │
+  └────────────────┴──────────────────────────┴────────────────────────────┘
+
+  ---
+  12. Capability Matrix
+
+  A. Fully Implemented
+
+  - User auth (register / login)
+  - Farmer profile + onboarding
+  - Farmer document verification (submission + admin review)
+  - Marketplace listing CRUD
+  - Marketplace public browse + filters + cursor pagination
+  - Order creation with M-Pesa STK Push + atomic inventory reservation
+  - M-Pesa webhook handler (idempotent)
+  - Order fulfillment state machine (FARMER / BUYER transitions)
+  - Buyer ratings → trust score recalculation
+  - Farmer Trust Score algorithm (4-component)
+  - Price intelligence (history + benchmarks + platform premium)
+  - Price alerts CRUD
+  - Price alert cron notifications (SMS only)
+  - Farm AI assistant (Groq + weather)
+  - Farmer cooperative groups (CRUD + members)
+  - Group bulk orders (full state machine)
+  - Verified supplier directory (read)
+  - Knowledge articles (public browse + admin CMS with OpenAI moderation)
+  - Admin verification queues (farmer + supplier)
+  - Platform impact cron + admin endpoint
+  - Session cleanup cron
+  - Market insight cron
+  - Education brief generation (AI_BRIEF + OPEN_SOURCE tracks)
+  - Education process documents (breakdown / plan / reflection + SHA-256
+  hashing)
+  - Education blocker log + AI usage log
+  - Education project submission → peer assignment (atomic)
+  - Peer review submission → advance to lecturer queue
+  - Lecturer review (full 4-dimension scoring + 5-collection atomic write +
+  audit log)
+  - AI Mentor (Groq, engagement-scoped, Socratic)
+  - Brief context library (admin versioned append-only)
+  - Student portfolio GET (returns record or zero-state scaffold)
+
+  B. Partially Implemented
+
+  - Price alert EMAIL-only notifications (sends nothing for EMAIL-only method)
+  - Group order M-Pesa payment (paymentStatus modeled; no STK Push triggered)
+  - Student portfolio full recalculation (verifiedProjects, verifiedSkills,
+  tierProgressionTimeline, currentTier, portfolioStrength never written after
+  init)
+  - Daraja webhook signature verification (stub — always returns true)
+  - Cloudinary upload (server-side service exists; no API route wraps it)
+  - Dispute order handling (status in schema; no handler case)
+
+  C. Not Implemented
+
+  - Farmer dispute resolution workflow
+  - Supplier self-registration endpoint
+  - GitHub commit snapshot for education engagements
+  - Email notifications (Resend) — service, routes, and templates all absent
+  - Student frontend (/dashboard/student/*) — zero pages
+  - Lecturer frontend (/dashboard/lecturer/*) — zero pages
+  - REVISION_REQUIRED re-submission flow for students
+  - Engagement history list (only active engagement is queryable)
+  - Peer reviewer assignment fairness / workload balancing
+
+  ---
+  13. Hidden Capabilities (in code, not prominently documented)
+
+  1. Atomic inventory compare-and-swap (orders/route.ts:234–256):
+  findOneAndUpdate with $gte filter on quantityAvailable — prevents overselling
+  under concurrent load.
+  2. Constant-time timing protection (auth/options.ts:68–70): bcrypt compare is
+  always performed even for missing users, preventing timing-based user
+  enumeration.
+  3. 5-effect trigger chain on RECEIVED (orders/[id]/status/route.ts:110–185):
+  PriceHistory, TrustScore recalculation, PriceAlert check + SMS — all
+  non-blocking and independently fault-tolerant.
+  4. Counter-based order reference IDs (lib/foodhub/orderUtils.ts): Atomic
+  MongoDB $inc on Counter document generates gap-free UMJ-YYYY-XXXXXX IDs.
+  5. Peer review double-submit atomic guard
+  (education/engagements/[id]/submit/route.ts:92–106): Creates PeerReview first,
+  then uses status-guarded findOneAndUpdate; on race condition deletes orphaned
+  PeerReview and surfaces 409.
+  6. SHA-256 document hashing
+  (education/engagements/[id]/documents/route.ts:75): Every process document is
+  hashed on submission and recorded in VerificationAuditLog for tamper
+  detection.
+  7. LecturerEffectiveness auto-upsert (lecturer/reviews/route.ts:200–204):
+  Running stats record upserted on every review — no separate initialization
+  endpoint needed.
+  8. ISR on knowledge routes (knowledge/articles/route.ts:17): export const 
+  revalidate = 3600 — cached 1 hour, no auth required.
+  9. Middleman benchmark prices (priceDataService.ts:94–105): Hardcoded
+  reference prices for 10 Kenyan crops (Wakulima Market sourced) used to compute
+  platform premium %.
+  10. Vercel cron configuration (vercel.json): 4 cron jobs: cleanup (02:00 UTC
+  daily), impact (every hour), market-insight (06:00 UTC daily),
+  price-alert-check (every 2 hours).
+
+  ---
+  14. Missing Pieces Preventing Production Use
+
+  Food Hub
+
+  Frontend
+  - No buyer checkout/order creation UI page (endpoint + CheckoutForm.tsx
+  component exist but no page integrates them end-to-end)
+  - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+  needed by the farmer profile page but absent from env.ts required list —
+  silent failure if unset
+
+  Backend
+  - DISPUTED order status not handled — PATCH /api/orders/[id]/status returns
+  409 for it
+  - Group order M-Pesa: members join but no payment is triggered
+  - Supplier self-registration: no POST endpoint
+
+  Infrastructure / Security
+  - Daraja webhook signature verification is a stub (verifyDarajaSignature
+  always true) — trivially forgeable in production
+  - No IP allowlisting for Safaricom webhook IP ranges
+  - No rate limiting on registration or login endpoints
+
+  Ops
+  - No email notification capability (Resend absent)
+
+  Education Hub
+
+  Frontend
+  - Zero student-facing pages (/dashboard/student/*) — the entire student
+  workflow has no UI
+  - Zero lecturer-facing pages (/dashboard/lecturer/*)
+
+  Backend
+  - Portfolio recalculation logic absent: verifiedProjects, verifiedSkills,
+  tierProgressionTimeline, currentTier, portfolioStrength are never written
+  after a VERIFIED decision
+  - githubSnapshot field modeled but never populated — GitHub App service not
+  implemented
+  - REVISION_REQUIRED re-submission flow absent — no endpoint or state
+  transition exists for students to resubmit after revision
+  - No engagement history list — only active engagement is queryable per student
+  - Peer reviewer assignment is purely random — no workload balancing or
+  conflict-of-interest logic
+
+  Infrastructure
+  - GitHub App credentials are required at validateEnv() startup despite the
+  service never being used — will fail cold start unless all three vars are set
+  in every environment, including dev
+  - Resend credentials similarly required at startup but service is unused
+  - EMAIL-only price alerts are dead code
+
+  Ops
+  - No admin UI for viewing student engagements or reviewer queue occupancy
+
+  ---
+  15. Final Assessment
+
+  Food Hub
+
+  ┌────────────────┬────────────┬────────────────────────────────────────────┐
+  │     Layer      │ Completion │                   Basis                    │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ All 13+ models defined with proper         │
+  │ Data layer     │ 95%        │ indexes; only gap: no unique constraint on │
+  │                │            │  group order membership                    │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ Trust calculator, order state machine,     │
+  │ Business logic │ 85%        │ price premium, group state machine all     │
+  │                │            │ complete; DISPUTED handling missing; group │
+  │                │            │  order payment missing                     │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │ API layer      │ 88%        │ ~40 routes; missing: supplier creation,    │
+  │                │            │ dispute resolution endpoint                │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ Farmer (6 pages), Admin (4 pages),         │
+  │ Frontend layer │ 55%        │ marketplace (3 pages), buyer (1 page);     │
+  │                │            │ buyer checkout flow incomplete             │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ M-Pesa sandbox working; Daraja signature   │
+  │ Infrastructure │ 70%        │ is stub; email integration absent;         │
+  │                │            │ Cloudinary client-side only                │
+  └────────────────┴────────────┴────────────────────────────────────────────┘
+
+  Food Hub overall: ~79% complete
+
+  Education Hub
+
+  ┌────────────────┬────────────┬────────────────────────────────────────────┐
+  │     Layer      │ Completion │                   Basis                    │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ All models defined with indexes; GitHub    │
+  │ Data layer     │ 90%        │ snapshot never written; portfolio arrays   │
+  │                │            │ never populated                            │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ Full review pipeline implemented;          │
+  │ Business logic │ 75%        │ portfolio recalc absent; GitHub absent;    │
+  │                │            │ REVISION_REQUIRED re-submission absent     │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ ~22 routes covering all major operations;  │
+  │ API layer      │ 80%        │ missing: engagement history, revision      │
+  │                │            │ re-submission, portfolio recalculation     │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │ Frontend layer │ 5%         │ Zero student pages; zero lecturer pages    │
+  ├────────────────┼────────────┼────────────────────────────────────────────┤
+  │                │            │ Groq + OpenAI integrated; GitHub App +     │
+  │ Infrastructure │ 50%        │ Resend required at startup but not         │
+  │                │            │ implemented                                │
+  └────────────────┴────────────┴────────────────────────────────────────────┘
+
+  Education Hub overall: ~60% complete
+
+  Platform (cross-cutting)
+
+  ┌────────────────┬─────────────────────────────────────────────────────────┐
+  │     Layer      │                       Completion                        │
+  ├────────────────┼─────────────────────────────────────────────────────────┤
+  │ Data layer     │ 92% — 24 models, all indexed; Counter, audit log,       │
+  │                │ singleton summary present                               │
+  ├────────────────┼─────────────────────────────────────────────────────────┤
+  │                │ 80% — weighted trust score, platform premium, cron      │
+  │ Business logic │ pipeline complete; dispute resolution, GitHub, email    │
+  │                │ absent                                                  │
+  ├────────────────┼─────────────────────────────────────────────────────────┤
+  │ API layer      │ 85% — 55 routes; consistent role guards; uniform error  │
+  │                │ handling                                                │
+  ├────────────────┼─────────────────────────────────────────────────────────┤
+  │ Frontend layer │ 35% — 9 farmer/admin/public pages; 0 student/lecturer   │
+  │                │ pages; login/register complete                          │
+  ├────────────────┼─────────────────────────────────────────────────────────┤
+  │                │ 65% — Vercel crons configured; env validation at        │
+  │ Infrastructure │ startup (with false positives for GitHub/Resend); no CI │
+  │                │  pipeline config in repo                                │
+  ├────────────────┼─────────────────────────────────────────────────────────┤
+  │                │ 60% — 33 test files covering 23 API routes and          │
+  │ Test coverage  │ validation schemas; trust calculator unit tested; no    │
+  │                │ frontend tests                                          │
+  └────────────────┴─────────────────────────────────────────────────────────┘
+
+  Platform overall: ~73% feature-complete MVP; ~45% production-ready (frontend 
+  gaps for Education Hub are the primary blocker).
+
+✻ Cogitated for 12m 7s
