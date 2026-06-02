@@ -78,8 +78,8 @@ const DROPDOWNS: Array<{
         links: [
           { label: 'Trust & Verification', href: '/trust' },
           { label: 'Transparency', href: '/transparency' },
-          { label: 'Verification Team', href: '/about' },
-          { label: 'Appeals & Disputes', href: '/appeals' },
+          { label: 'Verification Team', href: '/team' },
+          { label: 'Appeals & Disputes', href: '/team#appeals-process' },
         ],
       },
       {

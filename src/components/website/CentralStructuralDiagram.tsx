@@ -301,6 +301,7 @@ function MobileDiagram(): React.ReactElement {
 export function CentralStructuralDiagram(): React.ReactElement {
   return (
     <figure
+      role="img"
       aria-label="Architecture diagram: Food Security Hub and Education Hub share a common Verification Layer. Both hubs submit participants for verification, and the layer produces trusted credentials returned to each hub."
     >
       <DesktopDiagram />

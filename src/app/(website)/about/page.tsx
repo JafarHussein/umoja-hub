@@ -1,8 +1,10 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { AudiencePage } from '@/components/website/AudiencePage';
+import { GovernancePage } from '@/components/website/GovernancePage';
 import type { AnchorSection } from '@/components/website/SectionAnchor';
+
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'About — UmojaHub',
@@ -72,8 +74,8 @@ const foodHubComponents: PlatformComponent[] = [
     statusType: 'operational',
   },
   {
-    name: 'AI Farm Assistant',
-    what: 'A conversational assistant that answers questions about crops, soil health, pest management, weather conditions, and market timing. Asks questions to help farmers reason through crop problems rather than issuing prescriptions. Does not make buying or selling decisions. Powered by Groq.',
+    name: 'Farm Analytics Tool',
+    what: 'A structured guidance tool that answers questions about crops, soil health, pest management, weather conditions, and market timing. Uses rule-based agricultural knowledge to help farmers reason through crop decisions. Does not make buying or selling decisions on behalf of farmers. Powered by Groq.',
     status: 'Operational',
     statusType: 'operational',
   },
@@ -87,14 +89,14 @@ const foodHubComponents: PlatformComponent[] = [
 
 const educationHubComponents: PlatformComponent[] = [
   {
-    name: 'AI Brief generation',
+    name: 'Structured brief generator',
     what: 'Two tracks: AI_BRIEF (the platform generates a project brief from East African agricultural industry contexts) and OPEN_SOURCE (the student provides a GitHub repository URL and receives a brief based on a selected open-source project). Briefs specify the problem, deliverables, target users, and evaluation criteria. Powered by OpenAI.',
     status: 'Operational',
     statusType: 'operational',
   },
   {
-    name: 'AI Mentor',
-    what: 'A Socratic assistant that asks questions rather than providing answers. Has context about the brief and the current submission stage. Will not write documents. Designed to push the student to reason through their approach independently. Powered by Groq.',
+    name: 'Project Guidance Tool',
+    what: 'A structured guidance tool that provides project planning templates and relevant technical documentation. Designed to help students reason through their approach independently rather than providing direct answers. Has context about the brief and the current submission stage. Will not write documents. Powered by Groq.',
     status: 'Operational',
     statusType: 'operational',
   },
@@ -161,7 +163,7 @@ const eastAfricaFacts: GeographicFact[] = [
   {
     label: 'Agricultural domain briefs',
     detail:
-      'The Education Hub AI Brief generation draws project contexts from East African agricultural industry problems — irrigation data management, crop disease detection, supply chain logistics, cooperative coordination. CS students in any East African country can receive and work on contextually relevant briefs even before the platform operates in their country.',
+      'The Education Hub structured brief generator draws project contexts from East African agricultural industry problems — irrigation data management, crop disease detection, supply chain logistics, cooperative coordination. CS students in any East African country can receive and work on contextually relevant briefs even before the platform operates in their country.',
   },
 ];
 
@@ -195,81 +197,81 @@ const contactTypes: ContactType[] = [
 
 export default function AboutPage(): React.ReactElement {
   return (
-    <AudiencePage
-      eyebrow="About · All Audiences"
+    <GovernancePage
+      eyebrow="About UmojaHub"
       heading="Two platforms built to address three structural failures in Kenya's agricultural and technology sectors."
       intro="UmojaHub is a verified farmer marketplace for East Africa and a verified portfolio system for Kenyan CS students. This page explains the motivation, current state, and geographic scope."
       sections={sections}
-      registerHref="/contact"
-      registerLabel="Contact us"
+      ctaHref="/contact"
+      ctaLabel="Contact us"
     >
       {/* Section 1 — Why it exists */}
       <section id="why-it-exists" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           01 · Why it exists
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-6">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-6">
           Three structural failures
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-zinc-800/50 mb-6">
-          <div className="bg-surface-primary p-6 flex flex-col gap-3">
-            <p className="font-mono text-t6 text-accent-green uppercase tracking-widest">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-ws-border-light mb-6">
+          <div className="bg-ws-surface-base p-6 flex flex-col gap-3">
+            <p className="font-geist-mono text-ws-caption text-ws-hub-green uppercase">
               The farmer problem
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
               A smallholder farmer who consistently fulfils orders on time has no mechanism to prove
               that reliability to a buyer in a different county who has never met them. The price
               they receive is quoted by traders who also control the price information — they cannot
               independently verify whether the offer reflects market demand.
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
               Their track record exists only in informal memory. A new buyer cannot distinguish them
               from an unreliable farmer without a physical introduction or a trusted referral.
               Neither scales past a small radius.
             </p>
           </div>
-          <div className="bg-surface-primary p-6 flex flex-col gap-3">
-            <p className="font-mono text-t6 text-accent-green uppercase tracking-widest">
+          <div className="bg-ws-surface-base p-6 flex flex-col gap-3">
+            <p className="font-geist-mono text-ws-caption text-ws-hub-green uppercase">
               The buyer problem
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
               A buyer who wants to purchase directly from a farmer — for freshness, lower cost, and
               accountability — has no searchable, verified directory of available produce. There is
               no public record of who has fulfilled orders reliably and who has not.
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
               Without that information, the only basis for choosing a farmer is price or referral.
               Neither scales. Most buyers end up purchasing through brokers anyway — not because
               they prefer it, but because there is no reliable alternative.
             </p>
           </div>
-          <div className="bg-surface-primary p-6 flex flex-col gap-3">
-            <p className="font-mono text-t6 text-accent-green uppercase tracking-widest">
+          <div className="bg-ws-surface-base p-6 flex flex-col gap-3">
+            <p className="font-geist-mono text-ws-caption text-ws-hub-green uppercase">
               The student problem
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
               A Kenyan CS student who built real projects during their degree cannot prove the depth
               of their capability to an employer who does not know them. Their degree certifies which
               subjects they studied. A GitHub portfolio is self-reported — the code could have been
               copied, generated, or written without genuine problem-solving.
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
               Employers who have been misled before respond by discounting portfolios entirely. This
               advantages students from well-known universities regardless of actual capability.
             </p>
           </div>
         </div>
 
-        <div className="border-l-2 border-accent-green pl-6 py-2">
-          <p className="font-body text-t4 text-text-secondary leading-relaxed mb-3">
+        <div className="border-l-2 border-ws-hub-green pl-6 py-2">
+          <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-3">
             UmojaHub was built to address these three specific failures. The Food Security Hub
             creates a public, verifiable record of farmer reliability — built from verified identity,
             completed transactions, and independently submitted buyer ratings. The Education Hub
             creates a public, verifiable record of student capability — built from structured
             documentation reviewed by verified lecturers against defined criteria.
           </p>
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7]">
             In both cases, the purpose is the same: to make trust verifiable where it previously was
             not.
           </p>
@@ -278,73 +280,71 @@ export default function AboutPage(): React.ReactElement {
 
       {/* Section 2 — What we have built */}
       <section id="what-we-have-built" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           02 · What we have built
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-3">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-3">
           Current platform state
         </h2>
-        <p className="font-body text-t5 text-text-secondary leading-relaxed mb-8">
+        <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6] mb-8">
           The components below are built. Where a component is pending an external dependency (such
           as Safaricom production approval), this is stated explicitly.
         </p>
 
-        {/* Food Security Hub */}
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Food Security Hub
         </p>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden mb-8">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden mb-8">
           {foodHubComponents.map((component) => (
             <div
               key={component.name}
-              className="px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="px-5 py-5 border-b border-ws-border-light last:border-0"
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                <p className="font-body text-t5 font-semibold text-text-primary">
+                <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary">
                   {component.name}
                 </p>
                 <p
-                  className={`font-mono text-t6 uppercase tracking-widest shrink-0 ${
+                  className={`font-geist-mono text-ws-caption uppercase shrink-0 ${
                     component.statusType === 'operational'
-                      ? 'text-accent-green'
-                      : 'text-amber-400'
+                      ? 'text-ws-hub-green'
+                      : 'text-ws-status-pending'
                   }`}
                 >
                   {component.status}
                 </p>
               </div>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
                 {component.what}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Education Hub */}
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Education Hub
         </p>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden">
           {educationHubComponents.map((component) => (
             <div
               key={component.name}
-              className="px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="px-5 py-5 border-b border-ws-border-light last:border-0"
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                <p className="font-body text-t5 font-semibold text-text-primary">
+                <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary">
                   {component.name}
                 </p>
                 <p
-                  className={`font-mono text-t6 uppercase tracking-widest shrink-0 ${
+                  className={`font-geist-mono text-ws-caption uppercase shrink-0 ${
                     component.statusType === 'operational'
-                      ? 'text-accent-green'
-                      : 'text-amber-400'
+                      ? 'text-ws-hub-green'
+                      : 'text-ws-status-pending'
                   }`}
                 >
                   {component.status}
                 </p>
               </div>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
                 {component.what}
               </p>
             </div>
@@ -354,46 +354,54 @@ export default function AboutPage(): React.ReactElement {
 
       {/* Section 3 — Geographic focus */}
       <section id="geographic-focus" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           03 · Geographic focus
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-3">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-3">
           Kenya first. East Africa in scope.
         </h2>
-        <p className="font-body text-t5 text-text-secondary leading-relaxed mb-8">
+        <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6] mb-8">
           The initial build targets Kenya because the payment infrastructure required — M-Pesa via
           Safaricom Daraja — is Kenya-native. The structural failures being addressed are regional.
         </p>
 
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Why Kenya
         </p>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden mb-8">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden mb-8">
           {kenyaFacts.map((fact) => (
-            <div key={fact.label} className="px-5 py-5 border-b border-zinc-800/50 last:border-0">
-              <p className="font-body text-t5 font-semibold text-text-primary mb-2">{fact.label}</p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{fact.detail}</p>
+            <div key={fact.label} className="px-5 py-5 border-b border-ws-border-light last:border-0">
+              <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-2">
+                {fact.label}
+              </p>
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
+                {fact.detail}
+              </p>
             </div>
           ))}
         </div>
 
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           East Africa in scope
         </p>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden mb-6">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden mb-6">
           {eastAfricaFacts.map((fact) => (
-            <div key={fact.label} className="px-5 py-5 border-b border-zinc-800/50 last:border-0">
-              <p className="font-body text-t5 font-semibold text-text-primary mb-2">{fact.label}</p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{fact.detail}</p>
+            <div key={fact.label} className="px-5 py-5 border-b border-ws-border-light last:border-0">
+              <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-2">
+                {fact.label}
+              </p>
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
+                {fact.detail}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5">
-          <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+        <div className="border border-ws-border-light p-5">
+          <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
             Current scope
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
             The platform currently operates in Kenya only. County data, phone number validation, and
             payment processing are all Kenya-specific. Expansion to additional East African markets
             depends on payment provider integrations and regulatory requirements in each country.
@@ -403,24 +411,24 @@ export default function AboutPage(): React.ReactElement {
 
       {/* Section 4 — Contact */}
       <section id="contact" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           04 · Contact
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-3">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-3">
           What we handle
         </h2>
-        <p className="font-body text-t5 text-text-secondary leading-relaxed mb-8">
+        <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6] mb-8">
           UmojaHub is an independent platform project. The following types of inquiry can be
           directed to the platform through the contact form.
         </p>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden mb-6">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden mb-6">
           {contactTypes.map((type) => (
-            <div key={type.subject} className="px-5 py-5 border-b border-zinc-800/50 last:border-0">
-              <p className="font-body text-t5 font-semibold text-text-primary mb-2">
+            <div key={type.subject} className="px-5 py-5 border-b border-ws-border-light last:border-0">
+              <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-2">
                 {type.subject}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
                 {type.examples}
               </p>
             </div>
@@ -430,18 +438,18 @@ export default function AboutPage(): React.ReactElement {
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             href="/contact"
-            className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-sm border border-zinc-800/50 text-text-secondary font-body text-t5 transition-all duration-150 hover:border-white/20 hover:text-text-primary"
+            className="inline-flex items-center justify-center min-h-[44px] px-6 border border-ws-border-light text-ws-text-secondary font-geist text-ws-body-sm hover:border-ws-border-medium hover:text-ws-text-primary transition-colors duration-150"
           >
             Contact form
           </Link>
           <Link
             href="/security"
-            className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-sm border border-zinc-800/50 text-text-secondary font-body text-t5 transition-all duration-150 hover:border-white/20 hover:text-text-primary"
+            className="inline-flex items-center justify-center min-h-[44px] px-6 border border-ws-border-light text-ws-text-secondary font-geist text-ws-body-sm hover:border-ws-border-medium hover:text-ws-text-primary transition-colors duration-150"
           >
             Security disclosure process
           </Link>
         </div>
       </section>
-    </AudiencePage>
+    </GovernancePage>
   );
 }

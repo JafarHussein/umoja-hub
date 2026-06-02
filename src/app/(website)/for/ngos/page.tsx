@@ -1,8 +1,10 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { AudiencePage } from '@/components/website/AudiencePage';
-import { FaqAccordion, type FaqItem } from '@/components/website/FaqAccordion';
+import { GovernancePage } from '@/components/website/GovernancePage';
+import { FaqItem } from '@/components/website/FaqItem';
 import type { AnchorSection } from '@/components/website/SectionAnchor';
+
+export const revalidate = 86400;
 
 interface MandateRow {
   area: string;
@@ -24,6 +26,11 @@ interface UntrackedItem {
 interface Limitation {
   heading: string;
   detail: string;
+}
+
+interface FaqQuestion {
+  question: string;
+  answer: string;
 }
 
 export const metadata: Metadata = {
@@ -49,7 +56,7 @@ const foodSecurityMandates: MandateRow[] = [
     area: 'Market access for smallholder produce',
     status: 'addressed',
     explanation:
-      'The platform creates a publicly searchable directory of produce listings from verified farmers, accessible to buyers outside the farmer\'s existing social or geographic network. A farmer who previously sold only to roadside traders can list produce and receive orders from buyers anywhere in Kenya.',
+      "The platform creates a publicly searchable directory of produce listings from verified farmers, accessible to buyers outside the farmer's existing social or geographic network. A farmer who previously sold only to roadside traders can list produce and receive orders from buyers anywhere in Kenya.",
   },
   {
     area: 'Price transparency and information asymmetry',
@@ -67,19 +74,19 @@ const foodSecurityMandates: MandateRow[] = [
     area: 'Agricultural input access at reduced cost',
     status: 'partial',
     explanation:
-      'The cooperative group feature enables groups of verified farmers to place collective bulk orders from verified suppliers at bulk rates. This partially addresses input cost access. Important limitation: payment coordination for group orders is currently manual and outside the platform\'s M-Pesa payment system. See the For Cooperatives page for the full explanation.',
+      "The cooperative group feature enables groups of verified farmers to place collective bulk orders from verified suppliers at bulk rates. This partially addresses input cost access. Important limitation: payment coordination for group orders is currently manual and outside the platform's M-Pesa payment system. See the For Cooperatives page for the full explanation.",
   },
   {
     area: 'Farmer income improvement',
     status: 'partial',
     explanation:
-      'The platform enables farmers to sell at prices closer to market rates by eliminating intermediary information advantage. Whether this translates to sustained income improvement for any specific farmer depends on buyer demand for their crop, their Trust Score tier, and factors outside the platform\'s control (logistics, cold chain, capital timing). The platform does not track income outcomes.',
+      "The platform enables farmers to sell at prices closer to market rates by eliminating intermediary information advantage. Whether this translates to sustained income improvement for any specific farmer depends on buyer demand for their crop, their Trust Score tier, and factors outside the platform's control (logistics, cold chain, capital timing). The platform does not track income outcomes.",
   },
   {
     area: 'Agronomic advisory access',
     status: 'partial',
     explanation:
-      'The AI Farm Assistant provides general agronomic guidance on planting schedules, pest management, and market timing. It is not a replacement for a certified agricultural extension officer and does not provide location-specific soil or climate calibrated advice. It is a general-knowledge starting point, not an advisory service.',
+      'The Farm Analytics Tool provides general agronomic guidance on planting schedules, pest management, and market timing. It is not a replacement for a certified agricultural extension officer and does not provide location-specific soil or climate calibrated advice. It is a general-knowledge starting point, not an advisory service.',
   },
   {
     area: 'Post-harvest handling, storage, and cold chain',
@@ -97,7 +104,7 @@ const foodSecurityMandates: MandateRow[] = [
     area: 'Agricultural credit and financing',
     status: 'not-addressed',
     explanation:
-      'The platform does not provide or facilitate credit, financing, or insurance for farmers. Capital timing remains the farmer\'s problem — M-Pesa payment arrives after buyer receipt confirmation, not on farm-gate delivery. The platform does not solve the immediate cash need that drives many farmers to sell through brokers who pay on the spot.',
+      "The platform does not provide or facilitate credit, financing, or insurance for farmers. Capital timing remains the farmer's problem — M-Pesa payment arrives after buyer receipt confirmation, not on farm-gate delivery. The platform does not solve the immediate cash need that drives many farmers to sell through brokers who pay on the spot.",
   },
 ];
 
@@ -106,7 +113,7 @@ const youthMandates: MandateRow[] = [
     area: 'Structured skills development framework',
     status: 'addressed',
     explanation:
-      'The Education Hub\'s three-document structure — Problem Breakdown, Approach Plan, and Final Reflection — provides a framework for developing and documenting problem decomposition, planning discipline, and professional self-assessment. These are not skills typically developed explicitly in CS curricula.',
+      "The Education Hub's three-document structure — Problem Breakdown, Approach Plan, and Final Reflection — provides a framework for developing and documenting problem decomposition, planning discipline, and professional self-assessment. These are not skills typically developed explicitly in CS curricula.",
   },
   {
     area: 'Independently verified employability evidence',
@@ -209,7 +216,7 @@ const untrackedItems: UntrackedItem[] = [
   {
     heading: 'Platform attribution',
     detail:
-      'The platform cannot determine what share of a farmer\'s increased income, a buyer\'s reduced procurement cost, or a student\'s hiring outcome is attributable to platform participation versus other interventions. Attribution analysis requires a counterfactual study design that the platform data does not support.',
+      "The platform cannot determine what share of a farmer's increased income, a buyer's reduced procurement cost, or a student's hiring outcome is attributable to platform participation versus other interventions. Attribution analysis requires a counterfactual study design that the platform data does not support.",
   },
   {
     heading: 'Farmer retention and dropout',
@@ -232,12 +239,12 @@ const limitations: Limitation[] = [
   {
     heading: 'Field staff cannot act on behalf of farmers',
     detail:
-      'The platform does not support proxy registration or managed accounts. Field staff cannot create accounts for farmers, submit verification documents, manage listings, or receive payments on behalf of farmers. Every platform action requires the farmer\'s own account.',
+      "The platform does not support proxy registration or managed accounts. Field staff cannot create accounts for farmers, submit verification documents, manage listings, or receive payments on behalf of farmers. Every platform action requires the farmer's own account.",
   },
   {
     heading: 'Education Hub throughput is bounded by reviewer capacity',
     detail:
-      'The review queue for any track depends on the number of active verified lecturers for that track. Organizations that want to support students through the Education Hub should understand that the platform\'s throughput is not unlimited — large cohorts cannot be processed simultaneously if the reviewer pool is thin.',
+      "The review queue for any track depends on the number of active verified lecturers for that track. Organizations that want to support students through the Education Hub should understand that the platform's throughput is not unlimited — large cohorts cannot be processed simultaneously if the reviewer pool is thin.",
   },
   {
     heading: 'Platform data access for external organizations requires agreement',
@@ -246,22 +253,21 @@ const limitations: Limitation[] = [
   },
 ];
 
-const faqItems: FaqItem[] = [
+const faqItems: FaqQuestion[] = [
   {
-    question:
-      'Can our organization register farmers onto the platform on their behalf?',
+    question: 'Can our organization register farmers onto the platform on their behalf?',
     answer:
-      'No. Each farmer must create their own account, submit their own verification documents, and manage their own listings and orders. The platform does not support proxy accounts or managed profiles for farmers. Field staff can guide farmers through the process, but the farmer must perform each action using their own account.',
+      "No. Each farmer must create their own account, submit their own verification documents, and manage their own listings and orders. The platform does not support proxy accounts or managed profiles for farmers. Field staff can guide farmers through the process, but the farmer must perform each action using their own account.",
   },
   {
     question: 'How do we know which farmers in our program are on the platform?',
     answer:
-      'The platform does not share user data with external organizations. You cannot query which of your program farmers are using the platform. To understand adoption within your farmer groups, you would need to ask them directly. Farmers who choose to disclose their platform participation may share their marketplace profile or Trust Score.',
+      "The platform does not share user data with external organizations. You cannot query which of your program farmers are using the platform. To understand adoption within your farmer groups, you would need to ask them directly. Farmers who choose to disclose their platform participation may share their marketplace profile or Trust Score.",
   },
   {
     question: 'Can we access platform data for our impact evaluations?',
     answer:
-      'Aggregate public metrics (verified farmer count, transaction volume, counties represented) are publicly available on the platform\'s transparency page. Transaction-level data for specific farmers or cohorts is not publicly accessible. If your evaluation requires specific data sets, contact the platform to discuss what may be available under a formal data governance agreement.',
+      "Aggregate public metrics (verified farmer count, transaction volume, counties represented) are publicly available on the platform's transparency page. Transaction-level data for specific farmers or cohorts is not publicly accessible. If your evaluation requires specific data sets, contact the platform to discuss what may be available under a formal data governance agreement.",
   },
   {
     question: 'Can government agencies use the price intelligence data for market monitoring?',
@@ -281,7 +287,7 @@ const faqItems: FaqItem[] = [
   {
     question: 'Does the platform cover all Kenyan counties?',
     answer:
-      'The platform has verified farmers across multiple Kenyan counties, but coverage varies significantly. Not every county has active listings. The platform\'s county coverage reflects where farmers have registered, been verified, and are actively listing — not a deliberate geographic rollout strategy. Coverage expands as more farmers in underrepresented counties discover and join the platform.',
+      "The platform has verified farmers across multiple Kenyan counties, but coverage varies significantly. Not every county has active listings. The platform's county coverage reflects where farmers have registered, been verified, and are actively listing — not a deliberate geographic rollout strategy. Coverage expands as more farmers in underrepresented counties discover and join the platform.",
   },
   {
     question: 'Is the platform available in Kiswahili or local languages?',
@@ -289,38 +295,76 @@ const faqItems: FaqItem[] = [
       'The current platform interface is in English. Farmer-facing SMS notifications (order confirmations, verification status updates) are in English. This is a known access barrier for farmers with limited English literacy. If language accessibility is a critical factor for your program, note this as a limitation when assessing platform fit for your specific farmer population.',
   },
   {
-    question: 'What is the platform\'s data governance and privacy framework?',
+    question: "What is the platform's data governance and privacy framework?",
     answer:
-      'The platform operates under the Kenya Data Protection Act 2019. Farmer verification documents are stored on Cloudinary and accessible only to administrators. Payment processing is through Safaricom\'s Daraja API — the platform does not store buyer M-Pesa credentials. Student portfolio entries are publicly accessible by design. For a full statement of what data is collected, how it is used, and how to request deletion or access, see the platform\'s Privacy Policy.',
+      "The platform operates under the Kenya Data Protection Act 2019. Farmer verification documents are stored on Cloudinary and accessible only to administrators. Payment processing is through Safaricom's Daraja API — the platform does not store buyer M-Pesa credentials. Student portfolio entries are publicly accessible by design. For a full statement of what data is collected, how it is used, and how to request deletion or access, see the platform's Privacy Policy.",
   },
   {
-    question:
-      'How can field staff introduce the platform to farmer groups they work with?',
+    question: 'How can field staff introduce the platform to farmer groups they work with?',
     answer:
       'The most effective introduction is the For Farmers page, which covers what the platform does, what verification requires, and what limitations farmers should know before registering. Field staff who have read this page themselves are better positioned to set accurate expectations with farmers — particularly around the verification wait time, the payment model, and the fact that registration does not guarantee immediate orders.',
   },
 ];
 
+interface EngageStep {
+  audience: string;
+  action: string;
+  link: { label: string; href: string } | null;
+}
+
+const engageSteps: EngageStep[] = [
+  {
+    audience: 'Agricultural NGOs supporting farmers',
+    action:
+      'Read the For Farmers page yourself first, then share it with the farmers you work with. Assess digital access as a prerequisite before introducing the platform to your farmer groups.',
+    link: { label: 'Read the For Farmers page', href: '/for/farmers' },
+  },
+  {
+    audience: 'NGOs running cooperative programs',
+    action:
+      'Read the For Cooperatives page for the full explanation of how cooperative group ordering works, what payment coordination currently involves, and what the platform does not handle.',
+    link: { label: 'Read the For Cooperatives page', href: '/for/cooperatives' },
+  },
+  {
+    audience: 'Youth employment and skills programs',
+    action:
+      'Read the For Students page to understand the Education Hub before introducing it to students in your program. The page is written for students and sets the expectations that reduce dropout and disappointment.',
+    link: { label: 'Read the For Students page', href: '/for/students' },
+  },
+  {
+    audience: 'Government agricultural extension departments',
+    action:
+      'The Price Intelligence infrastructure and the farmer verification methodology are documented in the Trust & Verification page. For questions about data access relevant to market monitoring mandates, contact the platform directly.',
+    link: null,
+  },
+  {
+    audience: 'All organizations seeking formal partnership',
+    action:
+      'Contact the platform with the specific nature of your program, what you need from the platform, and what you offer in return. Be concrete about data access requirements, integration needs, and co-branding expectations. Generic partnership inquiries are harder to respond to usefully.',
+    link: null,
+  },
+];
+
 export default function NgosPage(): React.ReactElement {
   return (
-    <AudiencePage
-      eyebrow="For NGOs & Government"
+    <GovernancePage
+      eyebrow="Governance · Impact"
       heading="Two mandates this platform directly addresses. Several it does not. Here is exactly which ones."
       intro="This page covers how the Food Security Hub and Education Hub relate to agricultural NGO and government mandates in food security, market access, and youth employment. It covers what the platform tracks, how each metric is calculated, and what impact data organizations will need to generate independently."
       sections={sections}
-      registerHref="/contact?subject=ngo-partnership"
-      registerLabel="Contact us about partnership"
+      ctaHref="/contact?subject=ngo-partnership"
+      ctaLabel="Contact us about partnership"
     >
       {/* ── What the platform addresses ── */}
       <section id="what-the-platform-addresses" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           What the platform addresses
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-6">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-6">
           UmojaHub operates two systems. Neither is a comprehensive food security or youth
           employment program.
         </h2>
-        <div className="space-y-5 font-body text-t4 text-text-secondary leading-relaxed max-w-3xl">
+        <div className="space-y-5 font-geist text-ws-body text-ws-text-secondary leading-[1.7] max-w-3xl mb-8">
           <p>
             The Food Security Hub is a verified agricultural marketplace. It connects verified
             Kenyan farmers with buyers who pay via M-Pesa, and enables cooperative groups to
@@ -347,11 +391,11 @@ export default function NgosPage(): React.ReactElement {
           </p>
         </div>
 
-        <div className="mt-8 space-y-2 max-w-3xl">
+        <div className="space-y-2 max-w-3xl">
           {[
             {
               label: 'Addressed',
-              color: 'text-accent-green',
+              color: 'text-ws-hub-green',
               items: [
                 'Market access for smallholder produce',
                 'Price transparency and market information asymmetry',
@@ -361,7 +405,7 @@ export default function NgosPage(): React.ReactElement {
             },
             {
               label: 'Partially addressed',
-              color: 'text-amber-400',
+              color: 'text-ws-status-pending',
               items: [
                 'Agricultural input access at reduced cost (group ordering, manual payment)',
                 'Farmer income improvement (enabled, not guaranteed, not tracked)',
@@ -371,7 +415,7 @@ export default function NgosPage(): React.ReactElement {
             },
             {
               label: 'Not addressed',
-              color: 'text-red-400',
+              color: 'text-ws-status-denied',
               items: [
                 'Post-harvest handling, storage, and cold chain',
                 'Nutritional access and food distribution',
@@ -381,17 +425,19 @@ export default function NgosPage(): React.ReactElement {
               ],
             },
           ].map((group) => (
-            <div key={group.label} className="border border-zinc-800/50 rounded-sm overflow-hidden">
-              <div className="bg-surface-elevated px-5 py-2 border-b border-zinc-800/50">
-                <span className={`font-mono text-t6 uppercase tracking-widest ${group.color}`}>
+            <div key={group.label} className="border border-ws-border-light overflow-hidden">
+              <div className="bg-ws-surface-raised px-5 py-2 border-b border-ws-border-light">
+                <span className={`font-geist-mono text-ws-caption uppercase ${group.color}`}>
                   {group.label}
                 </span>
               </div>
               <div className="px-5 py-3 space-y-1">
                 {group.items.map((item) => (
                   <div key={item} className="flex items-start gap-3">
-                    <span className="font-mono text-t6 text-text-disabled shrink-0 mt-0.5">—</span>
-                    <p className="font-body text-t5 text-text-secondary">{item}</p>
+                    <span className="font-geist-mono text-ws-caption text-ws-text-tertiary shrink-0 mt-0.5">
+                      —
+                    </span>
+                    <p className="font-geist text-ws-body-sm text-ws-text-secondary">{item}</p>
                   </div>
                 ))}
               </div>
@@ -402,30 +448,32 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── Food Security Hub relevance ── */}
       <section id="food-security-hub" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Food Security Hub relevance
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-2">
           Which agricultural NGO and government mandate areas align with the Food Security Hub
           — and where the alignment is incomplete.
         </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           Each mandate area below is assessed against what the platform currently delivers.
           Partial alignment means the platform contributes but does not fully address the mandate.
         </p>
 
         <div className="space-y-3 max-w-3xl">
           {foodSecurityMandates.map((row) => (
-            <div key={row.area} className="border border-zinc-800/50 rounded-sm overflow-hidden">
-              <div className="bg-surface-elevated px-5 py-3 border-b border-zinc-800/50 flex items-center justify-between gap-4">
-                <p className="font-body text-t5 font-semibold text-text-primary">{row.area}</p>
+            <div key={row.area} className="border border-ws-border-light overflow-hidden">
+              <div className="bg-ws-surface-raised px-5 py-3 border-b border-ws-border-light flex items-center justify-between gap-4">
+                <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary">
+                  {row.area}
+                </p>
                 <span
-                  className={`font-mono text-t6 uppercase tracking-widest shrink-0 ${
+                  className={`font-geist-mono text-ws-caption uppercase shrink-0 ${
                     row.status === 'addressed'
-                      ? 'text-accent-green'
+                      ? 'text-ws-hub-green'
                       : row.status === 'partial'
-                        ? 'text-amber-400'
-                        : 'text-text-disabled'
+                        ? 'text-ws-status-pending'
+                        : 'text-ws-text-tertiary'
                   }`}
                 >
                   {row.status === 'addressed'
@@ -436,7 +484,7 @@ export default function NgosPage(): React.ReactElement {
                 </span>
               </div>
               <div className="px-5 py-4">
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
+                <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
                   {row.explanation}
                 </p>
               </div>
@@ -447,14 +495,14 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── Education Hub relevance ── */}
       <section id="education-hub" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Education Hub relevance
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-2">
           Which youth employment and skills development mandate areas align with the Education
           Hub — and where the evidence chain stops.
         </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           The Education Hub produces a specific type of evidence: independently reviewed project
           documentation for CS students. Here is what that means for organizations whose mandates
           include youth skills and employability.
@@ -462,16 +510,18 @@ export default function NgosPage(): React.ReactElement {
 
         <div className="space-y-3 max-w-3xl mb-8">
           {youthMandates.map((row) => (
-            <div key={row.area} className="border border-zinc-800/50 rounded-sm overflow-hidden">
-              <div className="bg-surface-elevated px-5 py-3 border-b border-zinc-800/50 flex items-center justify-between gap-4">
-                <p className="font-body text-t5 font-semibold text-text-primary">{row.area}</p>
+            <div key={row.area} className="border border-ws-border-light overflow-hidden">
+              <div className="bg-ws-surface-raised px-5 py-3 border-b border-ws-border-light flex items-center justify-between gap-4">
+                <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary">
+                  {row.area}
+                </p>
                 <span
-                  className={`font-mono text-t6 uppercase tracking-widest shrink-0 ${
+                  className={`font-geist-mono text-ws-caption uppercase shrink-0 ${
                     row.status === 'addressed'
-                      ? 'text-accent-green'
+                      ? 'text-ws-hub-green'
                       : row.status === 'partial'
-                        ? 'text-amber-400'
-                        : 'text-text-disabled'
+                        ? 'text-ws-status-pending'
+                        : 'text-ws-text-tertiary'
                   }`}
                 >
                   {row.status === 'addressed'
@@ -482,7 +532,7 @@ export default function NgosPage(): React.ReactElement {
                 </span>
               </div>
               <div className="px-5 py-4">
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
+                <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
                   {row.explanation}
                 </p>
               </div>
@@ -490,11 +540,11 @@ export default function NgosPage(): React.ReactElement {
           ))}
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 max-w-3xl">
-          <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+        <div className="border border-ws-border-light p-5 max-w-3xl">
+          <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-1">
             What the Education Hub produces that other youth skills programs do not
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
             Most youth skills programs produce: attendance certificates, completion badges, or
             self-reported portfolio entries. The Education Hub produces a portfolio entry where
             a named, credentials-confirmed reviewer read the student&apos;s three process documents,
@@ -509,20 +559,20 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── Supporting farmer adoption ── */}
       <section id="supporting-farmer-adoption" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Supporting farmer adoption
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-2">
           What NGO field staff can and cannot do to help farmers participate.
         </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           The platform requires farmers to act for themselves. Field staff who understand this
           constraint in advance set more accurate expectations with their farmer groups.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-zinc-800/50 mb-8">
-          <div className="bg-surface-primary p-6">
-            <p className="font-mono text-t6 text-accent-green uppercase tracking-widest mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-ws-border-light mb-8">
+          <div className="bg-ws-surface-base p-6">
+            <p className="font-geist-mono text-ws-caption text-ws-hub-green uppercase mb-4">
               What field staff can do
             </p>
             <div className="space-y-4">
@@ -549,43 +599,47 @@ export default function NgosPage(): React.ReactElement {
                 },
               ].map((item) => (
                 <div key={item.action}>
-                  <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+                  <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-1">
                     {item.action}
                   </p>
-                  <p className="font-body text-t5 text-text-secondary leading-relaxed">
+                  <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
                     {item.detail}
                   </p>
                 </div>
               ))}
             </div>
           </div>
-          <div className="bg-surface-primary p-6">
-            <p className="font-mono text-t6 text-amber-400 uppercase tracking-widest mb-4">
+          <div className="bg-ws-surface-base p-6">
+            <p className="font-geist-mono text-ws-caption text-ws-status-pending uppercase mb-4">
               What field staff cannot do
             </p>
             <div className="space-y-3">
               {[
-                'Register a farmer account on behalf of a farmer — each account must be created by the farmer using their own identity.',
-                'Submit verification documents for a farmer — the farmer must upload their own documents through their own account.',
-                'Manage a farmer\'s listings or respond to orders on their behalf — every platform action requires the farmer\'s own login.',
-                'Receive a farmer\'s M-Pesa payments or intercept order notifications — payment goes to the farmer\'s own M-Pesa account.',
+                "Register a farmer account on behalf of a farmer — each account must be created by the farmer using their own identity.",
+                "Submit verification documents for a farmer — the farmer must upload their own documents through their own account.",
+                "Manage a farmer's listings or respond to orders on their behalf — every platform action requires the farmer's own login.",
+                "Receive a farmer's M-Pesa payments or intercept order notifications — payment goes to the farmer's own M-Pesa account.",
                 'Accelerate the administrator verification review — the queue is processed in order; there is no priority lane.',
                 'Guarantee that a specific farmer will receive orders after verification — demand depends on crop type, county, buyer activity, and Trust Score tier.',
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
-                  <span className="font-mono text-t6 text-text-disabled shrink-0 mt-0.5">—</span>
-                  <p className="font-body text-t5 text-text-secondary leading-relaxed">{item}</p>
+                  <span className="font-geist-mono text-ws-caption text-ws-text-tertiary shrink-0 mt-0.5">
+                    —
+                  </span>
+                  <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
+                    {item}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 max-w-3xl">
-          <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+        <div className="border border-ws-border-light p-5 max-w-3xl">
+          <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-1">
             On setting expectations with farmers
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
             The most common failure mode when NGO field staff introduce the platform is
             creating expectations of quick income improvement. A verified farmer with a
             NEW tier Trust Score may wait weeks for a first order. A farmer in a county
@@ -599,34 +653,31 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── Impact metrics ── */}
       <section id="impact-metrics" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Impact metrics
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-2">
           What the platform publicly tracks, how each metric is calculated, and what each
           number includes and excludes.
         </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           These distinctions matter for organizations using platform data in donor reports,
           program evaluations, or policy briefings. Using the wrong interpretation of a
           metric in a report creates inaccuracies that may be difficult to correct later.
         </p>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden max-w-3xl">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden max-w-3xl">
           {impactMetrics.map((item, i) => (
-            <div
-              key={i}
-              className="px-5 py-5 border-b border-zinc-800/50 last:border-0"
-            >
-              <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+            <div key={i} className="px-5 py-5 border-b border-ws-border-light last:border-0">
+              <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
                 {item.metric}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed mb-2">
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6] mb-2">
                 {item.whatItCounts}
               </p>
               {item.distinction !== null && (
-                <p className="font-body text-t5 text-text-disabled leading-relaxed pl-3 border-l border-zinc-800/50">
-                  <span className="font-mono text-t6 uppercase tracking-widest mr-1">
+                <p className="font-geist text-ws-body-sm text-ws-text-tertiary leading-[1.6] pl-3 border-l border-ws-border-light">
+                  <span className="font-geist-mono text-ws-caption uppercase mr-1">
                     Important:
                   </span>
                   {item.distinction}
@@ -639,14 +690,14 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── What is not tracked ── */}
       <section id="what-is-not-tracked" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           What is not tracked
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-2">
           Impact data the platform does not generate — and what organizations need to produce
           independently.
         </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           This section must exist. Organizations that build program evaluations assuming the
           platform generates impact data it does not generate will discover the gap when they
           need the data — not now. The platform can provide transaction data for partner farmers
@@ -656,20 +707,22 @@ export default function NgosPage(): React.ReactElement {
 
         <div className="space-y-3 max-w-3xl">
           {untrackedItems.map((item) => (
-            <div key={item.heading} className="border border-zinc-800/50 rounded-sm p-5">
-              <p className="font-body text-t4 font-semibold text-text-primary mb-2">
+            <div key={item.heading} className="border border-ws-border-light p-5">
+              <p className="font-geist text-ws-body font-semibold text-ws-text-primary mb-2">
                 {item.heading}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.detail}</p>
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
+                {item.detail}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 border border-zinc-800/50 rounded-sm p-5 max-w-3xl">
-          <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+        <div className="mt-6 border border-ws-border-light p-5 max-w-3xl">
+          <p className="font-geist text-ws-body-sm font-semibold text-ws-text-primary mb-1">
             For organizations that need this data
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
             Transaction-level data for specific farmers — with appropriate consent and under
             a data governance agreement — can be discussed with the platform. This would
             allow an evaluator to match platform transaction records to a specific cohort of
@@ -682,23 +735,25 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── Limitations ── */}
       <section id="limitations" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           Limitations
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-2">
           Platform constraints relevant to organizational programs built around UmojaHub.
         </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        <p className="font-geist text-ws-body text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           Organizations that plan programs with the platform as a dependency should know these
           constraints before designing program logic around platform assumptions.
         </p>
         <div className="space-y-3">
           {limitations.map((item) => (
-            <div key={item.heading} className="border border-zinc-800/50 rounded-sm p-5">
-              <p className="font-body text-t4 font-semibold text-text-primary mb-2">
+            <div key={item.heading} className="border border-ws-border-light p-5">
+              <p className="font-geist text-ws-body font-semibold text-ws-text-primary mb-2">
                 {item.heading}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.detail}</p>
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
+                {item.detail}
+              </p>
             </div>
           ))}
         </div>
@@ -706,71 +761,44 @@ export default function NgosPage(): React.ReactElement {
 
       {/* ── FAQ ── */}
       <section id="faq" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           FAQ
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-8">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-8">
           Questions from NGO program staff and government officers.
         </h2>
-        <FaqAccordion items={faqItems} />
+        <div className="border border-ws-border-light">
+          {faqItems.map((item) => (
+            <FaqItem key={item.question} question={item.question} answer={item.answer} />
+          ))}
+        </div>
       </section>
 
       {/* ── How to engage ── */}
       <section id="how-to-engage" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
+        <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
           How to engage
         </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-8">
+        <h2 className="font-display text-ws-section text-ws-text-primary mb-8">
           Practical paths for organizations with different mandates.
         </h2>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden max-w-2xl mb-6">
-          {[
-            {
-              audience: 'Agricultural NGOs supporting farmers',
-              action:
-                'Read the For Farmers page yourself first, then share it with the farmers you work with. Assess digital access as a prerequisite before introducing the platform to your farmer groups.',
-              link: { label: 'Read the For Farmers page', href: '/for/farmers' },
-            },
-            {
-              audience: 'NGOs running cooperative programs',
-              action:
-                'Read the For Cooperatives page for the full explanation of how cooperative group ordering works, what payment coordination currently involves, and what the platform does not handle.',
-              link: { label: 'Read the For Cooperatives page', href: '/for/cooperatives' },
-            },
-            {
-              audience: 'Youth employment and skills programs',
-              action:
-                'Read the For Students page to understand the Education Hub before introducing it to students in your program. The page is written for students and sets the expectations that reduce dropout and disappointment.',
-              link: { label: 'Read the For Students page', href: '/for/students' },
-            },
-            {
-              audience: 'Government agricultural extension departments',
-              action:
-                'The Price Intelligence infrastructure and the farmer verification methodology are documented in the Trust & Verification page. For questions about data access relevant to market monitoring mandates, contact the platform directly.',
-              link: null,
-            },
-            {
-              audience: 'All organizations seeking formal partnership',
-              action:
-                'Contact the platform with the specific nature of your program, what you need from the platform, and what you offer in return. Be concrete about data access requirements, integration needs, and co-branding expectations. Generic partnership inquiries are harder to respond to usefully.',
-              link: null,
-            },
-          ].map((item) => (
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden max-w-2xl mb-6">
+          {engageSteps.map((item) => (
             <div
               key={item.audience}
-              className="px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="px-5 py-5 border-b border-ws-border-light last:border-0"
             >
-              <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+              <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
                 {item.audience}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed mb-2">
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6] mb-2">
                 {item.action}
               </p>
               {item.link !== null && (
                 <a
                   href={item.link.href}
-                  className="font-body text-t5 text-text-disabled hover:text-text-secondary transition-colors duration-150 underline underline-offset-2"
+                  className="font-geist text-ws-body-sm text-ws-text-tertiary hover:text-ws-text-secondary transition-colors duration-150 underline underline-offset-2"
                 >
                   {item.link.label} →
                 </a>
@@ -779,9 +807,9 @@ export default function NgosPage(): React.ReactElement {
           ))}
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 max-w-2xl">
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
-            <span className="font-semibold text-text-primary">On what the platform is not: </span>
+        <div className="border border-ws-border-light p-5 max-w-2xl">
+          <p className="font-geist text-ws-body-sm text-ws-text-secondary leading-[1.6]">
+            <span className="font-semibold text-ws-text-primary">On what the platform is not: </span>
             UmojaHub is not a development program. It is a platform. Organizations that are
             looking for a partner to co-design programs, provide field support, or contribute
             to program budgets will not find that here. What the platform offers is
@@ -791,6 +819,6 @@ export default function NgosPage(): React.ReactElement {
           </p>
         </div>
       </section>
-    </AudiencePage>
+    </GovernancePage>
   );
 }
