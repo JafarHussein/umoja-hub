@@ -1,25 +1,12 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { AudiencePage } from '@/components/website/AudiencePage';
-import { FaqAccordion, type FaqItem } from '@/components/website/FaqAccordion';
+import Link from 'next/link';
+import { EduHubPage } from '@/components/website/EduHubPage';
+import { LimitationPanel } from '@/components/website/LimitationPanel';
+import { FaqItem } from '@/components/website/FaqItem';
 import type { AnchorSection } from '@/components/website/SectionAnchor';
 
-interface FacultyStep {
-  step: string;
-  actor: string;
-  action: string;
-  note: string | null;
-}
-
-interface ContributionItem {
-  label: string;
-  detail: string;
-}
-
-interface Limitation {
-  heading: string;
-  detail: string;
-}
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'For Institutions — UmojaHub Education Hub',
@@ -27,7 +14,7 @@ export const metadata: Metadata = {
     'How universities and colleges relate to the Education Hub: individual faculty as verified reviewers, student participation independent of institutional permission, what the institution cannot control, and what accumulates over time.',
 };
 
-const sections: AnchorSection[] = [
+const SECTIONS: AnchorSection[] = [
   { id: 'why-institutions-matter', label: 'Why institutions matter' },
   { id: 'how-participation-works', label: 'How participation works' },
   { id: 'student-participation', label: 'Student participation' },
@@ -39,7 +26,36 @@ const sections: AnchorSection[] = [
   { id: 'how-to-engage', label: 'How to engage' },
 ];
 
-const facultySteps: FacultyStep[] = [
+// ─── Layout primitives ──────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <p className="font-geist-mono text-ws-caption text-ws-hub-blue uppercase mb-3">{children}</p>
+  );
+}
+
+function SectionH2({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <h2 className="font-display text-ws-section text-ws-text-primary mb-4 max-w-2xl">{children}</h2>
+  );
+}
+
+function Body({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7]">{children}</p>
+  );
+}
+
+// ─── Data ──────────────────────────────────────────────────────────────────
+
+interface FacultyStep {
+  readonly step: string;
+  readonly actor: string;
+  readonly action: string;
+  readonly note: string | null;
+}
+
+const FACULTY_STEPS: readonly FacultyStep[] = [
   {
     step: '1',
     actor: 'Faculty member',
@@ -70,7 +86,7 @@ const facultySteps: FacultyStep[] = [
   },
 ];
 
-const institutionContributes: ContributionItem[] = [
+const INSTITUTION_CONTRIBUTES = [
   {
     label: 'Reviewer capacity',
     detail:
@@ -86,13 +102,41 @@ const institutionContributes: ContributionItem[] = [
     detail:
       "When graduates of an institution consistently produce VERIFIED portfolio entries, a visible track record accumulates over time. This track record is a byproduct of public portfolios — not a managed institutional profile. An employer who has hired several graduates from the same institution and finds their portfolio entries consistently strong draws their own conclusions. The platform does not manufacture or manage this reputation.",
   },
-];
+] as const;
 
-const limitations: Limitation[] = [
+const WHAT_YOU_DO_NOT_CONTROL = [
+  {
+    item: "Who reviews your students' submissions",
+    explanation:
+      'Reviewer assignment is determined by the platform based on track availability and conflict of interest rules. No institution can request a specific reviewer or prevent a specific reviewer from being assigned.',
+  },
+  {
+    item: "The rubric applied to your students' submissions",
+    explanation:
+      'The four-dimension rubric — clarity of problem understanding, methodology appropriateness, documentation quality, and reflection depth — is fixed. It does not adapt to institutional teaching context, institutional standards, or course-level expectations.',
+  },
+  {
+    item: 'Whether any specific student receives VERIFIED, REVISION_REQUIRED, or DENIED',
+    explanation:
+      "The outcome of each review is the assigned reviewer's independent judgment. VERIFIED means the submission met the standard. DENIED means it did not. No institutional relationship influences this decision.",
+  },
+  {
+    item: 'Which students from your institution participate',
+    explanation:
+      "Students register and participate as individuals. You cannot register students on their behalf, require them to participate, or exclude them from participating. Participation is entirely the individual student's decision.",
+  },
+  {
+    item: "How your institution's graduates are perceived by employers",
+    explanation:
+      "Employer perceptions form based on what they read in portfolio entries — the documents, the reviewer's commentary, the quality of the reflection. The platform does not manage, amplify, or suppress any signal about any institution.",
+  },
+] as const;
+
+const LIMITATIONS = [
   {
     heading: 'No institutional visibility into student participation',
     detail:
-      'The platform does not share student participation data with institutions. A department head cannot query how many of their students are using the Education Hub, which track they chose, or whether any are currently in the review queue. Students participate as individuals with no institutional data linkage that the platform makes available externally. If an institution wants to understand student participation, they need to ask their students directly.',
+      "The platform does not share student participation data with institutions. A department head cannot query how many of their students are using the Education Hub, which track they chose, or whether any are currently in the review queue. Students participate as individuals with no institutional data linkage that the platform makes available externally. If an institution wants to understand student participation, they need to ask their students directly.",
   },
   {
     heading: 'No formal institutional partnership currently exists',
@@ -112,11 +156,11 @@ const limitations: Limitation[] = [
   {
     heading: 'Your faculty review students from other institutions, not your own',
     detail:
-      'Faculty who register from your institution will not see your own students in their queue. The conflict of interest protection routes your students to reviewers from other institutions. This is structural enforcement, not a matter of judgment. If your faculty are primarily motivated by wanting to assess their own students more formally, the platform does not serve that purpose — it is designed specifically to separate institutional affiliation from reviewer assignment.',
+      "Faculty who register from your institution will not see your own students in their queue. The conflict of interest protection routes your students to reviewers from other institutions. This is structural enforcement, not a matter of judgment. If your faculty are primarily motivated by wanting to assess their own students more formally, the platform does not serve that purpose — it is designed specifically to separate institutional affiliation from reviewer assignment.",
   },
-];
+] as const;
 
-const faqItems: FaqItem[] = [
+const FAQ_ITEMS = [
   {
     question: 'Does our institution need to sign up or register to participate?',
     answer:
@@ -130,7 +174,7 @@ const faqItems: FaqItem[] = [
   {
     question: 'Can our faculty review submissions from our own students?',
     answer:
-      "No. The platform's conflict of interest system prevents faculty from reviewing submissions from students at their own institution. This is enforced at the assignment level — submissions from students registered with the same institution as a faculty reviewer will not appear in that reviewer's queue. Faculty from your institution will only see submissions from students at other institutions.",
+      "No. The platform's conflict of interest system prevents faculty from reviewing submissions from students at their own institution. This is enforced at the assignment level — submissions from students registered with the same institution as a faculty reviewer will not appear in that reviewer's queue.",
   },
   {
     question: 'How would we know which of our students are participating?',
@@ -155,7 +199,7 @@ const faqItems: FaqItem[] = [
   {
     question: "What happens to our graduates' portfolios after they leave our institution?",
     answer:
-      "Portfolios are permanent and publicly accessible via URL regardless of the student's current enrollment status. Graduation does not affect portfolio access or visibility. A verified portfolio entry's audit trail — reviewer name and affiliation, decision date, document hash — remains permanently associated with the entry. Employers who view the entry years after graduation see the same information.",
+      "Portfolios are permanent and publicly accessible via URL regardless of the student's current enrollment status. Graduation does not affect portfolio access or visibility. A verified portfolio entry's audit trail — reviewer name and affiliation, decision date, document hash — remains permanently associated with the entry.",
   },
   {
     question: 'Can we formally promote or endorse the Education Hub credential in our program materials?',
@@ -167,94 +211,116 @@ const faqItems: FaqItem[] = [
     answer:
       "The platform does not produce formal institutional reporting. Individual students' verified portfolio entries are publicly accessible — each student could choose to share their portfolio data with their institution. If you need aggregate participation data from students at your institution for accreditation or program evaluation purposes, contact the platform to discuss what may be accessible.",
   },
-];
+] as const;
+
+const ENGAGE_STEPS = [
+  {
+    n: '01',
+    action: 'Interested faculty register individually.',
+    detail:
+      'Any faculty member who has relevant domain expertise and a CS background can register for the track(s) they are qualified for. No institutional action is required.',
+    link: { label: 'Read the For Lecturers page', href: '/for/lecturers' },
+  },
+  {
+    n: '02',
+    action: 'Mention the Education Hub to students as a resource.',
+    detail:
+      'Students who want a verified record of their project work can register individually. You can include the Education Hub in program orientation materials or a final-year project brief as an option students may choose to pursue — not as an institutional requirement.',
+    link: { label: 'Read the For Students page', href: '/for/students' },
+  },
+  {
+    n: '03',
+    action: 'Contact the platform to discuss institutional engagement.',
+    detail:
+      'If your institution has specific requirements for formal participation — data agreements, formal recognition, or other arrangements — contact the platform to discuss your situation. The product team may be able to accommodate particular requirements.',
+    link: null as { label: string; href: string } | null,
+  },
+] as const;
 
 export default function InstitutionsPage(): React.ReactElement {
   return (
-    <AudiencePage
-      eyebrow="Education Hub · For Institutions"
+    <EduHubPage
+      audience="For Institutions"
       heading="Your institution cannot register as a partner. Your faculty can. Here is what that means."
       intro="This page explains how universities and colleges relate to the Education Hub: how individual faculty become verified reviewers, how students participate independently of their institution, what the institution cannot control in the review system, and what accumulates over time as your graduates and faculty engage."
-      sections={sections}
+      sections={SECTIONS}
       registerHref="/contact?subject=institution-engagement"
       registerLabel="Contact us about institutional engagement"
     >
       {/* ── Why institutions matter ── */}
-      <section id="why-institutions-matter" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          Why institutions matter
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-6">
-          The Education Hub&apos;s verification capacity depends on the reviewer pool. That pool is
-          made of individual verified faculty — not institutional agreements.
-        </h2>
-        <div className="space-y-5 font-body text-t4 text-text-secondary leading-relaxed max-w-3xl">
-          <p>
-            Every VERIFIED portfolio entry is associated with a named, credentials-confirmed
-            reviewer. That reviewer is a faculty member or industry professional who registered
-            individually, submitted their credentials, and was reviewed by a platform administrator.
-            The institution that employs them appears on the portfolio entry — not as a partner, but
-            as the reviewer&apos;s affiliation at the time of their review.
-          </p>
-          <p>
-            An institution with no verified faculty members on the platform still has students who
-            can participate — those students are reviewed by faculty from other institutions. An
-            institution with several active verified faculty members contributes capacity to the
-            system and produces a body of reviews associated with their name. Over time, as their
-            graduates accumulate verified portfolio entries from external reviewers, a visible track
-            record forms.
-          </p>
-          <p>
+      <section id="why-institutions-matter" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Why institutions matter</SectionLabel>
+        <SectionH2>
+          The Education Hub&apos;s verification capacity depends on the reviewer pool. That pool is made
+          of individual verified faculty — not institutional agreements.
+        </SectionH2>
+        <div className="space-y-5 mb-8 max-w-3xl">
+          <Body>
+            Every VERIFIED portfolio entry is associated with a named, credentials-confirmed reviewer.
+            That reviewer is a faculty member or industry professional who registered individually,
+            submitted their credentials, and was reviewed by a platform administrator. The institution
+            that employs them appears on the portfolio entry — not as a partner, but as the reviewer&apos;s
+            affiliation at the time of their review.
+          </Body>
+          <Body>
+            An institution with no verified faculty members on the platform still has students who can
+            participate — those students are reviewed by faculty from other institutions. An
+            institution with several active verified faculty members contributes capacity to the system
+            and produces a body of reviews associated with their name. Over time, as their graduates
+            accumulate verified portfolio entries from external reviewers, a visible track record
+            forms.
+          </Body>
+          <Body>
             That track record is not managed or manufactured. There is no institutional profile to
-            curate, no institutional score, no institutional tier. What accumulates is a public
-            record of what your graduates built, how they documented it, and how external reviewers
-            assessed it — permanently readable by any employer who clicks a portfolio URL.
-          </p>
+            curate, no institutional score, no institutional tier. What accumulates is a public record
+            of what your graduates built, how they documented it, and how external reviewers assessed
+            it — permanently readable by any employer who clicks a portfolio URL.
+          </Body>
         </div>
 
-        <div className="mt-8 space-y-3 max-w-3xl">
-          {institutionContributes.map((item) => (
-            <div key={item.label} className="border border-zinc-800/50 rounded-sm p-5">
-              <p className="font-body text-t4 font-semibold text-text-primary mb-2">{item.label}</p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.detail}</p>
+        <div className="space-y-3 max-w-3xl">
+          {INSTITUTION_CONTRIBUTES.map((item) => (
+            <div key={item.label} className="border border-ws-border-light p-5">
+              <p className="font-display text-ws-subsection text-ws-text-primary mb-2">
+                {item.label}
+              </p>
+              <p className="font-geist text-ws-body text-ws-text-secondary">{item.detail}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── How participation works ── */}
-      <section id="how-participation-works" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          How participation works
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+      <section id="how-participation-works" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>How participation works</SectionLabel>
+        <SectionH2>
           Individual faculty register, submit credentials, and are verified — without any
           institutional action required.
-        </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        </SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           There is no institutional account, no MOU, no institutional onboarding process. If a
           faculty member at your institution wants to become a verified reviewer, here is what they
           do:
         </p>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden max-w-3xl mb-8">
-          {facultySteps.map((item) => (
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden max-w-3xl mb-8">
+          {FACULTY_STEPS.map((item) => (
             <div
               key={item.step}
-              className="flex items-start gap-4 px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="flex items-start gap-4 px-5 py-5 border-b border-ws-border-light last:border-0"
             >
               <div className="shrink-0 w-24">
-                <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+                <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase">
                   Step {item.step}
                 </p>
-                <p className="font-mono text-t6 text-accent-green mt-0.5">{item.actor}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
-                  {item.action}
+                <p className="font-geist-mono text-ws-caption text-ws-hub-blue mt-0.5">
+                  {item.actor}
                 </p>
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="font-geist text-ws-body text-ws-text-secondary">{item.action}</p>
                 {item.note !== null && (
-                  <p className="font-body text-t5 text-text-disabled leading-relaxed pl-3 border-l border-zinc-800/50">
+                  <p className="font-geist text-ws-body-sm text-ws-text-tertiary pl-3 border-l border-ws-border-light">
                     {item.note}
                   </p>
                 )}
@@ -263,22 +329,22 @@ export default function InstitutionsPage(): React.ReactElement {
           ))}
         </div>
 
-        <div className="space-y-3 max-w-3xl">
-          <div className="border border-zinc-800/50 rounded-sm p-5">
-            <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 max-w-3xl">
+          <div className="border border-ws-border-light p-5">
+            <p className="font-display text-ws-subsection text-ws-text-primary mb-2">
               What verification confirms
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body text-ws-text-secondary">
               That the faculty member&apos;s credentials are consistent with the claimed position at the
               time of review. Their name and institutional affiliation as listed in the verified
               record will appear on every portfolio entry they produce.
             </p>
           </div>
-          <div className="border border-zinc-800/50 rounded-sm p-5">
-            <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+          <div className="border border-ws-border-light p-5">
+            <p className="font-display text-ws-subsection text-ws-text-primary mb-2">
               What verification does not confirm
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body text-ws-text-secondary">
               That the institution endorses the platform. That the reviewer&apos;s credentials remain
               current beyond the date of review. That the reviewing institution approves of or is
               aware of their faculty member&apos;s participation. Participation is entirely the individual
@@ -289,60 +355,58 @@ export default function InstitutionsPage(): React.ReactElement {
       </section>
 
       {/* ── Student participation ── */}
-      <section id="student-participation" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          Student participation
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
+      <section id="student-participation" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Student participation</SectionLabel>
+        <SectionH2>
           Students participate independently. Their institution&apos;s faculty cannot review their
           submissions.
-        </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+        </SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           Two things are true simultaneously: students do not need institutional permission to
-          participate, and students at your institution will not be reviewed by your own faculty.
-          Both are by design.
+          participate, and students at your institution will not be reviewed by your own faculty. Both
+          are by design.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-zinc-800/50 mb-8">
-          <div className="bg-surface-primary p-6">
-            <p className="font-mono text-t6 text-accent-green uppercase tracking-widest mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-ws-border-light mb-6">
+          <div className="bg-ws-surface-base p-6">
+            <p className="font-geist-mono text-ws-caption text-ws-hub-blue uppercase mb-4">
               Student independence
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed mb-3">
+            <p className="font-geist text-ws-body text-ws-text-secondary mb-3">
               Any student at any Kenyan university can register on the Education Hub and submit
               projects. No institutional permission is required. No institutional email address is
               required. The platform does not notify institutions when their students register.
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
+            <p className="font-geist text-ws-body text-ws-text-secondary">
               Students select their own track, receive their own brief, produce their own documents,
               and submit for review — independently of any institutional process. The verified
               portfolio entry they earn is their own individual credential, not an institutional
               credential.
             </p>
           </div>
-          <div className="bg-surface-primary p-6">
-            <p className="font-mono text-t6 text-amber-400 uppercase tracking-widest mb-4">
+          <div className="bg-ws-surface-base p-6">
+            <p className="font-geist-mono text-ws-caption text-ws-status-pending uppercase mb-4">
               Conflict of interest protection
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed mb-3">
+            <p className="font-geist text-ws-body text-ws-text-secondary mb-3">
               Students at your institution are reviewed by faculty from other institutions. The
               system enforces this at the assignment level — a reviewer from your institution will
               never see a submission from a student registered with your institution in their queue.
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
-              This means: a VERIFIED decision received by a student at your institution was issued
-              by a reviewer who has no relationship to your institution. It was not influenced by
+            <p className="font-geist text-ws-body text-ws-text-secondary">
+              This means: a VERIFIED decision received by a student at your institution was issued by
+              a reviewer who has no relationship to your institution. It was not influenced by
               institutional relationships, familiarity with the student, or knowledge of the
               institution&apos;s teaching context.
             </p>
           </div>
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 max-w-3xl">
-          <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+        <div className="border border-ws-border-light p-5 max-w-3xl">
+          <p className="font-display text-ws-subsection text-ws-text-primary mb-1">
             Why this matters for how you read a VERIFIED decision
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body text-ws-text-secondary">
             A student who receives VERIFIED did so through external review — not internal review by
             people familiar with the student, the course context, or your institution&apos;s assessment
             culture. The credential is independent because the reviewer is independent. This is the
@@ -352,61 +416,34 @@ export default function InstitutionsPage(): React.ReactElement {
       </section>
 
       {/* ── What institutions do not control ── */}
-      <section id="what-institutions-do-not-control" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          What you do not control
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-6">
+      <section
+        id="what-institutions-do-not-control"
+        className="py-12 border-b border-ws-border-light"
+      >
+        <SectionLabel>What you do not control</SectionLabel>
+        <SectionH2>
           The outcomes of the review system are not available for institutional influence. This is
           the most important transparency disclosure on this page.
-        </h2>
+        </SectionH2>
 
-        <div className="space-y-3 max-w-3xl mb-8">
-          {[
-            {
-              item: 'Who reviews your students’ submissions',
-              explanation:
-                'Reviewer assignment is determined by the platform based on track availability and conflict of interest rules. No institution can request a specific reviewer or prevent a specific reviewer from being assigned.',
-            },
-            {
-              item: 'The rubric applied to your students’ submissions',
-              explanation:
-                'The four-dimension rubric — clarity of problem understanding, methodology appropriateness, documentation quality, and reflection depth — is fixed. It does not adapt to institutional teaching context, institutional standards, or course-level expectations.',
-            },
-            {
-              item: 'Whether any specific student receives VERIFIED, REVISION_REQUIRED, or DENIED',
-              explanation:
-                'The outcome of each review is the assigned reviewer’s independent judgment. VERIFIED means the submission met the standard. DENIED means it did not. No institutional relationship influences this decision.',
-            },
-            {
-              item: 'Which students from your institution participate',
-              explanation:
-                'Students register and participate as individuals. You cannot register students on their behalf, require them to participate, or exclude them from participating. Participation is entirely the individual student’s decision.',
-            },
-            {
-              item: 'How your institution’s graduates are perceived by employers',
-              explanation:
-                'Employer perceptions form based on what they read in portfolio entries — the documents, the reviewer’s commentary, the quality of the reflection. The platform does not manage, amplify, or suppress any signal about any institution.',
-            },
-          ].map((row) => (
-            <div key={row.item} className="border border-zinc-800/50 rounded-sm overflow-hidden">
-              <div className="bg-surface-elevated px-5 py-3 border-b border-zinc-800/50">
-                <p className="font-body text-t5 font-semibold text-text-primary">{row.item}</p>
+        <div className="space-y-3 max-w-3xl mb-6">
+          {WHAT_YOU_DO_NOT_CONTROL.map((row) => (
+            <div key={row.item} className="border border-ws-border-light overflow-hidden">
+              <div className="bg-ws-surface-raised px-5 py-3 border-b border-ws-border-light">
+                <p className="font-display text-ws-subsection text-ws-text-primary">{row.item}</p>
               </div>
               <div className="px-5 py-4">
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
-                  {row.explanation}
-                </p>
+                <p className="font-geist text-ws-body text-ws-text-secondary">{row.explanation}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 max-w-3xl">
-          <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+        <div className="border border-ws-border-light p-5 max-w-3xl">
+          <p className="font-display text-ws-subsection text-ws-text-primary mb-1">
             What an institution can do
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
+          <p className="font-geist text-ws-body text-ws-text-secondary">
             Encourage interested faculty to register as reviewers. Mention the Education Hub in
             program orientation materials as a resource for students. Incorporate the platform&apos;s
             three-document framework into how you prepare students for independent project work —
@@ -418,265 +455,225 @@ export default function InstitutionsPage(): React.ReactElement {
       </section>
 
       {/* ── What accumulates over time ── */}
-      <section id="what-accumulates" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          What accumulates over time
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
-          Two things build gradually: a visible graduate track record and better-prepared
-          faculty assessors.
-        </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
-          Neither is the result of institutional action. Both are byproducts of genuine
-          participation — students submitting real projects, faculty reviewing real submissions.
+      <section id="what-accumulates" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>What accumulates over time</SectionLabel>
+        <SectionH2>
+          Two things build gradually: a visible graduate track record and better-prepared faculty
+          assessors.
+        </SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
+          Neither is the result of institutional action. Both are byproducts of genuine participation
+          — students submitting real projects, faculty reviewing real submissions.
         </p>
 
-        <div className="border-l-2 border-zinc-800/50 pl-6 space-y-10 max-w-3xl">
+        <div className="border-l-2 border-ws-border-medium pl-6 space-y-10 max-w-3xl">
           <div>
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-3">
               The graduate track record
             </p>
-            <div className="space-y-4 font-body text-t4 text-text-secondary leading-relaxed">
-              <p>
+            <div className="space-y-4">
+              <Body>
                 Every verified portfolio entry is permanently public. An employer who has hired
                 multiple graduates from the same institution over several years has read multiple
                 portfolio entries from students at that institution. The quality of those entries —
                 the depth of the Reflection documents, the coherence of the Breakdown and Plan, the
                 specificity of the reviewer&apos;s commentary — accumulates into an impression that no
                 institutional marketing can substitute for.
-              </p>
-              <p>
+              </Body>
+              <Body>
                 An institution whose graduates consistently produce strong verified portfolios builds
                 a real signal over time. An institution whose graduates consistently receive
                 REVISION_REQUIRED or do not participate builds a different signal — or no signal.
                 The platform does not aggregate this or report it — employers draw their own
                 conclusions from reading individual entries.
-              </p>
+              </Body>
             </div>
           </div>
 
           <div>
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-3">
               The teaching feedback loop
             </p>
-            <div className="space-y-4 font-body text-t4 text-text-secondary leading-relaxed">
-              <p>
+            <div className="space-y-4">
+              <Body>
                 A faculty member who has reviewed forty Reflection documents from students at other
                 institutions develops a precise understanding of what strong professional
-                self-assessment looks like — and what the gap between adequate and weak looks like
-                at every point on the scale. This is assessment experience that is difficult to
-                build any other way.
-              </p>
-              <p>
+                self-assessment looks like — and what the gap between adequate and weak looks like at
+                every point on the scale. This is assessment experience that is difficult to build any
+                other way.
+              </Body>
+              <Body>
                 Most CS curricula teach students what to build, not how to reflect on what they
                 built. The Reflection document — which the review rubric treats as the most
                 significant of the three — asks students to document failures honestly, explain what
                 they tried before accepting a workaround, and propose what a proper solution would
                 require. A faculty member who has reviewed dozens of these documents understands
-                exactly what that standard requires, which they can communicate to their own
-                students before they submit.
-              </p>
-              <p>
-                This learning is not formal or structured — it accumulates through the act of
-                reviewing real submissions from a range of students and seeing what separates strong
-                from weak at each dimension.
-              </p>
+                exactly what that standard requires, which they can communicate to their own students
+                before they submit.
+              </Body>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── A real scenario ── */}
-      <section id="a-real-scenario" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          A real scenario
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
-          How a department head encounters the Education Hub and what they learn about their
-          options.
-        </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+      <section id="a-real-scenario" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>A real scenario</SectionLabel>
+        <SectionH2>
+          How a department head encounters the Education Hub and what they learn about their options.
+        </SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           This scenario traces how institutional engagement typically begins — not with a formal
           outreach, but with a department head finding out that their students are already
           participating.
         </p>
 
-        <div className="border-l-2 border-zinc-800/50 pl-6 space-y-8 max-w-3xl">
+        <div className="border-l-2 border-ws-border-medium pl-6 space-y-8 max-w-3xl">
           <div>
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Starting state
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               A head of the CS department at a Kenyan polytechnic receives a message from a hiring
               manager at a Nairobi software company. The hiring manager has interviewed a recent
               graduate and was impressed by their UmojaHub portfolio entry — specifically, the Final
-              Reflection document, which described a technical failure and what the student would
-              have done differently. The hiring manager asks whether the polytechnic formally
-              partners with UmojaHub.
-            </p>
+              Reflection document, which described a technical failure and what the student would have
+              done differently. The hiring manager asks whether the polytechnic formally partners with
+              UmojaHub.
+            </Body>
           </div>
 
           <div>
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               What the department head investigates
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              The department head reads this page. They learn: there is no institutional
-              partnership. The graduate participated independently. The reviewer who issued VERIFIED
-              was a faculty member from a different institution. The polytechnic was not involved
-              in any part of the process.
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed mt-3">
-              They ask their final-year students how many are using the Education Hub. Of 38
-              students, six are currently engaged with projects. Three have already received VERIFIED
-              decisions. Two are in the review queue. One is revising in response to a
-              REVISION_REQUIRED decision.
-            </p>
+            <Body>
+              The department head reads this page. They learn: there is no institutional partnership.
+              The graduate participated independently. The reviewer who issued VERIFIED was a faculty
+              member from a different institution. The polytechnic was not involved in any part of the
+              process.
+            </Body>
+            <div className="mt-3">
+              <Body>
+                They ask their final-year students how many are using the Education Hub. Of 38
+                students, six are currently engaged with projects. Three have already received VERIFIED
+                decisions. Two are in the review queue. One is revising in response to a
+                REVISION_REQUIRED decision.
+              </Body>
+            </div>
           </div>
 
           <div>
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               What the department head learns about their options
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               Two faculty members in the department have credentials that would qualify them as
-              verified reviewers: one in the Agriculture track, one in the Health track. Those
-              faculty members cannot review submissions from the polytechnic&apos;s own students — but
-              they can review submissions from students at other institutions. This contributes
-              reviewer capacity to the system and allows their faculty to develop assessment
-              experience.
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed mt-3">
-              The department head can mention the Education Hub in the final-year project
-              orientation as a resource — not as a required step, but as an option for students
-              who want a verified record of their project work. No formal partnership is required
-              for this.
-            </p>
+              verified reviewers: one in the Agriculture track, one in the Health track. Those faculty
+              members cannot review submissions from the polytechnic&apos;s own students — but they can
+              review submissions from students at other institutions. This contributes reviewer
+              capacity to the system and allows their faculty to develop assessment experience.
+            </Body>
+            <div className="mt-3">
+              <Body>
+                The department head can mention the Education Hub in the final-year project
+                orientation as a resource — not as a required step, but as an option for students who
+                want a verified record of their project work. No formal partnership is required for
+                this.
+              </Body>
+            </div>
           </div>
 
           <div>
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               What the department head cannot do
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               They cannot create an institutional account. They cannot nominate students for
-              participation. They cannot request that their graduates&apos; portfolios be highlighted.
-              They cannot see aggregate data about how many of their students are participating.
-              They cannot influence the review decisions their students receive.
-            </p>
-            <p className="font-body text-t4 text-text-disabled leading-relaxed mt-3">
-              The verified portfolio entries that exist belong to the individual graduates who
-              earned them. The polytechnic&apos;s connection to those entries is their graduates&apos; names
-              and the reviewer&apos;s affiliation — which, in this case, is a different institution.
-            </p>
+              participation. They cannot request that their graduates&apos; portfolios be highlighted. They
+              cannot see aggregate data about how many of their students are participating. They cannot
+              influence the review decisions their students receive.
+            </Body>
+            <div className="mt-3">
+              <p className="font-geist text-ws-body-lg text-ws-text-tertiary leading-[1.7]">
+                The verified portfolio entries that exist belong to the individual graduates who earned
+                them. The polytechnic&apos;s connection to those entries is their graduates&apos; names and
+                the reviewer&apos;s affiliation — which, in this case, is a different institution.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Limitations ── */}
-      <section id="limitations" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          Limitations
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-2">
-          What the platform cannot provide to institutions.
-        </h2>
-        <p className="font-body text-t4 text-text-secondary mb-8 max-w-2xl">
+      <section id="limitations" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Limitations</SectionLabel>
+        <SectionH2>What the platform cannot provide to institutions.</SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           These limitations are real. Know them before encouraging faculty or student engagement.
         </p>
         <div className="space-y-3">
-          {limitations.map((item) => (
-            <div key={item.heading} className="border border-zinc-800/50 rounded-sm p-5">
-              <p className="font-body text-t4 font-semibold text-text-primary mb-2">
-                {item.heading}
-              </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.detail}</p>
-            </div>
+          {LIMITATIONS.map((item) => (
+            <LimitationPanel key={item.heading} eyebrow={item.heading}>
+              {item.detail}
+            </LimitationPanel>
           ))}
         </div>
       </section>
 
       {/* ── FAQ ── */}
-      <section id="faq" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          FAQ
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-8">
-          Questions from university administrators and department heads.
-        </h2>
-        <FaqAccordion items={faqItems} />
+      <section id="faq" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>FAQ</SectionLabel>
+        <SectionH2>Questions from university administrators and department heads.</SectionH2>
+        <div className="divide-y divide-ws-border-light border-y border-ws-border-light">
+          {FAQ_ITEMS.map((item) => (
+            <FaqItem key={item.question} question={item.question} answer={item.answer} />
+          ))}
+        </div>
       </section>
 
       {/* ── How to engage ── */}
       <section id="how-to-engage" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-6">
-          How to engage
-        </p>
-        <h2 className="font-heading text-t2 font-semibold text-text-primary tracking-tight mb-8">
-          Three paths, none of which require an institutional agreement.
-        </h2>
+        <SectionLabel>How to engage</SectionLabel>
+        <SectionH2>Three paths, none of which require an institutional agreement.</SectionH2>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden max-w-2xl mb-6">
-          {[
-            {
-              n: '1',
-              action: 'Interested faculty register individually.',
-              detail:
-                'Any faculty member who has relevant domain expertise and a CS background can register for the track(s) they are qualified for. The registration link is on the For Lecturers page. No institutional action is required.',
-              link: { label: 'Read the For Lecturers page', href: '/for/lecturers' },
-            },
-            {
-              n: '2',
-              action: 'Mention the Education Hub to students as a resource.',
-              detail:
-                'Students who want a verified record of their project work can register individually. You can include the Education Hub in program orientation materials or a final-year project brief as an option students may choose to pursue — not as an institutional requirement.',
-              link: { label: 'Read the For Students page', href: '/for/students' },
-            },
-            {
-              n: '3',
-              action: 'Contact the platform to discuss institutional engagement.',
-              detail:
-                'If your institution has specific requirements for formal participation — data agreements, formal recognition, or other arrangements — contact the platform to discuss your situation. The product team may be able to accommodate particular requirements.',
-              link: null,
-            },
-          ].map((item) => (
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden max-w-2xl mb-6">
+          {ENGAGE_STEPS.map((item) => (
             <div
               key={item.n}
-              className="flex items-start gap-4 px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="flex items-start gap-4 px-5 py-5 border-b border-ws-border-light last:border-0"
             >
-              <span className="font-mono text-t6 text-text-disabled shrink-0 mt-0.5 w-4">
+              <span className="font-geist-mono text-ws-caption text-ws-hub-blue shrink-0 mt-0.5 w-6">
                 {item.n}.
               </span>
               <div>
-                <p className="font-body text-t5 font-semibold text-text-primary mb-1">
+                <p className="font-display text-ws-subsection text-ws-text-primary mb-1">
                   {item.action}
                 </p>
-                <p className="font-body text-t5 text-text-secondary leading-relaxed mb-2">
-                  {item.detail}
-                </p>
+                <p className="font-geist text-ws-body text-ws-text-secondary mb-2">{item.detail}</p>
                 {item.link !== null && (
-                  <a
+                  <Link
                     href={item.link.href}
-                    className="font-body text-t5 text-text-disabled hover:text-text-secondary transition-colors duration-150 underline underline-offset-2"
+                    className="font-geist text-ws-body text-ws-text-tertiary hover:text-ws-text-secondary transition-colors duration-150 underline underline-offset-2"
                   >
                     {item.link.label} →
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 max-w-2xl">
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
-            <span className="font-semibold text-text-primary">No action is required. </span>
-            Your students are already able to participate. Your faculty are already able to register.
-            The system does not wait for institutional approval or institutional engagement. If you
-            want to understand what your students or faculty are doing on the platform, the only
-            path is asking them directly.
+        <div className="border border-ws-border-light p-5 max-w-2xl">
+          <p className="font-geist text-ws-body text-ws-text-secondary">
+            <span className="font-semibold text-ws-text-primary">If formal engagement matters: </span>
+            Contact the platform with your institution&apos;s specific requirements. The product team
+            reviews institutional requests and may be able to accommodate specific data, recognition,
+            or partnership arrangements — but there is no standard program available on a self-service
+            basis.
           </p>
         </div>
       </section>
-    </AudiencePage>
+    </EduHubPage>
   );
 }

@@ -1,23 +1,26 @@
 import React from 'react';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { AudiencePage } from '@/components/website/AudiencePage';
-import { FaqAccordion, type FaqItem } from '@/components/website/FaqAccordion';
+import { EduHubPage } from '@/components/website/EduHubPage';
+import { LimitationPanel } from '@/components/website/LimitationPanel';
+import { FaqItem } from '@/components/website/FaqItem';
 import type { AnchorSection } from '@/components/website/SectionAnchor';
+
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'For Students — UmojaHub Education Hub',
   description:
-    'What the Education Hub requires, how the review process works, what VERIFIED means and what it does not, and what a verified portfolio entry shows employers. A complete guide before registering.',
+    'What the Education Hub requires, how the review process works, what VERIFIED means and what it does not, and what a completed portfolio entry shows employers. A complete guide before registering.',
 };
 
-const sections: AnchorSection[] = [
+const SECTIONS: AnchorSection[] = [
   { id: 'the-problem', label: 'The problem' },
   { id: 'why-existing-fail', label: 'Why existing tools fail' },
   { id: 'how-it-responds', label: 'How UmojaHub responds' },
   { id: 'the-two-tracks', label: 'The two tracks' },
   { id: 'the-three-documents', label: 'The three documents' },
-  { id: 'the-ai-mentor', label: 'The AI Mentor' },
+  { id: 'project-guidance-tool', label: 'Project Guidance Tool' },
   { id: 'real-scenario', label: 'A real scenario' },
   { id: 'complete-workflow', label: 'The complete workflow' },
   { id: 'responsibilities', label: 'Responsibilities' },
@@ -27,13 +30,29 @@ const sections: AnchorSection[] = [
   { id: 'next-steps', label: 'What to do next' },
 ];
 
-interface ExistingTool {
-  name: string;
-  provides: string;
-  fails: string;
+// ─── Layout primitives ──────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <p className="font-geist-mono text-ws-caption text-ws-hub-blue uppercase mb-3">{children}</p>
+  );
 }
 
-const existingTools: ExistingTool[] = [
+function SectionH2({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <h2 className="font-display text-ws-section text-ws-text-primary mb-4 max-w-2xl">{children}</h2>
+  );
+}
+
+function Body({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7]">{children}</p>
+  );
+}
+
+// ─── Data ──────────────────────────────────────────────────────────────────
+
+const EXISTING_TOOLS = [
   {
     name: 'CV / Resume',
     provides: 'A formatted summary of claimed experience, skills, and projects.',
@@ -58,16 +77,37 @@ const existingTools: ExistingTool[] = [
     fails:
       "Grades measure performance on defined assessments in structured academic environments. They do not measure: planning discipline, documentation quality, honest self-assessment, or the ability to work on unstructured problems without instructions. A CS degree certifies attendance and exam performance. It does not certify the ability to build, document, and reflect on real software.",
   },
-];
+] as const;
 
-interface ProjectDocument {
-  name: string;
-  reveals: string;
-  mustShow: string[];
-  reviewerNote: string;
-}
+const FIVE_RESPONSES = [
+  {
+    number: '01',
+    heading: 'Fixed brief — not student-chosen',
+    body: "The platform generates your brief or derives it from a real repository. You do not choose an easy problem. This is by design: self-selected projects are invariably problems the student already knows how to solve. An externally specified brief forces engagement with a problem that has not been pre-solved.",
+  },
+  {
+    number: '02',
+    heading: 'Three documents that expose reasoning',
+    body: 'The Breakdown, Plan, and Reflection are not a writing exercise. They are structured evidence of how you think: how you decompose a problem, how you plan before you execute, and how honestly you assess what you built and what you did not. This is the evidence GitHub portfolios cannot produce.',
+  },
+  {
+    number: '03',
+    heading: 'Peer review before lecturer',
+    body: "Before your submission reaches the lecturer queue, another student reviews it against the same rubric the lecturer will use. This raises the floor. It also serves a second purpose: reviewing another student's Reflection teaches you what a strong Reflection looks like in a way that abstract guidance cannot.",
+  },
+  {
+    number: '04',
+    heading: 'Named, credentials-confirmed lecturer',
+    body: "A platform administrator reviewed the credentials of every lecturer before they can access the review queue. Their name and institutional affiliation appear in your portfolio entry. An employer can look them up. The verification chain is traceable — this is what makes the VERIFIED decision meaningful.",
+  },
+  {
+    number: '05',
+    heading: 'Permanent, hashable portfolio',
+    body: "When your project is verified, it is recorded permanently with a SHA-256 document hash. The portfolio is publicly accessible via URL. It does not disappear when you graduate. An employer can read all three of your documents in full — not just the project title.",
+  },
+] as const;
 
-const projectDocuments: ProjectDocument[] = [
+const PROJECT_DOCUMENTS = [
   {
     name: 'Problem Breakdown',
     reveals: 'Whether you understood the brief and can decompose a complex problem',
@@ -105,16 +145,16 @@ const projectDocuments: ProjectDocument[] = [
     reviewerNote:
       'Reviewers weight the Reflection most heavily. A polished Breakdown with a superficial Reflection is a weaker submission than a modest Breakdown with a deeply honest Reflection. The Reflection is where professional thinking becomes visible — or where its absence becomes visible.',
   },
-];
+] as const;
 
 interface WorkflowStage {
-  label: string;
-  actor: string;
-  detail: string;
-  note: string | null;
+  readonly label: string;
+  readonly actor: string;
+  readonly detail: string;
+  readonly note: string | null;
 }
 
-const workflowStages: WorkflowStage[] = [
+const WORKFLOW_STAGES: readonly WorkflowStage[] = [
   {
     label: 'Register',
     actor: 'Student',
@@ -140,7 +180,7 @@ const workflowStages: WorkflowStage[] = [
     label: 'Produce three documents and code',
     actor: 'Student',
     detail:
-      'Work on your project. Produce your Problem Breakdown, Approach Plan, and Final Reflection. Develop and submit your code or link to your repository. The AI Mentor is available throughout this stage.',
+      'Work on your project. Produce your Problem Breakdown, Approach Plan, and Final Reflection. Develop and submit your code or link to your repository. The Project Guidance Tool is available throughout this stage.',
     note: 'The documents are produced progressively as you work — not written at the end. Breakdown before implementation. Plan before coding. Reflection after.',
   },
   {
@@ -187,12 +227,7 @@ const workflowStages: WorkflowStage[] = [
   },
 ];
 
-interface Responsibility {
-  label: string;
-  detail: string;
-}
-
-const responsibilities: Responsibility[] = [
+const RESPONSIBILITIES = [
   {
     label: 'Document authorship',
     detail:
@@ -221,16 +256,11 @@ const responsibilities: Responsibility[] = [
   {
     label: 'One submission per project',
     detail:
-      'Each project engagement is unique. You cannot resubmit a project you previously submitted in a prior engagement, and you cannot reuse another student\'s brief as the basis for your submission.',
+      "Each project engagement is unique. You cannot resubmit a project you previously submitted in a prior engagement, and you cannot reuse another student's brief as the basis for your submission.",
   },
-];
+] as const;
 
-interface Limitation {
-  heading: string;
-  detail: string;
-}
-
-const limitations: Limitation[] = [
+const LIMITATIONS = [
   {
     heading: 'VERIFIED is not a hiring credential',
     detail:
@@ -262,13 +292,13 @@ const limitations: Limitation[] = [
       'A DENIED decision means the submission does not meet the standard and revision within the current project scope cannot remedy it. The project does not appear in your portfolio. You may immediately start a new project engagement. DENIED decisions are relatively rare and do not affect your ability to participate in future projects.',
   },
   {
-    heading: 'The AI Mentor has no memory across sessions',
+    heading: 'The Project Guidance Tool has no memory across sessions',
     detail:
-      'Each conversation with the AI Mentor begins from zero context. It does not remember previous sessions. When starting a new session, provide your brief and current stage as context at the beginning of the conversation.',
+      'Each conversation with the Project Guidance Tool begins from zero context. It does not remember previous sessions. When starting a new session, provide your brief and current stage as context at the beginning of the conversation.',
   },
-];
+] as const;
 
-const faqItems: FaqItem[] = [
+const FAQ_ITEMS = [
   {
     question: 'How long does the review process take from submission to decision?',
     answer:
@@ -334,18 +364,13 @@ const faqItems: FaqItem[] = [
     answer:
       "The platform does not have a formal appeals process. The lecturer's decision is final for that review cycle.\n\nA REVISION_REQUIRED decision contains specific commentary identifying what needs to improve. The appropriate response is to address the identified weakness and resubmit. If you believe feedback was issued in error or bad faith, you can contact platform support — but removal of a review decision is not a standard outcome.",
   },
-];
+] as const;
 
-interface Misconception {
-  belief: string;
-  correction: string;
-}
-
-const misconceptions: Misconception[] = [
+const MISCONCEPTIONS = [
   {
-    belief: 'I can use the AI Mentor to help write my documents faster.',
+    belief: 'I can use the Project Guidance Tool to help write my documents faster.',
     correction:
-      "The Mentor responds to questions by asking questions back. If you ask it to write your Breakdown, it will ask what part of your brief you found most underspecified. Your document comes from working through those questions — the Mentor does not produce text you can paste into your submission. This is by design: a document written by the Mentor would show no evidence of your thinking.",
+      "The tool responds to questions by asking questions back. If you ask it to write your Breakdown, it will ask what part of your brief you found most underspecified. Your document comes from working through those questions — the tool does not produce text you can paste into your submission. This is by design: a document written by the tool would show no evidence of your thinking.",
   },
   {
     belief: 'VERIFIED means I am ready to be hired.',
@@ -363,181 +388,139 @@ const misconceptions: Misconception[] = [
       "DENIED means this submission does not meet the standard and revision cannot remedy it. The project does not appear in your portfolio. You can start a new project engagement immediately. DENIED decisions are relatively rare and do not preclude future participation. Your public profile shows only VERIFIED projects.",
   },
   {
-    belief:
-      "I should choose the OPEN_SOURCE track because I already have a project — it will be easier.",
+    belief: "I should choose the OPEN_SOURCE track because I already have a project — it will be easier.",
     correction:
       "The OPEN_SOURCE track generates a brief from the actual needs of the repository you select. You must produce three new documents from that brief: a Breakdown of the specific problem it identifies, a Plan for addressing it, and a Reflection on what you did. An OPEN_SOURCE submission where the documents are a summary of your existing contributions — rather than documentation of genuine engagement with the generated brief — will not meet the standard.",
   },
-];
+] as const;
 
 export default function StudentsPage(): React.ReactElement {
   return (
-    <AudiencePage
-      eyebrow="Education Hub · For Students"
+    <EduHubPage
+      audience="For Students"
       heading="You built projects. Your reasoning is invisible to employers."
       intro="This page covers what the Education Hub requires, how the review process works, what VERIFIED means and what it does not, and what a completed portfolio entry shows. Read it before you register."
-      sections={sections}
+      sections={SECTIONS}
       registerHref="/auth/register?role=student"
       registerLabel="Register as a student"
     >
-      {/* 1. The Problem */}
-      <section id="the-problem" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          The problem
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-6">
-          Three structural failures in how student capability is currently evidenced
-        </h2>
+      {/* ── The problem ── */}
+      <section id="the-problem" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>The problem</SectionLabel>
+        <SectionH2>Three structural failures in how student capability is currently evidenced</SectionH2>
 
-        <div className="space-y-5 max-w-prose">
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
+        <div className="space-y-5 max-w-3xl">
+          <Body>
             Every portfolio tool currently available to CS students shares the same fundamental
             limitation: the claims in them are made by the person who benefits from those claims. A
             CV says you built a machine learning model. GitHub shows you committed code. LinkedIn
             shows you received endorsements. None of these involve a qualified third party reviewing
             the work and making an independent determination of what it demonstrates. Employers who
             rely on these signals know they are self-asserted — and they discount them accordingly.
-          </p>
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
+          </Body>
+          <Body>
             The second failure is more recent and more severe. AI code generation tools now produce
             coherent, functional code for almost any standard project specification. A GitHub
             portfolio built with AI assistance is visually indistinguishable from one built through
-            years of genuine learning — unless a qualified reviewer engages deeply with the
-            design decisions and reasoning behind the code, which hiring managers cannot do at scale
-            for every candidate. The result: code-based portfolios have significantly degraded as
-            evidence of individual capability. Employers are increasingly treating them the way they
-            treat CVs — as claims to be investigated, not evidence to be trusted.
-          </p>
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            years of genuine learning — unless a qualified reviewer engages deeply with the design
+            decisions and reasoning behind the code, which hiring managers cannot do at scale for
+            every candidate. The result: code-based portfolios have significantly degraded as
+            evidence of individual capability.
+          </Body>
+          <Body>
             The third failure is structural and predates both of the above. A CS degree from a
             well-known institution carries an institutional signal in addition to the individual
-            student&apos;s performance signal. Employers discount self-reported claims from students
-            at recognized institutions less aggressively — the institution&apos;s selectivity
-            provides a partial quality guarantee. Students from smaller or newer institutions
-            receive no such amplification. Their actual work quality may be identical or superior,
-            but they compete without a supporting signal. The mechanism that should differentiate
-            capability — the actual project work — is invisible to employers because there is no
-            independent review creating a portable, verifiable record of it.
-          </p>
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            student&apos;s performance signal. Students from smaller or newer institutions receive no such
+            amplification. Their actual work quality may be identical or superior, but they compete
+            without a supporting signal. The mechanism that should differentiate capability — the
+            actual project work — is invisible to employers because there is no independent review
+            creating a portable, verifiable record of it.
+          </Body>
+          <Body>
             These three failures — the self-assertion problem, the AI evidence crisis, and the
             institutional signal gap — are the specific problems the Education Hub was built to
             address.
-          </p>
+          </Body>
         </div>
       </section>
 
-      {/* 2. Why Existing Tools Fail */}
-      <section id="why-existing-fail" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          Why existing tools fail
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-6">
-          What each tool provides — and where its evidence is weak
-        </h2>
+      {/* ── Why existing tools fail ── */}
+      <section id="why-existing-fail" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Why existing tools fail</SectionLabel>
+        <SectionH2>What each tool provides — and where its evidence is weak</SectionH2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-800/50">
-          {existingTools.map((tool) => (
-            <div key={tool.name} className="bg-surface-elevated p-6 flex flex-col gap-3">
-              <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-ws-border-light mb-8">
+          {EXISTING_TOOLS.map((tool) => (
+            <div key={tool.name} className="bg-ws-surface-raised p-6 flex flex-col gap-3">
+              <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase">
                 {tool.name}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed italic border-b border-zinc-800/50 pb-3">
+              <p className="font-geist text-ws-body text-ws-text-secondary border-b border-ws-border-light pb-3 italic">
                 {tool.provides}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{tool.fails}</p>
+              <p className="font-geist text-ws-body text-ws-text-secondary">{tool.fails}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 border-l-2 border-zinc-800/50 pl-6">
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
+        <div className="border-l-2 border-ws-border-medium pl-6 max-w-3xl">
+          <Body>
             UmojaHub does not create capability in students. It creates a mechanism for making
             existing capability visible to employers who could not see it before — through structured
-            documentation of reasoning, human review from a named and credentials-confirmed
-            reviewer, and a permanent, publicly accessible record with cryptographic integrity.
-          </p>
+            documentation of reasoning, human review from a named and credentials-confirmed reviewer,
+            and a permanent, publicly accessible record with cryptographic integrity.
+          </Body>
         </div>
       </section>
 
-      {/* 3. How UmojaHub Responds */}
-      <section id="how-it-responds" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          How UmojaHub responds
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-6">
-          Five structural responses to five structural gaps
-        </h2>
+      {/* ── How UmojaHub responds ── */}
+      <section id="how-it-responds" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>How UmojaHub responds</SectionLabel>
+        <SectionH2>Five structural responses to five structural gaps</SectionH2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-px bg-zinc-800/50">
-          {[
-            {
-              number: '01',
-              heading: 'Fixed brief — not student-chosen',
-              body: "The platform generates your brief or derives it from a real repository. You do not choose an easy problem. This is by design: self-selected projects are invariably problems the student already knows how to solve. An externally specified brief forces engagement with a problem that has not been pre-solved.",
-            },
-            {
-              number: '02',
-              heading: 'Three documents that expose reasoning',
-              body: 'The Breakdown, Plan, and Reflection are not a writing exercise. They are structured evidence of how you think: how you decompose a problem, how you plan before you execute, and how honestly you assess what you built and what you did not. This is the evidence GitHub portfolios cannot produce.',
-            },
-            {
-              number: '03',
-              heading: 'Peer review before lecturer',
-              body: "Before your submission reaches the lecturer queue, another student reviews it against the same rubric the lecturer will use. This raises the floor. It also serves a second purpose: reviewing another student's Reflection teaches you what a strong Reflection looks like in a way that abstract guidance cannot.",
-            },
-            {
-              number: '04',
-              heading: 'Named, credentials-confirmed lecturer',
-              body: "A platform administrator reviewed the credentials of every lecturer before they can access the review queue. Their name and institutional affiliation appear in your portfolio entry. An employer can look them up. The verification chain is traceable — this is what makes the VERIFIED decision meaningful.",
-            },
-            {
-              number: '05',
-              heading: 'Permanent, hashable portfolio',
-              body: "When your project is verified, it is recorded permanently with a SHA-256 document hash. The portfolio is publicly accessible via URL. It does not disappear when you graduate. An employer can read all three of your documents in full — not just the project title.",
-            },
-          ].map((item) => (
-            <div key={item.number} className="bg-surface-primary p-6 flex flex-col gap-3">
-              <span className="font-mono text-t6 text-accent-green tabular-nums">{item.number}</span>
-              <h3 className="font-heading text-t3 font-medium text-text-primary">{item.heading}</h3>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.body}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-px bg-ws-border-light">
+          {FIVE_RESPONSES.map((item) => (
+            <div key={item.number} className="bg-ws-surface-base p-6 flex flex-col gap-3">
+              <span className="font-geist-mono text-ws-caption text-ws-hub-blue tabular-nums">
+                {item.number}
+              </span>
+              <h3 className="font-display text-ws-subsection text-ws-text-primary">{item.heading}</h3>
+              <p className="font-geist text-ws-body-sm text-ws-text-secondary">{item.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 4. The Two Tracks */}
-      <section id="the-two-tracks" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          The two tracks
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-4">
-          AI_BRIEF and OPEN_SOURCE — what each involves and when to choose each
-        </h2>
-        <p className="font-body text-t4 text-text-secondary leading-relaxed max-w-prose mb-8">
+      {/* ── The two tracks ── */}
+      <section id="the-two-tracks" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>The two tracks</SectionLabel>
+        <SectionH2>AI_BRIEF and OPEN_SOURCE — what each involves and when to choose each</SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           At the start of each project engagement, you choose one of two tracks. The track
           determines how your brief is generated. Both tracks require the same three documents and
           the same review process.
         </p>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4 px-5 py-5 border-b border-zinc-800/50">
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 px-5 py-5 border-b border-ws-border-light">
             <div className="sm:w-40 shrink-0">
-              <p className="font-mono text-t5 text-text-primary font-medium">AI_BRIEF</p>
+              <p className="font-geist-mono text-ws-data font-medium text-ws-text-primary">
+                AI_BRIEF
+              </p>
             </div>
             <div className="flex-1 min-w-0 space-y-3">
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body text-ws-text-secondary">
                 The platform generates your brief from its library of Kenyan agricultural industry
                 problem contexts. The brief specifies the problem to solve, the target users,
                 technical constraints, and evaluation criteria. The brief is fixed — you cannot
                 negotiate its scope or requirements. This prevents cherry-picking familiar or
                 already-solved problems.
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body text-ws-text-secondary">
                 Choose AI_BRIEF if you do not have an existing project you want to document, or if
                 you want to demonstrate capability on a problem outside your usual area.
               </p>
-              <p className="font-body text-t6 text-text-disabled border-l border-zinc-800/50 pl-3">
+              <p className="font-geist text-ws-body-sm text-ws-text-tertiary border-l border-ws-border-light pl-3">
                 Briefs are assigned, not chosen. You do not select the specific industry context
                 within the Agriculture domain — the system assigns one. This is intentional.
               </p>
@@ -546,21 +529,23 @@ export default function StudentsPage(): React.ReactElement {
 
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 px-5 py-5">
             <div className="sm:w-40 shrink-0">
-              <p className="font-mono text-t5 text-text-primary font-medium">OPEN_SOURCE</p>
+              <p className="font-geist-mono text-ws-data font-medium text-ws-text-primary">
+                OPEN_SOURCE
+              </p>
             </div>
             <div className="flex-1 min-w-0 space-y-3">
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body text-ws-text-secondary">
                 You provide a GitHub repository URL of an open-source project. The platform analyzes
                 the repository — its codebase, open issues, and documentation state — and generates
                 a brief based on its actual needs. You produce all three documents from this brief
                 and submit your code alongside them.
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body text-ws-text-secondary">
                 Choose OPEN_SOURCE if you have been contributing to an open-source project and want
                 to document that work, or if you have a substantial existing project with domain
                 knowledge you want reviewed.
               </p>
-              <p className="font-body text-t6 text-text-disabled border-l border-zinc-800/50 pl-3">
+              <p className="font-geist text-ws-body-sm text-ws-text-tertiary border-l border-ws-border-light pl-3">
                 OPEN_SOURCE is not easier than AI_BRIEF. The generated brief specifies real work
                 that needs doing in the repository — you cannot substitute a description of your
                 existing contributions for engagement with the brief.
@@ -570,52 +555,48 @@ export default function StudentsPage(): React.ReactElement {
         </div>
       </section>
 
-      {/* 5. The Three Documents */}
-      <section id="the-three-documents" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          The three documents
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-4">
-          What each document must demonstrate and what reviewers look for
-        </h2>
-        <p className="font-body text-t4 text-text-secondary leading-relaxed max-w-prose mb-8">
+      {/* ── The three documents ── */}
+      <section id="the-three-documents" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>The three documents</SectionLabel>
+        <SectionH2>What each document must demonstrate and what reviewers look for</SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           All three documents are required before submission. They are assessed on the same
           four-dimension rubric: clarity of problem understanding, methodology appropriateness,
           documentation quality, and reflection depth. Each document is designed to evidence a
           different kind of thinking.
         </p>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
-          {projectDocuments.map((doc, i) => (
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden">
+          {PROJECT_DOCUMENTS.map((doc, i) => (
             <div
               key={doc.name}
-              className="flex flex-col gap-4 px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="flex flex-col gap-4 px-5 py-5 border-b border-ws-border-light last:border-0"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-1">
+                  <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-1">
                     Document {i + 1}
                   </p>
-                  <p className="font-body text-t4 text-text-primary font-medium">{doc.name}</p>
+                  <p className="font-display text-ws-subsection text-ws-text-primary">{doc.name}</p>
                 </div>
-                <p className="font-body text-t6 text-text-disabled text-right max-w-[200px] leading-snug shrink-0">
+                <p className="font-geist text-ws-body-sm text-ws-text-tertiary text-right max-w-[200px] leading-snug shrink-0">
                   {doc.reveals}
                 </p>
               </div>
               <div>
-                <p className="font-body text-t6 text-text-disabled uppercase tracking-widest mb-2">
+                <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
                   Must show
                 </p>
                 <ul className="space-y-1">
                   {doc.mustShow.map((item) => (
                     <li key={item} className="flex items-start gap-2">
-                      <span className="mt-[7px] h-1 w-1 rounded-full bg-text-disabled shrink-0" />
-                      <p className="font-body text-t5 text-text-secondary">{item}</p>
+                      <span className="mt-[7px] h-1 w-1 bg-ws-text-tertiary shrink-0" />
+                      <p className="font-geist text-ws-body text-ws-text-secondary">{item}</p>
                     </li>
                   ))}
                 </ul>
               </div>
-              <p className="font-body text-t6 text-text-disabled border-l border-zinc-800/50 pl-3 leading-relaxed">
+              <p className="font-geist text-ws-body-sm text-ws-text-tertiary border-l border-ws-border-light pl-3">
                 {doc.reviewerNote}
               </p>
             </div>
@@ -623,62 +604,58 @@ export default function StudentsPage(): React.ReactElement {
         </div>
       </section>
 
-      {/* 6. The AI Mentor */}
-      <section id="the-ai-mentor" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          The AI Mentor
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-6">
-          A Socratic guide — it asks questions, it does not write your documents
-        </h2>
+      {/* ── Project Guidance Tool ── */}
+      <section id="project-guidance-tool" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Project Guidance Tool</SectionLabel>
+        <SectionH2>A Socratic guide — it asks questions, it does not write your documents</SectionH2>
 
-        <div className="space-y-5 max-w-prose mb-8">
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
-            The AI Mentor is available throughout your project. It knows your brief and your current
-            stage. Its method is Socratic: when you ask it a question, it asks a question back. When
-            you describe your approach, it asks what alternatives you considered and why you rejected
-            them. When you explain what you built, it asks what you would need to do differently to
-            solve the part you did not build.
-          </p>
-          <p className="font-body text-t4 text-text-secondary leading-relaxed">
-            The purpose of this design is not to obstruct you. It is to ensure that the reasoning
-            in your documents is yours. A document written with the Mentor&apos;s help through
-            Socratic questioning will show evidence of genuine engagement. A document generated by
-            an AI tool and submitted directly will not. Reviewers with domain expertise can
-            distinguish between the two.
-          </p>
+        <div className="space-y-5 max-w-3xl mb-8">
+          <Body>
+            The Project Guidance Tool is available throughout your project. It knows your brief and
+            your current stage. Its method is Socratic: when you ask it a question, it asks a
+            question back. When you describe your approach, it asks what alternatives you considered
+            and why you rejected them. When you explain what you built, it asks what you would need
+            to do differently to solve the part you did not build.
+          </Body>
+          <Body>
+            The purpose of this design is not to obstruct you. It is to ensure that the reasoning in
+            your documents is yours. A document written with the tool&apos;s help through Socratic
+            questioning will show evidence of genuine engagement. A document generated by an AI tool
+            and submitted directly will not. Reviewers with domain expertise can distinguish between
+            the two.
+          </Body>
         </div>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-5 mb-8">
-          <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-4">
+        <div className="bg-ws-surface-raised border border-ws-border-light p-5 mb-6">
+          <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-4">
             Example interaction
           </p>
           <div className="space-y-4">
             <div className="flex gap-3">
-              <span className="font-mono text-t6 text-text-disabled shrink-0 w-16 pt-0.5">
+              <span className="font-geist-mono text-ws-caption text-ws-text-tertiary shrink-0 w-16 pt-0.5">
                 Student
               </span>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
+              <p className="font-geist text-ws-body text-ws-text-secondary">
                 &quot;Can you help me write my Problem Breakdown document?&quot;
               </p>
             </div>
-            <div className="flex gap-3 border-t border-zinc-800/50 pt-4">
-              <span className="font-mono text-t6 text-accent-green shrink-0 w-16 pt-0.5">
-                Mentor
+            <div className="flex gap-3 border-t border-ws-border-light pt-4">
+              <span className="font-geist-mono text-ws-caption text-ws-hub-blue shrink-0 w-16 pt-0.5">
+                Tool
               </span>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">
-                &quot;What part of your brief do you think is most underspecified? What would you
-                need to know before you could begin decomposing it?&quot;
+              <p className="font-geist text-ws-body text-ws-text-secondary">
+                &quot;What part of your brief do you think is most underspecified? What would you need to
+                know before you could begin decomposing it?&quot;
               </p>
             </div>
           </div>
         </div>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5">
-          <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-            What the AI Mentor does not do
+        <div className="border border-ws-border-light p-5 max-w-3xl">
+          <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-3">
+            What the Project Guidance Tool does not do
           </p>
-          <ul className="space-y-2">
+          <ul className="space-y-2 mb-4">
             {[
               'Generate text for your Breakdown, Plan, or Reflection documents',
               'Tell you the correct technical approach without asking you to reason through it first',
@@ -686,216 +663,190 @@ export default function StudentsPage(): React.ReactElement {
               'Remember previous sessions — each conversation begins from zero context',
             ].map((point) => (
               <li key={point} className="flex items-start gap-2">
-                <span className="mt-[7px] h-1 w-1 rounded-full bg-text-disabled shrink-0" />
-                <p className="font-body text-t5 text-text-secondary">{point}</p>
+                <span className="mt-[7px] h-1 w-1 bg-ws-text-tertiary shrink-0" />
+                <p className="font-geist text-ws-body text-ws-text-secondary">{point}</p>
               </li>
             ))}
           </ul>
-          <p className="font-body text-t6 text-text-disabled mt-4 border-t border-zinc-800/50 pt-4">
-            When starting a new Mentor session, provide your brief and your current stage as context
-            at the beginning of the conversation. The Mentor has no memory of previous sessions.
+          <p className="font-geist text-ws-body-sm text-ws-text-tertiary border-t border-ws-border-light pt-4">
+            When starting a new session, provide your brief and your current stage as context at the
+            beginning of the conversation. The tool has no memory of previous sessions.
           </p>
         </div>
       </section>
 
-      {/* 7. A Real Scenario */}
-      <section id="real-scenario" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          A real scenario
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-6">
+      {/* ── A real scenario ── */}
+      <section id="real-scenario" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>A real scenario</SectionLabel>
+        <SectionH2>
           What a complete project engagement looks like — David, CS student, Strathmore
-        </h2>
+        </SectionH2>
 
-        <div className="border-l-2 border-zinc-800/50 pl-6 space-y-8">
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+        <div className="border-l-2 border-ws-border-medium pl-6 space-y-8 max-w-3xl">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Before registration
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               David is a third-year CS student. He has built several projects for class but has
               nothing a prospective employer can independently verify. A classmate mentions the
-              Education Hub. He visits the website. He reads what the review process involves. He
-              reads the VERIFIED and REVISION_REQUIRED sections. He reads what VERIFIED does not
-              mean. He decides to register.
-            </p>
+              Education Hub. He visits the website, reads what the review process involves, reads the
+              VERIFIED and REVISION_REQUIRED sections, and reads what VERIFIED does not mean. He
+              decides to register.
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Brief received — AI_BRIEF track
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               He selects the AI_BRIEF track and the Agriculture domain. The system generates his
               brief: a mobile-accessible tool for smallholder farmers to document crop health
               observations and receive actionable guidance. Constraints: must function with
               intermittent connectivity. Deliverables: data model, interaction flow, and
-              implementation notes.
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              This is not a project he has built before. The brief generated a new scope. He has
-              four weeks to complete it.
-            </p>
+              implementation notes. This is not a project he has built before.
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Producing the documents — week one
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              He opens the AI Mentor. &quot;Can you help me write my breakdown document?&quot; The
-              Mentor responds: &quot;What problem in your brief do you think is most
-              underspecified? What would you need to know to solve it?&quot;
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              He answers. The Mentor asks another question. He works for two hours, reasoning
-              through his answers to its questions. He never receives text he can paste into a
-              document. He receives questions that force him to articulate his own thinking.
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              He writes his Breakdown. It is longer than he expected — he documented three
+            <Body>
+              He opens the Project Guidance Tool. &quot;Can you help me write my breakdown document?&quot;
+              The tool responds: &quot;What problem in your brief do you think is most underspecified?
+              What would you need to know to solve it?&quot; He answers. The tool asks another question.
+              He works for two hours, reasoning through his answers to its questions. He never
+              receives text he can paste into a document. He receives questions that force him to
+              articulate his own thinking. He writes his Breakdown — longer than expected, with three
               alternative approaches he considered and why he rejected two of them.
-            </p>
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Weeks two and three — implementation
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              He designs the data model, writes his Plan document, and begins building. He
-              encounters two significant problems: the intermittent connectivity requirement is
-              harder than anticipated. He solves one problem. He works around the second.
-            </p>
+            <Body>
+              He designs the data model, writes his Plan document, and begins building. He encounters
+              two significant problems: the intermittent connectivity requirement is harder than
+              anticipated. He solves one problem. He works around the second.
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Week four — the Reflection
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               He writes his Reflection document. He is honest: the connectivity problem he worked
               around is not properly solved. He documents what a proper solution would require. He
-              describes what he learned about offline-first data synchronization that he did not
-              know before starting.
-            </p>
+              describes what he learned about offline-first data synchronization that he did not know
+              before starting.
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Submission and peer review
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               He submits all three documents and his GitHub repository link. The system creates a
-              SHA-256 hash of the document content and records it in the audit log. His status
-              changes to PEER_REVIEW.
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              He is assigned a peer review for another student&apos;s submission. He finds the
-              process clarifying. The rubric he applies to their Reflection makes him think about
-              his own. He waits for his own review to advance.
-            </p>
+              SHA-256 hash and records it in the audit log. He is assigned a peer review for another
+              student&apos;s submission. He finds the process clarifying — applying the rubric to their
+              Reflection makes him think about his own.
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Lecturer decision — REVISION_REQUIRED
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               A verified lecturer in the Agriculture track reviews his submission. The decision:
               REVISION_REQUIRED. The commentary (63 words):
-            </p>
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4">
-              <p className="font-body text-t5 text-text-secondary leading-relaxed italic">
-                &quot;The Reflection section on the connectivity workaround is the weakest part of
-                this submission. You acknowledge the problem but do not explain what you tried
-                before accepting the workaround, why other approaches failed, or what implementing
-                a real solution would require technically. This section needs to demonstrate deeper
-                reasoning about the technical constraint you encountered, not just acknowledge that
-                the workaround exists.&quot;
+            </Body>
+            <div className="bg-ws-surface-raised border border-ws-border-light p-4 mt-3">
+              <p className="font-geist text-ws-body text-ws-text-secondary italic">
+                &quot;The Reflection section on the connectivity workaround is the weakest part of this
+                submission. You acknowledge the problem but do not explain what you tried before
+                accepting the workaround, why other approaches failed, or what implementing a real
+                solution would require technically. This section needs to demonstrate deeper reasoning
+                about the technical constraint you encountered, not just acknowledge that the
+                workaround exists.&quot;
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               Revision
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              David reads the feedback. He is disappointed but not confused — the feedback is
-              specific. He rewrites the Reflection section on connectivity. He adds: what he tried
-              first (client-side queueing with timestamp collision detection), why it failed (clock
-              drift between devices), why proper offline-first synchronization requires a conflict
-              resolution algorithm he did not have time to implement, and what that algorithm would
-              involve. The revised section is 400 words, not 100. He resubmits.
-            </p>
+            <Body>
+              David reads the feedback. It is specific. He rewrites the Reflection section on
+              connectivity: what he tried first (client-side queueing with timestamp collision
+              detection), why it failed (clock drift between devices), why proper offline-first
+              synchronization requires a conflict resolution algorithm he did not have time to
+              implement, and what that algorithm would involve. The revised section is 400 words.
+              He resubmits.
+            </Body>
           </div>
 
-          <div className="space-y-4">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div>
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               VERIFIED — portfolio published
             </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
+            <Body>
               The revised submission receives VERIFIED. His portfolio entry is published. It shows:
-              project title, AI_BRIEF track, Agriculture domain, verification date, the
-              lecturer&apos;s name and institutional affiliation, peer scores on four dimensions,
-              all three documents readable in full — including the Reflection with the connectivity
-              analysis — and the document hash.
-            </p>
-            <p className="font-body text-t4 text-text-secondary leading-relaxed">
-              He shares the URL with a prospective employer. The employer reads the Reflection.
-              They note that the student documented a failure honestly and analyzed the technical
-              constraint in depth. They schedule an interview and ask him to walk through the
-              offline-first problem live. He can.
-            </p>
+              project title, AI_BRIEF track, Agriculture domain, verification date, the lecturer&apos;s
+              name and institutional affiliation, peer scores on four dimensions, all three documents
+              readable in full — including the Reflection with the connectivity analysis — and the
+              document hash. He shares the URL with a prospective employer. They read the Reflection,
+              schedule an interview, and ask him to walk through the offline-first problem live. He
+              can.
+            </Body>
           </div>
 
-          <div className="space-y-4 border border-zinc-800/50 p-5">
-            <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+          <div className="border border-ws-border-light p-5">
+            <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-2">
               What this scenario does not show
             </p>
-            <p className="font-body text-t5 text-text-secondary leading-relaxed">
-              David&apos;s path was relatively smooth — he had time to complete the project, his
-              reviewer provided specific actionable feedback, and he addressed it genuinely. Not
-              every engagement follows this path. Some submissions receive DENIED decisions. Some
-              wait longer in the queue. Some students find the AI Mentor&apos;s Socratic approach
-              frustrating when under deadline. The scenario is accurate but not universal. The
-              limitations section of this page documents what can go wrong.
+            <p className="font-geist text-ws-body text-ws-text-secondary">
+              David&apos;s path was relatively smooth. Not every engagement follows this path. Some
+              submissions receive DENIED decisions. Some wait longer in the queue. Some students find
+              the Project Guidance Tool&apos;s Socratic approach frustrating when under deadline. The
+              scenario is accurate but not universal. The limitations section of this page documents
+              what can go wrong.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 8. Complete Workflow */}
-      <section id="complete-workflow" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          The complete workflow
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-6">
-          Every stage from registration to portfolio entry
-        </h2>
+      {/* ── Complete workflow ── */}
+      <section id="complete-workflow" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>The complete workflow</SectionLabel>
+        <SectionH2>Every stage from registration to portfolio entry</SectionH2>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
-          {workflowStages.map((stage, i) => (
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden">
+          {WORKFLOW_STAGES.map((stage, i) => (
             <div
               key={stage.label}
-              className="flex items-start gap-4 px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="flex items-start gap-4 px-5 py-5 border-b border-ws-border-light last:border-0"
             >
-              <span className="font-mono text-t6 text-text-disabled tabular-nums shrink-0 pt-0.5 w-6">
+              <span className="font-geist-mono text-ws-caption text-ws-text-tertiary tabular-nums shrink-0 pt-0.5 w-6">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4 mb-1">
-                  <p className="font-body text-t5 text-text-primary font-medium">{stage.label}</p>
-                  <span className="font-mono text-t6 text-text-disabled uppercase tracking-widest shrink-0">
+                  <p className="font-display text-ws-subsection text-ws-text-primary">{stage.label}</p>
+                  <span className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase shrink-0">
                     {stage.actor}
                   </span>
                 </div>
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
-                  {stage.detail}
-                </p>
-                {stage.note && (
-                  <p className="font-body text-t6 text-text-disabled mt-2 border-l border-zinc-800/50 pl-3">
+                <p className="font-geist text-ws-body text-ws-text-secondary">{stage.detail}</p>
+                {stage.note !== null && (
+                  <p className="font-geist text-ws-body-sm text-ws-text-tertiary mt-2 border-l border-ws-border-light pl-3">
                     {stage.note}
                   </p>
                 )}
@@ -905,216 +856,133 @@ export default function StudentsPage(): React.ReactElement {
         </div>
       </section>
 
-      {/* 9. Responsibilities */}
-      <section id="responsibilities" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          Responsibilities
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-4">
-          What you agree to when you submit a project
-        </h2>
-        <p className="font-body text-t4 text-text-secondary leading-relaxed max-w-prose mb-8">
+      {/* ── Responsibilities ── */}
+      <section id="responsibilities" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Responsibilities</SectionLabel>
+        <SectionH2>What you agree to when you submit a project</SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
           These are stated here because understanding them before you submit is the purpose of this
           page. They are not buried in a terms document.
         </p>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden">
-          {responsibilities.map((item) => (
+        <div className="bg-ws-surface-raised border border-ws-border-light overflow-hidden">
+          {RESPONSIBILITIES.map((item) => (
             <div
               key={item.label}
-              className="flex flex-col sm:flex-row sm:items-start gap-4 px-5 py-5 border-b border-zinc-800/50 last:border-0"
+              className="flex flex-col sm:flex-row sm:items-start gap-4 px-5 py-5 border-b border-ws-border-light last:border-0"
             >
-              <p className="font-body text-t5 text-text-primary font-medium sm:w-48 shrink-0">
+              <p className="font-display text-ws-subsection text-ws-text-primary sm:w-48 shrink-0">
                 {item.label}
               </p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.detail}</p>
+              <p className="font-geist text-ws-body text-ws-text-secondary">{item.detail}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 10. Limitations */}
-      <section id="limitations" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          Limitations
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-4">
-          What VERIFIED means — and what it explicitly does not mean
-        </h2>
-        <p className="font-body text-t4 text-text-secondary leading-relaxed max-w-prose mb-6">
+      {/* ── Limitations ── */}
+      <section id="limitations" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Limitations</SectionLabel>
+        <SectionH2>What VERIFIED means — and what it explicitly does not mean</SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-6 max-w-2xl">
           Disclosing limitations before you encounter them is the honest version of building trust.
           The most important limitation is the meaning of VERIFIED itself.
         </p>
 
-        <div className="border border-zinc-800/50 rounded-sm p-5 mb-6">
-          <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
+        <div className="border border-ws-border-light p-5 mb-6 max-w-3xl">
+          <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-3">
             VERIFIED means
           </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed mb-4">
-            A named, credentials-confirmed reviewer assessed all three documents and the code
-            against a defined rubric and determined the submission met the documented minimum
-            standard. The decision is timestamped and recorded in the audit log. The reviewer&apos;s
-            name and institutional affiliation appear in your portfolio entry.
+          <p className="font-geist text-ws-body text-ws-text-secondary mb-4">
+            A named, credentials-confirmed reviewer assessed all three documents and the code against
+            a defined rubric and determined the submission met the documented minimum standard. The
+            decision is timestamped and recorded in the audit log. The reviewer&apos;s name and
+            institutional affiliation appear in your portfolio entry.
           </p>
-          <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3 border-t border-zinc-800/50 pt-4">
+          <p className="font-geist-mono text-ws-caption text-ws-text-tertiary uppercase mb-3 border-t border-ws-border-light pt-4">
             VERIFIED does not mean
           </p>
           <ul className="space-y-2">
             {[
               'That you can be hired for any specific role',
-              'That your code is production-ready or free of security vulnerabilities',
-              'That your claims within the documents are accurate — the hash proves the documents were not altered after submission, not that they are honest',
-              'That the reviewer found your submission exceptional — VERIFIED means it met the minimum standard, not that it exceeded it',
-              'That the platform endorses your work product',
+              'That your code is production-ready',
+              'That you wrote every line without AI assistance',
+              'That the reviewer found your work exceptional',
+              'That the platform endorses you',
             ].map((point) => (
               <li key={point} className="flex items-start gap-2">
-                <span className="mt-[7px] h-1 w-1 rounded-full bg-text-disabled shrink-0" />
-                <p className="font-body text-t5 text-text-secondary">{point}</p>
+                <span className="mt-[7px] h-1 w-1 bg-ws-text-tertiary shrink-0" />
+                <p className="font-geist text-ws-body text-ws-text-secondary">{point}</p>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="space-y-4">
-          {limitations.map((item) => (
-            <div key={item.heading} className="border border-zinc-800/50 rounded-sm p-5">
-              <p className="font-body text-t5 text-text-primary font-medium mb-2">{item.heading}</p>
-              <p className="font-body text-t5 text-text-secondary leading-relaxed">{item.detail}</p>
-            </div>
+        <div className="space-y-3">
+          {LIMITATIONS.map((item) => (
+            <LimitationPanel key={item.heading} eyebrow={item.heading}>
+              {item.detail}
+            </LimitationPanel>
           ))}
         </div>
       </section>
 
-      {/* 11. FAQ */}
-      <section id="faq" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">FAQ</p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-8">
-          Frequently asked questions
-        </h2>
-        <FaqAccordion items={faqItems} />
+      {/* ── FAQ ── */}
+      <section id="faq" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>FAQ</SectionLabel>
+        <SectionH2>Questions students ask before registering.</SectionH2>
+        <div className="divide-y divide-ws-border-light border-y border-ws-border-light">
+          {FAQ_ITEMS.map((item) => (
+            <FaqItem key={item.question} question={item.question} answer={item.answer} />
+          ))}
+        </div>
       </section>
 
-      {/* 12. Misconceptions */}
-      <section id="misconceptions" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          Misconceptions
-        </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-8">
-          Specific incorrect beliefs — corrected directly
-        </h2>
+      {/* ── Misconceptions ── */}
+      <section id="misconceptions" className="py-12 border-b border-ws-border-light">
+        <SectionLabel>Misconceptions</SectionLabel>
+        <SectionH2>Common beliefs that lead to poor submissions or wrong expectations.</SectionH2>
 
-        <div className="space-y-4">
-          {misconceptions.map((item) => (
-            <div
-              key={item.belief}
-              className="border border-zinc-800/50 rounded-sm overflow-hidden"
-            >
-              <div className="bg-surface-elevated px-5 py-3 border-b border-zinc-800/50">
-                <p className="font-body text-t5 text-text-disabled italic">{item.belief}</p>
+        <div className="space-y-3">
+          {MISCONCEPTIONS.map((item) => (
+            <div key={item.belief} className="border border-ws-border-light overflow-hidden">
+              <div className="bg-ws-surface-raised px-5 py-4 border-b border-ws-border-light">
+                <p className="font-geist text-ws-body font-medium text-ws-text-primary italic">
+                  &quot;{item.belief}&quot;
+                </p>
               </div>
               <div className="px-5 py-4">
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
-                  {item.correction}
-                </p>
+                <p className="font-geist text-ws-body text-ws-text-secondary">{item.correction}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 13. What to Do Next */}
+      {/* ── Next steps ── */}
       <section id="next-steps" className="py-12">
-        <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-3">
-          What to do next
+        <SectionLabel>What to do next</SectionLabel>
+        <SectionH2>If you have read this page and want to begin.</SectionH2>
+        <p className="font-geist text-ws-body-lg text-ws-text-secondary leading-[1.7] mb-8 max-w-2xl">
+          Registration takes a few minutes. The commitment is to the project that follows — three
+          documents, peer review, and the review process. Read the Limitations section before
+          registering if you have not done so.
         </p>
-        <h2 className="font-heading text-display-sm font-semibold text-text-primary tracking-tight mb-8">
-          If you are ready to register
-        </h2>
-
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm overflow-hidden mb-8">
-          {[
-            {
-              step: '01',
-              action: 'Read the Trust and Verification page',
-              detail:
-                'Specifically the section on what verification does not claim. Understanding what VERIFIED means before you submit is more important than understanding the technical submission process.',
-              link: { href: '/trust', label: 'Trust and Verification' },
-            },
-            {
-              step: '02',
-              action: 'Register as a student',
-              detail:
-                'Go to the registration page and select the Student role. You need an email address for verification and your academic institution name for your profile.',
-              link: { href: '/auth/register?role=student', label: 'Register as a student' },
-            },
-            {
-              step: '03',
-              action: 'Decide which track to start with',
-              detail:
-                'If you have an open-source project you have been contributing to and want to document, have the repository URL ready for the OPEN_SOURCE track. If you want a fresh brief from an industry context, select AI_BRIEF. You can choose differently on your next project.',
-              link: null,
-            },
-            {
-              step: '04',
-              action: 'Read your brief carefully before writing anything',
-              detail:
-                'The brief specifies the problem, the deliverables, and the constraints. Your Breakdown demonstrates that you understood it. A Breakdown that restates the brief in different words has not demonstrated understanding. Read it, sit with it, identify what is underspecified, and open the AI Mentor before you start writing.',
-              link: null,
-            },
-            {
-              step: '05',
-              action: 'Engage the AI Mentor early, not at the end',
-              detail:
-                'The Mentor is most useful when you are still working through your approach — not when you are writing your documents under deadline. Open a session after you receive your brief and before you begin your Breakdown. Its questions will surface gaps in your understanding while you still have time to address them.',
-              link: null,
-            },
-          ].map((item) => (
-            <div
-              key={item.step}
-              className="flex items-start gap-4 px-5 py-5 border-b border-zinc-800/50 last:border-0"
-            >
-              <span className="font-mono text-t6 text-text-disabled tabular-nums shrink-0 pt-0.5 w-6">
-                {item.step}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-body text-t5 text-text-primary font-medium mb-1">
-                  {item.action}
-                </p>
-                <p className="font-body text-t5 text-text-secondary leading-relaxed">
-                  {item.detail}
-                </p>
-                {item.link && (
-                  <Link
-                    href={item.link.href}
-                    className="inline-flex items-center justify-center min-h-[40px] mt-3 px-4 rounded-sm border border-zinc-800/50 text-text-secondary font-body text-t6 transition-all duration-150 hover:border-accent-green/50 hover:text-text-primary"
-                  >
-                    {item.link.label}
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="border border-zinc-800/50 rounded-sm p-5">
-          <p className="font-mono text-t6 text-text-disabled uppercase tracking-widest mb-2">
-            If you have questions not answered here
-          </p>
-          <p className="font-body text-t5 text-text-secondary leading-relaxed">
-            The{' '}
-            <Link
-              href="/trust"
-              className="text-text-primary underline underline-offset-2 hover:text-accent-green transition-colors duration-150"
-            >
-              Trust &amp; Verification
-            </Link>{' '}
-            page has a detailed explanation of how the review process works across both hubs,
-            including the document hash methodology and what the lecturer verification process
-            involves. If your question is not answered by either page, contact the platform through
-            the support page.
-          </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link
+            href="/auth/register?role=student"
+            className="inline-flex items-center justify-center min-h-[44px] px-6 border border-ws-hub-blue text-ws-hub-blue font-geist text-ws-body hover:bg-ws-hub-blue hover:text-white transition-colors duration-150"
+          >
+            Register as a student
+          </Link>
+          <Link
+            href="/for/employers"
+            className="inline-flex items-center justify-center min-h-[44px] px-6 border border-ws-border-light text-ws-text-secondary font-geist text-ws-body hover:border-ws-border-medium transition-colors duration-150"
+          >
+            Read the For Employers page →
+          </Link>
         </div>
       </section>
-    </AudiencePage>
+    </EduHubPage>
   );
 }
