@@ -3,193 +3,436 @@ import Link from 'next/link';
 import { AnimateIn } from '@/components/website/AnimateIn';
 
 export const metadata: Metadata = {
-  title: 'UmojaHub — Food Security & Education Infrastructure',
+  title: 'UmojaHub — East Africa\'s Verification Infrastructure',
   description:
-    'Verified infrastructure connecting farmers to buyers and giving CS students a portfolio that employers can independently verify. Built on a transparent trust system.',
+    'Verified infrastructure connecting smallholder farmers, CS graduates, and trusted buyers across East Africa. No middlemen. No commissions. No self-reported credentials.',
 };
 
-const AUDIENCE_CARDS = [
+const FARMER_FLOW = [
+  { n: 1, title: 'Submit documents', desc: 'National ID, land documentation, farm photograph.' },
+  { n: 2, title: 'Administrator review', desc: 'Named administrator reviews for consistency and plausibility.' },
+  { n: 3, title: 'APPROVED or REJECTED', desc: 'Rejection includes a reason. Resubmission possible.' },
+  { n: 4, title: 'Listings go live', desc: 'Verified farmer can list produce at their own price.' },
+  { n: 5, title: 'Trust Score builds', desc: 'Each fulfilled order adds to the publicly visible Trust Score.' },
+] as const;
+
+const STUDENT_FLOW = [
+  { n: 1, title: 'Submit project + documents', desc: '3 supporting documents per project submission.' },
+  { n: 2, title: 'Peer review', desc: 'Anonymised review from fellow students.' },
+  { n: 3, title: 'Lecturer review', desc: 'Verified, credentialed lecturer makes the final decision.' },
+  { n: 4, title: 'VERIFIED, REVISION, or DENIED', desc: "Each outcome records the reviewer's name and reason." },
+  { n: 5, title: 'Portfolio entry created', desc: 'Records: reviewer, credentials, decision, document hash.' },
+] as const;
+
+const STATS = [
+  { value: '—', label: 'Verified farmers', sub: 'updated every 5 min' },
+  { value: '—', label: 'Transactions completed', sub: 'fulfilled orders' },
+  { value: '—', label: 'Portfolios verified', sub: 'reviewed by lecturers' },
+  { value: '—', label: 'Counties represented', sub: 'across Kenya' },
+] as const;
+
+const AUDIENCE_ROW_1 = [
   {
-    role: 'Farmer',
-    description: 'Sell verified produce to buyers who pay through M-Pesa. Your Trust Score travels with every listing.',
+    hub: 'FOOD SECURITY HUB',
+    role: 'Farmers',
+    desc: 'Sell verified produce to buyers outside your network. M-Pesa payment confirmed before dispatch.',
+    cta: 'See what you get →',
     href: '/for/farmers',
-    accent: 'teal',
+    accentClass: 'text-copper',
   },
   {
-    role: 'Student',
-    description: 'Build a portfolio of real projects. Each entry is cryptographically hashed and reviewed by a verified lecturer.',
+    hub: 'EDUCATION HUB',
+    role: 'Students',
+    desc: 'Build a verifiable project portfolio. Reviewed by credentialed lecturers who record their decision.',
+    cta: 'See what you get →',
     href: '/for/students',
-    accent: 'violet',
+    accentClass: 'text-teal',
   },
   {
-    role: 'Buyer',
-    description: 'Browse a verified-only marketplace. Every listing carries a Trust Score you can read before you pay.',
+    hub: 'FOOD SECURITY HUB',
+    role: 'Buyers',
+    desc: 'Purchase produce from farmers with visible transaction history, verified identity, and public Trust Score.',
+    cta: 'See how it works →',
     href: '/for/buyers',
-    accent: 'copper',
-  },
-  {
-    role: 'Employer',
-    description: 'Review student portfolios built on verifiable evidence — without registering or paying.',
-    href: '/for/employers',
-    accent: 'teal',
-  },
-  {
-    role: 'Lecturer',
-    description: 'Review student project submissions and sign off on evidence you can stand behind.',
-    href: '/for/lecturers',
-    accent: 'violet',
-  },
-  {
-    role: 'Cooperative',
-    description: 'Pool orders across your farmer group and access bulk purchasing at verified prices.',
-    href: '/for/cooperatives',
-    accent: 'copper',
+    accentClass: 'text-copper',
   },
 ] as const;
 
-const TRUST_STATS = [
-  { label: 'Verification layers', value: '3' },
-  { label: 'Trust Score factors', value: '4' },
-  { label: 'Days to verification decision', value: '≤30' },
-  { label: 'Verification methodology', value: 'Public' },
+const AUDIENCE_ROW_2 = [
+  {
+    hub: 'EDUCATION HUB',
+    role: 'Employers',
+    desc: "Read student portfolios that include the reviewer's name, credentials, and decision rationale.",
+    cta: 'See how to verify →',
+    href: '/for/employers',
+    accentClass: 'text-teal',
+  },
+  {
+    hub: 'EDUCATION HUB',
+    role: 'Lecturers',
+    desc: 'Review student project submissions. Your name, credentials, and decision are recorded permanently.',
+    cta: 'Apply as lecturer →',
+    href: '/for/lecturers',
+    accentClass: 'text-teal',
+  },
+  {
+    hub: 'BOTH HUBS',
+    role: 'NGOs & Government',
+    desc: 'Mandate alignment and impact metrics with full methodology disclosure and auditable evidence chains.',
+    cta: 'See impact data →',
+    href: '/for/ngos',
+    accentClass: 'text-violet',
+  },
+] as const;
+
+const PRINCIPLES = [
+  {
+    label: 'HUMAN DECISION',
+    desc: 'Verification is a human decision by a named administrator — not an automated checkbox.',
+  },
+  {
+    label: 'EVIDENCE ON RECORD',
+    desc: 'Every decision records the reviewer, the evidence reviewed, and the outcome. Auditable.',
+  },
+  {
+    label: 'CORRECTABLE',
+    desc: 'Rejection is not permanent. Resubmission with additional documentation is possible.',
+  },
 ] as const;
 
 export default function HomePage() {
   return (
     <>
-      {/* ── Hero ── */}
-      <section className="pt-32 pb-24 px-6 lg:px-8 bg-canvas-base">
-        <div className="mx-auto max-w-4xl text-center">
-          <AnimateIn>
-            <p className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm bg-ws-surface-primary border border-ws-border-soft font-ibm-mono text-ws-meta text-teal mb-8">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal" />
-              Verified infrastructure — East Africa
-            </p>
-          </AnimateIn>
-          <AnimateIn delay={0.08}>
-            <h1 className="text-ws-display font-jakarta font-800 text-ws-text-heading tracking-[-0.03em] leading-[1.05]">
-              Food Security and Education,{' '}
-              <span className="text-copper">Built on Verified Trust</span>
-            </h1>
-          </AnimateIn>
-          <AnimateIn delay={0.16}>
-            <p className="mt-6 text-ws-body font-jakarta text-ws-text-secondary max-w-2xl mx-auto leading-[1.6]">
-              UmojaHub connects verified Kenyan farmers with buyers and gives CS students a portfolio
-              that employers can independently verify — built on a transparent, auditable trust
-              system.
-            </p>
-          </AnimateIn>
-          <AnimateIn delay={0.24}>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/for/farmers"
-                className="inline-flex items-center px-6 py-3 bg-copper text-white font-jakarta font-600 text-[1rem] rounded-sm hover:bg-[#A05A30] active:scale-[0.98] transition-all duration-fast ease-standard"
-              >
-                Food Security Hub →
-              </Link>
-              <Link
-                href="/education"
-                className="inline-flex items-center px-6 py-3 border border-ws-border-default text-ws-text-heading font-jakarta font-600 text-[1rem] rounded-sm hover:bg-ws-surface-primary hover:border-ws-border-soft transition-all duration-standard ease-standard"
-              >
-                Education Hub →
-              </Link>
-            </div>
-          </AnimateIn>
-        </div>
+      {/* ── S1: Hero ── */}
+      <section className="bg-[#131619] px-[120px] py-[128px] flex flex-col gap-6 items-center">
+        <AnimateIn>
+          <p className="font-ibm-mono text-[0.6875rem] font-600 text-[#56A8A2] tracking-[0.08em] uppercase text-center">
+            East Africa&apos;s Verification Infrastructure
+          </p>
+        </AnimateIn>
+        <AnimateIn delay={0.08}>
+          <h1 className="font-jakarta font-800 text-[4.5rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] max-w-[1080px] text-center">
+            Verified Farmers.<br />
+            Verified Talent.<br />
+            East African Trust Infrastructure.
+          </h1>
+        </AnimateIn>
+        <AnimateIn delay={0.16}>
+          <p className="font-jakarta font-400 text-[1.125rem] text-[#A9A29A] leading-[1.6] max-w-[760px] text-center">
+            The verification layer connecting smallholder farmers, agricultural graduates,
+            and trusted buyers across East Africa.
+          </p>
+        </AnimateIn>
+        <AnimateIn delay={0.24}>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <Link
+              href="/for/farmers"
+              className="inline-flex items-center px-[28px] py-[16px] bg-copper text-[#F5F4F0] font-jakarta font-600 text-[1rem] rounded-[4px] hover:bg-[#A05A30] active:scale-[0.98] transition-all duration-fast ease-standard"
+            >
+              Food Security Hub →
+            </Link>
+            <Link
+              href="/education"
+              className="inline-flex items-center px-[28px] py-[16px] border border-[#39414A] text-[#D6D1CB] font-jakarta font-600 text-[1rem] rounded-[4px] hover:border-[#49515A] transition-all duration-standard ease-standard"
+            >
+              Education Hub →
+            </Link>
+          </div>
+        </AnimateIn>
+        <AnimateIn delay={0.32}>
+          <p className="font-jakarta font-500 text-[0.8125rem] text-[#636C76] tracking-[0.01em] text-center">
+            Verification methodology published · Open appeals process · Named administrators
+          </p>
+        </AnimateIn>
       </section>
 
-      {/* ── Trust stats bar ── */}
-      <AnimateIn>
-        <section className="border-y border-ws-border-soft bg-ws-surface-primary py-8 px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {TRUST_STATS.map(({ label, value }) => (
-                <div key={label} className="text-center">
-                  <p className="font-ibm-mono text-[2rem] font-400 text-ws-text-heading">{value}</p>
-                  <p className="mt-1 font-jakarta text-ws-meta text-ws-text-secondary">{label}</p>
-                </div>
-              ))}
-            </div>
+      {/* ── S2: Two Structural Failures ── */}
+      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[56px]">
+        <AnimateIn>
+          <div className="flex flex-col gap-3">
+            <p className="font-jakarta font-600 text-[0.6875rem] text-copper uppercase tracking-[0.06em]">
+              Why Verification
+            </p>
+            <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
+              Two industries.<br />
+              One structural failure.
+            </h2>
           </div>
-        </section>
-      </AnimateIn>
+        </AnimateIn>
 
-      {/* ── For Your Role ── */}
-      <section className="py-24 px-6 lg:px-8 bg-canvas-base">
-        <div className="mx-auto max-w-7xl">
-          <AnimateIn>
-            <div className="mb-12">
-              <p className="font-ibm-mono text-ws-meta text-teal mb-3">Who is this for?</p>
-              <h2 className="text-ws-h1 font-jakarta font-600 text-ws-text-heading">
-                Everyone in the ecosystem
-              </h2>
-              <p className="mt-3 text-ws-body font-jakarta text-ws-text-secondary max-w-xl">
-                Six roles. One trust system. Each participant builds and benefits from verified
-                infrastructure.
+        <div className="flex gap-8">
+          <AnimateIn className="flex-1">
+            <div className="p-[40px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full flex flex-col gap-5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-copper shrink-0" />
+                <p className="font-jakarta font-600 text-[0.6875rem] text-copper tracking-[0.04em] uppercase">
+                  Food Security Hub
+                </p>
+              </div>
+              <h3 className="font-jakarta font-600 text-[1.375rem] text-ws-text-heading tracking-[-0.01em] leading-[1.3]">
+                The Farmer Problem
+              </h3>
+              <p className="font-jakarta font-400 text-[1rem] text-ws-text-body leading-[1.6]">
+                Farmers sell through brokers who know the end-market price. The farmer does not.
+                There is no mechanism to compare offers, signal reliability to buyers they have
+                never met, or receive payment without physical presence. This is not individual
+                bad actors — it is a structural information asymmetry.
               </p>
             </div>
           </AnimateIn>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {AUDIENCE_CARDS.map((card, i) => (
-              <AnimateIn key={card.role} delay={i * 0.08}>
-                <Link
-                  href={card.href}
-                  className="group block p-6 bg-ws-surface-primary border border-ws-border-soft rounded-sm hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)] transition-all duration-standard ease-standard"
-                >
-                  <p
-                    className={`font-ibm-mono text-ws-meta mb-3 ${
-                      card.accent === 'teal'
-                        ? 'text-teal'
-                        : card.accent === 'violet'
-                          ? 'text-violet'
-                          : 'text-copper'
-                    }`}
-                  >
-                    {card.role}
-                  </p>
-                  <p className="font-jakarta text-ws-body text-ws-text-body leading-[1.6]">
-                    {card.description}
-                  </p>
-                  <p className="mt-4 font-jakarta text-ws-meta font-600 text-ws-text-heading group-hover:text-copper transition-colors duration-fast ease-standard">
-                    Learn more →
-                  </p>
-                </Link>
-              </AnimateIn>
-            ))}
+          <AnimateIn delay={0.08} className="flex-1">
+            <div className="p-[40px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full flex flex-col gap-5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal shrink-0" />
+                <p className="font-jakarta font-600 text-[0.6875rem] text-teal tracking-[0.04em] uppercase">
+                  Education Hub
+                </p>
+              </div>
+              <h3 className="font-jakarta font-600 text-[1.375rem] text-ws-text-heading tracking-[-0.01em] leading-[1.3]">
+                The Student Problem
+              </h3>
+              <p className="font-jakarta font-400 text-[1rem] text-ws-text-body leading-[1.6]">
+                CS graduates leave with degrees that certify attendance, GitHub repos that are
+                self-reported, and CVs that describe claims no one can verify. Employers have seen
+                AI-generated portfolios and inflated credentials. This is not student dishonesty —
+                it is the absence of a trustworthy verification mechanism.
+              </p>
+            </div>
+          </AnimateIn>
+        </div>
+
+        <AnimateIn>
+          <p className="font-jakarta font-500 text-[1.125rem] text-ws-text-secondary leading-[1.6] tracking-[-0.005em] text-center w-[800px] mx-auto">
+            Both problems share the same root: the absence of a mechanism to establish trust
+            between strangers before a consequential transaction.
+          </p>
+        </AnimateIn>
+      </section>
+
+      {/* ── S3: Verification Philosophy ── */}
+      <section className="bg-canvas-elevated px-[120px] py-[96px] flex flex-col gap-[48px] items-center">
+        <AnimateIn className="text-center flex flex-col gap-3 items-center">
+          <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.06em]">
+            The Verification Philosophy
+          </p>
+          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
+            One infrastructure.<br />
+            Two hubs.
+          </h2>
+          <p className="font-jakarta font-400 text-[1rem] text-ws-text-secondary leading-[1.6] max-w-[680px]">
+            Nothing claimed on UmojaHub is unverified. Farmer identity, land documentation,
+            produce listings — and student projects, reviewer credentials, portfolio entries —
+            all pass through the same verification spine.
+          </p>
+        </AnimateIn>
+
+        {/* D01 Diagram placeholder */}
+        <AnimateIn className="w-full">
+          <div className="bg-[#E5E1DA] border border-[#C8C2BA] rounded-[2px] h-[400px] w-full flex flex-col gap-4 items-center justify-center p-[48px] text-center">
+            <p className="font-ibm-mono text-[0.75rem] text-[#8A919A] tracking-[0.02em]">
+              D01 — Verification Spine Diagram
+            </p>
+            <p className="font-jakarta font-400 text-[0.875rem] text-[#8A919A] leading-[1.5] max-w-[600px]">
+              Shared verification infrastructure connecting Food Security Hub and Education Hub.
+              Farmer documents · Student projects · Lecturer credentials · Administrator decisions.
+            </p>
           </div>
+        </AnimateIn>
+
+        {/* 3 Principles */}
+        <div className="flex gap-6 w-full">
+          {PRINCIPLES.map((p, i) => (
+            <AnimateIn key={p.label} delay={i * 0.08} className="flex-1">
+              <div className="bg-[#E5E1DA] border border-[#C8C2BA] rounded-[2px] p-[28px] h-full flex flex-col gap-2.5">
+                <p className="font-jakarta font-600 text-[0.8125rem] text-teal tracking-[0.01em] uppercase">
+                  {p.label}
+                </p>
+                <p className="font-jakarta font-400 text-[0.9375rem] text-ws-text-body leading-[1.55]">
+                  {p.desc}
+                </p>
+              </div>
+            </AnimateIn>
+          ))}
         </div>
       </section>
 
-      {/* ── Platform overview CTA ── */}
-      <AnimateIn>
-        <section className="py-24 px-6 lg:px-8 bg-ws-text-heading">
-          <div className="mx-auto max-w-4xl text-center">
-            <p className="font-ibm-mono text-ws-meta text-teal-dark mb-4">How it works</p>
-            <h2 className="text-ws-h1 font-jakarta font-600 text-[#F2F0EC] leading-[1.15]">
-              Two hubs. One trust system.
-            </h2>
-            <p className="mt-4 text-ws-body font-jakarta text-[#A9A29A] max-w-2xl mx-auto leading-[1.6]">
-              The Food Security Hub verifies farmers and connects them to buyers. The Education Hub
-              verifies student work and connects graduates to employers. Both run on the same
-              transparent verification spine.
-            </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/how-it-works"
-                className="inline-flex items-center px-6 py-3 bg-copper text-white font-jakarta font-600 text-[1rem] rounded-sm hover:bg-[#D88A5A] active:scale-[0.98] transition-all duration-fast ease-standard"
-              >
-                See how it works →
-              </Link>
-              <Link
-                href="/trust"
-                className="inline-flex items-center px-6 py-3 border border-[#39414A] text-[#D6D1CB] font-jakarta font-600 text-[1rem] rounded-sm hover:border-[#49515A] transition-all duration-standard ease-standard"
-              >
-                Read the methodology
-              </Link>
+      {/* ── S4: Verification in Practice ── */}
+      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
+        <AnimateIn>
+          <p className="font-jakarta font-600 text-[0.6875rem] text-copper uppercase tracking-[0.06em]">
+            How It Works
+          </p>
+        </AnimateIn>
+        <AnimateIn>
+          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
+            Verification in practice.
+          </h2>
+        </AnimateIn>
+
+        <div className="flex gap-8">
+          {/* Farmer flow */}
+          <AnimateIn className="flex-1">
+            <div className="p-[40px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full flex flex-col">
+              <p className="font-jakarta font-600 text-[0.6875rem] text-copper uppercase tracking-[0.04em]">
+                Food Security Hub
+              </p>
+              <div className="h-5" />
+              {FARMER_FLOW.map((step, idx) => (
+                <div key={step.n}>
+                  <div className="flex gap-4 items-start">
+                    <div className="shrink-0 w-7 h-7 rounded-full bg-copper flex items-center justify-center">
+                      <span className="font-jakarta font-600 text-[0.75rem] text-[#F5F4F0]">
+                        {step.n}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      <p className="font-jakarta font-600 text-[0.875rem] text-ws-text-heading">
+                        {step.title}
+                      </p>
+                      <p className="font-jakarta font-400 text-[0.8125rem] text-ws-text-secondary leading-[1.55]">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </div>
+                  {idx < FARMER_FLOW.length - 1 && <div className="h-6" />}
+                </div>
+              ))}
             </div>
-          </div>
-        </section>
-      </AnimateIn>
+          </AnimateIn>
+
+          {/* Student flow */}
+          <AnimateIn delay={0.08} className="flex-1">
+            <div className="p-[40px] bg-[#E5ECE8] border border-ws-border-soft rounded-[2px] h-full flex flex-col">
+              <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.04em]">
+                Education Hub
+              </p>
+              <div className="h-5" />
+              {STUDENT_FLOW.map((step, idx) => (
+                <div key={step.n}>
+                  <div className="flex gap-4 items-start">
+                    <div className="shrink-0 w-7 h-7 rounded-full bg-teal flex items-center justify-center">
+                      <span className="font-jakarta font-600 text-[0.75rem] text-[#F5F4F0]">
+                        {step.n}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      <p className="font-jakarta font-600 text-[0.875rem] text-ws-text-heading">
+                        {step.title}
+                      </p>
+                      <p className="font-jakarta font-400 text-[0.8125rem] text-ws-text-secondary leading-[1.55]">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </div>
+                  {idx < STUDENT_FLOW.length - 1 && <div className="h-6" />}
+                </div>
+              ))}
+            </div>
+          </AnimateIn>
+        </div>
+      </section>
+
+      {/* ── S5: Live Stats ── */}
+      <section className="bg-[#131619] px-[120px] py-[80px] flex flex-col gap-[48px] items-center text-center">
+        <AnimateIn>
+          <p className="font-jakarta font-600 text-[0.6875rem] text-[#56A8A2] uppercase tracking-[0.06em]">
+            Platform in Numbers
+          </p>
+        </AnimateIn>
+
+        <div className="flex items-start w-full">
+          {STATS.map((stat, i) => (
+            <AnimateIn key={stat.label} delay={i * 0.08} className="flex-1">
+              <div className="p-[32px] flex flex-col gap-2 items-center">
+                <p className="font-jakarta font-600 text-[3rem] text-[#F2F0EC] leading-none tracking-[-0.02em]">
+                  {stat.value}
+                </p>
+                <p className="font-jakarta font-500 text-[0.875rem] text-[#D6D1CB]">
+                  {stat.label}
+                </p>
+                <p className="font-ibm-mono text-[0.6875rem] text-[#49515A]">{stat.sub}</p>
+              </div>
+            </AnimateIn>
+          ))}
+        </div>
+
+        <AnimateIn>
+          <p className="font-jakarta font-400 text-[0.8125rem] text-[#49515A] leading-[1.5] max-w-[700px]">
+            Figures reflect the platform as it operates today. Methodology for each metric is
+            disclosed on the{' '}
+            <Link href="/transparency" className="text-[#56A8A2] hover:underline underline-offset-2">
+              Transparency page
+            </Link>
+            .
+          </p>
+        </AnimateIn>
+      </section>
+
+      {/* ── S6: Audience Routing ── */}
+      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
+        <AnimateIn>
+          <p className="font-jakarta font-600 text-[0.6875rem] text-violet uppercase tracking-[0.06em]">
+            For Your Role
+          </p>
+        </AnimateIn>
+        <AnimateIn>
+          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
+            Who are you here for?
+          </h2>
+        </AnimateIn>
+
+        {/* Row 1 */}
+        <div className="flex gap-6">
+          {AUDIENCE_ROW_1.map((card, i) => (
+            <AnimateIn key={card.role} delay={i * 0.08} className="flex-1">
+              <Link
+                href={card.href}
+                className="group flex flex-col gap-3 p-[32px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-standard ease-standard"
+              >
+                <p className={`font-jakarta font-600 text-[0.625rem] uppercase tracking-[0.04em] ${card.accentClass}`}>
+                  {card.hub}
+                </p>
+                <p className="font-jakarta font-600 text-[1.25rem] text-ws-text-heading tracking-[-0.01em]">
+                  {card.role}
+                </p>
+                <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-secondary leading-[1.55]">
+                  {card.desc}
+                </p>
+                <div className="h-2" />
+                <p className={`font-jakarta font-600 text-[0.8125rem] ${card.accentClass}`}>
+                  {card.cta}
+                </p>
+              </Link>
+            </AnimateIn>
+          ))}
+        </div>
+
+        {/* Row 2 */}
+        <div className="flex gap-6">
+          {AUDIENCE_ROW_2.map((card, i) => (
+            <AnimateIn key={card.role} delay={i * 0.08} className="flex-1">
+              <Link
+                href={card.href}
+                className="group flex flex-col gap-3 p-[32px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-standard ease-standard"
+              >
+                <p className={`font-jakarta font-600 text-[0.625rem] uppercase tracking-[0.04em] ${card.accentClass}`}>
+                  {card.hub}
+                </p>
+                <p className="font-jakarta font-600 text-[1.25rem] text-ws-text-heading tracking-[-0.01em]">
+                  {card.role}
+                </p>
+                <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-secondary leading-[1.55]">
+                  {card.desc}
+                </p>
+                <div className="h-2" />
+                <p className={`font-jakarta font-600 text-[0.8125rem] ${card.accentClass}`}>
+                  {card.cta}
+                </p>
+              </Link>
+            </AnimateIn>
+          ))}
+        </div>
+      </section>
     </>
   );
 }
