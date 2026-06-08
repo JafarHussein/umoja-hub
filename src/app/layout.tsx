@@ -1,11 +1,18 @@
 import type { Metadata } from 'next';
-import { Sora, IBM_Plex_Sans, JetBrains_Mono, Geist, Geist_Mono } from 'next/font/google';
+import {
+  Sora,
+  IBM_Plex_Sans,
+  IBM_Plex_Mono,
+  JetBrains_Mono,
+  Geist,
+  Geist_Mono,
+  Plus_Jakarta_Sans,
+} from 'next/font/google';
 import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-
 
 const geistMono = Geist_Mono({
   subsets: ['latin'],
@@ -31,6 +38,21 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
+
+// Website fonts — Plus Jakarta Sans + IBM Plex Mono (FRONTEND.md)
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-ibm-plex-mono',
   display: 'swap',
 });
 
@@ -64,6 +86,8 @@ export default function RootLayout({
         jetbrainsMono.variable,
         geist.variable,
         geistMono.variable,
+        plusJakarta.variable,
+        ibmPlexMono.variable,
         'font-sans'
       )}
     >
