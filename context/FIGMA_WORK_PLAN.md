@@ -217,20 +217,31 @@ A reviewer should be able to look at the Claude Design canvas and experience the
 
 ---
 
-## PHASE 4 — PROTOTYPE + HANDOFF (CLAUDE DESIGN)
-**Status:** Blocked on Phase 3
-**Tool:** Claude Design (interactive prototype mode) → Claude Design Handoff Bundle → Claude Code
+## PHASE 4 — PROTOTYPE + HANDOFF
+**Status:** Journeys approved — pending handoff bundle export
+**Tool:** Figma Plugin API (prototype wiring) → Figma handoff export → Claude Code
 **Goal:** A reviewer can experience the complete website without a browser. Once approved, a single instruction hands the design to Claude Code.
 
-### What Phase 4 Does in Claude Design
+**Note on tooling:** Phase 4 was executed in Figma (not Claude Design) via the Figma Plugin API. Figma's Plugin API restricts NAVIGATE reactions to same-page frames, so all 18 Phase 3 screens were cloned to a single `04 / Prototype` page (Figma page ID: `183:2`) before prototype wiring. The `03/` source pages remain the design source of truth.
 
-Claude Design generates interactive prototypes natively — no separate prototyping step required. Phase 4 is:
+### What Was Built
 
-1. **Wire up the prototype** — connect all 18 pages through navigation, CTAs, dropdowns, and audience journey flows inside Claude Design
-2. **Add scroll and transition behaviors** — sticky nav, scroll-triggered reveals, page enter/exit states
-3. **Build mobile prototype** — separate prototype flow for mobile breakpoints
-4. **Review all 7 journeys** (see checklist below)
-5. **Export handoff bundle** — when approved, use Claude Design's "Handoff to Claude Code" export
+All 18 screens cloned to `04 / Prototype` and arranged in a 3-column grid:
+- **Col 1** — Homepage, For Farmers, For Buyers, Marketplace, Listing Detail
+- **Col 2** — For Students, Education Hub, For Lecturers, For Employers, Knowledge Hub, Knowledge Article
+- **Col 3** — Trust & Verification, Transparency, Team, About, How It Works, For NGOs, For Cooperatives
+
+**70 prototype connections wired:**
+- 36 nav connections across all 18 screens (logo → Homepage, Food Security Hub, Education Hub, How It Works, Transparency, Get Started)
+- 6 audience routing cards (Homepage ForYourRole → each audience page)
+- 4 hero CTAs (Food Security Hub →, Education Hub →, Register as Farmer ×2, Register as Student ×2)
+- 6 Education Hub routing cards (Students, Lecturers, Employers)
+- 2 cross-links (Trust → Team, Transparency → Team)
+- 7 marketplace listing cards → Listing Detail
+- 7 knowledge article cards → Knowledge Article
+- 2 breadcrumbs (Listing Detail → Marketplace, Knowledge Article → Knowledge Hub)
+
+5 flow starting points set for all 7 journeys. Review guide legend at node `208:2`.
 
 ### Prototype Review Checklist
 
@@ -244,22 +255,27 @@ A reviewer completes the following journeys without confusion. If any journey pr
 6. Researcher → /transparency → methodology read → /team → named accountability and appeals process found
 7. Skeptic → /trust → full methodology read → limitations prominent → /team → administrator credentials verifiable
 
-### The Handoff Bundle
+### Journey Review Results (2026-06-08)
 
-When the prototype is approved, Claude Design's export menu produces a handoff bundle containing:
-- All page designs with annotated specs
-- Design tokens (ready for Tailwind config extraction)
-- Component inventory
-- Asset export specifications
-- Interactive states documented
+All 7 journeys reviewed via Figma prototype — 13/13 connection checks passed.
 
-This bundle is passed to Claude Code with a single instruction. Claude Code implements from the bundle rather than from developer interpretation of design intent.
+| Journey | Verdict | Notes |
+|---------|---------|-------|
+| J1 — First-time visitor | **PASS** | Purpose clear in 5s. Split CTA routes correctly. Trust signals above fold. |
+| J2 — Farmer | **PASS** | Hero proposition immediate. CTA in hero + bottom section, both wired. |
+| J3 — Student | **PASS** | SHA-256 specimen above fold. Named reviewer emphasis lands. |
+| J4 — Employer | **PASS** | "Without registering" addressed in subtitle before first scroll. |
+| J5 — NGO Analyst | **PASS** | Mandate-alignment language correct for evaluator audience. |
+| J6 — Researcher | **PASS** | "Honest omissions" hero is strong. Transparency → Team link functional. |
+| J7 — Skeptic | **PASS** | In-page anchor nav (Trust Score, Farmer Verification, Education Verification, Appeals) allows targeted skepticism. Trust → Team link functional. |
+
+**Known prototype limitation:** Transparency footer "Trust & Verification · Team · For Buyers" is a single text node — clicking anywhere navigates to Team. In implementation these will be separate link elements. Not a design deficiency.
 
 ### Phase 4 Exit Criteria
-- [ ] All 7 prototype journeys completed without confusion
-- [ ] Mobile prototype reviewed on an actual mobile device (not a desktop browser preview)
-- [ ] Prototype approved by decision-maker
-- [ ] Handoff bundle exported from Claude Design
+- [x] All 7 prototype journeys completed without confusion
+- [ ] Mobile prototype reviewed on an actual mobile device
+- [x] Prototype approved by decision-maker
+- [ ] Handoff bundle exported from Figma
 - [ ] Handoff bundle reviewed — all pages present, all tokens exported, no missing states
 
 ---
@@ -376,3 +392,5 @@ UmojaHub Website — High Fidelity & Prototype
 | 2026-06-02 | For Lecturers CTA route: /lecturers/apply | Dedicated application flow, not /register?role=lecturer. Requires credential review; separate route enables tracking and analytics. |
 | 2026-06-02 | Marketplace: infinite scroll | Default browsing mode. Encourages discovery. Requirements: sticky filters, search, URL state preservation, back-to-top. Pagination reserved for admin dashboards, audit logs, financial records, verification queues. |
 | 2026-06-02 | Phase 3 proceeding in Figma, not Claude Design | Claude Design is not available as an agent tool. Phase 3 high-fidelity work continues in the existing Figma file via use_figma. Pages named 03 / PageName. Brand identity v1.0 locked: Plus Jakarta Sans + IBM Plex Mono, cold-fintech palette, Aurora Copper / Glacial Teal / Lunar Violet accents. |
+| 2026-06-08 | Phase 4 prototype built in Figma, not Claude Design | Claude Design not available as agent tool. Prototype wired via Figma Plugin API on `04 / Prototype` page. Figma Plugin API restricts NAVIGATE reactions to same-page frames — all 18 Phase 3 screens cloned to a single page before wiring. 70 connections wired. All 7 journeys reviewed and approved. |
+| 2026-06-08 | Prototype approval granted — pending handoff bundle only | All 7 journeys passed review. No pages returned to Phase 3 for revision. Remaining Phase 4 exit criteria: mobile prototype review + handoff bundle export (both human tasks). |
