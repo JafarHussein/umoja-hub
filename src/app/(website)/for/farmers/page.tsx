@@ -1,222 +1,358 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { AnimateIn } from '@/components/website/AnimateIn';
-import { ImageSlot } from '@/components/website/ImageSlot';
 
 export const metadata: Metadata = {
   title: 'For Farmers — Food Security Hub · UmojaHub',
   description:
-    'Sell verified produce to buyers who pay through M-Pesa. Build a Trust Score that grows with every successful transaction.',
+    'Verified farmers sell further. Connect to buyers outside your local network, get paid via M-Pesa before dispatch, and build a Trust Score with every transaction.',
 };
 
-const IS_ITEMS = [
-  'A verified produce marketplace — buyers know exactly who they are buying from',
-  'A Trust Score that persists across every listing you publish',
-  'M-Pesa STK Push payment — no cash handling, no third parties',
-  'Price intelligence based on live market data from your county',
-  'A cooperative group system for bulk orders with neighbouring farmers',
-];
+const BENEFITS = [
+  'Access to buyers outside your social and geographic network via a publicly searchable listing.',
+  'Price transparency — your listed price compared against verified weekly market benchmarks for ten major Kenyan crops.',
+  'M-Pesa payment confirmed before dispatch. Payment arrives via Safaricom to your registered phone.',
+  'Trust Score that accumulates across transactions, increasing your listing visibility over time.',
+  'SMS notifications for order status, payment confirmation, and price alerts.',
+  'AI farm assistant available in your dashboard after registration.',
+  'Cooperative group access for bulk agricultural input purchasing.',
+] as const;
 
-const IS_NOT_ITEMS = [
-  'A charity or subsidy programme — your earnings are yours',
-  'An intermediary that takes a cut before you are paid',
-  'A platform that accepts unverified listings',
-  'A loan, credit, or advance-payment product',
-];
+const LIMITATIONS = [
+  'Buyers for your produce — demand depends on market conditions.',
+  'Higher income than your current channels.',
+  'Produce quality verification on behalf of buyers.',
+  'Dispute resolution for produce quality claims after delivery.',
+] as const;
 
-const TRUST_TIERS = [
-  { tier: 'NEW', score: '0–24', label: 'Getting started', color: 'text-ws-text-secondary' },
-  { tier: 'ESTABLISHED', score: '25–59', label: 'Consistent record', color: 'text-violet' },
-  { tier: 'TRUSTED', score: '60–84', label: 'Verified history', color: 'text-teal' },
-  { tier: 'PREMIUM', score: '85–100', label: 'Top verified farmer', color: 'text-copper' },
+const DOCUMENTS = [
+  { title: 'National ID or Kenyan passport', sub: 'Identity document' },
+  { title: 'Land documentation', sub: 'Title deed, lease agreement, or tenancy letter' },
+  { title: 'Farm or produce photograph', sub: 'Visual confirmation of farming activity' },
+] as const;
+
+const TRUST_COMPONENTS = [
+  { index: '01', title: 'Verification status', desc: 'Binary: verified or not. Required to list.' },
+  { index: '02', title: 'Transaction volume', desc: 'Count of completed, paid orders.' },
+  { index: '03', title: 'Buyer ratings', desc: 'Average rating from post-transaction feedback.' },
+  { index: '04', title: 'Order reliability', desc: 'Fulfilled orders vs total orders over a rolling window.' },
+] as const;
+
+const TRUST_TIERS_DARK = [
+  { name: 'NEW', pillBorder: 'border-[#878078]', pillText: 'text-[#878078]', desc: 'Recently verified. Few or no completed transactions.' },
+  { name: 'ESTABLISHED', pillBorder: 'border-[#B86A3D]', pillText: 'text-[#B86A3D]', desc: 'Verified with a documented transaction history.' },
+  { name: 'TRUSTED', pillBorder: 'border-[#56A8A2]', pillText: 'text-[#56A8A2]', desc: 'Verified with strong history of positive ratings and consistent fulfillment.' },
+  { name: 'PREMIUM', pillBorder: 'border-[#9581CC]', pillText: 'text-[#9581CC]', desc: 'Highest tier. Deep transaction history and consistently high ratings.' },
 ] as const;
 
 const MPESA_STEPS = [
-  { n: '01', text: 'Buyer selects your listing and proceeds to checkout' },
-  { n: '02', text: "Platform sends an STK Push to the buyer's M-Pesa number" },
-  { n: '03', text: 'Buyer confirms on their phone — no app, no card required' },
-  { n: '04', text: 'Platform holds payment in escrow until delivery is confirmed' },
-  { n: '05', text: 'Funds released to your registered M-Pesa number within 24 hours' },
+  { n: '1', text: 'Buyer places order on the platform.', badge: 'bg-[#B86A3D]' },
+  { n: '2', text: "Platform initiates an M-Pesa STK Push to the buyer's registered phone.", badge: 'bg-[#B86A3D]' },
+  { n: '3', text: 'Buyer receives a prompt on their device and enters their M-Pesa PIN.', badge: 'bg-[#B86A3D]' },
+  { n: '4', text: "Safaricom processes the transaction and sends a confirmation to UmojaHub's callback endpoint.", badge: 'bg-[#B86A3D]' },
+  { n: '5', text: 'Order status updates from PENDING to PAID.', badge: 'bg-[#2E7D78]' },
+  { n: '6', text: 'Farmer receives an SMS with order details and payment confirmation.', badge: 'bg-[#2E7D78]' },
+  { n: '7', text: 'Farmer dispatches produce.', badge: 'bg-[#B86A3D]' },
+  { n: '8', text: 'Buyer marks order RECEIVED.', badge: 'bg-[#B86A3D]' },
+  { n: '9', text: 'Both parties submit ratings.', badge: 'bg-[#B86A3D]' },
+] as const;
+
+const FAILURE_MODES = [
+  {
+    title: 'Non-dispatch after payment',
+    desc: 'If a farmer consistently fails to dispatch after payment, their order reliability score degrades. Administrators can review accounts with sustained non-dispatch patterns.',
+  },
+  {
+    title: 'Review backlog',
+    desc: 'If submission volume exceeds administrator capacity, the review queue backs up. Farmers in PENDING status cannot list until their review completes. There is no automated fallback.',
+  },
+  {
+    title: 'Trust Score gaming',
+    desc: 'The verification requirement connects any bad actor to a real, verified identity. The cost of building a fraudulent score is the real transactions required to do it.',
+  },
 ] as const;
 
 export default function ForFarmersPage() {
   return (
     <>
-      {/* ── Hero ── */}
-      <section className="pt-32 pb-0 px-6 lg:px-8 bg-canvas-base">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div>
-              <AnimateIn>
-                <p className="font-ibm-mono text-ws-meta text-teal mb-4">Food Security Hub</p>
-              </AnimateIn>
-              <AnimateIn delay={0.08}>
-                <h1 className="text-ws-h1 font-jakarta font-700 text-ws-text-heading leading-[1.15] tracking-[-0.02em]">
-                  Your produce, verified.{' '}
-                  <span className="text-copper">Your payment, guaranteed.</span>
-                </h1>
-              </AnimateIn>
-              <AnimateIn delay={0.16}>
-                <p className="mt-5 text-ws-body font-jakarta text-ws-text-secondary leading-[1.6] max-w-lg">
-                  UmojaHub verifies your identity and farm before your first listing goes live.
-                  Buyers see your Trust Score on every listing — and pay through M-Pesa with no
-                  intermediary taking a cut.
-                </p>
-              </AnimateIn>
-              <AnimateIn delay={0.24}>
-                <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                  <Link
-                    href="/auth/register?role=FARMER"
-                    className="inline-flex items-center px-6 py-3 bg-copper text-white font-jakarta font-600 text-[1rem] rounded-sm hover:bg-[#A05A30] active:scale-[0.98] transition-all duration-fast ease-standard"
-                  >
-                    Register as a Farmer →
-                  </Link>
-                  <Link
-                    href="/trust"
-                    className="inline-flex items-center px-6 py-3 border border-ws-border-default text-ws-text-heading font-jakarta font-500 text-[1rem] rounded-sm hover:bg-ws-surface-primary transition-all duration-standard ease-standard"
-                  >
-                    Read the methodology
-                  </Link>
-                </div>
-              </AnimateIn>
-            </div>
-
-            {/* Image slot — drop /public/images/farmers-hero.jpg here */}
-            <AnimateIn delay={0.12} className="lg:self-end">
-              <ImageSlot
-                src="/images/farmers-hero.jpg"
-                alt="A verified farmer in their field in Kenya"
-                aspectRatio="4/3"
-                priority
-                className="rounded-sm"
-              />
-            </AnimateIn>
-          </div>
+      {/* Section/Hero */}
+      <section className="bg-[#131619] px-[120px] py-[96px] flex flex-col gap-5">
+        <div className="flex items-center gap-2 font-jakarta font-500 text-[0.8125rem]">
+          <span className="text-[#636C76]">Food Security Hub</span>
+          <span className="text-[#39414A]">/</span>
+          <span className="text-[#B86A3D]">For Farmers</span>
         </div>
+        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
+          For Farmers
+        </p>
+        <h1 className="font-jakarta font-800 text-[3.75rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] max-w-[900px]">
+          Verified farmers sell further.
+          <br />
+          At their own price.
+          <br />
+          Paid before dispatch.
+        </h1>
+        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#A9A29A] max-w-[680px]">
+          UmojaHub connects verified smallholder farmers to buyers outside their local network.
+          Verification is done once. Every listing and payment builds your Trust Score.
+        </p>
+        <Link
+          href="/auth/register?role=FARMER"
+          className="inline-flex self-start items-center px-[28px] py-[16px] rounded-[4px] bg-[#B86A3D] text-[#F5F4F0] font-jakarta font-600 text-[1rem] hover:bg-[#A05A30] transition-colors"
+        >
+          Register as a Farmer →
+        </Link>
       </section>
 
-      {/* ── IS / IS NOT ── */}
-      <AnimateIn>
-        <section className="py-24 px-6 lg:px-8 bg-ws-surface-primary border-y border-ws-border-soft">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div>
-                <p className="font-ibm-mono text-ws-meta text-teal mb-5">What it is</p>
-                <ul className="space-y-3">
-                  {IS_ITEMS.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-teal" />
-                      <span className="font-jakarta text-ws-body text-ws-text-body">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="font-ibm-mono text-ws-meta text-ws-text-meta mb-5">What it is not</p>
-                <ul className="space-y-3">
-                  {IS_NOT_ITEMS.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-ws-border-default" />
-                      <span className="font-jakarta text-ws-body text-ws-text-secondary">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-      </AnimateIn>
-
-      {/* ── Trust Score tiers ── */}
-      <section className="py-24 px-6 lg:px-8 bg-canvas-base">
-        <div className="mx-auto max-w-7xl">
-          <AnimateIn>
-            <p className="font-ibm-mono text-ws-meta text-copper mb-3">Trust Score</p>
-            <h2 className="text-ws-h1 font-jakarta font-600 text-ws-text-heading mb-3">
-              Your score grows with your record
-            </h2>
-            <p className="text-ws-body font-jakarta text-ws-text-secondary max-w-xl mb-12">
-              Four factors — transaction history, verification depth, response rate, and dispute
-              record — combine into a single score that buyers see on every listing.
+      {/* Section/WhatYouGet */}
+      <section className="bg-[#F5F4F0] px-[120px] py-[96px] flex flex-col gap-12">
+        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
+          What You Get
+        </p>
+        <p className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15]">
+          Precise. No vague promises.
+        </p>
+        <div className="flex gap-8 w-full">
+          {/* Benefits */}
+          <div className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] rounded-[2px] p-[40px] flex flex-col gap-6">
+            <p className="font-jakarta font-600 text-[1rem] tracking-[0.005em] text-[#1D232A]">
+              What participation gives you
             </p>
-          </AnimateIn>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TRUST_TIERS.map((t, i) => (
-              <AnimateIn key={t.tier} delay={i * 0.08}>
-                <div className="p-6 bg-ws-surface-primary border border-ws-border-soft rounded-sm">
-                  <p className={`font-ibm-mono text-ws-meta font-600 mb-2 ${t.color}`}>{t.tier}</p>
-                  <p className="font-jakarta text-[2rem] font-700 text-ws-text-heading mb-1">
-                    {t.score}
-                  </p>
-                  <p className="font-jakarta text-ws-meta text-ws-text-secondary">{t.label}</p>
-                </div>
-              </AnimateIn>
+            {BENEFITS.map((item) => (
+              <div key={item} className="flex gap-3 items-start">
+                <span className="shrink-0 w-[6px] h-[6px] rounded-full bg-[#B86A3D] mt-[9px]" />
+                <p className="flex-1 font-jakarta font-400 text-[0.9375rem] text-[#353C45] leading-[1.55]">
+                  {item}
+                </p>
+              </div>
             ))}
           </div>
-          <AnimateIn delay={0.32}>
-            <p className="mt-6 font-jakarta text-ws-meta text-ws-text-meta">
-              Full methodology →{' '}
-              <Link href="/trust" className="text-teal hover:underline underline-offset-2">
-                Trust & Verification
-              </Link>
+
+          {/* Limitations */}
+          <div className="flex-1 bg-[#E9E2DF] border border-[#C8A895] rounded-[2px] p-[40px] flex flex-col gap-5">
+            <p className="font-jakarta font-600 text-[0.875rem] tracking-[0.01em] text-[#7A5342] uppercase">
+              What It Does Not Guarantee
             </p>
-          </AnimateIn>
-        </div>
-      </section>
-
-      {/* ── M-Pesa payment flow ── */}
-      <section className="py-24 px-6 lg:px-8 bg-ws-surface-primary border-y border-ws-border-soft">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <AnimateIn>
-              <p className="font-ibm-mono text-ws-meta text-teal mb-3">How you get paid</p>
-              <h2 className="text-ws-h1 font-jakarta font-600 text-ws-text-heading mb-6">
-                M-Pesa, end to end
-              </h2>
-              <ol className="space-y-4">
-                {MPESA_STEPS.map((step) => (
-                  <li key={step.n} className="flex items-start gap-4">
-                    <span className="shrink-0 font-ibm-mono text-ws-meta text-ws-text-meta pt-0.5">
-                      {step.n}
-                    </span>
-                    <span className="font-jakarta text-ws-body text-ws-text-body">{step.text}</span>
-                  </li>
-                ))}
-              </ol>
-            </AnimateIn>
-
-            {/* Image slot — drop /public/images/mpesa-flow.jpg here */}
-            <AnimateIn delay={0.12}>
-              <ImageSlot
-                src="/images/mpesa-flow.jpg"
-                alt="M-Pesa STK Push payment confirmation on a mobile device"
-                aspectRatio="3/4"
-                className="rounded-sm"
-              />
-            </AnimateIn>
+            {LIMITATIONS.map((item) => (
+              <div key={item} className="flex gap-3 items-start">
+                <span className="font-jakarta font-500 text-[#B86A3D] shrink-0">—</span>
+                <p className="flex-1 font-jakarta font-400 text-[0.875rem] text-[#7A5342] leading-[1.55]">
+                  {item}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── Bottom CTA ── */}
-      <AnimateIn>
-        <section className="py-24 px-6 lg:px-8 bg-canvas-base">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-ws-h1 font-jakarta font-600 text-ws-text-heading mb-4">
-              Start building your verified record
-            </h2>
-            <p className="text-ws-body font-jakarta text-ws-text-secondary mb-10">
-              Verification takes up to 30 days. Once approved, your listings go live immediately.
+      {/* Section/VerificationProcess */}
+      <section className="bg-[#F0EEE9] px-[120px] py-[96px] flex flex-col gap-12">
+        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
+          The Verification Process
+        </p>
+        <div className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15]">
+          <p>Done once.</p>
+          <p>Builds your record permanently.</p>
+        </div>
+        <div className="flex gap-8 w-full">
+          {/* Documents */}
+          <div className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] rounded-[2px] p-[40px] flex flex-col gap-5">
+            <p className="font-jakarta font-600 text-[1rem] text-[#1D232A]">Documents required</p>
+            {DOCUMENTS.map((doc) => (
+              <div key={doc.title} className="bg-[#E5E1DA] rounded-[2px] p-4 flex flex-col gap-1">
+                <p className="font-jakarta font-600 text-[0.875rem] text-[#1D232A]">{doc.title}</p>
+                <p className="font-jakarta font-400 text-[0.8125rem] text-[#636C76]">{doc.sub}</p>
+              </div>
+            ))}
+            <p className="font-ibm-mono not-italic text-[0.75rem] text-[#8A919A] leading-[1.5]">
+              Document content is NOT visible to buyers or other farmers.
+              <br />
+              Only your verified / unverified status is public.
             </p>
-            <Link
-              href="/auth/register?role=FARMER"
-              className="inline-flex items-center px-8 py-4 bg-copper text-white font-jakarta font-600 text-[1.0625rem] rounded-sm hover:bg-[#A05A30] active:scale-[0.98] transition-all duration-fast ease-standard"
+          </div>
+
+          {/* AdminReview */}
+          <div className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] rounded-[2px] p-[40px] flex flex-col gap-6">
+            <p className="font-jakarta font-600 text-[1rem] text-[#1D232A]">
+              What the administrator does
+            </p>
+            <div className="font-jakarta font-400 text-[0.9375rem] text-[#353C45] leading-[1.6] flex flex-col gap-4">
+              <p>
+                A named administrator reviews your submitted documents for consistency and
+                plausibility — are the documents consistent with each other? Do they represent a
+                real person with a documented connection to land?
+              </p>
+              <p>
+                The administrator does NOT assess farm quality, produce quality, or business
+                viability.
+              </p>
+            </div>
+            <div className="bg-[#E5ECE8] rounded-[2px] p-4 flex flex-col gap-[6px]">
+              <p className="font-ibm-mono not-italic text-[0.75rem] tracking-[0.02em] text-[#2E7D78] uppercase">
+                Approved
+              </p>
+              <p className="font-jakarta font-400 text-[0.875rem] text-[#353C45] leading-[1.55]">
+                Farmer status becomes VERIFIED. Listings are immediately possible.
+              </p>
+            </div>
+            <div className="bg-[#E9E2DF] rounded-[2px] p-4 flex flex-col gap-[6px]">
+              <p className="font-ibm-mono not-italic text-[0.75rem] tracking-[0.02em] text-[#7A5342] uppercase">
+                Rejected
+              </p>
+              <p className="font-jakarta font-400 text-[0.875rem] text-[#353C45] leading-[1.55]">
+                You receive a reason via SMS. Rejection is correctable — resubmit with additional
+                documentation.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section/TrustScore */}
+      <section className="bg-[#131619] px-[120px] py-[96px] flex flex-col gap-12">
+        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#56A8A2] uppercase">
+          Trust Score
+        </p>
+        <div className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15]">
+          <p>Built from real transactions.</p>
+          <p>Not from self-reporting.</p>
+        </div>
+
+        {/* 4 component cards */}
+        <div className="flex gap-4 w-full">
+          {TRUST_COMPONENTS.map((c) => (
+            <div
+              key={c.index}
+              className="flex-1 bg-[#1B2025] border border-[#2A3138] rounded-[2px] px-6 py-7 flex flex-col gap-3"
             >
-              Register as a Farmer →
-            </Link>
-          </div>
-        </section>
-      </AnimateIn>
+              <span className="font-ibm-mono not-italic text-[0.6875rem] text-[#56A8A2]">{c.index}</span>
+              <p className="font-jakarta font-600 text-[0.9375rem] text-[#F2F0EC] leading-[1.3]">{c.title}</p>
+              <p className="font-jakarta font-400 text-[0.8125rem] text-[#A9A29A] leading-[1.55]">{c.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 4 tier cards */}
+        <div className="flex gap-4 w-full">
+          {TRUST_TIERS_DARK.map((tier) => (
+            <div
+              key={tier.name}
+              className="flex-1 bg-[#1B2025] border border-[#2A3138] rounded-[2px] p-6 flex flex-col gap-[10px]"
+            >
+              <div className={`inline-flex self-start border ${tier.pillBorder} rounded-full px-[10px] py-[4px]`}>
+                <span className={`font-ibm-mono not-italic text-[0.6875rem] tracking-[0.02em] ${tier.pillText}`}>
+                  {tier.name}
+                </span>
+              </div>
+              <p className="font-jakarta font-400 text-[0.8125rem] text-[#A9A29A] leading-[1.55]">
+                {tier.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <Link
+          href="/trust"
+          className="font-jakarta font-500 text-[0.875rem] text-[#56A8A2] hover:opacity-80 transition-opacity"
+        >
+          Complete Trust Score methodology → /trust
+        </Link>
+      </section>
+
+      {/* Section/MpesaPayment */}
+      <section className="bg-[#F5F4F0] px-[120px] py-[96px] flex flex-col gap-12">
+        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
+          M-Pesa Payment
+        </p>
+        <div className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15]">
+          <p>Payment confirmed</p>
+          <p>before you dispatch.</p>
+        </div>
+
+        {/* 9-step grid — 3 rows of 3, adjacent tiles */}
+        <div className="flex flex-col w-full">
+          {[MPESA_STEPS.slice(0, 3), MPESA_STEPS.slice(3, 6), MPESA_STEPS.slice(6, 9)].map(
+            (row, rowIdx) => (
+              <div key={rowIdx} className="flex w-full">
+                {row.map((step) => (
+                  <div
+                    key={step.n}
+                    className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] p-7 flex flex-col gap-3"
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-full ${step.badge} flex items-center justify-center shrink-0`}
+                    >
+                      <span className="font-jakarta font-600 text-[0.75rem] text-[#F5F4F0]">
+                        {step.n}
+                      </span>
+                    </div>
+                    <p className="font-jakarta font-400 text-[0.875rem] text-[#353C45] leading-[1.55]">
+                      {step.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Failure notice */}
+        <div className="bg-[#E9E2DF] rounded-[2px] px-6 py-5 flex gap-4 items-start w-full">
+          <span className="font-jakarta font-600 text-[0.875rem] text-[#B86A3D] shrink-0">!</span>
+          <p className="flex-1 font-jakarta font-400 text-[0.875rem] text-[#7A5342] leading-[1.55]">
+            Payment failure (STK Push timeout, declined, or network error): no money moves. Order
+            stays PENDING. Buyer can retry or cancel. There is no financial risk to the farmer —
+            payment must confirm before dispatch obligation begins.
+          </p>
+        </div>
+      </section>
+
+      {/* Section/FailureModes */}
+      <section className="bg-[#F0EEE9] px-[120px] py-[80px] flex flex-col gap-10">
+        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#636C76] uppercase">
+          Platform Limits — Disclosed
+        </p>
+        <p className="font-jakarta font-600 text-[1.75rem] tracking-[-0.015em] text-[#1D232A] leading-[1.2]">
+          What can go wrong, and what happens.
+        </p>
+        <div className="flex gap-6 w-full">
+          {FAILURE_MODES.map((item) => (
+            <div
+              key={item.title}
+              className="flex-1 bg-[#E5E1DA] border border-[#C8C2BA] rounded-[2px] p-7 flex flex-col gap-[10px]"
+            >
+              <p className="font-jakarta font-600 text-[0.9375rem] text-[#1D232A]">{item.title}</p>
+              <p className="font-jakarta font-400 text-[0.875rem] text-[#636C76] leading-[1.55]">
+                {item.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Section/RegistrationCTA */}
+      <section className="bg-[#B86A3D] px-[120px] py-[80px] flex flex-col gap-6 items-center">
+        <p className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#F5F4F0] text-center leading-[1.15]">
+          Ready to register?
+        </p>
+        <p className="font-jakarta font-400 text-[1rem] text-[#F0EEE9] text-center leading-[1.55] max-w-[600px]">
+          Verification takes one round of document submission. Once approved, your listings are
+          live immediately.
+        </p>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/auth/register?role=FARMER"
+            className="inline-flex items-center px-[28px] py-[16px] rounded-[4px] bg-[#1D232A] text-[#F5F4F0] font-jakarta font-600 text-[1rem] hover:opacity-90 transition-opacity"
+          >
+            Register as a Farmer →
+          </Link>
+          <Link
+            href="/auth/login"
+            className="inline-flex items-center px-[28px] py-[16px] rounded-[4px] border border-[#F0EEE9] text-[#F0EEE9] font-jakarta font-500 text-[1rem] hover:opacity-80 transition-opacity"
+          >
+            Already have an account? Sign in
+          </Link>
+        </div>
+      </section>
     </>
   );
 }
