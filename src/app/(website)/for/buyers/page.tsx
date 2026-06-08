@@ -91,10 +91,10 @@ export default function ForBuyersPage() {
               </AnimateIn>
             </div>
 
-            {/* Image slot — drop /public/images/buyers-hero.webp here */}
+            {/* Image slot — drop /public/images/buyers-hero.jpg here */}
             <AnimateIn delay={0.12} className="lg:self-end">
               <ImageSlot
-                src="/images/buyers-hero.webp"
+                src="/images/buyers-hero.jpg"
                 alt="A buyer reviewing verified produce listings"
                 aspectRatio="4/3"
                 priority

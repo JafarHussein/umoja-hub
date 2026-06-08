@@ -110,10 +110,10 @@ export default function ForStudentsPage() {
               </AnimateIn>
             </div>
 
-            {/* Image slot — drop /public/images/students-hero.webp here */}
+            {/* Image slot — drop /public/images/students-hero.jpg here */}
             <AnimateIn delay={0.12} className="lg:self-end">
               <ImageSlot
-                src="/images/students-hero.webp"
+                src="/images/students-hero.jpg"
                 alt="A CS student working on a verified project in Kenya"
                 aspectRatio="4/3"
                 priority

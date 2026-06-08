@@ -81,10 +81,10 @@ export default function ForFarmersPage() {
               </AnimateIn>
             </div>
 
-            {/* Image slot — drop /public/images/farmers-hero.webp here */}
+            {/* Image slot — drop /public/images/farmers-hero.jpg here */}
             <AnimateIn delay={0.12} className="lg:self-end">
               <ImageSlot
-                src="/images/farmers-hero.webp"
+                src="/images/farmers-hero.jpg"
                 alt="A verified farmer in their field in Kenya"
                 aspectRatio="4/3"
                 priority
@@ -185,10 +185,10 @@ export default function ForFarmersPage() {
               </ol>
             </AnimateIn>
 
-            {/* Image slot — drop /public/images/mpesa-flow.webp here */}
+            {/* Image slot — drop /public/images/mpesa-flow.jpg here */}
             <AnimateIn delay={0.12}>
               <ImageSlot
-                src="/images/mpesa-flow.webp"
+                src="/images/mpesa-flow.jpg"
                 alt="M-Pesa STK Push payment confirmation on a mobile device"
                 aspectRatio="3/4"
                 className="rounded-sm"
