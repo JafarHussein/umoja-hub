@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AnimateIn } from '@/components/website/AnimateIn';
+import { D01DiagramLazy } from '@/components/website/D01DiagramLazy';
 
 export const metadata: Metadata = {
   title: 'UmojaHub — East Africa\'s Verification Infrastructure',
@@ -22,13 +23,6 @@ const STUDENT_FLOW = [
   { n: 3, title: 'Lecturer review', desc: 'Verified, credentialed lecturer makes the final decision.' },
   { n: 4, title: 'VERIFIED, REVISION, or DENIED', desc: "Each outcome records the reviewer's name and reason." },
   { n: 5, title: 'Portfolio entry created', desc: 'Records: reviewer, credentials, decision, document hash.' },
-] as const;
-
-const STATS = [
-  { value: '—', label: 'Verified farmers', sub: 'updated every 5 min' },
-  { value: '—', label: 'Transactions completed', sub: 'fulfilled orders' },
-  { value: '—', label: 'Portfolios verified', sub: 'reviewed by lecturers' },
-  { value: '—', label: 'Counties represented', sub: 'across Kenya' },
 ] as const;
 
 const AUDIENCE_ROW_1 = [
@@ -226,18 +220,8 @@ export default function HomePage() {
           </p>
         </AnimateIn>
 
-        {/* D01 Diagram placeholder */}
-        <AnimateIn className="w-full">
-          <div className="bg-[#E5E1DA] border border-[#C8C2BA] rounded-[2px] h-[400px] w-full flex flex-col gap-4 items-center justify-center p-[48px] text-center">
-            <p className="font-ibm-mono text-[0.75rem] text-[#8A919A] tracking-[0.02em]">
-              D01 — Verification Spine Diagram
-            </p>
-            <p className="font-jakarta font-400 text-[0.875rem] text-[#8A919A] leading-[1.5] max-w-[600px]">
-              Shared verification infrastructure connecting Food Security Hub and Education Hub.
-              Farmer documents · Student projects · Lecturer credentials · Administrator decisions.
-            </p>
-          </div>
-        </AnimateIn>
+        {/* D01 — Verification Spine Diagram */}
+        <D01DiagramLazy />
 
         {/* 3 Principles */}
         <div className="flex gap-6 w-full">
@@ -332,41 +316,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── S5: Live Stats ── */}
-      <section className="bg-[#131619] px-[120px] py-[80px] flex flex-col gap-[48px] items-center text-center">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-[#56A8A2] uppercase tracking-[0.06em]">
-            Platform in Numbers
-          </p>
-        </AnimateIn>
-
-        <div className="flex items-start w-full">
-          {STATS.map((stat, i) => (
-            <AnimateIn key={stat.label} delay={i * 0.08} className="flex-1">
-              <div className="p-[32px] flex flex-col gap-2 items-center">
-                <p className="font-jakarta font-600 text-[3rem] text-[#F2F0EC] leading-none tracking-[-0.02em]">
-                  {stat.value}
-                </p>
-                <p className="font-jakarta font-500 text-[0.875rem] text-[#D6D1CB]">
-                  {stat.label}
-                </p>
-                <p className="font-ibm-mono text-[0.6875rem] text-[#49515A]">{stat.sub}</p>
-              </div>
-            </AnimateIn>
-          ))}
-        </div>
-
-        <AnimateIn>
-          <p className="font-jakarta font-400 text-[0.8125rem] text-[#49515A] leading-[1.5] max-w-[700px]">
-            Figures reflect the platform as it operates today. Methodology for each metric is
-            disclosed on the{' '}
-            <Link href="/transparency" className="text-[#56A8A2] hover:underline underline-offset-2">
-              Transparency page
-            </Link>
-            .
-          </p>
-        </AnimateIn>
-      </section>
+      {/* ── S5: People Ecosystem — placeholder until architecture is approved ── */}
 
       {/* ── S6: Audience Routing ── */}
       <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
