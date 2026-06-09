@@ -3,6 +3,11 @@ import Link from 'next/link';
 import { AnimateIn } from '@/components/website/AnimateIn';
 import { D01DiagramLazy } from '@/components/website/D01DiagramLazy';
 import { StoryWorldSection } from '@/components/website/StoryWorld';
+import { StoryWorldV2Section } from '@/components/website/StoryWorld/v2';
+
+// Dev-preview flag per STORYWORLD_V2 Resolved Decision 6: V2 renders behind
+// NEXT_PUBLIC_STORYWORLD_V2 until launch, when it replaces V1 in place.
+const STORYWORLD_V2 = process.env.NEXT_PUBLIC_STORYWORLD_V2 === 'true';
 
 export const metadata: Metadata = {
   title: 'UmojaHub — East Africa\'s Verification Infrastructure',
@@ -317,8 +322,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── S5: Witness — StoryWorld ── */}
-      <StoryWorldSection />
+      {/* ── S5: StoryWorld — The Commons (V2) behind dev flag, Witness (V1) default ── */}
+      {STORYWORLD_V2 ? <StoryWorldV2Section /> : <StoryWorldSection />}
 
       {/* ── S6: Audience Routing ── */}
       <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
