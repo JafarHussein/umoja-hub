@@ -80,6 +80,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         sora.variable,
         ibmPlexSans.variable,
@@ -91,7 +92,7 @@ export default function RootLayout({
         'font-sans'
       )}
     >
-      <body className="bg-surface-primary text-text-primary font-body antialiased">
+      <body suppressHydrationWarning className="bg-surface-primary text-text-primary font-body antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

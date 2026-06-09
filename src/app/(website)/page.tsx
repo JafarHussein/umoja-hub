@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AnimateIn } from '@/components/website/AnimateIn';
 import { D01DiagramLazy } from '@/components/website/D01DiagramLazy';
+import { StoryWorldSection } from '@/components/website/StoryWorld';
 
 export const metadata: Metadata = {
   title: 'UmojaHub — East Africa\'s Verification Infrastructure',
@@ -316,7 +317,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── S5: People Ecosystem — placeholder until architecture is approved ── */}
+      {/* ── S5: Witness — StoryWorld ── */}
+      <StoryWorldSection />
 
       {/* ── S6: Audience Routing ── */}
       <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
