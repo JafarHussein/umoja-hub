@@ -147,7 +147,12 @@ This is the cheapest, highest-yield aliveness mechanic in the entire document. A
 
 ### 2.5 The Ambient Cast
 
-Beyond the eight protagonists: 6–10 **ambient figures** (Tier 1 only; instanced, simplified two-piece geometry, 200 triangles each, no dialogue, no awareness). Couriers walking crates along the Path between settled districts; a second farmer working a far crop row; a figure reading at the Field Station. They exist for one reason: a world with exactly eight inhabitants is a cast; a world where un-named people are also busy is a *place*.
+Beyond the eight protagonists: un-named figures (instanced, simplified two-piece geometry, 200 triangles each, no dialogue, no awareness). They exist for one reason: a world with exactly eight inhabitants is a cast; a world where un-named people are also busy is a *place*.
+
+Two classes, with different launch status (per Resolved Decision 2):
+
+- **Couriers (launch, Tiers 1–2):** 2–4 figures walking crates and record forms along the filaments between settled districts. They are narrative infrastructure — visible proof that the platform's connections carry real traffic — and are owned by the FilamentSystem, not the decorative layer.
+- **Decorative figures (deferred to V2.1):** a second farmer working a far crop row; a figure reading at the Field Station. Designed in Phase B sheets but not built at launch.
 
 ---
 
@@ -213,7 +218,7 @@ Each district is a mini-world that teaches the role by **showing the role's work
 
 - **Geometry:** the Ledger column (§1.4), the dais, four low **audit lanterns** around it, an open registry plinth.
 - **Loop:** the Administrator circles the column slowly, pauses at a lantern, raises it — a recent record ring's detail glows above the lantern briefly — sets it down. The steward audits their own structure, endlessly. *That is the brand.*
-- **Inspectables:** the registry plinth ("Verification record: name of approving administrator, date, evidence reviewed"), a lantern ("Records are hashed; hashes are stored apart from the operational database"), the column itself (a count: "Records this visit: N" — N includes the visitor's own contributions).
+- **Inspectables:** the registry plinth ("Verification record: name of approving administrator, date, evidence reviewed" — this card is the *only* place in the experience where a specific human name appears, per Resolved Decision 1: the character is role-titled; the record carries the signature), a lantern ("Records are hashed; hashes are stored apart from the operational database"), the column itself (a count: "Records this visit: N" — N includes the visitor's own contributions).
 
 ### 3.9 Connection Filaments
 
@@ -303,7 +308,7 @@ The Administrator carries V1's strongest institutional material (record permanen
 
 0–6% scroll. The camera descends to the Path's outer end. The world is dim but **not asleep**: the Ledger turns, one courier moves in the distance, the Administrator audits a lantern. Critically — *activity precedes the visitor.* Nothing waits for you to begin. Then the Administrator notices the presence, nods (§4.7), and turns toward the first arrival path. The Farmer's silhouette appears at the fog line.
 
-No headline inside the world. The section header above the canvas does the labeling; the world never reads like a slide.
+No headline inside the world. The section header above the canvas does the labeling (per Resolved Decision 4 — eyebrow: `The Commons`; heading: `Spend a few minutes inside UmojaHub.`; support: `Seven people arrive with hard questions. Watch the answers happen — or go find them yourself.`); the world never reads like a slide.
 
 ### 5.3 Episode Anatomy (scroll-driven core)
 
@@ -314,7 +319,7 @@ Each episode's mandatory spine plays on scroll exactly as V1 proved out: arrival
 
 ### 5.4 Branch Dialogue — Asking Is Participating
 
-Each episode carries 1–2 optional exchanges, accessible only through follow-up chips (§6.4). Branches deepen, never redirect: the Farmer's branch covers dispute timelines; the Employer's covers collusion (V1's sharpest exchange — too good to make mandatory, perfect as a *reward* for the visitor who asks). Branches play in a scroll-paused pocket (§9.4) so they never desync the spine.
+Each episode carries 1–2 optional exchanges, accessible only through follow-up chips (§6.4). Branches deepen, never redirect: the Farmer's branch covers dispute timelines; the Employer's covers collusion (V1's sharpest exchange — too good to make mandatory, perfect as a *reward* for the visitor who asks). Branches play in a scroll-paused pocket (§9.4) so they never desync the spine. Every branch is authored to ≤10 seconds (Resolved Decision 5) — the cap is a writing constraint, not just a lock limit.
 
 ### 5.5 Secondary Stories — The World Talks to Itself
 
@@ -486,7 +491,7 @@ Scrub controls *when* spine events trigger; spine events that represent physics 
 
 ### 9.4 Branch Pockets
 
-When a follow-up chip is clicked, scroll input is soft-locked (the pin holds, wheel deltas accumulate to a max buffer) for the branch's duration (8–14s), then released with the buffer discarded. The visitor chose to stay; the world honors the choice without letting the spine drift. Esc or a second click exits early.
+When a follow-up chip is clicked, scroll input is soft-locked (the pin holds, wheel deltas accumulate to a max buffer) for the branch's duration — **10 seconds hard cap** (Resolved Decision 5) — then released with the buffer discarded. The visitor chose to stay; the world honors the choice without letting the spine drift. Esc or a second click exits early.
 
 ### 9.5 Interrupt Discipline
 
@@ -584,7 +589,7 @@ Mobile vertical framing comps (3 chapters); reduced-motion viewpoint set (8 stil
 |---|---|---|---|---|
 | Trigger | desktop, capable GPU | desktop, weak GPU / battery saver / sustained FPS drop | viewport < 768px | `prefers-reduced-motion` (any device) |
 | Episodes | 7 | 7 | 5 | matches device tier |
-| Ambient cast | 6–10 | 0 | 0 | 0 |
+| Ambient cast | couriers (2–4); decorative figures V2.1 | couriers (2) | 0 | 0 |
 | District loops | full | hero motion only | hero motion only | frozen legible pose |
 | Vignettes | all | 2 | 1 | described in live region only |
 | Filament pulses | yes | yes | no | no |
@@ -608,7 +613,7 @@ Mobile vertical framing comps (3 chapters); reduced-motion viewpoint set (8 stil
 
 ### 13.3 Adaptive Quality Manager
 
-A rolling 120-frame FPS window, evaluated every 2s. Below 48 FPS (Tier 1): shed in order — ambient cast → far-district loop rate → filament pulses → DPR step down → demote to Tier 2. Sheds are one-way per session (no oscillation). Demotions log to the console in dev only.
+A rolling 120-frame FPS window, evaluated every 2s. Below 48 FPS (Tier 1): shed in order — courier count (4→2) → far-district loop rate → filament pulses → DPR step down → demote to Tier 2. Sheds are one-way per session (no oscillation). Demotions log to the console in dev only.
 
 ### 13.4 Loading & Gating
 
@@ -629,7 +634,7 @@ Keep and evolve: `StoryWorldSection` (ScrollTrigger driver, reduced-motion wirin
 3. **P3 — The Ledger + record-ring pipeline** (the consequence backbone every later phase writes into).
 4. **P4 — Episode 1 vertical slice:** Farmer complete — district kit, loop, full dialogue, demonstration, consequence, settling, inspectables, hidden record, aside, lift. *Gate: full quality review (§15) on this slice before scaling.*
 5. **P5 — Episodes 2–7** (production line: kit → loop → dialogue → consequences → review, per episode).
-6. **P6 — Connective tissue:** filaments, couriers, vignettes, ambient cast, presence/awareness polish.
+6. **P6 — Connective tissue:** filaments, couriers, vignettes, presence/awareness polish. (Decorative ambient figures deferred to V2.1 per Resolved Decision 2.)
 7. **P7 — Finale + constellation.**
 8. **P8 — Tiers 2/3/4**, adaptive manager, keyboard model, SR region.
 9. **P9 — Performance hardening + cross-device QA.**
@@ -692,19 +697,21 @@ The visitor finishes and the section asked nothing of them — no CTA inside the
 
 ---
 
-## Open Decisions
+## Resolved Decisions
 
-| # | Decision | Options | Blocks |
+All six decisions resolved 2026-06-10.
+
+| # | Decision | Resolution | Rationale |
 |---|---|---|---|
-| 1 | Administrator identity | Named ("Amara") / role-titled only | Dialogue attribution, §5.2 nod beat copy |
-| 2 | Ambient cast in scope for launch | Yes (Tier 1 only) / defer to V2.1 | P6 scope |
-| 3 | Hidden records count on mobile | 5 / 0 (defer) | Tier 3 scope |
-| 4 | Section header copy above canvas | "Seven stories" lineage / "Spend five minutes inside" / unlabelled | DOM header |
-| 5 | Branch pocket scroll-lock duration cap | 14s / 10s | §9.4 tuning |
-| 6 | V1 section retirement | Replace in place / ship V2 behind a flag for A/B | Rollout |
+| 1 | Administrator identity | **Role-titled only** — speaker label reads `THE ADMINISTRATOR`. A specific human name appears in exactly one place: the registry plinth fact card (§3.8), as the signature on a verification record. | Naming the character risks mascot-ification — the exact thing V2 retired the Guide to escape — and anchors the geographically-neutral brand posture to one region. The platform's claim is "a named human signs every verification"; that claim is strongest *demonstrated in the record*, not worn as character branding. The character stays institutional; the record proves the name. |
+| 2 | Ambient cast at launch | **Split.** Couriers ship at launch — promoted out of the ambient cast into the FilamentSystem (P6), since they carry narrative meaning (record traffic between settled districts) and the Liveness Test (§15.1) depends on them. The purely decorative figures (second farmer, Field Station reader) defer to V2.1. | Liveness is already carried by district loops, vignettes, filament pulses, and couriers. Decorative figures are the lowest meaning-per-triangle item in the build; cutting them shrinks P6 scope and the Tier 1 triangle budget with zero story cost. |
+| 3 | Hidden records on mobile | **5** (one per Tier 3 district). | The tier principle is non-negotiable: tiers trade spectacle, never meaning — and hidden records are the participation economy. Tap-to-inspect works natively on touch, and the cost is marginal (they are just inspectables with a reveal). |
+| 4 | Section header copy | **Invitation framing.** Eyebrow (IBM Plex Mono, teal): `The Commons`. Heading: `Spend a few minutes inside UmojaHub.` Support line: `Seven people arrive with hard questions. Watch the answers happen — or go find them yourself.` | "Seven stories" frames the section as content to consume — V1's watching posture. Unlabelled loses orientation, SR context, and SEO. The invitation states V2's thesis (participation) before the canvas does, and the support line teaches that both modes — scrolling and exploring — are legitimate. |
+| 5 | Branch pocket scroll-lock cap | **10s hard cap.** All branches authored to ≤10s; §5.4 and §9.4 updated. | Scroll-locking is the single riskiest UX mechanic in the experience; the default must be safe even though Esc/second-click exits exist. A 10s ceiling also forces branch writing to stay tight — a constraint that improves the dialogue, not just the UX. |
+| 6 | V1 retirement | **Replace in place at launch.** During build phases P1–P8, V2 renders behind a local env flag (`NEXT_PUBLIC_STORYWORLD_V2`) for development preview only — not A/B testing. V1 is removed in the launch PR; it remains recoverable via git. | A/B testing requires traffic the site does not yet have (the production roadmap targets the *first* 100 users). Carrying two heavy Three.js sections doubles bundle weight and QA surface for no decision-grade data. The dev flag gives safe iteration; git gives reversibility. |
 
 ---
 
-*No code, no scenes, no assets until this document is approved and Open Decisions 1–6 are resolved.*
+*No code, no scenes, no assets until this document is approved. All formerly open decisions are resolved above; approval of this document is the only remaining gate.*
 
 *V1's goal was a visitor who thinks "I understand why this exists." V2's goal is a visitor who thinks "I was there." The first is a conclusion. The second is a memory. Memories are what get retold.*
