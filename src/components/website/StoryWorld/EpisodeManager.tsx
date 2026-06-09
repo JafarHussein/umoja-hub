@@ -13,9 +13,13 @@ import {
   CHARACTER_CONVO_POS,
   COUNCIL_RING_POS,
   EPISODES,
+  GUIDE_POS,
 } from '@/lib/storyworld/config';
 import { useStoryworldStore } from '@/lib/storyworld/store';
 import type { DialogueLine } from '@/lib/storyworld/types';
+
+// World-space position of the Guide — characters face toward this during conversation
+const GUIDE_WORLD = new THREE.Vector3(...GUIDE_POS);
 
 const LERP = 0.05;
 const LINE_HOLD_BASE = 3.5;     // seconds
@@ -38,10 +42,12 @@ export function EpisodeInstance({ episodeIndex, isActive }: EpisodeInstanceProps
   const charId = ep.characterId;
   const charDef = CHARACTERS[charId];
 
-  // Position tracking
+  // Position + orientation tracking
   const groupRef = useRef<THREE.Group>(null);
   const currentPos = useRef(new THREE.Vector3(...CHARACTER_ARRIVAL[charId]));
   const targetPos = useRef(new THREE.Vector3(...CHARACTER_ARRIVAL[charId]));
+  const faceDir = useRef(new THREE.Vector3()); // scratch vector for facing calculation
+  const councilPos = useRef(new THREE.Vector3(...COUNCIL_RING_POS[charId])); // stable ref
 
   // Conversation state
   const [activeLine, setActiveLine] = useState<DialogueLine | null>(null);
@@ -105,6 +111,16 @@ export function EpisodeInstance({ episodeIndex, isActive }: EpisodeInstanceProps
       currentPos.current.lerp(targetPos.current, LERP);
     }
     groupRef.current.position.copy(currentPos.current);
+
+    // Face: during approach/crossing face the walk destination; during conversation face the Guide
+    const faceTarget =
+      myProgress >= 0 && myProgress < ep.crossingAt
+        ? GUIDE_WORLD
+        : councilPos.current;
+    faceDir.current.copy(faceTarget).sub(groupRef.current.position).setY(0);
+    if (faceDir.current.lengthSq() > 0.001) {
+      groupRef.current.rotation.y = Math.atan2(faceDir.current.x, faceDir.current.z);
+    }
 
     // Dialogue triggers
     if (myProgress >= 0 && isActive) {

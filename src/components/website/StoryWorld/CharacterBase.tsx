@@ -17,12 +17,16 @@ export function CharacterBase({ color, isActive = false, heightScale = 1.0 }: Ch
   const headMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const breathOffset = useRef(Math.random() * Math.PI * 2);
 
-  const bodyGeo = useMemo(() => new THREE.CylinderGeometry(0.22, 0.16, 0.78, 12), []);
-  const headGeo = useMemo(() => new THREE.SphereGeometry(0.19, 12, 8), []);
+  // Torso slightly slimmer at waist to suggest a more human silhouette
+  const torsoGeo = useMemo(() => new THREE.CylinderGeometry(0.205, 0.155, 0.74, 12), []);
+  // Neck bridges the gap between torso top (y≈0.74) and head sphere bottom (y≈0.80)
+  const neckGeo = useMemo(() => new THREE.CylinderGeometry(0.068, 0.072, 0.13, 8), []);
+  // Head — slightly oblate, not a perfect sphere
+  const headGeo = useMemo(() => new THREE.SphereGeometry(0.195, 12, 8), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const targetEmissive = isActive ? 0.10 : 0.04;
+    const targetEmissive = isActive ? 0.12 : 0.04;
 
     if (bodyMatRef.current) {
       bodyMatRef.current.emissiveIntensity +=
@@ -34,34 +38,50 @@ export function CharacterBase({ color, isActive = false, heightScale = 1.0 }: Ch
     }
 
     if (groupRef.current) {
-      const breathe = 0.98 + Math.sin(t * 0.55 + breathOffset.current) * 0.01;
-      groupRef.current.scale.y = (isActive ? 1.03 : 1.0) * breathe * heightScale;
-      const s = isActive ? 1.03 : 1.0;
-      groupRef.current.scale.x = s;
-      groupRef.current.scale.z = s;
+      // Breathing: subtle vertical scale oscillation, reduced when in conversation
+      const breathAmp = isActive ? 0.008 : 0.005;
+      const breathe = 1.0 + Math.sin(t * 0.58 + breathOffset.current) * breathAmp;
+      groupRef.current.scale.y = breathe * heightScale;
+      // Slight lateral sway complement to breathing
+      groupRef.current.scale.x = isActive ? 1.025 : 1.0;
+      groupRef.current.scale.z = isActive ? 1.025 : 1.0;
     }
   });
 
   return (
     <group ref={groupRef}>
-      <mesh geometry={bodyGeo} position={[0, 0.39, 0]}>
+      {/* Torso — bottom at y=0 (ground), top at y≈0.74 */}
+      <mesh geometry={torsoGeo} position={[0, 0.37, 0]}>
         <meshStandardMaterial
           ref={bodyMatRef}
           color={color}
           emissive={color}
           emissiveIntensity={0.04}
-          roughness={0.65}
-          metalness={0.05}
+          roughness={0.68}
+          metalness={0.04}
         />
       </mesh>
-      <mesh geometry={headGeo} position={[0, 0.98, 0]} scale={[1, 0.85, 1]}>
+
+      {/* Neck — y=0.74 to y=0.87 */}
+      <mesh geometry={neckGeo} position={[0, 0.805, 0]}>
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.03}
+          roughness={0.65}
+          metalness={0.0}
+        />
+      </mesh>
+
+      {/* Head — center y=0.98, oblate (wider than tall) */}
+      <mesh geometry={headGeo} position={[0, 0.98, 0]} scale={[1.0, 0.86, 0.92]}>
         <meshStandardMaterial
           ref={headMatRef}
           color={color}
           emissive={color}
           emissiveIntensity={0.04}
-          roughness={0.65}
-          metalness={0.05}
+          roughness={0.62}
+          metalness={0.04}
         />
       </mesh>
     </group>
