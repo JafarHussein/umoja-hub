@@ -430,6 +430,8 @@ export function Administrator() {
         />
       </mesh>
       <GuideProp color={ADMIN_EMISSIVE} />
+      {/* The steward carries light — every conversation they attend is lit */}
+      <pointLight position={[0, 1.9, 0]} color="#f2f0ec" intensity={1.2} distance={5} decay={2} />
       {microText && <MicroBubble text={microText} color={ADMIN_EMISSIVE} />}
     </group>
   );

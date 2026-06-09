@@ -697,11 +697,11 @@ function District({ id }: { id: Exclude<DistrictId, 'ledger'> }) {
   useFrame((_, delta) => {
     const isSettled = settled(role);
     if (lightRef.current) {
-      const target = isSettled ? 0.6 : 0.12;
+      const target = isSettled ? 1.0 : 0.3;
       lightRef.current.intensity +=
         (target - lightRef.current.intensity) * Math.min(1, delta * 2);
     }
-    approach(thresholdMat.current, isSettled ? 0.35 : 0.12, delta, 2);
+    approach(thresholdMat.current, isSettled ? 0.22 : 0.08, delta, 2);
   });
 
   const thresholdPos: [number, number, number] = [
@@ -714,17 +714,17 @@ function District({ id }: { id: Exclude<DistrictId, 'ledger'> }) {
     <group>
       {/* Territory threshold — color before geometry (§1.2) */}
       <mesh position={thresholdPos} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.5, 0.75, 24]} />
+        <ringGeometry args={[0.42, 0.58, 24]} />
         <meshStandardMaterial
           ref={el => {
             thresholdMat.current = el;
           }}
           color={color}
           emissive={color}
-          emissiveIntensity={0.12}
+          emissiveIntensity={0.08}
           roughness={0.8}
           transparent
-          opacity={0.55}
+          opacity={0.3}
         />
       </mesh>
       <pointLight

@@ -153,7 +153,7 @@ function episodeViewpoint(role: Exclude<RoleId, 'admin'>): { pos: Vec3; look: Ve
   // Stand off the district on its outward side, slightly behind along the path,
   // looking at the conversation ground.
   const pos = add(add(d.center, scale(d.outward, 5.6)), scale(d.tangent, -1.2));
-  return { pos: [pos[0], 3.1, pos[2]], look: [d.center[0], 0.9, d.center[2]] };
+  return { pos: [pos[0], 2.8, pos[2]], look: [d.center[0], 1.15, d.center[2]] };
 }
 
 function buildKeyframes(): CameraKeyframe[] {

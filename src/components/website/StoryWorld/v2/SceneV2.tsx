@@ -40,10 +40,10 @@ function AdaptiveQuality() {
 function SceneLightingV2() {
   return (
     <>
-      <ambientLight intensity={0.18} color="#f2f0ec" />
-      <directionalLight position={[4, 9, 3]} intensity={0.65} color="#f2f0ec" />
-      <directionalLight position={[-6, 5, -4]} intensity={0.2} color="#8a919a" />
-      <directionalLight position={[0, 3, -9]} intensity={0.25} color="#2e7d78" />
+      <ambientLight intensity={0.32} color="#f2f0ec" />
+      <directionalLight position={[4, 9, 3]} intensity={0.95} color="#f2f0ec" />
+      <directionalLight position={[-6, 5, -4]} intensity={0.3} color="#8a919a" />
+      <directionalLight position={[0, 3, -9]} intensity={0.35} color="#2e7d78" />
     </>
   );
 }
@@ -59,7 +59,7 @@ export function SceneV2() {
         antialias: tier < 3,
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.15,
+        toneMappingExposure: 1.45,
       }}
       frameloop="always"
       style={{ background: '#0d1014', touchAction: 'pan-y' }}

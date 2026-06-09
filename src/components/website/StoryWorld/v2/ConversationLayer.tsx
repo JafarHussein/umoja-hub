@@ -20,13 +20,13 @@ function speakerAnchor(speaker: RoleId, chapter: number): [number, number, numbe
     const role = chapter >= 1 && chapter <= 7 ? EPISODE_ROLES[chapter - 1] : undefined;
     if (role) {
       const p = STAGING[role].convoAdmin;
-      return [p[0], p[1] + 2.5, p[2]];
+      return [p[0], p[1] + 2.1, p[2]];
     }
-    return [FINALE_ADMIN_POS[0], 2.5, FINALE_ADMIN_POS[2]];
+    return [FINALE_ADMIN_POS[0], 2.1, FINALE_ADMIN_POS[2]];
   }
   const staging = STAGING[speaker as Exclude<RoleId, 'admin'>];
   const p = chapter === 8 ? staging.home : staging.convoChar;
-  return [p[0], p[1] + 2.5, p[2]];
+  return [p[0], p[1] + 2.1, p[2]];
 }
 
 interface PanelProps {
@@ -203,7 +203,7 @@ export function ConversationLayer() {
     <Html
       position={speakerAnchor(shown.speaker, chapterForAnchor.current)}
       center
-      distanceFactor={9}
+      distanceFactor={6.5}
       style={{ pointerEvents: chip ? 'auto' : 'none' }}
       zIndexRange={[20, 10]}
     >
