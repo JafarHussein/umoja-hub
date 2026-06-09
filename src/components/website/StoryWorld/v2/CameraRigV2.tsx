@@ -59,7 +59,9 @@ export function CameraRigV2() {
       currentLook.copy(targetLook);
       initialized.current = true;
     } else {
-      const k = 1 - Math.exp(-delta * 3.2);
+      // The ScrollTrigger scrub already smooths scroll input — this damping only
+      // irons out keyframe corners. Keep it fast or the camera feels rubber-banded.
+      const k = 1 - Math.exp(-delta * 7);
       camera.position.lerp(targetPos, k);
       currentLook.lerp(targetLook, k);
     }

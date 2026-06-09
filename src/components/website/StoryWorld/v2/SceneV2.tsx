@@ -48,12 +48,12 @@ function SceneLightingV2() {
   );
 }
 
-export function SceneV2() {
+export function SceneV2({ running = true }: { running?: boolean }) {
   const tier = useStoryworldV2(s => s.tier);
 
   return (
     <Canvas
-      dpr={tier === 1 ? [1, 1.5] : tier === 2 ? [1, 1.25] : [1, 1]}
+      dpr={tier === 1 ? [1, 1.25] : [1, 1]}
       camera={{ position: [0, 7.5, 19], fov: 42 }}
       gl={{
         antialias: tier < 3,
@@ -61,7 +61,7 @@ export function SceneV2() {
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.45,
       }}
-      frameloop="always"
+      frameloop={running ? 'always' : 'never'}
       style={{ background: '#0d1014', touchAction: 'pan-y' }}
     >
       <fogExp2 attach="fog" args={['#0d1014', 0.038]} />

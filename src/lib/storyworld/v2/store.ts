@@ -34,10 +34,14 @@ interface StorySlice {
 
 interface WorldSlice {
   world: WorldState;
+  /** Bumps every time the world resets — components clear their session refs on it. */
+  resetEpoch: number;
   settle: (role: Exclude<RoleId, 'admin'>) => void;
   fireConsequence: (id: ConsequenceId, role: RoleId) => void;
   discover: (district: DistrictId) => void;
   firstInteraction: (verb: InteractionVerb) => void;
+  /** Full replay: fires when the visitor leaves the section entirely (either direction). */
+  resetWorld: () => void;
 }
 
 interface VisitorSlice {
@@ -70,12 +74,21 @@ export const useStoryworldV2 = create<StoryworldV2Store>(set => ({
   startBranch: id => set({ branchActive: id }),
   endBranch: () => set({ branchActive: null }),
 
-  // ── World (monotonic) ──
+  // ── World (monotonic while inside the section) ──
   world: createWorld(),
+  resetEpoch: 0,
   settle: role => set(s => ({ world: worldSettle(s.world, role) })),
   fireConsequence: (id, role) => set(s => ({ world: worldFireConsequence(s.world, id, role) })),
   discover: district => set(s => ({ world: worldDiscover(s.world, district) })),
   firstInteraction: verb => set(s => ({ world: worldFirstInteraction(s.world, verb) })),
+  resetWorld: () =>
+    set(s => ({
+      world: createWorld(),
+      branchActive: null,
+      inspecting: null,
+      lifted: null,
+      resetEpoch: s.resetEpoch + 1,
+    })),
 
   // ── Visitor ──
   presence: null,

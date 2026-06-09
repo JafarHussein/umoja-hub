@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -129,8 +129,6 @@ const liftPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const liftRay = new THREE.Raycaster();
 const liftPoint = new THREE.Vector3();
 
-let noticeFired = false;
-
 function Protagonist({ role }: { role: Exclude<RoleId, 'admin'> }) {
   const groupRef = useRef<THREE.Group>(null);
   const staging = STAGING[role];
@@ -149,6 +147,19 @@ function Protagonist({ role }: { role: Exclude<RoleId, 'admin'> }) {
   const [microText, setMicroText] = useState<string | null>(null);
   const microTimer = useRef<number | null>(null);
   const [active, setActive] = useState(false);
+  const resetEpoch = useStoryworldV2(s => s.resetEpoch);
+
+  // A world reset is a fresh visit: session-scoped refs start over (§1.5 amendment —
+  // monotonicity holds while inside the section; leaving it replays the story).
+  useEffect(() => {
+    settledFired.current = false;
+    asideUsed.current = false;
+    liftLineUsed.current = false;
+    dwellMs.current = 0;
+    liftY.current = 0;
+    currentPos.current.set(...staging.arrival);
+    setMicroText(null);
+  }, [resetEpoch, staging]);
 
   function showMicro(text: string, holdMs = 2500) {
     setMicroText(text);
@@ -232,7 +243,8 @@ function Protagonist({ role }: { role: Exclude<RoleId, 'admin'> }) {
     if (reducedMotion) {
       currentPos.current.set(scratchA.x, 0, scratchA.z);
     } else {
-      currentPos.current.lerp(scratchA, Math.min(1, delta * 3));
+      // Tight enough to track the scrub-driven target without rubber-banding.
+      currentPos.current.lerp(scratchA, Math.min(1, delta * 5.5));
     }
     groupRef.current.position.set(
       currentPos.current.x,
@@ -253,8 +265,7 @@ function Protagonist({ role }: { role: Exclude<RoleId, 'admin'> }) {
       faceX = presence[0];
       faceZ = presence[2];
       dwellMs.current += delta * 1000;
-      if (!noticeFired) {
-        noticeFired = true;
+      if (!store.world.firstInteractions.includes('notice')) {
         store.firstInteraction('notice');
       }
       // After sustained attention, one aside per character per session.

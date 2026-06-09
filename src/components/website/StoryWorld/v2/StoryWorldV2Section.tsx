@@ -45,6 +45,7 @@ export function StoryWorldV2Section() {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [armed, setArmed] = useState(false);
+  const [running, setRunning] = useState(false);
   const [announced, setAnnounced] = useState('');
 
   // Tier detection (§13.1) + reduced motion.
@@ -73,6 +74,23 @@ export function StoryWorldV2Section() {
       },
       { rootMargin: '600px 0px' }
     );
+    observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Visibility: park the render loop off-screen, and reset the world for a fresh
+  // replay whenever the visitor fully leaves the section in either direction.
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    let wasVisible = false;
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.some(e => e.isIntersecting);
+      setRunning(visible);
+      if (!visible && wasVisible) {
+        useStoryworldV2.getState().resetWorld();
+      }
+      wasVisible = visible;
+    });
     observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
@@ -119,7 +137,7 @@ export function StoryWorldV2Section() {
         trigger: sectionRef.current,
         start: 'top top',
         end: 'bottom bottom',
-        scrub: 1.5,
+        scrub: 0.8,
         pin: canvasRef.current,
         pinSpacing: false,
         onUpdate: self => useStoryworldV2.getState().setScrollProgress(self.progress),
@@ -233,7 +251,7 @@ export function StoryWorldV2Section() {
                 </div>
               }
             >
-              <SceneV2 />
+              <SceneV2 running={running} />
             </Suspense>
           ) : (
             <div className="w-full h-full bg-[#0d1014]" />

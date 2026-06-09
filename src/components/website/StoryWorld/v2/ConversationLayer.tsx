@@ -121,7 +121,16 @@ export function ConversationLayer() {
   const branchesPlayed = useRef<Set<string>>(new Set());
   const activeLineId = useRef<string | null>(null);
   const branchActive = useStoryworldV2(s => s.branchActive);
+  const resetEpoch = useStoryworldV2(s => s.resetEpoch);
   const chapterForAnchor = useRef(0);
+
+  // A world reset replays the story — chips become available again.
+  useEffect(() => {
+    branchesPlayed.current.clear();
+    activeLineId.current = null;
+    setActiveLine(null);
+    setBranchLine(null);
+  }, [resetEpoch]);
 
   // Spine cueing — scroll proposes the line; consequences fire on first show.
   useFrame(() => {
