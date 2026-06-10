@@ -22,8 +22,10 @@ interface IMyListing {
   createdAt: string;
 }
 
+// Response shape of GET /api/marketplace?own=true — lean listing documents
+// under the standard `data` key.
 interface IListingsResponse {
-  listings: IMyListing[];
+  data: IMyListing[];
   nextCursor: string | null;
   total: number;
 }
@@ -44,7 +46,7 @@ export default function FarmerListingsPage(): React.ReactElement {
       const res = await fetch('/api/marketplace?own=true');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = (await res.json()) as IListingsResponse;
-      setListings(data.listings ?? []);
+      setListings(data.data ?? []);
       setPageState('ready');
     } catch {
       setPageState('error');
