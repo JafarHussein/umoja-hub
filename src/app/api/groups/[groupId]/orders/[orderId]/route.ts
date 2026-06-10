@@ -71,6 +71,18 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
         throw new AppError('You are not a member of this group.', 403, 'AUTH_FORBIDDEN');
       }
 
+      // Collective purchasing is restricted to verified farmers. Members added
+      // before this gate existed (or later un-verified) must not join orders.
+      const { default: User } = await import('@/lib/models/User.model');
+      const joiner = await User.findById(userId).select('farmerData.isVerified').lean();
+      if (!joiner?.farmerData?.isVerified) {
+        throw new AppError(
+          'Only verified farmers can join group orders.',
+          403,
+          'FARMER_NOT_VERIFIED'
+        );
+      }
+
       if (
         groupOrder.status !== GroupOrderStatus.OPEN &&
         groupOrder.status !== GroupOrderStatus.MINIMUM_MET

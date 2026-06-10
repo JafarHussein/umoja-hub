@@ -106,9 +106,20 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
         );
       }
       const { default: User } = await import('@/lib/models/User.model');
-      const targetUser = await User.findById(targetId).select('role').lean();
+      const targetUser = await User.findById(targetId)
+        .select('role farmerData.isVerified')
+        .lean();
       if (!targetUser || targetUser.role !== Role.FARMER) {
         throw new AppError('User not found or is not a farmer.', 404, 'DB_NOT_FOUND');
+      }
+      // Group participation is restricted to verified farmers — the published
+      // cooperative methodology promises this gate; enforce it server-side.
+      if (!targetUser.farmerData?.isVerified) {
+        throw new AppError(
+          'Only verified farmers can be added to a group.',
+          403,
+          'FARMER_NOT_VERIFIED'
+        );
       }
       update = { $addToSet: { members: targetId }, $inc: { memberCount: 1 } };
     } else {

@@ -115,7 +115,9 @@ describe('PATCH /api/groups/[groupId] — member management', () => {
     (getServerSession as jest.Mock).mockResolvedValue(CREATOR_SESSION);
     mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
     mockUserFindById.mockReturnValue({
-      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ role: 'FARMER' }) }),
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ role: 'FARMER', farmerData: { isVerified: true } }),
+      }),
     });
     mockGroupFindByIdAndUpdate.mockResolvedValue({ ...mockGroup, memberCount: 3 });
 
@@ -129,6 +131,23 @@ describe('PATCH /api/groups/[groupId] — member management', () => {
       { new: true }
     );
     expect(body.data.memberCount).toBe(3);
+  });
+
+  it('returns 403 when trying to ADD an unverified farmer', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(CREATOR_SESSION);
+    mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
+    mockUserFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ role: 'FARMER', farmerData: { isVerified: false } }),
+      }),
+    });
+
+    const res = await PATCH(makePatchRequest({ action: 'ADD', userId: TARGET_ID }), makeParams());
+
+    expect(res.status).toBe(403);
+    const body = await res.json() as { code: string };
+    expect(body.code).toBe('FARMER_NOT_VERIFIED');
+    expect(mockGroupFindByIdAndUpdate).not.toHaveBeenCalled();
   });
 
   it('allows creator to REMOVE an existing member', async () => {
