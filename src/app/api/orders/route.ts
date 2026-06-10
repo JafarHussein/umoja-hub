@@ -175,7 +175,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           // dispatch attestation is therefore gated on payment received and not yet
           // confirmed — confirmedByFarmerAt is what the reliability score measures.
           canConfirmDispatch:
-            order.paymentStatus === OrderPaymentStatus.PAID && !order.confirmedByFarmerAt,
+            order.paymentStatus === OrderPaymentStatus.PAID &&
+            order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+            !order.confirmedByFarmerAt,
           createdAt: order.createdAt.toISOString(),
         };
       }),
