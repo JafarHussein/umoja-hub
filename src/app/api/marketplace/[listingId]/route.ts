@@ -3,9 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
-import { cropListingSchema } from '@/lib/validation/farmerSchema';
+import { listingUpdateSchema } from '@/lib/validation/farmerSchema';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
-import { Role } from '@/types';
+import { Role, ListingStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/marketplace/[listingId] — Single listing with farmer + trust data
@@ -93,8 +93,9 @@ export async function PATCH(
     const { listingId } = await params;
     const body: unknown = await req.json();
 
-    // Only allow partial updates of listing fields
-    const parsed = cropListingSchema.partial().safeParse(body);
+    // Partial update of listing fields plus the farmer-controllable status
+    // transitions (AVAILABLE ⇄ INACTIVE). SOLD_OUT is system-managed.
+    const parsed = listingUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         {
@@ -124,6 +125,19 @@ export async function PATCH(
         403,
         'AUTH_FORBIDDEN'
       );
+    }
+
+    // Reactivation guard: a listing may only return to AVAILABLE with stock
+    // to sell — either the existing quantity or one supplied in this update.
+    if (parsed.data.listingStatus === ListingStatus.AVAILABLE) {
+      const effectiveQuantity = parsed.data.quantityAvailable ?? listing.quantityAvailable;
+      if (effectiveQuantity <= 0) {
+        throw new AppError(
+          'Add stock before reactivating this listing.',
+          409,
+          'LISTING_NO_STOCK'
+        );
+      }
     }
 
     const updated = await MarketplaceListing.findByIdAndUpdate(listingId, parsed.data, {

@@ -74,14 +74,18 @@ export default function FarmerListingsPage(): React.ReactElement {
         : ListingStatus.AVAILABLE;
     setUpdatingId(listing._id);
     try {
-      await fetch(`/api/marketplace/${listing._id}`, {
+      const res = await fetch(`/api/marketplace/${listing._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingStatus: newStatus }),
       });
-      setListings((prev) =>
-        prev.map((l) => (l._id === listing._id ? { ...l, listingStatus: newStatus } : l)),
-      );
+      // Only reflect the new status once the server has accepted it — e.g.
+      // reactivating a zero-stock listing is rejected with LISTING_NO_STOCK.
+      if (res.ok) {
+        setListings((prev) =>
+          prev.map((l) => (l._id === listing._id ? { ...l, listingStatus: newStatus } : l)),
+        );
+      }
     } finally {
       setUpdatingId(null);
     }
