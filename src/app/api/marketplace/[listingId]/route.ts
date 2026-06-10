@@ -40,7 +40,9 @@ export async function GET(
       User.findById(farmerId)
         .select('firstName lastName county phoneNumber farmerData.isVerified')
         .lean(),
-      FarmerTrustScore.findOne({ farmerId }).select('compositeScore tier').lean(),
+      FarmerTrustScore.findOne({ farmerId })
+        .select('compositeScore tier ratingScore.averageRating ratingScore.totalRatings')
+        .lean(),
     ]);
 
     return NextResponse.json({
@@ -59,6 +61,14 @@ export async function GET(
           ? {
               compositeScore: (trustScore as { compositeScore?: number }).compositeScore ?? 0,
               tier: (trustScore as { tier?: string }).tier ?? 'NEW',
+              ratingScore: {
+                averageRating:
+                  (trustScore as { ratingScore?: { averageRating?: number } }).ratingScore
+                    ?.averageRating ?? 0,
+                totalRatings:
+                  (trustScore as { ratingScore?: { totalRatings?: number } }).ratingScore
+                    ?.totalRatings ?? 0,
+              },
             }
           : null,
       },
