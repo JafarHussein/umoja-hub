@@ -55,7 +55,9 @@ interface IEngagementDetail {
     blockerLog: IBlockerEntry[];
     aiUsageLog: IAIUsageEntry[];
   };
-  peerReviewId: IPeerReview | null;
+  // Withheld by the API until the lecturer's decision is recorded — peer
+  // scores arrive via the POST /api/lecturer/reviews response instead.
+  peerReviewId?: IPeerReview | null;
   createdAt: string;
 }
 
@@ -127,6 +129,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
   const [pageState, setPageState] = useState<PageState>('loading');
   const [engagement, setEngagement] = useState<IEngagementDetail | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [revealedPeerReview, setRevealedPeerReview] = useState<IPeerReview | null>(null);
   const [activeDocTab, setActiveDocTab] = useState<DocTab>('problemBreakdown');
 
   const fetchEngagement = useCallback(async (): Promise<void> => {
@@ -166,8 +169,9 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
     }
   }, [status, session, router, fetchEngagement]);
 
-  function handleReviewSuccess(): void {
+  function handleReviewSuccess(peerReview: IPeerReview | null): void {
     setSubmitted(true);
+    setRevealedPeerReview(peerReview);
   }
 
   if (status === 'loading' || pageState === 'loading') {
@@ -225,7 +229,9 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
     );
   }
 
-  const peerReview = engagement.peerReviewId;
+  // Pre-decision the API withholds peer scores entirely; they only exist
+  // here after submission, delivered by the decision response.
+  const peerReview = revealedPeerReview ?? engagement.peerReviewId ?? null;
   const activeDoc = engagement.documents[activeDocTab];
 
   return (
@@ -351,6 +357,12 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
                 <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
                   Peer review scores
                 </p>
+                {revealedPeerReview && (
+                  <p className="text-t6 font-body text-text-disabled">
+                    Revealed after your decision was recorded — peer scores are
+                    withheld during assessment to keep reviews independent.
+                  </p>
+                )}
                 <div className="space-y-0">
                   <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
                     <span className="text-t5 font-body text-text-secondary">Code quality</span>
