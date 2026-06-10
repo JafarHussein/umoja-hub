@@ -170,9 +170,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             firstName: buyer?.firstName ?? '—',
             lastName: buyer?.lastName ?? '',
           },
+          // The Daraja webhook sets fulfillmentStatus to IN_FULFILLMENT at the moment of
+          // payment, so an order never sits in PAID + AWAITING_PAYMENT. The farmer's
+          // dispatch attestation is therefore gated on payment received and not yet
+          // confirmed — confirmedByFarmerAt is what the reliability score measures.
           canConfirmDispatch:
-            order.paymentStatus === OrderPaymentStatus.PAID &&
-            order.fulfillmentStatus === OrderFulfillmentStatus.AWAITING_PAYMENT,
+            order.paymentStatus === OrderPaymentStatus.PAID && !order.confirmedByFarmerAt,
           createdAt: order.createdAt.toISOString(),
         };
       }),
