@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FarmerListingCard, type IListingCardData } from '@/components/foodhub/FarmerListingCard';
 import { MarketplaceFilters } from '@/components/foodhub/MarketplaceFilters';
 import { CardSkeleton } from '@/components/ui/SkeletonLoader';
+import type { FarmerTrustTier, ListingUnit } from '@/types';
 
 export const revalidate = 60;
 
@@ -22,13 +23,64 @@ interface IMarketplaceSearchParams {
   cursor?: string;
 }
 
-interface IListingsResponse {
+// Shape of one item as returned by GET /api/marketplace — the API is the
+// stable contract; this page adapts it to the card component's props.
+interface IMarketplaceApiItem {
+  id: string;
+  title: string;
+  cropName: string;
+  quantityAvailable: number;
+  unit: string;
+  currentPricePerUnit: number;
+  pickupCounty: string;
+  imageUrl: string;
+  farmer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    isVerified: boolean;
+    trustScore: number;
+    trustTier: string;
+  };
+  listingStatus: string;
+  createdAt: string;
+}
+
+interface IMarketplaceApiResponse {
+  data: IMarketplaceApiItem[];
+  nextCursor: string | null;
+  total: number;
+}
+
+interface IListingsResult {
   listings: IListingCardData[];
   nextCursor: string | null;
   total: number;
 }
 
-async function fetchListings(params: IMarketplaceSearchParams): Promise<IListingsResponse> {
+function toCardData(item: IMarketplaceApiItem): IListingCardData {
+  return {
+    _id: item.id,
+    title: item.title,
+    cropName: item.cropName,
+    currentPricePerUnit: item.currentPricePerUnit,
+    unit: item.unit as ListingUnit,
+    quantityAvailable: item.quantityAvailable,
+    pickupCounty: item.pickupCounty,
+    imageUrls: item.imageUrl ? [item.imageUrl] : [],
+    isVerifiedListing: item.farmer.isVerified,
+    farmer: {
+      firstName: item.farmer.firstName,
+      lastName: item.farmer.lastName,
+    },
+    trustScore: {
+      compositeScore: item.farmer.trustScore,
+      tier: item.farmer.trustTier as FarmerTrustTier,
+    },
+  };
+}
+
+async function fetchListings(params: IMarketplaceSearchParams): Promise<IListingsResult> {
   const baseUrl = process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000';
   const searchParams = new URLSearchParams();
 
@@ -48,7 +100,13 @@ async function fetchListings(params: IMarketplaceSearchParams): Promise<IListing
     return { listings: [], nextCursor: null, total: 0 };
   }
 
-  return res.json() as Promise<IListingsResponse>;
+  const body = (await res.json()) as IMarketplaceApiResponse;
+
+  return {
+    listings: (body.data ?? []).map(toCardData),
+    nextCursor: body.nextCursor ?? null,
+    total: body.total ?? 0,
+  };
 }
 
 function ListingsSkeleton(): React.ReactElement {
