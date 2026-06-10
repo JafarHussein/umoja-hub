@@ -40,7 +40,7 @@ const DASHBOARD_BY_ROLE: Record<Role, string> = {
   FARMER: '/dashboard/farmer/listings',
   BUYER: '/marketplace',
   STUDENT: '/dashboard/student/projects/new',
-  LECTURER: '/dashboard/lecturer/reviews/pending',
+  LECTURER: '/dashboard/lecturer/queue',
   ADMIN: '/dashboard/admin/verification-queue',
 };
 
