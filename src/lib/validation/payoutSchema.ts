@@ -13,3 +13,19 @@ export const payoutRequestSchema = z.object({
 });
 
 export type PayoutRequestInput = z.infer<typeof payoutRequestSchema>;
+
+// Admin decision on a withdrawal request. Transitions enforced in the route:
+// REQUESTED→APPROVED, REQUESTED→REJECTED (note required), APPROVED→PAID
+// (note carries the manual M-Pesa payment reference).
+export const adminPayoutDecisionSchema = z
+  .object({
+    requestId: z.string().min(1, 'Request ID is required'),
+    decision: z.enum(['APPROVED', 'REJECTED', 'PAID']),
+    note: z.string().trim().max(500).optional(),
+  })
+  .refine(
+    (d) => d.decision !== 'REJECTED' || (d.note !== undefined && d.note.length > 0),
+    { message: 'A reason note is required when rejecting a payout request', path: ['note'] }
+  );
+
+export type AdminPayoutDecisionInput = z.infer<typeof adminPayoutDecisionSchema>;
