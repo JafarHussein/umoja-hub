@@ -165,6 +165,13 @@ export enum BuyerContactPreference {
   PLATFORM_MESSAGE = 'PLATFORM_MESSAGE',
 }
 
+export enum WithdrawalRequestStatus {
+  REQUESTED = 'REQUESTED',
+  APPROVED = 'APPROVED',
+  PAID = 'PAID',
+  REJECTED = 'REJECTED',
+}
+
 // ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------
