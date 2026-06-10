@@ -172,6 +172,19 @@ export enum WithdrawalRequestStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum MediationRequestStatus {
+  OPEN = 'OPEN',
+  IN_REVIEW = 'IN_REVIEW',
+  RESOLVED = 'RESOLVED',
+}
+
+export enum MediationCategory {
+  NOT_DELIVERED = 'NOT_DELIVERED',
+  QUALITY_ISSUE = 'QUALITY_ISSUE',
+  WRONG_QUANTITY = 'WRONG_QUANTITY',
+  OTHER = 'OTHER',
+}
+
 // ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------
