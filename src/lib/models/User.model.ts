@@ -92,12 +92,15 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     hashedPassword: { type: String, required: true, select: false },
     firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
-    phoneNumber: { type: String, required: true, trim: true },
+    // Optional until onboarding Stage 2 (IDENTITY_INPUT, AUTH-05): a fresh OAuth
+    // user has only an email + first name. The credentials path still requires
+    // these via registerSchema (Zod), so existing signups are unaffected.
+    lastName: { type: String, trim: true },
+    phoneNumber: { type: String, trim: true },
     // Nullable during onboarding (Decision 02-A): an OAuth user has no role
     // until they pick one at ROLE_SELECTION. null is an explicit enum member.
     role: { type: String, enum: [...Object.values(Role), null], default: null },
-    county: { type: String, required: true },
+    county: { type: String },
     status: { type: String, enum: Object.values(UserStatus), default: UserStatus.ACTIVE },
     // Defaults to COMPLETED so every pre-OAuth creation path (credentials
     // register, seeds) is correctly onboarded; the OAuth flow (AUTH-02/AUTH-05)

@@ -69,7 +69,7 @@ export function handleApiError(error: unknown): NextResponse {
 // ---------------------------------------------------------------------------
 
 export function requireRole(
-  session: { user: { role?: string } } | null,
+  session: { user: { role?: string | null } } | null,
   ...roles: string[]
 ): void {
   if (!session) {
