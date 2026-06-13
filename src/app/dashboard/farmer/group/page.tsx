@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import GroupOrderCard from '@/components/foodhub/GroupOrderCard';
-import { KENYAN_COUNTIES } from '@/types';
+import { Badge } from '@/components/ui/Badge';
+import { Role } from '@/types';
 
 interface IGroup {
   _id: string;
@@ -11,7 +13,20 @@ interface IGroup {
   county: string;
   memberCount: number;
   status: string;
+  createdBy: string;
   createdAt: string;
+}
+
+interface IGroupMember {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  county?: string;
+  farmerData?: { isVerified?: boolean };
+}
+
+interface IGroupDetail extends IGroup {
+  members: IGroupMember[];
 }
 
 interface IGroupOrder {
@@ -35,7 +50,8 @@ function GroupSkeleton() {
           key={i}
           className="h-32 bg-surface-secondary border border-white/5 rounded animate-shimmer"
           style={{
-            backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
+            backgroundImage:
+              'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
             backgroundSize: '200% 100%',
           }}
         />
@@ -44,29 +60,28 @@ function GroupSkeleton() {
   );
 }
 
+function memberName(member: IGroupMember): string {
+  const full = `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim();
+  return full || 'Farmer';
+}
+
 export default function FarmerGroupPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [groups, setGroups] = useState<IGroup[]>([]);
-  const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<IGroupDetail | null>(null);
   const [groupOrders, setGroupOrders] = useState<IGroupOrder[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(true);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  const [createFormOpen, setCreateFormOpen] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [groupCounty, setGroupCounty] = useState('Kiambu');
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
-  useEffect(() => {
-    void fetchGroups();
-  }, []);
+  const userId = session?.user.id;
 
-  async function fetchGroups() {
+  const fetchGroups = useCallback(async (): Promise<void> => {
     setIsLoadingGroups(true);
     try {
       const res = await fetch('/api/groups');
       if (res.ok) {
-        const data = await res.json() as { data: IGroup[] };
+        const data = (await res.json()) as { data: IGroup[] };
         setGroups(data.data ?? []);
       } else if (res.status === 401 || res.status === 403) {
         router.push('/auth/unauthorized');
@@ -74,42 +89,41 @@ export default function FarmerGroupPage() {
     } finally {
       setIsLoadingGroups(false);
     }
-  }
+  }, [router]);
 
-  async function selectGroup(group: IGroup) {
-    setSelectedGroup(group);
-    setIsLoadingOrders(true);
-    try {
-      const res = await fetch(`/api/groups/${group._id}/orders`);
-      if (res.ok) {
-        const data = await res.json() as { data: IGroupOrder[] };
-        setGroupOrders(data.data ?? []);
-      }
-    } finally {
-      setIsLoadingOrders(false);
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/login');
+      return;
     }
-  }
+    if (status === 'authenticated') {
+      if (session.user.role !== Role.FARMER) {
+        router.push('/auth/unauthorized');
+        return;
+      }
+      void fetchGroups();
+    }
+  }, [status, session, router, fetchGroups]);
 
-  async function createGroup(e: React.FormEvent) {
-    e.preventDefault();
-    setCreateError(null);
-    setIsCreating(true);
+  async function selectGroup(group: IGroup): Promise<void> {
+    setIsLoadingDetail(true);
+    setSelectedGroup({ ...group, members: [] });
+    setGroupOrders([]);
     try {
-      const res = await fetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupName, county: groupCounty }),
-      });
-      if (res.ok) {
-        setCreateFormOpen(false);
-        setGroupName('');
-        await fetchGroups();
-      } else {
-        const err = await res.json() as { error: string };
-        setCreateError(err.error ?? 'Failed to create group');
+      const [detailRes, ordersRes] = await Promise.all([
+        fetch(`/api/groups/${group._id}`),
+        fetch(`/api/groups/${group._id}/orders`),
+      ]);
+      if (detailRes.ok) {
+        const detail = (await detailRes.json()) as { data: IGroupDetail };
+        setSelectedGroup(detail.data);
+      }
+      if (ordersRes.ok) {
+        const orders = (await ordersRes.json()) as { data: IGroupOrder[] };
+        setGroupOrders(orders.data ?? []);
       }
     } finally {
-      setIsCreating(false);
+      setIsLoadingDetail(false);
     }
   }
 
@@ -120,77 +134,29 @@ export default function FarmerGroupPage() {
     return 'Supplier';
   }
 
+  const isManager = Boolean(selectedGroup && userId && selectedGroup.createdBy === userId);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-surface-primary">
+        <div className="max-w-5xl mx-auto px-4 py-8 md:px-8">
+          <GroupSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-surface-primary">
       <div className="max-w-5xl mx-auto px-4 py-8 md:px-8">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="font-heading text-t1 text-text-primary mb-2">Farmer Groups</h1>
-            <p className="font-body text-t4 text-text-secondary">
-              Join a cooperative to purchase inputs collectively and reduce costs.
-            </p>
-          </div>
-          <button
-            onClick={() => setCreateFormOpen(true)}
-            className="px-4 py-3 bg-accent-green text-white rounded-sm font-body text-t5 hover:opacity-90 transition-all duration-150 min-h-[44px]"
-          >
-            Create Group
-          </button>
+        {/* Header — read-only hub: no create/join controls */}
+        <div className="mb-8">
+          <h1 className="font-heading text-t1 text-text-primary mb-2">Farmer Groups</h1>
+          <p className="font-body text-t4 text-text-secondary">
+            View your cooperative rosters and collective input-purchase history. Membership is
+            managed by an administrator.
+          </p>
         </div>
-
-        {/* Create group form */}
-        {createFormOpen && (
-          <div className="mb-8 bg-surface-elevated border border-white/5 rounded p-6">
-            <h2 className="font-heading text-t2 text-text-primary mb-4">New Cooperative Group</h2>
-            <form onSubmit={(e) => void createGroup(e)} className="space-y-4">
-              <div>
-                <label className="block font-body text-t5 text-text-secondary mb-1">Group Name</label>
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="e.g. Kiambu Maize Farmers Cooperative"
-                  required
-                  minLength={3}
-                  maxLength={100}
-                  className="w-full bg-surface-secondary border border-white/5 rounded-sm px-4 py-3 font-body text-t5 text-text-primary placeholder-text-disabled focus:outline-none focus:border-accent-green/50 transition-all duration-150 min-h-[44px]"
-                />
-              </div>
-              <div>
-                <label className="block font-body text-t5 text-text-secondary mb-1">County</label>
-                <select
-                  value={groupCounty}
-                  onChange={(e) => setGroupCounty(e.target.value)}
-                  className="w-full bg-surface-secondary border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-text-primary focus:outline-none focus:border-accent-green/50 min-h-[44px]"
-                >
-                  {KENYAN_COUNTIES.map((c) => (
-                    <option key={c} value={c} className="bg-surface-elevated">{c}</option>
-                  ))}
-                </select>
-              </div>
-              {createError && (
-                <p className="font-body text-t5 text-red-400">{createError}</p>
-              )}
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="px-6 py-3 bg-accent-green text-white rounded-sm font-body text-t5 disabled:opacity-40 hover:opacity-90 transition-all duration-150 min-h-[44px]"
-                >
-                  {isCreating ? 'Creating...' : 'Create Group'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreateFormOpen(false)}
-                  className="px-6 py-3 bg-surface-secondary text-text-secondary border border-white/5 rounded-sm font-body text-t5 hover:text-text-primary transition-all duration-150 min-h-[44px]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Groups list */}
@@ -202,7 +168,8 @@ export default function FarmerGroupPage() {
               <div className="text-center py-12 bg-surface-elevated border border-white/5 rounded">
                 <p className="font-body text-t4 text-text-secondary mb-2">No groups yet</p>
                 <p className="font-body text-t5 text-text-disabled">
-                  Create a group to start purchasing inputs collectively with other farmers.
+                  An administrator can add you to a cooperative, or you can link an institutional
+                  group token from your settings.
                 </p>
               </div>
             ) : (
@@ -219,7 +186,8 @@ export default function FarmerGroupPage() {
                   >
                     <p className="font-body text-t4 text-text-primary">{group.groupName}</p>
                     <p className="font-body text-t5 text-text-secondary mt-1">
-                      {group.county} · {group.memberCount} member{group.memberCount !== 1 ? 's' : ''}
+                      {group.county} · {group.memberCount} member
+                      {group.memberCount !== 1 ? 's' : ''}
                     </p>
                   </button>
                 ))}
@@ -227,50 +195,121 @@ export default function FarmerGroupPage() {
             )}
           </div>
 
-          {/* Group orders */}
+          {/* Group detail */}
           <div className="lg:col-span-2">
-            {selectedGroup ? (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading text-t2 text-text-primary">
-                    {selectedGroup.groupName}
-                  </h2>
-                </div>
-                {isLoadingOrders ? (
-                  <GroupSkeleton />
-                ) : groupOrders.length === 0 ? (
-                  <div className="text-center py-12 bg-surface-elevated border border-white/5 rounded">
-                    <p className="font-body text-t4 text-text-secondary mb-2">No group orders yet</p>
-                    <p className="font-body text-t5 text-text-disabled">
-                      Propose a collective input purchase once your group has at least 5 members.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {groupOrders.map((order) => (
-                      <GroupOrderCard
-                        key={order._id}
-                        groupOrderId={order._id}
-                        supplierId={typeof order.supplierId === 'string' ? order.supplierId : (order.supplierId as { _id?: string })._id ?? ''}
-                        supplierName={getSupplierName(order)}
-                        inputType={order.inputType}
-                        quantityPerMember={order.quantityPerMember}
-                        pricePerMember={order.pricePerMember}
-                        joiningDeadline={order.joiningDeadline}
-                        minimumMembers={order.minimumMembers}
-                        currentMemberCount={order.participatingMembers.length}
-                        status={order.status}
-                        proposedBy={order.proposedBy}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
+            {!selectedGroup ? (
               <div className="flex items-center justify-center h-48 bg-surface-elevated border border-white/5 rounded">
                 <p className="font-body text-t5 text-text-disabled">
-                  Select a group to see group orders
+                  Select a group to see its roster and order history
                 </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Group header + manager variant */}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="font-heading text-t2 text-text-primary">
+                      {selectedGroup.groupName}
+                    </h2>
+                    <p className="font-body text-t5 text-text-secondary mt-1">
+                      {selectedGroup.county} · {selectedGroup.memberCount} member
+                      {selectedGroup.memberCount !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  {isManager && <Badge variant="success" label="Manager" />}
+                </div>
+
+                {isManager && (
+                  <p className="font-body text-t6 text-text-disabled">
+                    You created this group. Member additions and removals are handled by an
+                    administrator.
+                  </p>
+                )}
+
+                {/* Off-platform payment notice (plain text) */}
+                <div className="bg-surface-secondary border border-white/5 rounded p-4">
+                  <p className="font-body text-t5 text-text-secondary">
+                    Payment for group orders is coordinated off-platform. UmojaHub does not
+                    process or hold group-order payments.
+                  </p>
+                </div>
+
+                {/* Roster — no payment badges, no member controls */}
+                <section>
+                  <h3 className="font-heading text-t3 text-text-primary mb-3">Roster</h3>
+                  {isLoadingDetail ? (
+                    <GroupSkeleton />
+                  ) : selectedGroup.members.length === 0 ? (
+                    <div className="text-center py-8 bg-surface-elevated border border-white/5 rounded">
+                      <p className="font-body text-t5 text-text-disabled">No members to show.</p>
+                    </div>
+                  ) : (
+                    <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+                      {selectedGroup.members.map((member) => (
+                        <div
+                          key={member._id}
+                          className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/5 last:border-0"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-body text-t5 text-text-primary truncate">
+                              {memberName(member)}
+                              {member._id === userId && (
+                                <span className="text-text-disabled font-normal"> · You</span>
+                              )}
+                              {member._id === selectedGroup.createdBy && (
+                                <span className="text-text-disabled font-normal"> · Creator</span>
+                              )}
+                            </p>
+                            {member.county && (
+                              <p className="font-body text-t6 text-text-disabled">{member.county}</p>
+                            )}
+                          </div>
+                          <Badge
+                            variant={member.farmerData?.isVerified ? 'success' : 'warning'}
+                            label={member.farmerData?.isVerified ? 'Verified' : 'Unverified'}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                {/* Group order histories */}
+                <section>
+                  <h3 className="font-heading text-t3 text-text-primary mb-3">Group orders</h3>
+                  {isLoadingDetail ? (
+                    <GroupSkeleton />
+                  ) : groupOrders.length === 0 ? (
+                    <div className="text-center py-8 bg-surface-elevated border border-white/5 rounded">
+                      <p className="font-body text-t5 text-text-disabled">
+                        No group orders for this cooperative yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {groupOrders.map((order) => (
+                        <GroupOrderCard
+                          key={order._id}
+                          groupOrderId={order._id}
+                          supplierId={
+                            typeof order.supplierId === 'string'
+                              ? order.supplierId
+                              : (order.supplierId as { _id?: string } | null)?._id ?? ''
+                          }
+                          supplierName={getSupplierName(order)}
+                          inputType={order.inputType}
+                          quantityPerMember={order.quantityPerMember}
+                          pricePerMember={order.pricePerMember}
+                          joiningDeadline={order.joiningDeadline}
+                          minimumMembers={order.minimumMembers}
+                          currentMemberCount={order.participatingMembers.length}
+                          status={order.status}
+                          proposedBy={order.proposedBy}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             )}
           </div>

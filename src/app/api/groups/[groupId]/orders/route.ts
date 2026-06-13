@@ -5,6 +5,9 @@ import { connectDB } from '@/lib/db';
 import FarmerGroup from '@/lib/models/FarmerGroup.model';
 import GroupOrder from '@/lib/models/GroupOrder.model';
 import VerifiedSupplier from '@/lib/models/VerifiedSupplier.model';
+// Registers the User schema so participatingMembers.userId can be populated in
+// GET (otherwise MissingSchemaError in a cold serverless context).
+import '@/lib/models/User.model';
 import { groupOrderSchema } from '@/lib/validation/groupSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, MIN_GROUP_ORDER_MEMBERS, SupplierVerificationStatus } from '@/types';

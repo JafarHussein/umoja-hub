@@ -6,6 +6,8 @@ import { connectDB } from '@/lib/db';
 import UserModel from '@/lib/models/User.model';
 import OrderModel from '@/lib/models/Order.model';
 import WithdrawalRequestModel from '@/lib/models/WithdrawalRequest.model';
+import FarmerGroupModel from '@/lib/models/FarmerGroup.model';
+import GroupOrderModel from '@/lib/models/GroupOrder.model';
 import {
   Role,
   OnboardingStage,
@@ -26,6 +28,15 @@ import { E2E_USERS, AUTH_DIR, authFile, type E2EUserFixture } from './auth';
 const FIXTURE_ORDER_REF = 'E2E-FAR-0001';
 const FIXTURE_ORDER_PAID_AT = new Date('2026-01-01T00:00:00.000Z');
 const FIXTURE_LISTING_ID = '000000000000000000000001';
+
+// UI-04 read-only group hub: a cooperative created by the verified farmer
+// (manager variant) with the unverified farmer as a second roster member, plus
+// one group order for the histories section. supplierId is a dangling ref —
+// the orders API populates it to null and the card falls back to "Supplier".
+const FIXTURE_GROUP_NAME = 'E2E Cooperative';
+const FIXTURE_GROUP_ORDER_INPUT = 'Fertilizer (DAP)';
+const FIXTURE_SUPPLIER_ID = '000000000000000000000002';
+const FIXTURE_GROUP_ORDER_DEADLINE = new Date('2099-01-01T00:00:00.000Z');
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -180,6 +191,47 @@ export default async function globalSetup(): Promise<void> {
     // PAID fixture order (KES 4,000). Clears anything a prior run/manual test
     // may have filed.
     await WithdrawalRequestModel.deleteMany({ farmerId });
+  }
+
+  // UI-04 group fixture: verified farmer is creator + member, unverified farmer
+  // is a second member, plus one group order for the histories section.
+  const unverifiedFarmerId = idsByKey.get('farmer-unverified');
+  if (farmerId && unverifiedFarmerId) {
+    const group = await FarmerGroupModel.findOneAndUpdate(
+      { groupName: FIXTURE_GROUP_NAME },
+      {
+        $set: {
+          groupName: FIXTURE_GROUP_NAME,
+          county: 'Kiambu',
+          createdBy: farmerId,
+          members: [farmerId, unverifiedFarmerId],
+          memberCount: 2,
+          status: 'ACTIVE',
+        },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+
+    if (group) {
+      await GroupOrderModel.findOneAndUpdate(
+        { groupId: group._id, inputType: FIXTURE_GROUP_ORDER_INPUT },
+        {
+          $set: {
+            groupId: group._id,
+            proposedBy: farmerId,
+            supplierId: FIXTURE_SUPPLIER_ID,
+            inputType: FIXTURE_GROUP_ORDER_INPUT,
+            quantityPerMember: 2,
+            pricePerMember: 3500,
+            joiningDeadline: FIXTURE_GROUP_ORDER_DEADLINE,
+            minimumMembers: 5,
+            status: 'OPEN',
+            participatingMembers: [{ userId: farmerId, paymentStatus: 'PENDING' }],
+          },
+        },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    }
   }
 
   await mongoose.disconnect();
