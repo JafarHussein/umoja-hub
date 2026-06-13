@@ -9,6 +9,7 @@ import WithdrawalRequestModel from '@/lib/models/WithdrawalRequest.model';
 import FarmerGroupModel from '@/lib/models/FarmerGroup.model';
 import GroupOrderModel from '@/lib/models/GroupOrder.model';
 import MediationRequestModel from '@/lib/models/MediationRequest.model';
+import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
 import {
   Role,
   OnboardingStage,
@@ -16,6 +17,8 @@ import {
   VerificationStatus,
   FulfillmentType,
   ListingUnit,
+  ListingStatus,
+  BuyerContactPreference,
   OrderPaymentStatus,
   OrderFulfillmentStatus,
   MediationCategory,
@@ -49,6 +52,12 @@ const FIXTURE_GROUP_ORDER_DEADLINE = new Date('2099-01-01T00:00:00.000Z');
 const FIXTURE_ORDER2_REF = 'E2E-FAR-0002';
 const FIXTURE_ORDER2_PAID_AT = new Date('2025-12-01T00:00:00.000Z');
 const FIXTURE_ORDER2_FARMER_ID = '000000000000000000000003';
+
+// UI-07 checkout: a real AVAILABLE listing (fixed id) so the detail page renders
+// the CheckoutForm with the quantity lock. The order POST + payment-status are
+// intercepted in the spec, so no real Daraja call is made.
+const FIXTURE_LISTING_DETAIL_ID = '000000000000000000000010';
+const FIXTURE_LISTING_STOCK = 25;
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -250,6 +259,28 @@ export default async function globalSetup(): Promise<void> {
         { upsert: true, setDefaultsOnInsert: true }
       );
     }
+
+    // UI-07 checkout listing (AVAILABLE, fixed stock) owned by the verified farmer.
+    await MarketplaceListingModel.findOneAndUpdate(
+      { _id: FIXTURE_LISTING_DETAIL_ID },
+      {
+        $set: {
+          farmerId,
+          title: 'E2E Sukuma Wiki — Grade A',
+          cropName: 'Sukuma Wiki',
+          description: 'Fresh sukuma wiki harvested this morning, ready for collection.',
+          quantityAvailable: FIXTURE_LISTING_STOCK,
+          unit: ListingUnit.KG,
+          currentPricePerUnit: 50,
+          pickupCounty: 'Kiambu',
+          pickupDescription: 'Pickup at the Kiambu town depot, weekday mornings.',
+          listingStatus: ListingStatus.AVAILABLE,
+          isVerifiedListing: true,
+          buyerContactPreference: [BuyerContactPreference.PHONE],
+        },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
   }
 
   // UI-04 group fixture: verified farmer is creator + member, unverified farmer
