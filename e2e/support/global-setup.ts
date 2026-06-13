@@ -8,6 +8,7 @@ import OrderModel from '@/lib/models/Order.model';
 import WithdrawalRequestModel from '@/lib/models/WithdrawalRequest.model';
 import FarmerGroupModel from '@/lib/models/FarmerGroup.model';
 import GroupOrderModel from '@/lib/models/GroupOrder.model';
+import MediationRequestModel from '@/lib/models/MediationRequest.model';
 import {
   Role,
   OnboardingStage,
@@ -17,6 +18,8 @@ import {
   ListingUnit,
   OrderPaymentStatus,
   OrderFulfillmentStatus,
+  MediationCategory,
+  MediationRequestStatus,
 } from '@/types';
 import { E2E_USERS, AUTH_DIR, authFile, type E2EUserFixture } from './auth';
 
@@ -37,6 +40,15 @@ const FIXTURE_GROUP_NAME = 'E2E Cooperative';
 const FIXTURE_GROUP_ORDER_INPUT = 'Fertilizer (DAP)';
 const FIXTURE_SUPPLIER_ID = '000000000000000000000002';
 const FIXTURE_GROUP_ORDER_DEADLINE = new Date('2099-01-01T00:00:00.000Z');
+
+// UI-06 buyer mediation: a second buyer order that already carries an OPEN
+// mediation, used to assert the UNDER_MEDIATION alert bar. Its farmerId is a
+// dangling ref so it never enters the fixture farmer's orders/ledger (which
+// would skew UI-01/UI-02). E2E-FAR-0001 stays mediation-free for the
+// escalation-gate test.
+const FIXTURE_ORDER2_REF = 'E2E-FAR-0002';
+const FIXTURE_ORDER2_PAID_AT = new Date('2025-12-01T00:00:00.000Z');
+const FIXTURE_ORDER2_FARMER_ID = '000000000000000000000003';
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -191,6 +203,53 @@ export default async function globalSetup(): Promise<void> {
     // PAID fixture order (KES 4,000). Clears anything a prior run/manual test
     // may have filed.
     await WithdrawalRequestModel.deleteMany({ farmerId });
+
+    // Clear all of the buyer's mediations so E2E-FAR-0001 starts each run with
+    // no escalation (escalation-gate test) and the canonical OPEN mediation
+    // below is the only one.
+    await MediationRequestModel.deleteMany({ buyerId });
+
+    // Second buyer order (dangling farmer) carrying an OPEN mediation, for the
+    // UNDER_MEDIATION alert bar.
+    const order2 = await OrderModel.findOneAndUpdate(
+      { orderReferenceId: FIXTURE_ORDER2_REF },
+      {
+        $set: {
+          listingId: FIXTURE_LISTING_ID,
+          farmerId: FIXTURE_ORDER2_FARMER_ID,
+          buyerId,
+          cropName: 'Spinach',
+          quantityOrdered: 30,
+          unit: ListingUnit.KG,
+          pricePerUnit: 60,
+          totalAmountKES: 1800,
+          fulfillmentType: FulfillmentType.DELIVERY,
+          buyerPhone: '+254700000011',
+          paymentStatus: OrderPaymentStatus.PAID,
+          fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT,
+          paidAt: FIXTURE_ORDER2_PAID_AT,
+        },
+        $unset: { confirmedByFarmerAt: '', receivedByBuyerAt: '' },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+
+    if (order2) {
+      await MediationRequestModel.findOneAndUpdate(
+        { orderId: order2._id },
+        {
+          $set: {
+            orderId: order2._id,
+            buyerId,
+            farmerId: FIXTURE_ORDER2_FARMER_ID,
+            category: MediationCategory.NOT_DELIVERED,
+            description: 'Order has not arrived after the expected delivery window.',
+            status: MediationRequestStatus.OPEN,
+          },
+        },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    }
   }
 
   // UI-04 group fixture: verified farmer is creator + member, unverified farmer
