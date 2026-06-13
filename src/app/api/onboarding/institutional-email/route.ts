@@ -7,7 +7,7 @@ import { institutionalEmailSchema } from '@/lib/validation/onboardingSchema';
 import { isAllowedUniversityDomain } from '@/lib/auth/universityDomains';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { sendInstitutionalEmailPin } from '@/lib/integrations/emailService';
-import { AppError, handleApiError, hashPassword, logger } from '@/lib/utils';
+import { AppError, handleApiError, hashSecret, logger } from '@/lib/utils';
 import { Role, OnboardingStage } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const pin = String(randomInt(0, 1_000_000)).padStart(6, '0');
-    const hashedPin = await hashPassword(pin);
+    const hashedPin = await hashSecret(pin);
     const expiry = new Date(Date.now() + PIN_TTL_MS);
 
     await User.findByIdAndUpdate(session.user.id, {

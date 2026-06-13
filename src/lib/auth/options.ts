@@ -1,11 +1,8 @@
 import type { NextAuthOptions, Session, User, Profile, Account } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
-import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
-import { checkRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/utils';
 import { Role, UserStatus, OnboardingStage, OAuthProvider } from '@/types';
 
@@ -167,75 +164,15 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
       authorization: { params: { scope: 'read:user user:email' } },
     }),
-
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-
-      async authorize(credentials, req): Promise<User | null> {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const ip =
-          (req?.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-          (req?.headers?.['x-real-ip'] as string | undefined) ??
-          'unknown';
-
-        if (!(await checkRateLimit(`login:${ip}`, 10, 15 * 60 * 1000)).allowed) {
-          return null;
-        }
-
-        await connectDB();
-        const UserModel = (await import('@/lib/models/User.model')).default;
-
-        const user = await UserModel.findOne({
-          email: credentials.email.toLowerCase().trim(),
-        }).select('+hashedPassword');
-
-        if (!user || !user.hashedPassword) {
-          // Constant-time compare to prevent timing attacks even on missing user
-          await bcrypt.compare('dummy', '$2b$12$invalidhashfortimingprotection00000000000000000');
-          return null;
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
-        if (!isValid) {
-          return null;
-        }
-
-        // Email verification stays here (credentials-specific). Suspension is
-        // enforced centrally in the signIn callback for every provider.
-        if (!user.isEmailVerified) {
-          return null;
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          firstName: user.firstName,
-          role: (user.role as Role | null) ?? null,
-        };
-      },
-    }),
   ],
 
   callbacks: {
     async signIn({ user, account, profile }): Promise<boolean | string> {
-      const provider = account?.provider ?? 'credentials';
+      const provider = account?.provider;
+      if (!provider) return false;
 
       await connectDB();
       const UserModel = (await import('@/lib/models/User.model')).default;
-
-      // Credentials: authorize already validated password + email verification.
-      // Centralised suspension gate.
-      if (provider === 'credentials') {
-        const dbUser = await UserModel.findOne({ email: user.email }).select('status').lean();
-        return Boolean(dbUser && dbUser.status === UserStatus.ACTIVE);
-      }
 
       // OAuth (google | github) — require a provider-verified email.
       const email = await resolveVerifiedEmail(provider, account ?? null, profile, user);

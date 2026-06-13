@@ -3,8 +3,8 @@
  */
 import {
   AppError,
-  hashPassword,
-  verifyPassword,
+  hashSecret,
+  verifySecret,
   requireRole,
   generateOrderReferenceId,
   slugify,
@@ -13,37 +13,37 @@ import {
 } from '../utils';
 
 // ---------------------------------------------------------------------------
-// hashPassword / verifyPassword
+// hashSecret / verifySecret
 // ---------------------------------------------------------------------------
 
-describe('hashPassword', () => {
+describe('hashSecret', () => {
   it('returns a bcrypt hash string', async () => {
-    const hash = await hashPassword('Secure@Password1');
+    const hash = await hashSecret('Secure@Secret1');
     expect(typeof hash).toBe('string');
     expect(hash).toMatch(/^\$2[ab]\$/);
   });
 
-  it('produces different hashes for the same password', async () => {
-    const hash1 = await hashPassword('SamePassword1!');
-    const hash2 = await hashPassword('SamePassword1!');
+  it('produces different hashes for the same secret', async () => {
+    const hash1 = await hashSecret('SameSecret1!');
+    const hash2 = await hashSecret('SameSecret1!');
     expect(hash1).not.toBe(hash2);
   });
 });
 
-describe('verifyPassword', () => {
-  it('returns true for the correct password', async () => {
-    const hash = await hashPassword('CorrectPassword!');
-    await expect(verifyPassword('CorrectPassword!', hash)).resolves.toBe(true);
+describe('verifySecret', () => {
+  it('returns true for the correct secret', async () => {
+    const hash = await hashSecret('CorrectSecret!');
+    await expect(verifySecret('CorrectSecret!', hash)).resolves.toBe(true);
   });
 
-  it('returns false for the wrong password', async () => {
-    const hash = await hashPassword('CorrectPassword!');
-    await expect(verifyPassword('WrongPassword!', hash)).resolves.toBe(false);
+  it('returns false for the wrong secret', async () => {
+    const hash = await hashSecret('CorrectSecret!');
+    await expect(verifySecret('WrongSecret!', hash)).resolves.toBe(false);
   });
 
-  it('returns false for an empty password', async () => {
-    const hash = await hashPassword('CorrectPassword!');
-    await expect(verifyPassword('', hash)).resolves.toBe(false);
+  it('returns false for an empty secret', async () => {
+    const hash = await hashSecret('CorrectSecret!');
+    await expect(verifySecret('', hash)).resolves.toBe(false);
   });
 });
 

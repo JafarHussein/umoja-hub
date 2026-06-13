@@ -191,7 +191,7 @@ export default async function MarketplacePage({ searchParams }: IPageProps): Pro
           </Link>
           <h1 className="text-t3 font-heading font-semibold text-text-primary">Marketplace</h1>
           <Link
-            href="/auth/register"
+            href="/auth/login"
             className="text-t5 font-body text-accent-green hover:underline underline-offset-2"
           >
             Sell produce

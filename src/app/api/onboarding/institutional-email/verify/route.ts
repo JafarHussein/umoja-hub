@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { institutionalEmailVerifySchema } from '@/lib/validation/onboardingSchema';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { AppError, handleApiError, verifyPassword, logger } from '@/lib/utils';
+import { AppError, handleApiError, verifySecret, logger } from '@/lib/utils';
 import { Role, OnboardingStage } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw new AppError('Your verification code has expired.', 410, 'INSTITUTIONAL_PIN_EXPIRED');
     }
 
-    const isValid = await verifyPassword(parsed.data.pin, hashedPin);
+    const isValid = await verifySecret(parsed.data.pin, hashedPin);
     if (!isValid) {
       throw new AppError('Incorrect verification code.', 400, 'INSTITUTIONAL_PIN_INVALID');
     }

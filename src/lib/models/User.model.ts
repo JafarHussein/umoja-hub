@@ -93,11 +93,9 @@ const buyerDataSchema = new Schema(
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    hashedPassword: { type: String, required: true, select: false },
     firstName: { type: String, required: true, trim: true },
     // Optional until onboarding Stage 2 (IDENTITY_INPUT, AUTH-05): a fresh OAuth
-    // user has only an email + first name. The credentials path still requires
-    // these via registerSchema (Zod), so existing signups are unaffected.
+    // user has only an email + first name until they complete the funnel.
     lastName: { type: String, trim: true },
     phoneNumber: { type: String, trim: true },
     // Nullable during onboarding (Decision 02-A): an OAuth user has no role
@@ -105,20 +103,17 @@ const userSchema = new Schema(
     role: { type: String, enum: [...Object.values(Role), null], default: null },
     county: { type: String },
     status: { type: String, enum: Object.values(UserStatus), default: UserStatus.ACTIVE },
-    // Defaults to COMPLETED so every pre-OAuth creation path (credentials
-    // register, seeds) is correctly onboarded; the OAuth flow (AUTH-02/AUTH-05)
-    // explicitly writes the earlier stages on account creation.
+    // Defaults to COMPLETED so seed paths are onboarded; the OAuth flow
+    // (AUTH-02/AUTH-05) explicitly writes the earlier stages on account creation.
     onboardingStage: {
       type: String,
       enum: Object.values(OnboardingStage),
       default: OnboardingStage.COMPLETED,
     },
     oauthProvider: { type: String, enum: Object.values(OAuthProvider), default: undefined },
+    // Provider-asserted at OAuth sign-in (no self-managed verification exists
+    // post-AUTH-07).
     isEmailVerified: { type: Boolean, default: false },
-    emailVerificationToken: { type: String, select: false },
-    emailVerificationExpiry: { type: Date, select: false },
-    passwordResetToken: { type: String, select: false },
-    passwordResetExpiry: { type: Date, select: false },
     farmerData: { type: farmerDataSchema, default: undefined },
     studentData: { type: studentDataSchema, default: undefined },
     lecturerData: { type: lecturerDataSchema, default: undefined },
@@ -136,7 +131,6 @@ userSchema.index({ 'buyerData.verificationStatus': 1 });
 userSchema.set('toJSON', {
   transform: (_: unknown, ret: Record<string, unknown>) => {
     delete ret.__v;
-    delete ret.hashedPassword;
     return ret;
   },
 });
@@ -145,7 +139,6 @@ userSchema.set('toJSON', {
 // The full API-facing interface lives in src/types/foodhub.ts.
 export interface IUserDocument extends Document {
   email: string;
-  hashedPassword: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -155,10 +148,6 @@ export interface IUserDocument extends Document {
   onboardingStage: string;
   oauthProvider?: string;
   isEmailVerified: boolean;
-  emailVerificationToken?: string;
-  emailVerificationExpiry?: Date;
-  passwordResetToken?: string;
-  passwordResetExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
   farmerData?: {

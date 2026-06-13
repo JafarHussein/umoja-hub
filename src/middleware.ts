@@ -76,20 +76,21 @@ function onboardingPathForStage(stage: string | undefined): string {
   }
 }
 
+// Known-good landing pages per role (not every role group has an index route).
 function dashboardForRole(role: Role | null): string {
   switch (role) {
     case Role.FARMER:
-      return '/dashboard/farmer';
+      return '/dashboard/farmer/listings';
     case Role.BUYER:
-      return '/dashboard/buyer';
+      return '/marketplace';
     case Role.STUDENT:
       return '/dashboard/student';
     case Role.LECTURER:
-      return '/dashboard/lecturer';
+      return '/dashboard/lecturer/queue';
     case Role.ADMIN:
-      return '/dashboard/admin';
+      return '/dashboard/admin/verification-queue';
     default:
-      return '/dashboard';
+      return '/';
   }
 }
 
