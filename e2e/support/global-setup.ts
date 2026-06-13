@@ -12,6 +12,7 @@ import GroupOrderModel from '@/lib/models/GroupOrder.model';
 import MediationRequestModel from '@/lib/models/MediationRequest.model';
 import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
 import ProjectEngagementModel from '@/lib/models/ProjectEngagement.model';
+import PeerReviewModel from '@/lib/models/PeerReview.model';
 import {
   Role,
   OnboardingStage,
@@ -28,6 +29,7 @@ import {
   ProjectTrack,
   ProjectStatus,
   StudentTier,
+  PeerReviewStatus,
 } from '@/types';
 import {
   E2E_USERS,
@@ -75,6 +77,12 @@ const FIXTURE_LISTING_STOCK = 25;
 // hash) so the workbench shows 3/3, the per-document hashes, and Finalize →
 // Submit.
 const FIXTURE_ENGAGEMENT_DOC_AT = new Date('2026-01-01T00:00:00.000Z');
+
+// UI-09 peer review: a de-identified reviewee engagement (dangling author) plus
+// a PeerReview ASSIGNED to the student fixture as reviewer.
+const FIXTURE_PEER_ENGAGEMENT_ID = '000000000000000000000021';
+const FIXTURE_PEER_REVIEW_ID = '000000000000000000000022';
+const FIXTURE_PEER_AUTHOR_ID = '000000000000000000000023';
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -388,6 +396,49 @@ export default async function globalSetup(): Promise<void> {
             aiUsageLog: [],
           },
         },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+
+    // UI-09: reviewee engagement (dangling author — never populated, so the
+    // reviewer never sees an identity) + a PeerReview assigned to the student.
+    await ProjectEngagementModel.findOneAndUpdate(
+      { _id: FIXTURE_PEER_ENGAGEMENT_ID },
+      {
+        $set: {
+          studentId: FIXTURE_PEER_AUTHOR_ID,
+          track: ProjectTrack.AI_BRIEF,
+          tier: StudentTier.BEGINNER,
+          status: ProjectStatus.UNDER_PEER_REVIEW,
+          brief: { title: 'Peer Project — Market Stall Tracker' },
+          documents: {
+            problemBreakdown: buildDoc(
+              'Market stall vendors in Nairobi need a lightweight way to record daily sales and restock reminders.'
+            ),
+            approachPlan: buildDoc(
+              'A mobile-first PWA with offline-first storage syncing to a small API; daily totals and a restock list.'
+            ),
+            finalReflection: buildDoc(
+              'Offline sync was the hardest part; I would add conflict resolution and a clearer empty state next time.'
+            ),
+            blockerLog: [],
+            aiUsageLog: [],
+          },
+        },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+
+    await PeerReviewModel.findOneAndUpdate(
+      { _id: FIXTURE_PEER_REVIEW_ID },
+      {
+        $set: {
+          engagementId: FIXTURE_PEER_ENGAGEMENT_ID,
+          reviewerId: studentId,
+          status: PeerReviewStatus.ASSIGNED,
+        },
+        // Reset to a clean unsubmitted state so the review form renders each run.
+        $unset: { scores: '', comments: '', submittedAt: '' },
       },
       { upsert: true, setDefaultsOnInsert: true }
     );
