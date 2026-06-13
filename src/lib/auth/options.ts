@@ -61,6 +61,16 @@ function providerAllowsRole(provider: string, role: string | null | undefined): 
   return provider === OAuthProvider.GOOGLE;
 }
 
+// Admin bootstrap (AUTH-03): Google emails on the allowlist are provisioned as
+// ADMIN on first sign-in, skipping the onboarding funnel. An empty/unset list
+// means no allowlisted admins. GitHub is never an admin path.
+function getAdminAllowlist(): string[] {
+  return (process.env.ADMIN_EMAIL_ALLOWLIST ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 type LeanVerificationUser = {
   _id: unknown;
   role?: string | null;
@@ -252,16 +262,20 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
 
-      // New OAuth user → partial account that enters the onboarding funnel at
-      // ROLE_SELECTION with no role yet. GitHub implies STUDENT (enforced at
-      // role selection), so its login is captured now as the read-only,
-      // OAuth-sourced githubUsername (UI-12).
+      // New OAuth user. Allowlisted Google emails are bootstrapped straight to
+      // ADMIN (COMPLETED, no funnel); everyone else enters at ROLE_SELECTION
+      // with no role yet. GitHub implies STUDENT (enforced at role selection),
+      // so its login is captured now as the read-only githubUsername (UI-12).
+      const isAllowlistedAdmin =
+        provider === OAuthProvider.GOOGLE && getAdminAllowlist().includes(email);
       const githubLogin = (profile as { login?: string } | undefined)?.login;
       await UserModel.create({
         email,
         firstName: deriveFirstName(profile, email),
-        role: null,
-        onboardingStage: OnboardingStage.ROLE_SELECTION,
+        role: isAllowlistedAdmin ? Role.ADMIN : null,
+        onboardingStage: isAllowlistedAdmin
+          ? OnboardingStage.COMPLETED
+          : OnboardingStage.ROLE_SELECTION,
         oauthProvider: provider,
         isEmailVerified: true,
         status: UserStatus.ACTIVE,
@@ -270,7 +284,11 @@ export const authOptions: NextAuthOptions = {
           : {}),
       });
 
-      logger.info('auth', 'New OAuth user created', { provider, email });
+      logger.info('auth', 'New OAuth user created', {
+        provider,
+        email,
+        isAdmin: isAllowlistedAdmin,
+      });
       return true;
     },
 
