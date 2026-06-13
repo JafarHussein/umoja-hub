@@ -47,7 +47,7 @@ interface IEngagementDetail {
   track: ProjectTrack;
   tier: StudentTier;
   brief: Record<string, unknown>;
-  studentId: IStudentRef | string;
+  studentId: IStudentRef | string | null;
   documents: {
     problemBreakdown?: IProcessDoc;
     approachPlan?: IProcessDoc;
@@ -72,7 +72,8 @@ const DOC_TABS: { id: DocTab; label: string }[] = [
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function studentFullName(studentId: IStudentRef | string): string {
+function studentFullName(studentId: IStudentRef | string | null | undefined): string {
+  if (!studentId) return 'Unknown student';
   if (typeof studentId === 'string') return studentId.slice(-6);
   const { firstName = '', lastName = '' } = studentId;
   return `${firstName} ${lastName}`.trim() || 'Unknown student';

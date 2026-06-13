@@ -18,7 +18,7 @@ interface IQueueItem {
   track: ProjectTrack;
   tier: StudentTier;
   brief: Record<string, unknown>;
-  studentId: IStudentRef | string;
+  studentId: IStudentRef | string | null;
   createdAt: string;
 }
 
@@ -51,7 +51,8 @@ function PageSkeleton(): React.ReactElement {
   );
 }
 
-function studentName(studentId: IStudentRef | string): string {
+function studentName(studentId: IStudentRef | string | null | undefined): string {
+  if (!studentId) return 'Unknown student';
   if (typeof studentId === 'string') return studentId.slice(-6);
   const { firstName = '', lastName = '' } = studentId;
   const full = `${firstName} ${lastName}`.trim();

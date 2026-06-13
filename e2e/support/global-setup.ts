@@ -84,6 +84,11 @@ const FIXTURE_PEER_ENGAGEMENT_ID = '000000000000000000000021';
 const FIXTURE_PEER_REVIEW_ID = '000000000000000000000022';
 const FIXTURE_PEER_AUTHOR_ID = '000000000000000000000023';
 
+// UI-10 lecturer review: a UNDER_LECTURER_REVIEW engagement any verified
+// lecturer can open. Dangling author (never populated → "Unknown student"),
+// kept off the student fixture so it doesn't shadow the UI-08 `me` engagement.
+const FIXTURE_LECTURER_ENGAGEMENT_ID = '000000000000000000000024';
+
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
 //
@@ -443,6 +448,61 @@ export default async function globalSetup(): Promise<void> {
       { upsert: true, setDefaultsOnInsert: true }
     );
   }
+
+  // UI-10 lecturer review engagement (dangling author, UNDER_LECTURER_REVIEW).
+  await ProjectEngagementModel.findOneAndUpdate(
+    { _id: FIXTURE_LECTURER_ENGAGEMENT_ID },
+    {
+      $set: {
+        studentId: FIXTURE_PEER_AUTHOR_ID,
+        track: ProjectTrack.AI_BRIEF,
+        tier: StudentTier.INTERMEDIATE,
+        status: ProjectStatus.UNDER_LECTURER_REVIEW,
+        brief: { title: 'Lecturer Review Project' },
+        documents: {
+          problemBreakdown: {
+            content:
+              'The cooperative needs a shared ledger so member deliveries reconcile against payouts each week.',
+            hash: createHash('sha256')
+              .update('lecturer-review-problem')
+              .digest('hex'),
+            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+          },
+          approachPlan: {
+            content:
+              'A Next.js dashboard backed by MongoDB with weekly reconciliation jobs and an export to CSV.',
+            hash: createHash('sha256').update('lecturer-review-approach').digest('hex'),
+            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+          },
+          finalReflection: {
+            content:
+              'Reconciliation edge cases around partial deliveries took the most time and taught me to model state explicitly.',
+            hash: createHash('sha256').update('lecturer-review-reflection').digest('hex'),
+            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+          },
+          blockerLog: [
+            {
+              stuckOn: 'Weekly job double-counted re-submitted deliveries.',
+              resolution: 'Added an idempotency key per delivery before aggregating.',
+              durationHours: 3,
+              loggedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+            },
+          ],
+          aiUsageLog: [
+            {
+              toolUsed: 'ChatGPT',
+              prompt: 'How do I dedupe records before a sum aggregation in MongoDB?',
+              outputReceived: 'Suggested a $group on the idempotency key first.',
+              studentAction: 'Adapted the suggestion into the reconciliation pipeline.',
+              loggedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+              source: 'manual',
+            },
+          ],
+        },
+      },
+    },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
 
   await mongoose.disconnect();
 }
