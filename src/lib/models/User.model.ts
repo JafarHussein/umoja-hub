@@ -50,6 +50,23 @@ const lecturerDataSchema = new Schema(
   { _id: false }
 );
 
+// Buyer KYC (BE-09). The verification fields below back the buyer-verification
+// admin queue; AUTH-01 extends this sub-document with the onboarding identity
+// fields (organizationName, businessRegistrationNumber, corporatePaybill,
+// procurementScale).
+const buyerDataSchema = new Schema(
+  {
+    verificationStatus: {
+      type: String,
+      enum: Object.values(VerificationStatus),
+      default: VerificationStatus.UNSUBMITTED,
+    },
+    isVerified: { type: Boolean, default: false },
+    taxComplianceCertificate: { type: String },
+  },
+  { _id: false }
+);
+
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -68,6 +85,7 @@ const userSchema = new Schema(
     farmerData: { type: farmerDataSchema, default: undefined },
     studentData: { type: studentDataSchema, default: undefined },
     lecturerData: { type: lecturerDataSchema, default: undefined },
+    buyerData: { type: buyerDataSchema, default: undefined },
   },
   { timestamps: true }
 );
@@ -76,6 +94,7 @@ userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1, status: 1 });
 userSchema.index({ county: 1 });
 userSchema.index({ 'farmerData.isVerified': 1 });
+userSchema.index({ 'buyerData.verificationStatus': 1 });
 
 userSchema.set('toJSON', {
   transform: (_: unknown, ret: Record<string, unknown>) => {
@@ -125,6 +144,11 @@ export interface IUserDocument extends Document {
   lecturerData?: {
     universityAffiliation?: string;
     isVerified: boolean;
+  };
+  buyerData?: {
+    verificationStatus: string;
+    isVerified: boolean;
+    taxComplianceCertificate?: string;
   };
 }
 
