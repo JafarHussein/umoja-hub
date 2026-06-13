@@ -13,6 +13,11 @@ import { Role } from '@/types';
 // global-setup will provision + mint a session for it on the next run.
 // ---------------------------------------------------------------------------
 
+// Shared fixture id: the seeded student engagement (UI-08). The student
+// dashboard redirects to the active project, so this is the student's effective
+// landing — kept here so global-setup and the smoke landing stay in sync.
+export const FIXTURE_ENGAGEMENT_ID = '000000000000000000000020';
+
 export type E2ERole =
   | 'farmer'
   | 'farmer-unverified'
@@ -66,7 +71,9 @@ export const E2E_USERS: E2EUserFixture[] = [
     email: 'e2e+student@umojahub.test',
     firstName: 'E2E Student',
     isVerified: false,
-    landing: '/dashboard/student',
+    // /dashboard/student redirects to the active engagement, so the project
+    // workbench is the student's effective landing.
+    landing: `/dashboard/student/projects/${FIXTURE_ENGAGEMENT_ID}`,
   },
   {
     key: 'lecturer',

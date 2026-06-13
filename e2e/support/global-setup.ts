@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { loadEnvConfig } from '@next/env';
 import { encode } from 'next-auth/jwt';
 import mongoose from 'mongoose';
@@ -10,6 +11,7 @@ import FarmerGroupModel from '@/lib/models/FarmerGroup.model';
 import GroupOrderModel from '@/lib/models/GroupOrder.model';
 import MediationRequestModel from '@/lib/models/MediationRequest.model';
 import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
+import ProjectEngagementModel from '@/lib/models/ProjectEngagement.model';
 import {
   Role,
   OnboardingStage,
@@ -23,8 +25,17 @@ import {
   OrderFulfillmentStatus,
   MediationCategory,
   MediationRequestStatus,
+  ProjectTrack,
+  ProjectStatus,
+  StudentTier,
 } from '@/types';
-import { E2E_USERS, AUTH_DIR, authFile, type E2EUserFixture } from './auth';
+import {
+  E2E_USERS,
+  AUTH_DIR,
+  authFile,
+  FIXTURE_ENGAGEMENT_ID,
+  type E2EUserFixture,
+} from './auth';
 
 // Deterministic fixture order for UI-01 (Farmer Fulfillment Pipeline). It sits
 // in the only state the "Confirm Carrier Handover" prompt acts on — PAID +
@@ -58,6 +69,12 @@ const FIXTURE_ORDER2_FARMER_ID = '000000000000000000000003';
 // intercepted in the spec, so no real Daraja call is made.
 const FIXTURE_LISTING_DETAIL_ID = '000000000000000000000010';
 const FIXTURE_LISTING_STOCK = 25;
+
+// UI-08 student developer log workbench: an IN_PROGRESS engagement (id from
+// auth.ts) with all 3 process documents present (each with its real SHA-256
+// hash) so the workbench shows 3/3, the per-document hashes, and Finalize →
+// Submit.
+const FIXTURE_ENGAGEMENT_DOC_AT = new Date('2026-01-01T00:00:00.000Z');
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -322,6 +339,58 @@ export default async function globalSetup(): Promise<void> {
         { upsert: true, setDefaultsOnInsert: true }
       );
     }
+  }
+
+  // UI-08 student developer log workbench: an IN_PROGRESS engagement with all 3
+  // process documents present (each with its real SHA-256 hash).
+  const studentId = idsByKey.get('student');
+  if (studentId) {
+    const buildDoc = (content: string) => ({
+      content,
+      hash: createHash('sha256').update(content).digest('hex'),
+      submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+    });
+    await ProjectEngagementModel.findOneAndUpdate(
+      { _id: FIXTURE_ENGAGEMENT_ID },
+      {
+        $set: {
+          studentId,
+          track: ProjectTrack.AI_BRIEF,
+          tier: StudentTier.BEGINNER,
+          status: ProjectStatus.IN_PROGRESS,
+          brief: {
+            title: 'E2E Developer Log',
+            clientPersona: {
+              businessType: 'Agrovet',
+              county: 'Nakuru',
+              context: 'A two-branch agrovet tracking seed and fertiliser stock by hand.',
+            },
+            problemStatement:
+              'The agrovet cannot see stock levels across both shops and frequently runs out of fast-moving inputs.',
+            coreRequirements: ['Track stock per shop', 'Low-stock alerts'],
+            technicalConstraints: [],
+            kenyanContextConstraints: [],
+            deliverables: ['Inventory CRUD', 'Daily low-stock summary'],
+            suggestedTechStack: ['Next.js', 'MongoDB'],
+            estimatedComplexity: 'MEDIUM',
+          },
+          documents: {
+            problemBreakdown: buildDoc(
+              'The client, a Nakuru agrovet, needs a simple stock tracker for seed and fertiliser inventory across two shops.'
+            ),
+            approachPlan: buildDoc(
+              "Build a Next.js app with a MongoDB inventory model, role-based access, and a daily low-stock SMS summary via Africa's Talking."
+            ),
+            finalReflection: buildDoc(
+              'I learned to scope tightly: shipping the stock CRUD first, then layering alerts, kept the build focused and testable.'
+            ),
+            blockerLog: [],
+            aiUsageLog: [],
+          },
+        },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
   }
 
   await mongoose.disconnect();
