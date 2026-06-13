@@ -13,7 +13,14 @@ import { Role } from '@/types';
 // global-setup will provision + mint a session for it on the next run.
 // ---------------------------------------------------------------------------
 
-export type E2ERole = 'farmer' | 'buyer' | 'student' | 'lecturer' | 'admin';
+export type E2ERole =
+  | 'farmer'
+  | 'farmer-unverified'
+  | 'buyer'
+  | 'student'
+  | 'lecturer'
+  | 'lecturer-unverified'
+  | 'admin';
 
 export interface E2EUserFixture {
   key: E2ERole;
@@ -33,6 +40,16 @@ export const E2E_USERS: E2EUserFixture[] = [
     email: 'e2e+farmer@umojahub.test',
     firstName: 'E2E Farmer',
     isVerified: true,
+    landing: '/dashboard/farmer/listings',
+  },
+  {
+    // UI-03: drives the farmer verification lockout (PENDING) on the listings
+    // screen. isVerified false → global-setup sets verificationStatus PENDING.
+    key: 'farmer-unverified',
+    role: Role.FARMER,
+    email: 'e2e+farmer-unverified@umojahub.test',
+    firstName: 'E2E Unverified Farmer',
+    isVerified: false,
     landing: '/dashboard/farmer/listings',
   },
   {
@@ -57,6 +74,16 @@ export const E2E_USERS: E2EUserFixture[] = [
     email: 'e2e+lecturer@umojahub.test',
     firstName: 'E2E Lecturer',
     isVerified: true,
+    landing: '/dashboard/lecturer/queue',
+  },
+  {
+    // UI-03: drives the lecturer verification lockout — isVerified false rides
+    // the minted JWT claim, which the queue page reads directly.
+    key: 'lecturer-unverified',
+    role: Role.LECTURER,
+    email: 'e2e+lecturer-unverified@umojahub.test',
+    firstName: 'E2E Unverified Lecturer',
+    isVerified: false,
     landing: '/dashboard/lecturer/queue',
   },
   {

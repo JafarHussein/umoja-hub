@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, ProjectTrack, StudentTier } from '@/types';
 import { Badge } from '@/components/ui/Badge';
+import { VerificationLockout } from '@/components/shared/VerificationLockout';
 
 interface IStudentRef {
   firstName?: string;
@@ -99,6 +100,13 @@ export default function LecturerQueuePage(): React.ReactElement {
         router.push('/auth/unauthorized');
         return;
       }
+      // The isVerified JWT claim is authoritative: an unverified lecturer is
+      // locked out without an API round-trip (the queue API also 403s as a
+      // defensive fallback, handled in fetchQueue).
+      if (!session.user.isVerified) {
+        setPageState('unverified');
+        return;
+      }
       void fetchQueue();
     }
   }, [status, session, router, fetchQueue]);
@@ -111,12 +119,11 @@ export default function LecturerQueuePage(): React.ReactElement {
     return (
       <div className="min-h-screen bg-surface-primary">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-amber-900/30 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-amber-400">Account not yet verified</p>
-            <p className="text-t5 font-body text-text-disabled mt-1">
-              An administrator must verify your lecturer account before you can access the review queue.
-            </p>
-          </div>
+          <VerificationLockout
+            tone="pending"
+            title="Account not yet verified"
+            message="An administrator must verify your lecturer account before you can access the review queue."
+          />
         </div>
       </div>
     );

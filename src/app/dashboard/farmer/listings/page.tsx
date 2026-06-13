@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/Badge';
 import { CreateListingForm } from '@/components/foodhub/CreateListingForm';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
-import { Role, ListingStatus, ListingUnit } from '@/types';
+import {
+  VerificationLockout,
+  type IVerificationLockoutProps,
+} from '@/components/shared/VerificationLockout';
+import { Role, ListingStatus, ListingUnit, VerificationStatus } from '@/types';
 
 interface IMyListing {
   _id: string;
@@ -30,23 +34,63 @@ interface IListingsResponse {
   total: number;
 }
 
+interface IFarmerResponse {
+  farmer: { farmerData: { verificationStatus: VerificationStatus } };
+}
+
 type PageState = 'loading' | 'ready' | 'error';
+
+// Maps a farmer's verification status to the lockout copy. A verified farmer
+// (APPROVED) never sees this — the rule is "cannot list until verified".
+function lockoutForStatus(status: VerificationStatus | null): IVerificationLockoutProps {
+  switch (status) {
+    case VerificationStatus.PENDING:
+      return {
+        tone: 'pending',
+        title: 'Verification under review',
+        message:
+          'An administrator is reviewing your verification documents. You can create listings once your account is approved.',
+      };
+    case VerificationStatus.REJECTED:
+      return {
+        tone: 'rejected',
+        title: 'Verification not approved',
+        message:
+          'Your verification was not approved. Review the feedback and resubmit your documents from your profile.',
+        cta: { label: 'Go to profile', href: '/dashboard/farmer/profile' },
+      };
+    default:
+      return {
+        tone: 'action',
+        title: 'Verification required',
+        message:
+          'You must be a verified farmer before you can create listings. Submit your verification documents to get started.',
+        cta: { label: 'Submit verification', href: '/dashboard/farmer/profile' },
+      };
+  }
+}
 
 export default function FarmerListingsPage(): React.ReactElement {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [listings, setListings] = useState<IMyListing[]>([]);
+  const [verification, setVerification] = useState<VerificationStatus | null>(null);
   const [pageState, setPageState] = useState<PageState>('loading');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchListings = useCallback(async (): Promise<void> => {
+  const fetchData = useCallback(async (): Promise<void> => {
     setPageState('loading');
     try {
-      const res = await fetch('/api/marketplace?own=true');
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = (await res.json()) as IListingsResponse;
-      setListings(data.data ?? []);
+      const [listingsRes, farmerRes] = await Promise.all([
+        fetch('/api/marketplace?own=true'),
+        fetch('/api/farmers'),
+      ]);
+      if (!listingsRes.ok || !farmerRes.ok) throw new Error('Failed to fetch');
+      const listingsData = (await listingsRes.json()) as IListingsResponse;
+      const farmerData = (await farmerRes.json()) as IFarmerResponse;
+      setListings(listingsData.data ?? []);
+      setVerification(farmerData.farmer.farmerData.verificationStatus);
       setPageState('ready');
     } catch {
       setPageState('error');
@@ -63,9 +107,9 @@ export default function FarmerListingsPage(): React.ReactElement {
         router.push('/auth/unauthorized');
         return;
       }
-      void fetchListings();
+      void fetchData();
     }
-  }, [status, session, router, fetchListings]);
+  }, [status, session, router, fetchData]);
 
   async function toggleStatus(listing: IMyListing): Promise<void> {
     const newStatus =
@@ -122,9 +166,21 @@ export default function FarmerListingsPage(): React.ReactElement {
         <p className="text-t5 font-body text-text-secondary mb-4">
           Check your connection and try again.
         </p>
-        <Button variant="secondary" onClick={() => void fetchListings()}>
+        <Button variant="secondary" onClick={() => void fetchData()}>
           Retry
         </Button>
+      </div>
+    );
+  }
+
+  // ── Verification lockout (System Lockout Layer) ─────────────────────────────
+  // A farmer who is not APPROVED cannot create listings, so the body is
+  // replaced with the lockout layer rather than an unusable create surface.
+  if (verification !== VerificationStatus.APPROVED) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-t2 font-heading font-semibold text-text-primary">My Listings</h1>
+        <VerificationLockout {...lockoutForStatus(verification)} />
       </div>
     );
   }
@@ -153,27 +209,6 @@ export default function FarmerListingsPage(): React.ReactElement {
           New listing
         </Button>
       </div>
-
-      {/* Verification notice */}
-      {session?.user && (
-        <div className="bg-surface-elevated border border-white/5 rounded p-4 flex items-start gap-3">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className="text-text-secondary mt-0.5 flex-shrink-0"
-            aria-hidden="true"
-          >
-            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <p className="text-t5 font-body text-text-secondary">
-            You must be a verified farmer to create listings. If you have not submitted your
-            verification documents, visit your profile to do so.
-          </p>
-        </div>
-      )}
 
       {/* Empty state */}
       {listings.length === 0 ? (
@@ -291,7 +326,7 @@ export default function FarmerListingsPage(): React.ReactElement {
         isOpen={isCreateOpen}
         onClose={() => {
           setIsCreateOpen(false);
-          void fetchListings();
+          void fetchData();
         }}
       />
     </div>

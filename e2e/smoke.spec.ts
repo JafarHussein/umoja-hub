@@ -10,7 +10,9 @@ import { E2E_USERS, authFile } from './support/auth';
 // ---------------------------------------------------------------------------
 
 for (const fixture of E2E_USERS) {
-  test.describe(`${fixture.role} session`, () => {
+  // Keyed by the unique fixture key (not role) — multiple fixtures can share a
+  // role (e.g. verified vs unverified farmer/lecturer for UI-03).
+  test.describe(`${fixture.key} session`, () => {
     test.use({ storageState: authFile(fixture.key) });
 
     test(`reaches ${fixture.landing} without an auth or onboarding redirect`, async ({ page }) => {
