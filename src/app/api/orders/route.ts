@@ -31,6 +31,8 @@ type OrderLean = {
   totalAmountKES: number;
   paymentStatus: OrderPaymentStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
+  fulfillmentType: string;
+  buyerPhone: string;
   mpesaCheckoutRequestId?: string;
   farmerId: { toString(): string };
   buyerId: { toString(): string };
@@ -166,6 +168,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           totalAmountKES: order.totalAmountKES,
           paymentStatus: order.paymentStatus,
           fulfillmentStatus: order.fulfillmentStatus,
+          fulfillmentType: order.fulfillmentType,
+          buyerPhone: order.buyerPhone,
           buyer: {
             firstName: buyer?.firstName ?? '—',
             lastName: buyer?.lastName ?? '',
@@ -179,6 +183,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
             !order.confirmedByFarmerAt,
           createdAt: order.createdAt.toISOString(),
+          // The handover countdown is anchored to paidAt: confirming within 24 h of
+          // payment is what farmerTrustCalculator counts as on-time.
+          paidAt: order.paidAt?.toISOString() ?? null,
+          confirmedByFarmerAt: order.confirmedByFarmerAt?.toISOString() ?? null,
+          receivedByBuyerAt: order.receivedByBuyerAt?.toISOString() ?? null,
         };
       }),
       nextCursor: farmerNextCursor,

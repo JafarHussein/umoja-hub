@@ -4,8 +4,27 @@ import { encode } from 'next-auth/jwt';
 import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import UserModel from '@/lib/models/User.model';
-import { Role, OnboardingStage, UserStatus, VerificationStatus } from '@/types';
+import OrderModel from '@/lib/models/Order.model';
+import {
+  Role,
+  OnboardingStage,
+  UserStatus,
+  VerificationStatus,
+  FulfillmentType,
+  ListingUnit,
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+} from '@/types';
 import { E2E_USERS, AUTH_DIR, authFile, type E2EUserFixture } from './auth';
+
+// Deterministic fixture order for UI-01 (Farmer Fulfillment Pipeline). It sits
+// in the only state the "Confirm Carrier Handover" prompt acts on — PAID +
+// IN_FULFILLMENT + not yet confirmed — so the FIX-01 `canConfirmDispatch` flag
+// is true. `paidAt` is a fixed instant; specs freeze the clock relative to it so
+// the 24-h countdown text is stable across runs.
+const FIXTURE_ORDER_REF = 'E2E-FAR-0001';
+const FIXTURE_ORDER_PAID_AT = new Date('2026-01-01T00:00:00.000Z');
+const FIXTURE_LISTING_ID = '000000000000000000000001';
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -66,6 +85,8 @@ export default async function globalSetup(): Promise<void> {
   await connectDB();
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
+  const idsByKey = new Map<string, string>();
+
   for (const fixture of E2E_USERS) {
     const user = await UserModel.findOneAndUpdate(
       { email: fixture.email },
@@ -88,6 +109,7 @@ export default async function globalSetup(): Promise<void> {
     }
 
     const id = String((user as { _id: unknown })._id);
+    idsByKey.set(fixture.key, id);
 
     const token = await encode({
       token: {
@@ -121,6 +143,36 @@ export default async function globalSetup(): Promise<void> {
     };
 
     fs.writeFileSync(authFile(fixture.key), JSON.stringify(storageState, null, 2));
+  }
+
+  // UI-01 fixture order: PAID + IN_FULFILLMENT + not yet confirmed so the farmer
+  // orders screen renders the live handover prompt. $unset keeps it re-runnable —
+  // a prior run that confirmed the order is reset back to the unconfirmed state.
+  const farmerId = idsByKey.get('farmer');
+  const buyerId = idsByKey.get('buyer');
+  if (farmerId && buyerId) {
+    await OrderModel.findOneAndUpdate(
+      { orderReferenceId: FIXTURE_ORDER_REF },
+      {
+        $set: {
+          listingId: FIXTURE_LISTING_ID,
+          farmerId,
+          buyerId,
+          cropName: 'Tomatoes',
+          quantityOrdered: 50,
+          unit: ListingUnit.KG,
+          pricePerUnit: 80,
+          totalAmountKES: 4000,
+          fulfillmentType: FulfillmentType.PICKUP,
+          buyerPhone: '+254700000010',
+          paymentStatus: OrderPaymentStatus.PAID,
+          fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT,
+          paidAt: FIXTURE_ORDER_PAID_AT,
+        },
+        $unset: { confirmedByFarmerAt: '', receivedByBuyerAt: '' },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
   }
 
   await mongoose.disconnect();
