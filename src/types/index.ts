@@ -22,6 +22,24 @@ export enum VerificationStatus {
   REJECTED = 'REJECTED',
 }
 
+// Progressive onboarding funnel (Decision 02-A). A new OAuth user has no role
+// and walks ROLE_SELECTION → IDENTITY_INPUT → VERIFICATION_UPLOAD → COMPLETED.
+// AUTH-02 writes the starting stage on OAuth account creation; AUTH-05 advances
+// it as each onboarding step is submitted.
+export enum OnboardingStage {
+  ROLE_SELECTION = 'ROLE_SELECTION',
+  IDENTITY_INPUT = 'IDENTITY_INPUT',
+  VERIFICATION_UPLOAD = 'VERIFICATION_UPLOAD',
+  COMPLETED = 'COMPLETED',
+}
+
+// Identity provider a user authenticated with (Decision 01-B). Absent for
+// legacy credentials accounts until the CredentialsProvider is retired (AUTH-07).
+export enum OAuthProvider {
+  GOOGLE = 'google',
+  GITHUB = 'github',
+}
+
 export enum OrderPaymentStatus {
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PAID = 'PAID',
