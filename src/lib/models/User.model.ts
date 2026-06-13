@@ -43,9 +43,12 @@ const studentDataSchema = new Schema(
     universityAffiliation: { type: String },
     completedProjectCount: { type: Number, default: 0 },
     // Institutional-email verification (AUTH-05): a university-domain address,
-    // confirmed via a 6-digit pin, plus the academic registration number.
+    // confirmed via a 6-digit pin, plus the academic registration number. The
+    // pin is stored bcrypt-hashed and excluded from queries by default.
     institutionalEmail: { type: String, lowercase: true, trim: true },
     institutionalEmailVerified: { type: Boolean, default: false },
+    institutionalEmailPin: { type: String, select: false },
+    institutionalEmailPinExpiry: { type: Date },
     academicRegistrationNumber: { type: String, trim: true },
   },
   { _id: false }
@@ -179,6 +182,8 @@ export interface IUserDocument extends Document {
     completedProjectCount: number;
     institutionalEmail?: string;
     institutionalEmailVerified: boolean;
+    institutionalEmailPin?: string;
+    institutionalEmailPinExpiry?: Date;
     academicRegistrationNumber?: string;
   };
   lecturerData?: {

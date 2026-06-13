@@ -5,7 +5,7 @@ import { hashPassword, handleApiError, AppError, logger } from '@/lib/utils';
 import { registerSchema } from '@/lib/validation/authSchema';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { sendVerificationEmail } from '@/lib/integrations/emailService';
-import { Role } from '@/types';
+import { buildRoleDefaults } from '@/lib/auth/roleDefaults';
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -91,39 +91,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   } catch (error) {
     return handleApiError(error);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// buildRoleDefaults — initialise the correct role subdocument
-// ---------------------------------------------------------------------------
-
-function buildRoleDefaults(role: string): Record<string, unknown> {
-  switch (role) {
-    case Role.FARMER:
-      return {
-        farmerData: {
-          verificationStatus: 'UNSUBMITTED',
-          isVerified: false,
-          cropsGrown: [],
-          livestockKept: [],
-        },
-      };
-    case Role.STUDENT:
-      return {
-        studentData: {
-          currentTier: 'BEGINNER',
-          techStackPreferences: [],
-          completedProjectCount: 0,
-        },
-      };
-    case Role.LECTURER:
-      return {
-        lecturerData: {
-          isVerified: false,
-        },
-      };
-    default:
-      return {};
   }
 }

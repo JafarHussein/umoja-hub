@@ -44,6 +44,25 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   }
 }
 
+export async function sendInstitutionalEmailPin(to: string, pin: string): Promise<ISendEmailResult> {
+  try {
+    const from = process.env['SMTP_FROM'] ?? process.env['SMTP_USER'];
+
+    const info = await getTransporter().sendMail({
+      from,
+      to,
+      subject: 'Your UmojaHub student verification code',
+      html: `<p>Your UmojaHub student verification code is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px">${pin}</p><p>This code expires in 15 minutes. If you did not request it, you can ignore this email.</p>`,
+    });
+
+    logger.info('emailService', 'Institutional email pin sent', { to, messageId: info.messageId });
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    logger.error('emailService', 'EXT_EMAIL_FAILED — institutional email pin', { to, error });
+    return { success: false };
+  }
+}
+
 export async function sendPasswordResetEmail(to: string, token: string): Promise<ISendEmailResult> {
   try {
     const baseUrl = process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000';
