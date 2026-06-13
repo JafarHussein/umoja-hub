@@ -1,0 +1,86 @@
+name: E2E
+
+# Visual-regression + smoke harness (Phase 4). Runs against a built app served
+# with `npm run start` and an ephemeral MongoDB, so snapshots are deterministic.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  playwright:
+    name: Playwright (build · seed · visual)
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    env:
+      # Dummy values are sufficient to boot the app; the harness drives synthetic
+      # sessions, never the real OAuth providers. NEXTAUTH_SECRET must match what
+      # global-setup uses to mint cookies (it reads the same process env).
+      MONGODB_URI: mongodb://localhost:27017/umojahub-e2e
+      NEXTAUTH_SECRET: test-secret-for-ci-only
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: test
+      GOOGLE_CLIENT_SECRET: test
+      GITHUB_CLIENT_ID: test
+      GITHUB_CLIENT_SECRET: test
+      GROQ_API_KEY: test
+      OPENAI_API_KEY: test
+      MPESA_CONSUMER_KEY: test
+      MPESA_CONSUMER_SECRET: test
+      MPESA_SHORTCODE: '174379'
+      MPESA_PASSKEY: test
+      MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
+      AFRICASTALKING_API_KEY: test
+      AFRICASTALKING_USERNAME: sandbox
+      OPEN_WEATHER_MAP_API_KEY: test
+      CLOUDINARY_CLOUD_NAME: test
+      CLOUDINARY_API_KEY: test
+      CLOUDINARY_API_SECRET: test
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test
+      CRON_SECRET: test-cron-secret
+      SMTP_HOST: localhost
+      SMTP_PORT: '587'
+      SMTP_USER: test
+      SMTP_PASS: test
+      ADMIN_PHONE_NUMBER: '+254700000000'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Seed database
+        run: npm run db:seed
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
