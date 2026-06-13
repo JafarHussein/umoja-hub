@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import UserModel from '@/lib/models/User.model';
 import OrderModel from '@/lib/models/Order.model';
+import WithdrawalRequestModel from '@/lib/models/WithdrawalRequest.model';
 import {
   Role,
   OnboardingStage,
@@ -173,6 +174,12 @@ export default async function globalSetup(): Promise<void> {
       },
       { upsert: true, setDefaultsOnInsert: true }
     );
+
+    // Keep the settlement ledger (UI-02) deterministic: with no committed
+    // payouts the fixture farmer's available balance always equals the single
+    // PAID fixture order (KES 4,000). Clears anything a prior run/manual test
+    // may have filed.
+    await WithdrawalRequestModel.deleteMany({ farmerId });
   }
 
   await mongoose.disconnect();
