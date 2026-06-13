@@ -1,4 +1,10 @@
-import { groupCreationSchema, groupMemberSchema, groupOrderSchema } from '../groupSchema';
+import {
+  groupCreationSchema,
+  groupMemberSchema,
+  groupOrderSchema,
+  groupTokenMintSchema,
+  redeemTokenSchema,
+} from '../groupSchema';
 
 // ---------------------------------------------------------------------------
 // groupCreationSchema
@@ -171,5 +177,89 @@ describe('groupOrderSchema', () => {
     expect(
       groupOrderSchema.safeParse({ ...valid, minimumMembers: 5.5 }).success
     ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// groupTokenMintSchema
+// ---------------------------------------------------------------------------
+
+describe('groupTokenMintSchema', () => {
+  const valid = {
+    groupId: '507f1f77bcf86cd799439011',
+    recipientPhone: '0712345678',
+  };
+
+  it('accepts a valid mint payload without expiry', () => {
+    expect(groupTokenMintSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('accepts a valid mint payload with expiresInHours', () => {
+    expect(groupTokenMintSchema.safeParse({ ...valid, expiresInHours: 48 }).success).toBe(true);
+  });
+
+  it('accepts +254 phone format', () => {
+    expect(
+      groupTokenMintSchema.safeParse({ ...valid, recipientPhone: '+254712345678' }).success
+    ).toBe(true);
+  });
+
+  it('rejects an invalid phone number', () => {
+    expect(
+      groupTokenMintSchema.safeParse({ ...valid, recipientPhone: '0612345678' }).success
+    ).toBe(false);
+  });
+
+  it('rejects a missing recipientPhone', () => {
+    const { recipientPhone: _, ...noPhone } = valid;
+    expect(groupTokenMintSchema.safeParse(noPhone).success).toBe(false);
+  });
+
+  it('rejects an empty groupId', () => {
+    expect(groupTokenMintSchema.safeParse({ ...valid, groupId: '' }).success).toBe(false);
+  });
+
+  it('rejects expiresInHours below 1', () => {
+    expect(groupTokenMintSchema.safeParse({ ...valid, expiresInHours: 0 }).success).toBe(false);
+  });
+
+  it('rejects expiresInHours above 720', () => {
+    expect(groupTokenMintSchema.safeParse({ ...valid, expiresInHours: 721 }).success).toBe(false);
+  });
+
+  it('rejects non-integer expiresInHours', () => {
+    expect(groupTokenMintSchema.safeParse({ ...valid, expiresInHours: 1.5 }).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// redeemTokenSchema
+// ---------------------------------------------------------------------------
+
+describe('redeemTokenSchema', () => {
+  it('accepts a valid token', () => {
+    expect(redeemTokenSchema.safeParse({ token: 'ABCD2345' }).success).toBe(true);
+  });
+
+  it('trims surrounding whitespace', () => {
+    const result = redeemTokenSchema.safeParse({ token: '  ABCD2345  ' });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.token).toBe('ABCD2345');
+  });
+
+  it('rejects an empty token', () => {
+    expect(redeemTokenSchema.safeParse({ token: '' }).success).toBe(false);
+  });
+
+  it('rejects a whitespace-only token', () => {
+    expect(redeemTokenSchema.safeParse({ token: '   ' }).success).toBe(false);
+  });
+
+  it('rejects a token longer than 32 characters', () => {
+    expect(redeemTokenSchema.safeParse({ token: 'x'.repeat(33) }).success).toBe(false);
+  });
+
+  it('rejects a missing token', () => {
+    expect(redeemTokenSchema.safeParse({}).success).toBe(false);
   });
 });
