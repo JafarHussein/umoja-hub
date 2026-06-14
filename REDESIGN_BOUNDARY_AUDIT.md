@@ -72,7 +72,23 @@ Foundation-first, never big-bang. Order: **unified tokens → primitives → con
 
 ## 3. `site/` resolution
 
-`site/` is a separate, minimal marketing-site experiment (third design language). Per the approved scope ("unify both `src/` and `site/`"), it does **not** stay a fork. Both apps converge on **one** shared token + primitive foundation. The Phase 3 plan must decide whether `site/` folds into the root `app/(website)` group or remains a separate deploy target consuming a shared design package — resolved at the top of Phase 3 after a focused read of `site/src/**`.
+`site/` is a separate, minimal marketing-site experiment (third design language). Per the approved scope ("unify both `src/` and `site/`"), it does **not** stay a fork. Both apps converge on **one** shared token + primitive foundation.
+
+### RESOLVED (Phase 3.1, 2026-06-15) — fold into root `app/(website)`
+
+A focused read of `site/src/**` settled it: `site/` is a 4-page static app (`next`/`react`/`react-dom` only, no app logic) whose homepage **duplicates** the root `(website)` homepage and whose grammar is the third, Playfair-serif "editorial" system. Only **three** pages carry unique content not already in root: `/ai-safety`, `/partnerships`, `/verification`.
+
+**Decision: fold, do not keep as a shared-package consumer.** Rationale:
+
+1. **No monorepo tooling.** The repo is a single Next.js app — no npm/turbo workspaces. A shared design *package* would require standing up workspace tooling purely to serve a tiny static marketing site. Disproportionate; adds the exact cross-boundary sync surface the audit is trying to kill.
+2. **Root `(website)` already *is* the marketing site** — 14 pages with `Nav`/`Footer` and a layout. `site/`'s homepage is redundant with it; the three unique pages become new routes inside `(website)`.
+3. **The unified-token mandate is satisfied natively** by folding: one app, one `tailwind.config.ts`, one semantic token set — no cross-app token mirroring.
+4. **Eliminates a third deploy target** and its drift risk.
+
+**Execution (later Phase 3 steps, not now):**
+- Port `/ai-safety`, `/partnerships`, `/verification` into `app/(website)/`, rebuilt on the unified tokens (Phase 3.4 surface migration).
+- Delete the `site/` directory **only after** those three routes serve from root and are gate-verified (Phase 3.5).
+- **Deploy caveat (outward-facing — gated, not done here):** `site/` is its own linked Vercel project (`site`, `prj_jcnEuVPZfRUd5jCqdsrBy2OZrp4B`). Retiring/redirecting that project happens deliberately after the root deploy serves the ported routes — never as a side effect of the directory deletion.
 
 ---
 
