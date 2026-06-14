@@ -27,8 +27,10 @@ test('checkout shows the quantity lock bound to available stock', async ({ page 
   await expect(page.getByRole('heading', { name: 'Pay with M-Pesa' })).toBeVisible({
     timeout: 30_000,
   });
-  // Quantity is locked to the listing's available stock.
-  await expect(page.getByText('of 25 avail.')).toBeVisible();
+  // Quantity is locked to the listing's available stock. The detail page can
+  // render the checkout form more than once (responsive layout), so scope to
+  // the first match.
+  await expect(page.getByText('of 25 avail.').first()).toBeVisible();
 });
 
 test('inventory-lock-failed surfaces an explicit refresh path', async ({ page }) => {
