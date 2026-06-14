@@ -131,22 +131,31 @@ interface Step {
   readonly body: string;
 }
 
-function FlowStep({ step, numColor }: { step: Step; numColor: string }) {
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+
+function FlowStep({ step }: { step: Step }) {
   return (
-    <div className="border-b border-[#2A3138] py-[28px] flex gap-[32px] items-start w-full">
-      <div className="bg-[#2A3138] px-[14px] py-[8px] shrink-0 flex items-center">
-        <span className={`font-jakarta font-600 text-[1rem] leading-[1.3] ${numColor}`}>
-          {step.n}
-        </span>
+    <div className="flex w-full items-start gap-8 border-b border-border py-7">
+      <div className="flex shrink-0 items-center rounded-sm bg-surface-raised px-3.5 py-2">
+        <span className="font-semibold leading-snug text-brand-text">{step.n}</span>
       </div>
-      <div className="flex-1 flex flex-col gap-[10px]">
-        <p className="font-jakarta font-600 text-[1.125rem] leading-[1.3] text-[#F2F0EC]">
-          {step.title}
-        </p>
-        <p className="font-jakarta font-400 text-[1rem] leading-[1.6] text-[#A9A29A]">
-          {step.body}
-        </p>
+      <div className="flex flex-1 flex-col gap-2.5">
+        <p className="text-lg font-semibold leading-snug text-fg">{step.title}</p>
+        <p className="leading-relaxed text-fg-muted">{step.body}</p>
       </div>
+    </div>
+  );
+}
+
+function FlowHeader({ tag, title }: { tag: string; title: string }) {
+  return (
+    <div className="flex w-full flex-col gap-4 pb-12">
+      <div className="inline-flex self-start rounded-sm bg-surface-raised px-3 py-1.5">
+        <p className="font-ibm-mono text-xs uppercase tracking-wide text-brand-text">{tag}</p>
+      </div>
+      <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+        {title}
+      </p>
     </div>
   );
 }
@@ -155,72 +164,53 @@ export default function HowItWorksPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-[#131619] px-[160px] py-[120px] flex flex-col gap-7">
-        <p className="font-jakarta font-500 text-[0.875rem] tracking-[0.02em] text-[#878078]">
-          How It Works
-        </p>
-        <h1 className="font-jakarta font-800 text-[4.5rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] w-[900px]">
-          Every actor.
-          <br />
-          Every step.
-          <br />
-          In sequence.
-        </h1>
-        <p className="font-jakarta font-400 text-[1.25rem] leading-[1.6] text-[#A9A29A] w-[840px]">
-          The complete end-to-end walkthrough for all three platform flows. Food Security Hub,
-          Education Hub, and Cooperative Group purchasing — from first step to final outcome.
-        </p>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-7 py-24`}>
+          <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+            How It Works
+          </p>
+          <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+            Every actor.
+            <br />
+            Every step.
+            <br />
+            In sequence.
+          </h1>
+          <p className="max-w-3xl text-xl leading-relaxed text-fg-muted">
+            The complete end-to-end walkthrough for all three platform flows. Food Security Hub,
+            Education Hub, and Cooperative Group purchasing — from first step to final outcome.
+          </p>
+        </div>
       </section>
 
       {/* S1 — Food Security Flow */}
-      <section className="bg-[#1B2025] px-[160px] py-[96px] flex flex-col items-start w-full">
-        <div className="flex flex-col gap-[16px] pb-[48px] w-full">
-          <div className="bg-[#4A3A2A] px-[12px] py-[6px] inline-flex self-start">
-            <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.02em] text-[#D88A5A]">
-              Food Security Hub
-            </p>
-          </div>
-          <p className="font-jakarta font-600 text-[2.5rem] tracking-[-0.02em] leading-[1.15] text-[#F2F0EC] w-[900px]">
-            Farmer to first transaction
-          </p>
+      <section className="theme-product bg-surface">
+        <div className={`${CONTAINER} flex w-full flex-col items-start py-24`}>
+          <FlowHeader tag="Food Security Hub" title="Farmer to first transaction" />
+          {FOOD_STEPS.map((step) => (
+            <FlowStep key={step.n} step={step} />
+          ))}
         </div>
-        {FOOD_STEPS.map((step) => (
-          <FlowStep key={step.n} step={step} numColor="text-[#D88A5A]" />
-        ))}
       </section>
 
       {/* S2 — Education Flow */}
-      <section className="bg-[#131619] px-[160px] py-[96px] flex flex-col items-start w-full">
-        <div className="flex flex-col gap-[16px] pb-[48px] w-full">
-          <div className="bg-[#1E3535] px-[12px] py-[6px] inline-flex self-start">
-            <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.02em] text-[#56A8A2]">
-              Education Hub
-            </p>
-          </div>
-          <p className="font-jakarta font-600 text-[2.5rem] tracking-[-0.02em] leading-[1.15] text-[#F2F0EC] w-[900px]">
-            Student to VERIFIED portfolio entry
-          </p>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex w-full flex-col items-start py-24`}>
+          <FlowHeader tag="Education Hub" title="Student to VERIFIED portfolio entry" />
+          {EDUCATION_STEPS.map((step) => (
+            <FlowStep key={step.n} step={step} />
+          ))}
         </div>
-        {EDUCATION_STEPS.map((step) => (
-          <FlowStep key={step.n} step={step} numColor="text-[#56A8A2]" />
-        ))}
       </section>
 
       {/* S3 — Cooperative Flow */}
-      <section className="bg-[#1B2025] px-[160px] py-[96px] flex flex-col items-start w-full">
-        <div className="flex flex-col gap-[16px] pb-[48px] w-full">
-          <div className="bg-[#4A3A2A] px-[12px] py-[6px] inline-flex self-start">
-            <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.02em] text-[#D88A5A]">
-              Cooperative Group
-            </p>
-          </div>
-          <p className="font-jakarta font-600 text-[2.5rem] tracking-[-0.02em] leading-[1.15] text-[#F2F0EC] w-[900px]">
-            Group formation to input order fulfillment
-          </p>
+      <section className="theme-product bg-surface">
+        <div className={`${CONTAINER} flex w-full flex-col items-start py-24`}>
+          <FlowHeader tag="Cooperative Group" title="Group formation to input order fulfillment" />
+          {COOPERATIVE_STEPS.map((step) => (
+            <FlowStep key={step.n} step={step} />
+          ))}
         </div>
-        {COOPERATIVE_STEPS.map((step) => (
-          <FlowStep key={step.n} step={step} numColor="text-[#D88A5A]" />
-        ))}
       </section>
     </>
   );

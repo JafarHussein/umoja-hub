@@ -36,21 +36,32 @@ const IS_NOT_ITEMS = [
   'A certification body or accreditation authority',
 ] as const;
 
+const CONTACTS = [
+  { purpose: 'Partnerships & institutional access', email: 'partnerships@umojahub.org' },
+  { purpose: 'Press & policy enquiries', email: 'press@umojahub.org' },
+  { purpose: 'General', email: 'hello@umojahub.org' },
+] as const;
+
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+
 export default function AboutPage() {
   return (
     <>
-      <section className="pt-32 pb-24 px-6 lg:px-8 bg-canvas-base">
-        <div className="mx-auto max-w-4xl">
+      {/* ── Hero ── */}
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} max-w-4xl py-24`}>
           <AnimateIn>
-            <p className="font-ibm-mono text-ws-meta text-teal mb-4">About</p>
+            <p className="mb-4 font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+              About
+            </p>
           </AnimateIn>
           <AnimateIn delay={0.08}>
-            <h1 className="text-ws-h1 font-jakarta font-700 text-ws-text-heading leading-[1.15] tracking-[-0.02em]">
+            <h1 className="text-4xl font-bold leading-tight tracking-tight text-fg md:text-5xl">
               Why UmojaHub exists
             </h1>
           </AnimateIn>
           <AnimateIn delay={0.16}>
-            <p className="mt-5 text-ws-body font-jakarta text-ws-text-secondary leading-[1.6] max-w-2xl">
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-fg-muted">
               UmojaHub was built to address structural gaps in how smallholder farmers sell produce
               and how CS graduates demonstrate skill in East Africa. Neither market failure is about
               effort or talent. Both are about the absence of verifiable trust infrastructure.
@@ -60,20 +71,24 @@ export default function AboutPage() {
       </section>
 
       {/* Structural failures */}
-      <section className="py-24 px-6 lg:px-8 bg-ws-surface-primary border-y border-ws-border-soft">
-        <div className="mx-auto max-w-7xl">
+      <section className="border-y border-border bg-surface-sunken">
+        <div className={`${CONTAINER} py-24`}>
           <AnimateIn>
-            <p className="font-ibm-mono text-ws-meta text-teal mb-3">The problems</p>
-            <h2 className="text-ws-h1 font-jakarta font-600 text-ws-text-heading mb-12">
+            <p className="mb-3 font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+              The problems
+            </p>
+            <h2 className="mb-12 text-3xl font-semibold tracking-tight text-fg md:text-4xl">
               Three structural failures this platform addresses
             </h2>
           </AnimateIn>
           <div className="space-y-4">
             {STRUCTURAL_FAILURES.map((item, i) => (
               <AnimateIn key={item.tag} delay={i * 0.08}>
-                <div className="p-6 bg-canvas-base border border-ws-border-soft rounded-sm">
-                  <span className="inline-block font-ibm-mono text-ws-meta text-teal mb-3">{item.tag}</span>
-                  <p className="font-jakarta text-ws-body text-ws-text-body leading-[1.6]">{item.failure}</p>
+                <div className="rounded-sm border border-border bg-surface p-6">
+                  <span className="mb-3 inline-block font-ibm-mono text-xs uppercase tracking-wide text-brand">
+                    {item.tag}
+                  </span>
+                  <p className="leading-relaxed text-fg-muted">{item.failure}</p>
                 </div>
               </AnimateIn>
             ))}
@@ -82,29 +97,33 @@ export default function AboutPage() {
       </section>
 
       {/* Hub status */}
-      <section className="py-24 px-6 lg:px-8 bg-canvas-base">
-        <div className="mx-auto max-w-7xl">
+      <section className="bg-background">
+        <div className={`${CONTAINER} py-24`}>
           <AnimateIn>
-            <p className="font-ibm-mono text-ws-meta text-teal mb-3">What is built</p>
-            <h2 className="text-ws-h1 font-jakarta font-600 text-ws-text-heading mb-12">
+            <p className="mb-3 font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+              What is built
+            </p>
+            <h2 className="mb-12 text-3xl font-semibold tracking-tight text-fg md:text-4xl">
               Platform scope and status
             </h2>
           </AnimateIn>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {HUB_STATUS.map((item, i) => (
               <AnimateIn key={item.hub} delay={i * 0.08}>
-                <div className="p-6 bg-ws-surface-primary border border-ws-border-soft rounded-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`font-ibm-mono text-ws-meta px-2 py-0.5 rounded-sm border ${
-                      item.status === 'OPERATIONAL'
-                        ? 'text-teal border-teal/30 bg-ws-surface-success'
-                        : 'text-ws-text-secondary border-ws-border-default bg-ws-surface-primary'
-                    }`}>
+                <div className="rounded-sm border border-border bg-surface p-6">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span
+                      className={`rounded-sm border px-2 py-0.5 font-ibm-mono text-xs ${
+                        item.status === 'OPERATIONAL'
+                          ? 'border-success/30 bg-success/10 text-success'
+                          : 'border-border-strong text-fg-subtle'
+                      }`}
+                    >
                       {item.status}
                     </span>
                   </div>
-                  <p className="font-jakarta font-600 text-ws-text-heading mb-3">{item.hub}</p>
-                  <p className="font-jakarta text-ws-body text-ws-text-secondary leading-[1.6]">{item.description}</p>
+                  <p className="mb-3 font-semibold text-fg">{item.hub}</p>
+                  <p className="leading-relaxed text-fg-muted">{item.description}</p>
                 </div>
               </AnimateIn>
             ))}
@@ -114,17 +133,19 @@ export default function AboutPage() {
 
       {/* IS NOT */}
       <AnimateIn>
-        <section className="py-24 px-6 lg:px-8 bg-ws-surface-primary border-y border-ws-border-soft">
-          <div className="mx-auto max-w-4xl">
-            <p className="font-ibm-mono text-ws-meta text-ws-text-meta mb-3">What this is not</p>
-            <h2 className="text-ws-h2 font-jakarta font-600 text-ws-text-heading mb-6">
+        <section className="border-y border-border bg-surface-sunken">
+          <div className={`${CONTAINER} max-w-4xl py-24`}>
+            <p className="mb-3 font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+              What this is not
+            </p>
+            <h2 className="mb-6 text-2xl font-semibold tracking-tight text-fg md:text-3xl">
               Five things outside our scope
             </h2>
             <ul className="space-y-3">
               {IS_NOT_ITEMS.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-ws-border-default" />
-                  <span className="font-jakarta text-ws-body text-ws-text-secondary">{item}</span>
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-fg-subtle" />
+                  <span className="text-fg-muted">{item}</span>
                 </li>
               ))}
             </ul>
@@ -134,21 +155,19 @@ export default function AboutPage() {
 
       {/* Contact */}
       <AnimateIn>
-        <section className="py-24 px-6 lg:px-8 bg-canvas-base">
-          <div className="mx-auto max-w-7xl">
-            <p className="font-ibm-mono text-ws-meta text-teal mb-8">Contact</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { purpose: 'Partnerships & institutional access', email: 'partnerships@umojahub.org' },
-                { purpose: 'Press & policy enquiries', email: 'press@umojahub.org' },
-                { purpose: 'General', email: 'hello@umojahub.org' },
-              ].map((contact, i) => (
+        <section className="bg-background">
+          <div className={`${CONTAINER} py-24`}>
+            <p className="mb-8 font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+              Contact
+            </p>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {CONTACTS.map((contact, i) => (
                 <AnimateIn key={contact.email} delay={i * 0.08}>
-                  <div className="p-6 bg-ws-surface-primary border border-ws-border-soft rounded-sm">
-                    <p className="font-jakarta text-ws-meta text-ws-text-secondary mb-2">{contact.purpose}</p>
+                  <div className="rounded-sm border border-border bg-surface p-6">
+                    <p className="mb-2 text-sm text-fg-muted">{contact.purpose}</p>
                     <a
                       href={`mailto:${contact.email}`}
-                      className="font-ibm-mono text-ws-meta text-teal hover:underline underline-offset-2"
+                      className="font-ibm-mono text-sm text-brand underline-offset-2 hover:underline"
                     >
                       {contact.email}
                     </a>

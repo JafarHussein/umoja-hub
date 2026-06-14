@@ -105,201 +105,152 @@ const STATUS_ROW_1 = [
 
 const STATUS_ROW_2 = ['AI farm assistant', 'AI mentor', 'SMS notifications'] as const;
 
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+const SECTION_LABEL = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle';
+
+function StatCard({ stat }: { stat: (typeof STATS)[number] }) {
+  return (
+    <div className="flex flex-1 flex-col gap-4 border-b-2 border-border bg-surface px-7 py-8">
+      <p className="font-ibm-mono text-4xl leading-tight text-fg">—</p>
+      <p className="text-sm font-semibold leading-snug text-fg">{stat.label}</p>
+      <p className="text-xs leading-relaxed text-fg-muted">Includes: {stat.includes}</p>
+      <p className="text-xs leading-relaxed text-fg-subtle">Excludes: {stat.excludes}</p>
+    </div>
+  );
+}
+
+function StatusCard({ name }: { name: string }) {
+  return (
+    <div className="flex flex-1 flex-col gap-4 rounded-sm border border-border bg-surface px-6 py-7">
+      <div className="inline-flex items-center gap-1.5 self-start rounded-sm bg-success/10 px-2.5 py-1.5">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
+        <span className="font-ibm-mono text-xs tracking-wide text-success">OPERATIONAL</span>
+      </div>
+      <p className="text-sm leading-snug text-fg">{name}</p>
+    </div>
+  );
+}
+
 export default function TransparencyPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-[#131619] px-[160px] py-[120px] flex flex-col gap-7">
-        <p className="font-jakarta font-500 text-[0.875rem] tracking-[0.02em] text-[#878078]">
-          Transparency
-        </p>
-        <h1 className="font-jakarta font-800 text-[4.5rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] max-w-[1000px]">
-          Real numbers.
-          <br />
-          Published methodology.
-          <br />
-          Honest omissions.
-        </h1>
-        <p className="font-jakarta font-400 text-[1.25rem] leading-[1.6] text-[#A9A29A] max-w-[800px]">
-          A researcher, auditor, or funder arrives wanting evidence of real operations. This page
-          provides real numbers, disclosed methodology, and an honest list of what we do not track.
-        </p>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-7 py-24`}>
+          <p className={SECTION_LABEL}>Transparency</p>
+          <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+            Real numbers.
+            <br />
+            Published methodology.
+            <br />
+            Honest omissions.
+          </h1>
+          <p className="max-w-3xl text-xl leading-relaxed text-fg-muted">
+            A researcher, auditor, or funder arrives wanting evidence of real operations. This page
+            provides real numbers, disclosed methodology, and an honest list of what we do not track.
+          </p>
+        </div>
       </section>
 
       {/* S1 — Live Stats */}
-      <section className="bg-[#F5F4F0] px-[160px] py-[96px] flex flex-col gap-12">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#8A919A] uppercase">
-          Section 01
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15] max-w-[800px]">
-          Live platform statistics
-        </p>
-        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#636C76] max-w-[760px]">
-          Each metric states what the count includes, what it excludes, and how it is calculated.
-          Updated every 5 minutes (ISR, revalidate 300s).
-        </p>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <p className={SECTION_LABEL}>Section 01</p>
+          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            Live platform statistics
+          </p>
+          <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
+            Each metric states what the count includes, what it excludes, and how it is calculated.
+            Updated every 5 minutes (ISR, revalidate 300s).
+          </p>
 
-        {/* Row 1 */}
-        <div className="flex gap-4 w-full">
-          {STATS.slice(0, 3).map((stat) => (
-            <div
-              key={stat.label}
-              className="flex-1 bg-[#ECE8E1] border-b-2 border-[#C8C2BA] px-7 py-8 flex flex-col gap-4"
-            >
-              <p className="font-ibm-mono not-italic text-[2.25rem] leading-[1.2] text-[#1D232A]">
-                —
-              </p>
-              <p className="font-jakarta font-600 text-[0.9375rem] leading-[1.35] text-[#353C45]">
-                {stat.label}
-              </p>
-              <p className="font-jakarta font-400 text-[0.75rem] leading-[1.5] text-[#636C76]">
-                Includes: {stat.includes}
-              </p>
-              <p className="font-jakarta font-400 text-[0.75rem] leading-[1.5] text-[#8A919A]">
-                Excludes: {stat.excludes}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Row 2 */}
-        <div className="flex gap-4 w-full">
-          {STATS.slice(3).map((stat) => (
-            <div
-              key={stat.label}
-              className="flex-1 bg-[#ECE8E1] border-b-2 border-[#C8C2BA] px-7 py-8 flex flex-col gap-4"
-            >
-              <p className="font-ibm-mono not-italic text-[2.25rem] leading-[1.2] text-[#1D232A]">
-                —
-              </p>
-              <p className="font-jakarta font-600 text-[0.9375rem] leading-[1.35] text-[#353C45]">
-                {stat.label}
-              </p>
-              <p className="font-jakarta font-400 text-[0.75rem] leading-[1.5] text-[#636C76]">
-                Includes: {stat.includes}
-              </p>
-              <p className="font-jakarta font-400 text-[0.75rem] leading-[1.5] text-[#8A919A]">
-                Excludes: {stat.excludes}
-              </p>
-            </div>
-          ))}
+          <div className="flex w-full flex-col gap-4 md:flex-row">
+            {STATS.slice(0, 3).map((stat) => (
+              <StatCard key={stat.label} stat={stat} />
+            ))}
+          </div>
+          <div className="flex w-full flex-col gap-4 md:flex-row">
+            {STATS.slice(3).map((stat) => (
+              <StatCard key={stat.label} stat={stat} />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* S2 — Not Tracked */}
-      <section className="bg-[#131619] px-[160px] py-[96px] flex flex-col">
-        <div className="pb-12 flex flex-col gap-4">
-          <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#878078] uppercase">
-            Section 02
-          </p>
-          <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15] max-w-[800px]">
-            What we do not track
-          </p>
-          <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#A9A29A] max-w-[760px]">
-            Explicit disclosure. These are the outcomes we do not measure — either because the data
-            is not available on-platform, or because we do not claim these outcomes as results.
-          </p>
-        </div>
-
-        {NOT_TRACKED.map((item, i) => (
-          <div
-            key={item}
-            className="border-b border-[#2A3138] py-6 flex gap-6 items-center"
-          >
-            <p className="font-ibm-mono not-italic text-[0.8125rem] text-[#49515A] shrink-0">
-              {String(i + 1).padStart(2, '0')}
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col py-24`}>
+          <div className="flex flex-col gap-4 pb-12">
+            <p className={SECTION_LABEL}>Section 02</p>
+            <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              What we do not track
             </p>
-            <p className="flex-1 font-jakarta font-400 text-[1.125rem] leading-[1.5] text-[#D6D1CB]">
-              {item}
+            <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
+              Explicit disclosure. These are the outcomes we do not measure — either because the data
+              is not available on-platform, or because we do not claim these outcomes as results.
             </p>
           </div>
-        ))}
+
+          {NOT_TRACKED.map((item, i) => (
+            <div key={item} className="flex items-center gap-6 border-b border-border py-6">
+              <p className="shrink-0 font-ibm-mono text-sm text-fg-subtle">
+                {String(i + 1).padStart(2, '0')}
+              </p>
+              <p className="flex-1 text-lg leading-snug text-fg">{item}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* S3 — Infrastructure */}
-      <section className="bg-[#ECE8E1] px-[160px] py-[96px] flex flex-col gap-8">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#8A919A] uppercase">
-          Section 03
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15] max-w-[800px]">
-          Infrastructure disclosure
-        </p>
-        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#636C76] max-w-[760px]">
-          Third-party services used by this platform. For each: what it does on the platform, what
-          data it receives.
-        </p>
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-8 py-24`}>
+          <p className={SECTION_LABEL}>Section 03</p>
+          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            Infrastructure disclosure
+          </p>
+          <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
+            Third-party services used by this platform. For each: what it does on the platform, what
+            data it receives.
+          </p>
 
-        {INFRASTRUCTURE.map((service) => (
-          <div
-            key={service.name}
-            className="border-b border-[#C8C2BA] py-6 flex items-start"
-          >
-            <div className="w-[300px] shrink-0 flex flex-col gap-1">
-              <p className="font-jakarta font-600 text-[1rem] leading-[1.35] text-[#1D232A]">
-                {service.name}
-              </p>
-              <p className="font-jakarta font-400 text-[0.875rem] leading-[1.4] text-[#8A919A]">
-                {service.role}
-              </p>
-            </div>
-            <p className="flex-1 font-jakarta font-400 text-[0.9375rem] leading-[1.6] text-[#636C76]">
-              {service.data}
-            </p>
-          </div>
-        ))}
-      </section>
-
-      {/* S4 — Service Status */}
-      <section className="bg-[#1B2025] px-[160px] py-[96px] flex flex-col gap-8">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#878078] uppercase">
-          Section 04
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15] max-w-[800px]">
-          Service status
-        </p>
-        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#A9A29A] max-w-[760px]">
-          Operational status of each major platform function. States: OPERATIONAL / DEGRADED /
-          PENDING.
-        </p>
-
-        {/* Row 1 — 4 cards */}
-        <div className="flex gap-3 w-full">
-          {STATUS_ROW_1.map((name) => (
+          {INFRASTRUCTURE.map((service) => (
             <div
-              key={name}
-              className="flex-1 bg-[#21272D] border border-[#2A3138] px-6 py-7 flex flex-col gap-4"
+              key={service.name}
+              className="flex flex-col items-start gap-2 border-b border-border py-6 md:flex-row md:gap-0"
             >
-              <div className="inline-flex self-start items-center gap-[6px] bg-[#1E3535] px-[10px] py-[6px]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#2E7D78] shrink-0" />
-                <span className="font-ibm-mono not-italic text-[0.75rem] tracking-[0.02em] text-[#2E7D78]">
-                  OPERATIONAL
-                </span>
+              <div className="flex w-full shrink-0 flex-col gap-1 md:w-80">
+                <p className="font-semibold leading-snug text-fg">{service.name}</p>
+                <p className="text-sm leading-snug text-fg-subtle">{service.role}</p>
               </div>
-              <p className="font-jakarta font-400 text-[0.9375rem] leading-[1.4] text-[#D6D1CB]">
-                {name}
-              </p>
+              <p className="flex-1 text-sm leading-relaxed text-fg-muted">{service.data}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* Row 2 — 3 cards */}
-        <div className="flex gap-3 w-full">
-          {STATUS_ROW_2.map((name) => (
-            <div
-              key={name}
-              className="flex-1 bg-[#21272D] border border-[#2A3138] px-6 py-7 flex flex-col gap-4"
-            >
-              <div className="inline-flex self-start items-center gap-[6px] bg-[#1E3535] px-[10px] py-[6px]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#2E7D78] shrink-0" />
-                <span className="font-ibm-mono not-italic text-[0.75rem] tracking-[0.02em] text-[#2E7D78]">
-                  OPERATIONAL
-                </span>
-              </div>
-              <p className="font-jakarta font-400 text-[0.9375rem] leading-[1.4] text-[#D6D1CB]">
-                {name}
-              </p>
-            </div>
-          ))}
+      {/* S4 — Service Status */}
+      <section className="theme-product bg-surface">
+        <div className={`${CONTAINER} flex flex-col gap-8 py-24`}>
+          <p className={SECTION_LABEL}>Section 04</p>
+          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            Service status
+          </p>
+          <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
+            Operational status of each major platform function. States: OPERATIONAL / DEGRADED /
+            PENDING.
+          </p>
+
+          <div className="flex w-full flex-col gap-3 md:flex-row">
+            {STATUS_ROW_1.map((name) => (
+              <StatusCard key={name} name={name} />
+            ))}
+          </div>
+          <div className="flex w-full flex-col gap-3 md:flex-row">
+            {STATUS_ROW_2.map((name) => (
+              <StatusCard key={name} name={name} />
+            ))}
+          </div>
         </div>
       </section>
     </>
