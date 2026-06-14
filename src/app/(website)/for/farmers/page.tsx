@@ -37,23 +37,23 @@ const TRUST_COMPONENTS = [
   { index: '04', title: 'Order reliability', desc: 'Fulfilled orders vs total orders over a rolling window.' },
 ] as const;
 
-const TRUST_TIERS_DARK = [
-  { name: 'NEW', pillBorder: 'border-[#878078]', pillText: 'text-[#878078]', desc: 'Recently verified. Few or no completed transactions.' },
-  { name: 'ESTABLISHED', pillBorder: 'border-[#B86A3D]', pillText: 'text-[#B86A3D]', desc: 'Verified with a documented transaction history.' },
-  { name: 'TRUSTED', pillBorder: 'border-[#56A8A2]', pillText: 'text-[#56A8A2]', desc: 'Verified with strong history of positive ratings and consistent fulfillment.' },
-  { name: 'PREMIUM', pillBorder: 'border-[#9581CC]', pillText: 'text-[#9581CC]', desc: 'Highest tier. Deep transaction history and consistently high ratings.' },
+const TRUST_TIERS = [
+  { name: 'NEW', desc: 'Recently verified. Few or no completed transactions.' },
+  { name: 'ESTABLISHED', desc: 'Verified with a documented transaction history.' },
+  { name: 'TRUSTED', desc: 'Verified with strong history of positive ratings and consistent fulfillment.' },
+  { name: 'PREMIUM', desc: 'Highest tier. Deep transaction history and consistently high ratings.' },
 ] as const;
 
 const MPESA_STEPS = [
-  { n: '1', text: 'Buyer places order on the platform.', badge: 'bg-[#B86A3D]' },
-  { n: '2', text: "Platform initiates an M-Pesa STK Push to the buyer's registered phone.", badge: 'bg-[#B86A3D]' },
-  { n: '3', text: 'Buyer receives a prompt on their device and enters their M-Pesa PIN.', badge: 'bg-[#B86A3D]' },
-  { n: '4', text: "Safaricom processes the transaction and sends a confirmation to UmojaHub's callback endpoint.", badge: 'bg-[#B86A3D]' },
-  { n: '5', text: 'Order status updates from PENDING to PAID.', badge: 'bg-[#2E7D78]' },
-  { n: '6', text: 'Farmer receives an SMS with order details and payment confirmation.', badge: 'bg-[#2E7D78]' },
-  { n: '7', text: 'Farmer dispatches produce.', badge: 'bg-[#B86A3D]' },
-  { n: '8', text: 'Buyer marks order RECEIVED.', badge: 'bg-[#B86A3D]' },
-  { n: '9', text: 'Both parties submit ratings.', badge: 'bg-[#B86A3D]' },
+  { n: '1', text: 'Buyer places order on the platform.' },
+  { n: '2', text: "Platform initiates an M-Pesa STK Push to the buyer's registered phone." },
+  { n: '3', text: 'Buyer receives a prompt on their device and enters their M-Pesa PIN.' },
+  { n: '4', text: "Safaricom processes the transaction and sends a confirmation to UmojaHub's callback endpoint." },
+  { n: '5', text: 'Order status updates from PENDING to PAID.' },
+  { n: '6', text: 'Farmer receives an SMS with order details and payment confirmation.' },
+  { n: '7', text: 'Farmer dispatches produce.' },
+  { n: '8', text: 'Buyer marks order RECEIVED.' },
+  { n: '9', text: 'Both parties submit ratings.' },
 ] as const;
 
 const FAILURE_MODES = [
@@ -71,286 +71,271 @@ const FAILURE_MODES = [
   },
 ] as const;
 
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+const EYEBROW = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand';
+
 export default function ForFarmersPage() {
   return (
     <>
       {/* Section/Hero */}
-      <section className="bg-[#131619] px-[120px] py-[96px] flex flex-col gap-5">
-        <div className="flex items-center gap-2 font-jakarta font-500 text-[0.8125rem]">
-          <span className="text-[#636C76]">Food Security Hub</span>
-          <span className="text-[#39414A]">/</span>
-          <span className="text-[#B86A3D]">For Farmers</span>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-5 py-24`}>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <span className="text-fg-subtle">Food Security Hub</span>
+            <span className="text-fg-subtle">/</span>
+            <span className="text-brand-text">For Farmers</span>
+          </div>
+          <p className={EYEBROW}>For Farmers</p>
+          <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+            Verified farmers sell further.
+            <br />
+            At their own price.
+            <br />
+            Paid before dispatch.
+          </h1>
+          <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
+            UmojaHub connects verified smallholder farmers to buyers outside their local network.
+            Verification is done once. Every listing and payment builds your Trust Score.
+          </p>
+          <Link
+            href="/auth/register?role=FARMER"
+            className="inline-flex items-center self-start rounded-sm bg-brand px-7 py-4 font-semibold text-brand-fg transition-colors hover:bg-brand-hover"
+          >
+            Register as a Farmer →
+          </Link>
         </div>
-        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
-          For Farmers
-        </p>
-        <h1 className="font-jakarta font-800 text-[3.75rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] max-w-[900px]">
-          Verified farmers sell further.
-          <br />
-          At their own price.
-          <br />
-          Paid before dispatch.
-        </h1>
-        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#A9A29A] max-w-[680px]">
-          UmojaHub connects verified smallholder farmers to buyers outside their local network.
-          Verification is done once. Every listing and payment builds your Trust Score.
-        </p>
-        <Link
-          href="/auth/register?role=FARMER"
-          className="inline-flex self-start items-center px-[28px] py-[16px] rounded-[4px] bg-[#B86A3D] text-[#F5F4F0] font-jakarta font-600 text-[1rem] hover:bg-[#A05A30] transition-colors"
-        >
-          Register as a Farmer →
-        </Link>
       </section>
 
       {/* Section/WhatYouGet */}
-      <section className="bg-[#F5F4F0] px-[120px] py-[96px] flex flex-col gap-12">
-        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
-          What You Get
-        </p>
-        <p className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15]">
-          Precise. No vague promises.
-        </p>
-        <div className="flex gap-8 w-full">
-          {/* Benefits */}
-          <div className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] rounded-[2px] p-[40px] flex flex-col gap-6">
-            <p className="font-jakarta font-600 text-[1rem] tracking-[0.005em] text-[#1D232A]">
-              What participation gives you
-            </p>
-            {BENEFITS.map((item) => (
-              <div key={item} className="flex gap-3 items-start">
-                <span className="shrink-0 w-[6px] h-[6px] rounded-full bg-[#B86A3D] mt-[9px]" />
-                <p className="flex-1 font-jakarta font-400 text-[0.9375rem] text-[#353C45] leading-[1.55]">
-                  {item}
-                </p>
-              </div>
-            ))}
-          </div>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <p className={EYEBROW}>What You Get</p>
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            Precise. No vague promises.
+          </h2>
+          <div className="flex w-full flex-col gap-8 md:flex-row">
+            {/* Benefits */}
+            <div className="flex flex-1 flex-col gap-6 rounded-sm border border-border bg-surface p-10">
+              <p className="font-semibold text-fg">What participation gives you</p>
+              {BENEFITS.map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+                  <p className="flex-1 text-sm leading-relaxed text-fg-muted">{item}</p>
+                </div>
+              ))}
+            </div>
 
-          {/* Limitations */}
-          <div className="flex-1 bg-[#E9E2DF] border border-[#C8A895] rounded-[2px] p-[40px] flex flex-col gap-5">
-            <p className="font-jakarta font-600 text-[0.875rem] tracking-[0.01em] text-[#7A5342] uppercase">
-              What It Does Not Guarantee
-            </p>
-            {LIMITATIONS.map((item) => (
-              <div key={item} className="flex gap-3 items-start">
-                <span className="font-jakarta font-500 text-[#B86A3D] shrink-0">—</span>
-                <p className="flex-1 font-jakarta font-400 text-[0.875rem] text-[#7A5342] leading-[1.55]">
-                  {item}
-                </p>
-              </div>
-            ))}
+            {/* Limitations */}
+            <div className="flex flex-1 flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+              <p className="text-sm font-semibold uppercase tracking-wide text-fg-subtle">
+                What It Does Not Guarantee
+              </p>
+              {LIMITATIONS.map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <span className="shrink-0 font-medium text-fg-subtle">—</span>
+                  <p className="flex-1 text-sm leading-relaxed text-fg-muted">{item}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Section/VerificationProcess */}
-      <section className="bg-[#F0EEE9] px-[120px] py-[96px] flex flex-col gap-12">
-        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
-          The Verification Process
-        </p>
-        <div className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15]">
-          <p>Done once.</p>
-          <p>Builds your record permanently.</p>
-        </div>
-        <div className="flex gap-8 w-full">
-          {/* Documents */}
-          <div className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] rounded-[2px] p-[40px] flex flex-col gap-5">
-            <p className="font-jakarta font-600 text-[1rem] text-[#1D232A]">Documents required</p>
-            {DOCUMENTS.map((doc) => (
-              <div key={doc.title} className="bg-[#E5E1DA] rounded-[2px] p-4 flex flex-col gap-1">
-                <p className="font-jakarta font-600 text-[0.875rem] text-[#1D232A]">{doc.title}</p>
-                <p className="font-jakarta font-400 text-[0.8125rem] text-[#636C76]">{doc.sub}</p>
-              </div>
-            ))}
-            <p className="font-ibm-mono not-italic text-[0.75rem] text-[#8A919A] leading-[1.5]">
-              Document content is NOT visible to buyers or other farmers.
-              <br />
-              Only your verified / unverified status is public.
-            </p>
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <p className={EYEBROW}>The Verification Process</p>
+          <div className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            <p>Done once.</p>
+            <p>Builds your record permanently.</p>
           </div>
+          <div className="flex w-full flex-col gap-8 md:flex-row">
+            {/* Documents */}
+            <div className="flex flex-1 flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+              <p className="font-semibold text-fg">Documents required</p>
+              {DOCUMENTS.map((doc) => (
+                <div key={doc.title} className="flex flex-col gap-1 rounded-sm bg-surface-sunken p-4">
+                  <p className="text-sm font-semibold text-fg">{doc.title}</p>
+                  <p className="text-sm text-fg-muted">{doc.sub}</p>
+                </div>
+              ))}
+              <p className="font-ibm-mono text-xs leading-relaxed text-fg-subtle">
+                Document content is NOT visible to buyers or other farmers.
+                <br />
+                Only your verified / unverified status is public.
+              </p>
+            </div>
 
-          {/* AdminReview */}
-          <div className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] rounded-[2px] p-[40px] flex flex-col gap-6">
-            <p className="font-jakarta font-600 text-[1rem] text-[#1D232A]">
-              What the administrator does
-            </p>
-            <div className="font-jakarta font-400 text-[0.9375rem] text-[#353C45] leading-[1.6] flex flex-col gap-4">
-              <p>
-                A named administrator reviews your submitted documents for consistency and
-                plausibility — are the documents consistent with each other? Do they represent a
-                real person with a documented connection to land?
-              </p>
-              <p>
-                The administrator does NOT assess farm quality, produce quality, or business
-                viability.
-              </p>
-            </div>
-            <div className="bg-[#E5ECE8] rounded-[2px] p-4 flex flex-col gap-[6px]">
-              <p className="font-ibm-mono not-italic text-[0.75rem] tracking-[0.02em] text-[#2E7D78] uppercase">
-                Approved
-              </p>
-              <p className="font-jakarta font-400 text-[0.875rem] text-[#353C45] leading-[1.55]">
-                Farmer status becomes VERIFIED. Listings are immediately possible.
-              </p>
-            </div>
-            <div className="bg-[#E9E2DF] rounded-[2px] p-4 flex flex-col gap-[6px]">
-              <p className="font-ibm-mono not-italic text-[0.75rem] tracking-[0.02em] text-[#7A5342] uppercase">
-                Rejected
-              </p>
-              <p className="font-jakarta font-400 text-[0.875rem] text-[#353C45] leading-[1.55]">
-                You receive a reason via SMS. Rejection is correctable — resubmit with additional
-                documentation.
-              </p>
+            {/* AdminReview */}
+            <div className="flex flex-1 flex-col gap-6 rounded-sm border border-border bg-surface p-10">
+              <p className="font-semibold text-fg">What the administrator does</p>
+              <div className="flex flex-col gap-4 leading-relaxed text-fg-muted">
+                <p>
+                  A named administrator reviews your submitted documents for consistency and
+                  plausibility — are the documents consistent with each other? Do they represent a
+                  real person with a documented connection to land?
+                </p>
+                <p>
+                  The administrator does NOT assess farm quality, produce quality, or business
+                  viability.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5 rounded-sm bg-success/10 p-4">
+                <p className="font-ibm-mono text-xs uppercase tracking-wide text-success">Approved</p>
+                <p className="text-sm leading-relaxed text-fg-muted">
+                  Farmer status becomes VERIFIED. Listings are immediately possible.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5 rounded-sm bg-warning/10 p-4">
+                <p className="font-ibm-mono text-xs uppercase tracking-wide text-warning">Rejected</p>
+                <p className="text-sm leading-relaxed text-fg-muted">
+                  You receive a reason via SMS. Rejection is correctable — resubmit with additional
+                  documentation.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Section/TrustScore */}
-      <section className="bg-[#131619] px-[120px] py-[96px] flex flex-col gap-12">
-        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#56A8A2] uppercase">
-          Trust Score
-        </p>
-        <div className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15]">
-          <p>Built from real transactions.</p>
-          <p>Not from self-reporting.</p>
-        </div>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+            Trust Score
+          </p>
+          <div className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            <p>Built from real transactions.</p>
+            <p>Not from self-reporting.</p>
+          </div>
 
-        {/* 4 component cards */}
-        <div className="flex gap-4 w-full">
-          {TRUST_COMPONENTS.map((c) => (
-            <div
-              key={c.index}
-              className="flex-1 bg-[#1B2025] border border-[#2A3138] rounded-[2px] px-6 py-7 flex flex-col gap-3"
-            >
-              <span className="font-ibm-mono not-italic text-[0.6875rem] text-[#56A8A2]">{c.index}</span>
-              <p className="font-jakarta font-600 text-[0.9375rem] text-[#F2F0EC] leading-[1.3]">{c.title}</p>
-              <p className="font-jakarta font-400 text-[0.8125rem] text-[#A9A29A] leading-[1.55]">{c.desc}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* 4 tier cards */}
-        <div className="flex gap-4 w-full">
-          {TRUST_TIERS_DARK.map((tier) => (
-            <div
-              key={tier.name}
-              className="flex-1 bg-[#1B2025] border border-[#2A3138] rounded-[2px] p-6 flex flex-col gap-[10px]"
-            >
-              <div className={`inline-flex self-start border ${tier.pillBorder} rounded-full px-[10px] py-[4px]`}>
-                <span className={`font-ibm-mono not-italic text-[0.6875rem] tracking-[0.02em] ${tier.pillText}`}>
-                  {tier.name}
-                </span>
+          {/* 4 component cards */}
+          <div className="flex w-full flex-col gap-4 md:flex-row">
+            {TRUST_COMPONENTS.map((c) => (
+              <div
+                key={c.index}
+                className="flex flex-1 flex-col gap-3 rounded-sm border border-border bg-surface px-6 py-7"
+              >
+                <span className="font-ibm-mono text-xs text-brand-text">{c.index}</span>
+                <p className="font-semibold leading-snug text-fg">{c.title}</p>
+                <p className="text-sm leading-relaxed text-fg-muted">{c.desc}</p>
               </div>
-              <p className="font-jakarta font-400 text-[0.8125rem] text-[#A9A29A] leading-[1.55]">
-                {tier.desc}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <Link
-          href="/trust"
-          className="font-jakarta font-500 text-[0.875rem] text-[#56A8A2] hover:opacity-80 transition-opacity"
-        >
-          Complete Trust Score methodology → /trust
-        </Link>
+          {/* 4 tier cards */}
+          <div className="flex w-full flex-col gap-4 md:flex-row">
+            {TRUST_TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className="flex flex-1 flex-col gap-2.5 rounded-sm border border-border bg-surface p-6"
+              >
+                <div className="inline-flex self-start rounded-full border border-border-strong px-2.5 py-1">
+                  <span className="font-ibm-mono text-xs tracking-wide text-fg-muted">{tier.name}</span>
+                </div>
+                <p className="text-sm leading-relaxed text-fg-muted">{tier.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            href="/trust"
+            className="text-sm font-medium text-brand-text transition-opacity hover:opacity-80"
+          >
+            Complete Trust Score methodology → /trust
+          </Link>
+        </div>
       </section>
 
       {/* Section/MpesaPayment */}
-      <section className="bg-[#F5F4F0] px-[120px] py-[96px] flex flex-col gap-12">
-        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#B86A3D] uppercase">
-          M-Pesa Payment
-        </p>
-        <div className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15]">
-          <p>Payment confirmed</p>
-          <p>before you dispatch.</p>
-        </div>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <p className={EYEBROW}>M-Pesa Payment</p>
+          <div className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            <p>Payment confirmed</p>
+            <p>before you dispatch.</p>
+          </div>
 
-        {/* 9-step grid — 3 rows of 3, adjacent tiles */}
-        <div className="flex flex-col w-full">
-          {[MPESA_STEPS.slice(0, 3), MPESA_STEPS.slice(3, 6), MPESA_STEPS.slice(6, 9)].map(
-            (row, rowIdx) => (
-              <div key={rowIdx} className="flex w-full">
-                {row.map((step) => (
-                  <div
-                    key={step.n}
-                    className="flex-1 bg-[#ECE8E1] border border-[#D8D3CC] p-7 flex flex-col gap-3"
-                  >
+          {/* 9-step grid — 3 rows of 3, adjacent tiles */}
+          <div className="flex w-full flex-col">
+            {[MPESA_STEPS.slice(0, 3), MPESA_STEPS.slice(3, 6), MPESA_STEPS.slice(6, 9)].map(
+              (row, rowIdx) => (
+                <div key={rowIdx} className="flex w-full flex-col sm:flex-row">
+                  {row.map((step) => (
                     <div
-                      className={`w-7 h-7 rounded-full ${step.badge} flex items-center justify-center shrink-0`}
+                      key={step.n}
+                      className="flex flex-1 flex-col gap-3 border border-border bg-surface p-7"
                     >
-                      <span className="font-jakarta font-600 text-[0.75rem] text-[#F5F4F0]">
-                        {step.n}
-                      </span>
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand">
+                        <span className="text-xs font-semibold text-brand-fg">{step.n}</span>
+                      </div>
+                      <p className="text-sm leading-relaxed text-fg-muted">{step.text}</p>
                     </div>
-                    <p className="font-jakarta font-400 text-[0.875rem] text-[#353C45] leading-[1.55]">
-                      {step.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </div>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
 
-        {/* Failure notice */}
-        <div className="bg-[#E9E2DF] rounded-[2px] px-6 py-5 flex gap-4 items-start w-full">
-          <span className="font-jakarta font-600 text-[0.875rem] text-[#B86A3D] shrink-0">!</span>
-          <p className="flex-1 font-jakarta font-400 text-[0.875rem] text-[#7A5342] leading-[1.55]">
-            Payment failure (STK Push timeout, declined, or network error): no money moves. Order
-            stays PENDING. Buyer can retry or cancel. There is no financial risk to the farmer —
-            payment must confirm before dispatch obligation begins.
-          </p>
+          {/* Failure notice */}
+          <div className="flex w-full items-start gap-4 rounded-sm border border-warning/30 bg-warning/10 px-6 py-5">
+            <span className="shrink-0 font-semibold text-warning">!</span>
+            <p className="flex-1 text-sm leading-relaxed text-fg-muted">
+              Payment failure (STK Push timeout, declined, or network error): no money moves. Order
+              stays PENDING. Buyer can retry or cancel. There is no financial risk to the farmer —
+              payment must confirm before dispatch obligation begins.
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Section/FailureModes */}
-      <section className="bg-[#F0EEE9] px-[120px] py-[80px] flex flex-col gap-10">
-        <p className="font-jakarta font-600 text-[0.6875rem] tracking-[0.06em] text-[#636C76] uppercase">
-          Platform Limits — Disclosed
-        </p>
-        <p className="font-jakarta font-600 text-[1.75rem] tracking-[-0.015em] text-[#1D232A] leading-[1.2]">
-          What can go wrong, and what happens.
-        </p>
-        <div className="flex gap-6 w-full">
-          {FAILURE_MODES.map((item) => (
-            <div
-              key={item.title}
-              className="flex-1 bg-[#E5E1DA] border border-[#C8C2BA] rounded-[2px] p-7 flex flex-col gap-[10px]"
-            >
-              <p className="font-jakarta font-600 text-[0.9375rem] text-[#1D232A]">{item.title}</p>
-              <p className="font-jakarta font-400 text-[0.875rem] text-[#636C76] leading-[1.55]">
-                {item.desc}
-              </p>
-            </div>
-          ))}
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-20`}>
+          <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+            Platform Limits — Disclosed
+          </p>
+          <p className="text-3xl font-semibold leading-tight tracking-tight text-fg">
+            What can go wrong, and what happens.
+          </p>
+          <div className="flex w-full flex-col gap-6 md:flex-row">
+            {FAILURE_MODES.map((item) => (
+              <div
+                key={item.title}
+                className="flex flex-1 flex-col gap-2.5 rounded-sm border border-border bg-surface p-7"
+              >
+                <p className="font-semibold text-fg">{item.title}</p>
+                <p className="text-sm leading-relaxed text-fg-muted">{item.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Section/RegistrationCTA */}
-      <section className="bg-[#B86A3D] px-[120px] py-[80px] flex flex-col gap-6 items-center">
-        <p className="font-jakarta font-600 text-[2.25rem] tracking-[-0.02em] text-[#F5F4F0] text-center leading-[1.15]">
-          Ready to register?
-        </p>
-        <p className="font-jakarta font-400 text-[1rem] text-[#F0EEE9] text-center leading-[1.55] max-w-[600px]">
-          Verification takes one round of document submission. Once approved, your listings are
-          live immediately.
-        </p>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/auth/register?role=FARMER"
-            className="inline-flex items-center px-[28px] py-[16px] rounded-[4px] bg-[#1D232A] text-[#F5F4F0] font-jakarta font-600 text-[1rem] hover:opacity-90 transition-opacity"
-          >
-            Register as a Farmer →
-          </Link>
-          <Link
-            href="/auth/login"
-            className="inline-flex items-center px-[28px] py-[16px] rounded-[4px] border border-[#F0EEE9] text-[#F0EEE9] font-jakarta font-500 text-[1rem] hover:opacity-80 transition-opacity"
-          >
-            Already have an account? Sign in
-          </Link>
+      <section className="bg-brand">
+        <div className={`${CONTAINER} flex flex-col items-center gap-6 py-20`}>
+          <p className="text-center text-3xl font-semibold leading-tight tracking-tight text-brand-fg md:text-4xl">
+            Ready to register?
+          </p>
+          <p className="max-w-xl text-center leading-relaxed text-brand-fg/85">
+            Verification takes one round of document submission. Once approved, your listings are
+            live immediately.
+          </p>
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            <Link
+              href="/auth/register?role=FARMER"
+              className="inline-flex items-center rounded-sm bg-brand-fg px-7 py-4 font-semibold text-brand transition-opacity hover:opacity-90"
+            >
+              Register as a Farmer →
+            </Link>
+            <Link
+              href="/auth/login"
+              className="inline-flex items-center rounded-sm border border-brand-fg/40 px-7 py-4 font-medium text-brand-fg transition-colors hover:bg-brand-fg/10"
+            >
+              Already have an account? Sign in
+            </Link>
+          </div>
         </div>
       </section>
     </>

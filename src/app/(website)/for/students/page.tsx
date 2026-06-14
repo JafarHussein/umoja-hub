@@ -67,26 +67,26 @@ const PEER_REVIEW_NOTES = [
 const OUTCOMES = [
   {
     key: 'VERIFIED',
-    bg: '#162219',
-    badgeBorder: '#56A8A2',
-    badgeText: '#56A8A2',
+    tone: 'success',
     body: "The submission meets the standard. Your portfolio updates immediately. The entry is permanent. The lecturer's name, affiliation, and the verification date are recorded.",
   },
   {
     key: 'REVISION_REQUIRED',
-    bg: '#1E1610',
-    badgeBorder: '#D88A5A',
-    badgeText: '#D88A5A',
+    tone: 'warning',
     body: 'The lecturer writes substantive commentary (minimum 50 words) explaining what must be improved. You may revise and resubmit. Both the original and the revision are preserved.',
   },
   {
     key: 'DENIED',
-    bg: '#1B1410',
-    badgeBorder: '#878078',
-    badgeText: '#878078',
+    tone: 'neutral',
     body: 'The submission does not meet the standard and revision cannot remedy it. It does not appear in your portfolio. You may start a new project. The decision and reasoning are recorded.',
   },
 ] as const;
+
+const OUTCOME_BADGE: Record<(typeof OUTCOMES)[number]['tone'], string> = {
+  success: 'border-success/40 text-success',
+  warning: 'border-warning/40 text-warning',
+  neutral: 'border-border-strong text-fg-muted',
+};
 
 const CONFLICT_PROTECTIONS = [
   'A lecturer cannot review submissions from students at their own institution.',
@@ -107,388 +107,378 @@ const HONEST_LIMITS = [
   'VERIFIED status does not expire, but it reflects your work at the time of submission. It does not update to reflect skills gained after submission.',
 ] as const;
 
+const PORTFOLIO_FIELDS = [
+  { label: 'REVIEWER', value: 'Dr. A. Kamau, Lecturer\nUniversity of Nairobi — Computer Science', mono: false },
+  { label: 'PEER SCORE', value: '3.8 / 5.0 (aggregated)', mono: false },
+  { label: 'VERIFICATION DATE', value: '2026-05-21', mono: false },
+  { label: 'DOCUMENT HASH', value: 'a3f8c2d1...e9b4071f', mono: true },
+] as const;
+
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+const EYEBROW = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand';
+
 export default function ForStudentsPage() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="bg-[#131619] px-[120px] py-[96px] flex flex-col gap-5 items-start">
-        <AnimateIn>
-          <div className="flex items-center gap-2 font-jakarta font-500 text-[0.8125rem]">
-            <span className="text-[#636C76]">Education Hub</span>
-            <span className="text-[#39414A]">/</span>
-            <span className="text-[#2E7D78]">For Students</span>
-          </div>
-        </AnimateIn>
-        <AnimateIn delay={0.06}>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-[#2E7D78] tracking-[0.06em] uppercase">
-            For Students
-          </p>
-        </AnimateIn>
-        <AnimateIn delay={0.12}>
-          <h1 className="font-jakarta font-800 text-[3.75rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] max-w-[900px]">
-            Your work, verified.<br />
-            By a named reviewer.<br />
-            Permanently on record.
-          </h1>
-        </AnimateIn>
-        <AnimateIn delay={0.18}>
-          <p className="font-jakarta font-400 text-[1.125rem] text-[#A9A29A] leading-[1.6] max-w-[700px]">
-            Portfolio Verified is a permanent record that a credentialed lecturer assessed your
-            project documents against a published rubric and made a documented decision. Not a
-            self-report. Not a checkbox.
-          </p>
-        </AnimateIn>
-        <AnimateIn delay={0.24}>
-          <div className="flex items-center gap-3 bg-[#1B2025] border border-[#2A3138] rounded-[2px] px-4 py-3">
-            <span className="font-ibm-mono text-[0.6875rem] text-[#56A8A2] tracking-[0.01em]">SHA-256</span>
-            <span className="font-ibm-mono text-[0.6875rem] text-[#636C76]">a3f8c2d1...e9b4071f</span>
-            <span className="font-jakarta font-400 text-[0.6875rem] text-[#39414A]">
-              Documents hashed at submission. Cannot be altered after review.
-            </span>
-          </div>
-        </AnimateIn>
-        <AnimateIn delay={0.30}>
-          <Link
-            href="/auth/register?role=STUDENT"
-            className="inline-flex items-center px-[28px] py-[16px] bg-[#2E7D78] text-[#F5F4F0] font-jakarta font-600 text-[1rem] rounded-[4px] hover:bg-[#265F5B] active:scale-[0.98] transition-all duration-fast ease-standard"
-          >
-            Register as a Student →
-          </Link>
-        </AnimateIn>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col items-start gap-5 py-24`}>
+          <AnimateIn>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <span className="text-fg-subtle">Education Hub</span>
+              <span className="text-fg-subtle">/</span>
+              <span className="text-brand-text">For Students</span>
+            </div>
+          </AnimateIn>
+          <AnimateIn delay={0.06}>
+            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+              For Students
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={0.12}>
+            <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+              Your work, verified.<br />
+              By a named reviewer.<br />
+              Permanently on record.
+            </h1>
+          </AnimateIn>
+          <AnimateIn delay={0.18}>
+            <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
+              Portfolio Verified is a permanent record that a credentialed lecturer assessed your
+              project documents against a published rubric and made a documented decision. Not a
+              self-report. Not a checkbox.
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={0.24}>
+            <div className="flex flex-wrap items-center gap-3 rounded-sm border border-border bg-surface px-4 py-3">
+              <span className="font-ibm-mono text-xs text-brand-text">SHA-256</span>
+              <span className="font-ibm-mono text-xs text-fg-muted">a3f8c2d1...e9b4071f</span>
+              <span className="text-xs text-fg-subtle">
+                Documents hashed at submission. Cannot be altered after review.
+              </span>
+            </div>
+          </AnimateIn>
+          <AnimateIn delay={0.3}>
+            <Link
+              href="/auth/register?role=STUDENT"
+              className="inline-flex items-center rounded-sm bg-brand px-7 py-4 font-semibold text-brand-fg transition-all duration-fast ease-standard hover:bg-brand-hover active:scale-95"
+            >
+              Register as a Student →
+            </Link>
+          </AnimateIn>
+        </div>
       </section>
 
       {/* ── What Portfolio Verified Is ── */}
-      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.06em]">
-            What Portfolio Verified Is
-          </p>
-        </AnimateIn>
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-            Specific. Documented.<br />
-            Not another self-reported credential.
-          </h2>
-        </AnimateIn>
-
-        <div className="flex gap-8">
-          {/* What it IS */}
-          <AnimateIn className="flex-1">
-            <div className="bg-[#E5ECE8] border border-[#7FA9A4] rounded-[2px] p-[40px] h-full flex flex-col gap-5">
-              <p className="font-jakarta font-600 text-[0.875rem] text-teal tracking-[0.02em] uppercase">
-                What it is
-              </p>
-              {WHAT_IT_IS.map((item) => (
-                <div key={item} className="flex gap-3 items-start">
-                  <span className="shrink-0 mt-[0.55rem] w-1.5 h-1.5 rounded-full bg-teal" />
-                  <p className="font-jakarta font-400 text-[0.9375rem] text-ws-text-body leading-[1.55]">
-                    {item}
-                  </p>
-                </div>
-              ))}
-            </div>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <AnimateIn>
+            <p className={EYEBROW}>What Portfolio Verified Is</p>
+          </AnimateIn>
+          <AnimateIn>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              Specific. Documented.<br />
+              Not another self-reported credential.
+            </h2>
           </AnimateIn>
 
-          {/* What it IS NOT */}
-          <AnimateIn delay={0.08} className="flex-1">
-            <div className="bg-[#E9E2DF] border border-[#C8A895] rounded-[2px] p-[40px] h-full flex flex-col gap-4">
-              <p className="font-jakarta font-600 text-[0.875rem] text-[#7A5342] tracking-[0.02em] uppercase">
-                What it is not
-              </p>
-              {WHAT_IT_IS_NOT.map((item) => (
-                <div key={item} className="flex gap-3 items-start">
-                  <span className="font-jakarta font-500 text-[0.875rem] text-copper shrink-0">—</span>
-                  <p className="font-jakarta font-400 text-[0.875rem] text-[#7A5342] leading-[1.5]">
-                    {item}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </AnimateIn>
+          <div className="flex flex-col gap-8 md:flex-row">
+            {/* What it IS */}
+            <AnimateIn className="flex-1">
+              <div className="flex h-full flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+                <p className="text-sm font-semibold uppercase tracking-wide text-brand">What it is</p>
+                {WHAT_IT_IS.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+                    <p className="text-sm leading-relaxed text-fg-muted">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </AnimateIn>
+
+            {/* What it IS NOT */}
+            <AnimateIn delay={0.08} className="flex-1">
+              <div className="flex h-full flex-col gap-4 rounded-sm border border-border bg-surface p-10">
+                <p className="text-sm font-semibold uppercase tracking-wide text-fg-subtle">
+                  What it is not
+                </p>
+                {WHAT_IT_IS_NOT.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <span className="shrink-0 text-sm font-medium text-fg-subtle">—</span>
+                    <p className="text-sm leading-relaxed text-fg-muted">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </AnimateIn>
+          </div>
         </div>
       </section>
 
       {/* ── The Process ── */}
-      <section className="bg-canvas-elevated px-[120px] py-[96px] flex flex-col gap-[48px]">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.06em]">
-            The Process
-          </p>
-        </AnimateIn>
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-            Three documents.<br />
-            One defined brief.<br />
-            One human reviewer.
-          </h2>
-        </AnimateIn>
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <AnimateIn>
+            <p className={EYEBROW}>The Process</p>
+          </AnimateIn>
+          <AnimateIn>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              Three documents.<br />
+              One defined brief.<br />
+              One human reviewer.
+            </h2>
+          </AnimateIn>
 
-        {/* Brief type cards */}
-        <div className="flex gap-6">
-          {BRIEF_TYPES.map((type, i) => (
-            <AnimateIn key={type.tag} delay={i * 0.08} className="flex-1">
-              <div className="bg-ws-surface-primary border border-ws-border-default rounded-[2px] p-[28px] flex flex-col gap-3 h-full">
-                <div className="inline-flex">
-                  <span className="font-ibm-mono text-[0.6875rem] text-[#F5F4F0] tracking-[0.01em] bg-teal px-[10px] py-[4px] rounded-full">
-                    {type.tag}
-                  </span>
+          {/* Brief type cards */}
+          <div className="flex flex-col gap-6 md:flex-row">
+            {BRIEF_TYPES.map((type, i) => (
+              <AnimateIn key={type.tag} delay={i * 0.08} className="flex-1">
+                <div className="flex h-full flex-col gap-3 rounded-sm border border-border bg-surface p-7">
+                  <div className="inline-flex self-start">
+                    <span className="rounded-full bg-brand px-2.5 py-1 font-ibm-mono text-xs text-brand-fg">
+                      {type.tag}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-fg-muted">{type.body}</p>
+                  <p className="font-ibm-mono text-xs leading-relaxed text-fg-subtle">{type.note}</p>
                 </div>
-                <p className="font-jakarta font-400 text-[0.9375rem] text-ws-text-body leading-[1.55]">
-                  {type.body}
-                </p>
-                <p className="font-ibm-mono text-[0.75rem] text-ws-text-meta leading-[1.5]">
-                  {type.note}
-                </p>
-              </div>
-            </AnimateIn>
-          ))}
-        </div>
-
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.875rem] text-ws-text-secondary tracking-[0.01em] uppercase">
-            Three Required Documents
-          </p>
-        </AnimateIn>
-
-        {/* Document cards */}
-        <div className="flex gap-6">
-          {THREE_DOCS.map((doc, i) => (
-            <AnimateIn key={doc.n} delay={i * 0.08} className="flex-1">
-              <div className="bg-ws-surface-primary border border-ws-border-default rounded-[2px] p-[32px] flex flex-col gap-3.5 h-full">
-                <p className="font-ibm-mono text-[0.6875rem] text-teal">{doc.n}</p>
-                <p className="font-jakarta font-600 text-[1rem] text-ws-text-heading leading-[1.25]">
-                  {doc.title}
-                </p>
-                <p className="font-jakarta font-500 text-[0.875rem] text-ws-text-body leading-[1.5]">
-                  {doc.sub}
-                </p>
-                <p className="font-jakarta font-400 text-[0.8125rem] text-ws-text-secondary leading-[1.55]">
-                  {doc.body}
-                </p>
-              </div>
-            </AnimateIn>
-          ))}
-        </div>
-
-        {/* On submission bar */}
-        <AnimateIn>
-          <div className="bg-[#E3E6E8] rounded-[2px] px-5 py-4 flex gap-3 items-center w-full">
-            <span className="font-ibm-mono text-[0.6875rem] text-[#56A8A2] tracking-[0.02em] shrink-0">
-              ON SUBMISSION
-            </span>
-            <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-body leading-[1.5] flex-1">
-              The platform creates a SHA-256 cryptographic hash of your documents and records it in
-              the audit log with a timestamp. From this point, the documents cannot be altered
-              without the hash failing.
-            </p>
+              </AnimateIn>
+            ))}
           </div>
-        </AnimateIn>
+
+          <AnimateIn>
+            <p className="text-sm font-semibold uppercase tracking-wide text-fg-subtle">
+              Three Required Documents
+            </p>
+          </AnimateIn>
+
+          {/* Document cards */}
+          <div className="flex flex-col gap-6 md:flex-row">
+            {THREE_DOCS.map((doc, i) => (
+              <AnimateIn key={doc.n} delay={i * 0.08} className="flex-1">
+                <div className="flex h-full flex-col gap-3.5 rounded-sm border border-border bg-surface p-8">
+                  <p className="font-ibm-mono text-xs text-brand">{doc.n}</p>
+                  <p className="font-semibold leading-snug text-fg">{doc.title}</p>
+                  <p className="text-sm font-medium leading-snug text-fg">{doc.sub}</p>
+                  <p className="text-sm leading-relaxed text-fg-muted">{doc.body}</p>
+                </div>
+              </AnimateIn>
+            ))}
+          </div>
+
+          {/* On submission bar */}
+          <AnimateIn>
+            <div className="flex w-full items-center gap-3 rounded-sm bg-surface-sunken px-5 py-4">
+              <span className="shrink-0 font-ibm-mono text-xs uppercase tracking-wide text-brand">
+                ON SUBMISSION
+              </span>
+              <p className="flex-1 text-sm leading-relaxed text-fg-muted">
+                The platform creates a SHA-256 cryptographic hash of your documents and records it in
+                the audit log with a timestamp. From this point, the documents cannot be altered
+                without the hash failing.
+              </p>
+            </div>
+          </AnimateIn>
+        </div>
       </section>
 
       {/* ── The Review Process ── */}
-      <section className="bg-[#131619] px-[120px] py-[96px] flex flex-col gap-[48px]">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-[#56A8A2] uppercase tracking-[0.06em]">
-            The Review Process
-          </p>
-        </AnimateIn>
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-[#F2F0EC] tracking-[-0.02em] leading-[1.15]">
-            Two stages.<br />
-            One final human decision.
-          </h2>
-        </AnimateIn>
-
-        {/* Stage 1 */}
-        <AnimateIn>
-          <div className="bg-[#1B2025] border border-[#2A3138] rounded-[2px] p-[40px] flex flex-col gap-5 w-full">
-            <p className="font-ibm-mono text-[0.6875rem] text-[#56A8A2] tracking-[0.02em] uppercase">
-              Stage 1 — Peer Review
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <AnimateIn>
+            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+              The Review Process
             </p>
-            <p className="font-jakarta font-400 text-[1rem] text-[#D6D1CB] leading-[1.6]">
-              Another student on the platform receives your documents and reviews them against the
-              four-dimension rubric. They score each dimension (1–5) and write commentary. Their
-              score is recorded and locked before your submission enters the lecturer queue.
-            </p>
-            <div className="flex gap-6">
-              {PEER_REVIEW_NOTES.map((note) => (
-                <div key={note} className="flex-1 bg-[#21272D] rounded-[2px] p-5">
-                  <p className="font-jakarta font-400 text-[0.8125rem] text-[#A9A29A] leading-[1.55]">
-                    {note}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </AnimateIn>
+          </AnimateIn>
+          <AnimateIn>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              Two stages.<br />
+              One final human decision.
+            </h2>
+          </AnimateIn>
 
-        {/* Stage 2 outcomes */}
-        <div className="flex gap-6">
-          {OUTCOMES.map((outcome, i) => (
-            <AnimateIn key={outcome.key} delay={i * 0.08} className="flex-1">
-              <div
-                className="border border-[#2A3138] rounded-[2px] p-[32px] flex flex-col gap-3.5 h-full"
-                style={{ backgroundColor: outcome.bg }}
-              >
-                <p className="font-ibm-mono text-[0.625rem] text-[#49515A] tracking-[0.02em] uppercase">
-                  Stage 2 — Lecturer Decision
-                </p>
-                <div className="inline-flex">
-                  <span
-                    className="font-ibm-mono text-[0.6875rem] tracking-[0.02em] px-[10px] py-[4px] rounded-full border"
-                    style={{ color: outcome.badgeText, borderColor: outcome.badgeBorder }}
-                  >
-                    {outcome.key}
-                  </span>
-                </div>
-                <p className="font-jakarta font-400 text-[0.875rem] text-[#A9A29A] leading-[1.55]">
-                  {outcome.body}
-                </p>
+          {/* Stage 1 */}
+          <AnimateIn>
+            <div className="flex w-full flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+              <p className="font-ibm-mono text-xs uppercase tracking-wide text-brand-text">
+                Stage 1 — Peer Review
+              </p>
+              <p className="leading-relaxed text-fg-muted">
+                Another student on the platform receives your documents and reviews them against the
+                four-dimension rubric. They score each dimension (1–5) and write commentary. Their
+                score is recorded and locked before your submission enters the lecturer queue.
+              </p>
+              <div className="flex flex-col gap-6 md:flex-row">
+                {PEER_REVIEW_NOTES.map((note) => (
+                  <div key={note} className="flex-1 rounded-sm bg-surface-raised p-5">
+                    <p className="text-sm leading-relaxed text-fg-muted">{note}</p>
+                  </div>
+                ))}
               </div>
-            </AnimateIn>
-          ))}
+            </div>
+          </AnimateIn>
+
+          {/* Stage 2 outcomes */}
+          <div className="flex flex-col gap-6 md:flex-row">
+            {OUTCOMES.map((outcome, i) => (
+              <AnimateIn key={outcome.key} delay={i * 0.08} className="flex-1">
+                <div className="flex h-full flex-col gap-3.5 rounded-sm border border-border bg-surface p-8">
+                  <p className="font-ibm-mono text-xs uppercase tracking-wide text-fg-subtle">
+                    Stage 2 — Lecturer Decision
+                  </p>
+                  <div className="inline-flex self-start">
+                    <span
+                      className={`rounded-full border px-2.5 py-1 font-ibm-mono text-xs tracking-wide ${OUTCOME_BADGE[outcome.tone]}`}
+                    >
+                      {outcome.key}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-fg-muted">{outcome.body}</p>
+                </div>
+              </AnimateIn>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── What an Employer Sees ── */}
-      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[40px]">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.06em]">
-            What an Employer Sees
-          </p>
-        </AnimateIn>
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-            A portfolio entry anyone<br />
-            can read and verify.
-          </h2>
-        </AnimateIn>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <AnimateIn>
+            <p className={EYEBROW}>What an Employer Sees</p>
+          </AnimateIn>
+          <AnimateIn>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              A portfolio entry anyone<br />
+              can read and verify.
+            </h2>
+          </AnimateIn>
 
-        {/* Portfolio entry mock */}
-        <AnimateIn>
-          <div className="bg-ws-surface-primary border border-ws-border-soft rounded-[2px] p-[40px] flex flex-col gap-6 w-full">
-            {/* Header row */}
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <p className="font-jakarta font-600 text-[1.125rem] text-ws-text-heading">
-                  Crop yield prediction using rainfall data
-                </p>
-                <p className="font-jakarta font-400 text-[0.8125rem] text-ws-text-secondary">
-                  AI_BRIEF · Agriculture track · Submitted 2026-05-14
-                </p>
-              </div>
-              <div className="bg-[#E5ECE8] border border-[#7FA9A4] rounded-full px-3 py-1.5">
-                <span className="font-ibm-mono text-[0.6875rem] text-teal tracking-[0.02em]">● VERIFIED</span>
-              </div>
-            </div>
-
-            {/* Data row */}
-            <div className="flex">
-              {[
-                { label: 'REVIEWER', value: 'Dr. A. Kamau, Lecturer\nUniversity of Nairobi — Computer Science', mono: false },
-                { label: 'PEER SCORE', value: '3.8 / 5.0 (aggregated)', mono: false },
-                { label: 'VERIFICATION DATE', value: '2026-05-21', mono: false },
-                { label: 'DOCUMENT HASH', value: 'a3f8c2d1...e9b4071f', mono: true },
-              ].map(({ label, value, mono }) => (
-                <div key={label} className="flex-1 bg-[#E5E1DA] border border-ws-border-soft px-5 py-4 flex flex-col gap-1">
-                  <p className="font-jakarta font-600 text-[0.6875rem] text-ws-text-meta tracking-[0.02em] uppercase">
-                    {label}
+          {/* Portfolio entry mock */}
+          <AnimateIn>
+            <div className="flex w-full flex-col gap-6 rounded-sm border border-border bg-surface p-10">
+              {/* Header row */}
+              <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                <div className="flex flex-col gap-1">
+                  <p className="text-lg font-semibold text-fg">
+                    Crop yield prediction using rainfall data
                   </p>
-                  {mono ? (
-                    <p className="font-ibm-mono text-[0.75rem] text-ws-text-body leading-[1.45]">{value}</p>
-                  ) : (
-                    <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-body leading-[1.45] whitespace-pre-line">{value}</p>
-                  )}
+                  <p className="text-sm text-fg-muted">
+                    AI_BRIEF · Agriculture track · Submitted 2026-05-14
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </AnimateIn>
+                <div className="rounded-full border border-success/40 bg-success/10 px-3 py-1.5">
+                  <span className="font-ibm-mono text-xs tracking-wide text-success">● VERIFIED</span>
+                </div>
+              </div>
 
-        <AnimateIn>
-          <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-secondary leading-[1.55]">
-            An employer reading your Final Reflection document gets a direct window into how you
-            approach problems, how you assess failure, and whether your professional thinking is
-            disciplined. All three documents are publicly readable — no registration required.
-          </p>
-        </AnimateIn>
+              {/* Data row */}
+              <div className="flex flex-col sm:flex-row">
+                {PORTFOLIO_FIELDS.map(({ label, value, mono }) => (
+                  <div
+                    key={label}
+                    className="flex flex-1 flex-col gap-1 border border-border bg-surface-sunken px-5 py-4"
+                  >
+                    <p className="font-ibm-mono text-xs uppercase tracking-wide text-fg-subtle">
+                      {label}
+                    </p>
+                    {mono ? (
+                      <p className="font-ibm-mono text-xs leading-snug text-fg-muted">{value}</p>
+                    ) : (
+                      <p className="whitespace-pre-line text-sm leading-snug text-fg">{value}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AnimateIn>
+
+          <AnimateIn>
+            <p className="text-sm leading-relaxed text-fg-muted">
+              An employer reading your Final Reflection document gets a direct window into how you
+              approach problems, how you assess failure, and whether your professional thinking is
+              disciplined. All three documents are publicly readable — no registration required.
+            </p>
+          </AnimateIn>
+        </div>
       </section>
 
       {/* ── Protections & Timeline ── */}
-      <section className="bg-canvas-elevated px-[120px] py-[80px] flex gap-8">
-        {/* Conflict of Interest */}
-        <AnimateIn className="flex-1">
-          <div className="bg-ws-surface-primary border border-ws-border-soft rounded-[2px] p-[40px] flex flex-col gap-5 h-full">
-            <p className="font-jakarta font-600 text-[0.6875rem] text-ws-text-secondary uppercase tracking-[0.04em]">
-              Conflict of Interest Protections
-            </p>
-            {CONFLICT_PROTECTIONS.map((item) => (
-              <div key={item} className="flex gap-3 items-start">
-                <span className="font-jakarta font-600 text-[0.875rem] text-teal shrink-0">✓</span>
-                <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-body leading-[1.55]">
-                  {item}
-                </p>
-              </div>
-            ))}
-          </div>
-        </AnimateIn>
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-8 py-20 md:flex-row`}>
+          {/* Conflict of Interest */}
+          <AnimateIn className="flex-1">
+            <div className="flex h-full flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+              <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+                Conflict of Interest Protections
+              </p>
+              {CONFLICT_PROTECTIONS.map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <span className="shrink-0 font-semibold text-brand">✓</span>
+                  <p className="text-sm leading-relaxed text-fg-muted">{item}</p>
+                </div>
+              ))}
+            </div>
+          </AnimateIn>
 
-        {/* Realistic Timeline */}
-        <AnimateIn delay={0.08} className="flex-1">
-          <div className="bg-ws-surface-primary border border-ws-border-soft rounded-[2px] p-[40px] flex flex-col gap-5 h-full">
-            <p className="font-jakarta font-600 text-[0.6875rem] text-ws-text-secondary uppercase tracking-[0.04em]">
-              Realistic Timeline
-            </p>
-            {TIMELINE_ROWS.map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between">
-                <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-body">{label}</p>
-                <p className="font-ibm-mono text-[0.8125rem] text-teal">{value}</p>
-              </div>
-            ))}
-          </div>
-        </AnimateIn>
+          {/* Realistic Timeline */}
+          <AnimateIn delay={0.08} className="flex-1">
+            <div className="flex h-full flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+              <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+                Realistic Timeline
+              </p>
+              {TIMELINE_ROWS.map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-fg">{label}</p>
+                  <p className="font-ibm-mono text-sm text-brand">{value}</p>
+                </div>
+              ))}
+            </div>
+          </AnimateIn>
+        </div>
       </section>
 
       {/* ── Honest Limits ── */}
-      <section className="bg-[#E3E6E8] px-[120px] py-[64px] flex flex-col gap-6">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-ws-text-secondary uppercase tracking-[0.04em]">
-            What Portfolio Verified Does Not Cover
-          </p>
-        </AnimateIn>
-        {HONEST_LIMITS.map((item) => (
-          <AnimateIn key={item}>
-            <div className="flex gap-3 items-start">
-              <span className="font-jakarta font-500 text-[0.875rem] text-ws-text-meta shrink-0">—</span>
-              <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-secondary leading-[1.55]">
-                {item}
-              </p>
-            </div>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-6 py-16`}>
+          <AnimateIn>
+            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+              What Portfolio Verified Does Not Cover
+            </p>
           </AnimateIn>
-        ))}
+          {HONEST_LIMITS.map((item) => (
+            <AnimateIn key={item}>
+              <div className="flex items-start gap-3">
+                <span className="shrink-0 text-sm font-medium text-fg-subtle">—</span>
+                <p className="text-sm leading-relaxed text-fg-muted">{item}</p>
+              </div>
+            </AnimateIn>
+          ))}
+        </div>
       </section>
 
       {/* ── CTA ── */}
-      <section className="bg-teal px-[120px] py-[80px] flex flex-col gap-6 items-center">
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-[#F5F4F0] text-center tracking-[-0.02em] leading-[1.15]">
-            Ready to build your verified portfolio?
-          </h2>
-        </AnimateIn>
-        <AnimateIn delay={0.08}>
-          <p className="font-jakarta font-400 text-[1rem] text-[#E5ECE8] text-center leading-[1.55] max-w-[560px]">
-            Registration is free. Participation is independent of your university enrollment. Your
-            first submission can begin immediately.
-          </p>
-        </AnimateIn>
-        <AnimateIn delay={0.16}>
-          <Link
-            href="/auth/register?role=STUDENT"
-            className="inline-flex items-center px-[28px] py-[16px] bg-ws-text-heading text-[#F5F4F0] font-jakarta font-600 text-[1rem] rounded-[4px] hover:opacity-90 active:scale-[0.98] transition-all duration-fast ease-standard"
-          >
-            Register as a Student →
-          </Link>
-        </AnimateIn>
+      <section className="bg-brand">
+        <div className={`${CONTAINER} flex flex-col items-center gap-6 py-20`}>
+          <AnimateIn>
+            <h2 className="text-center text-3xl font-semibold leading-tight tracking-tight text-brand-fg md:text-4xl">
+              Ready to build your verified portfolio?
+            </h2>
+          </AnimateIn>
+          <AnimateIn delay={0.08}>
+            <p className="max-w-xl text-center leading-relaxed text-brand-fg/85">
+              Registration is free. Participation is independent of your university enrollment. Your
+              first submission can begin immediately.
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={0.16}>
+            <Link
+              href="/auth/register?role=STUDENT"
+              className="inline-flex items-center rounded-sm bg-brand-fg px-7 py-4 font-semibold text-brand transition-all duration-fast ease-standard hover:opacity-90 active:scale-95"
+            >
+              Register as a Student →
+            </Link>
+          </AnimateIn>
+        </div>
       </section>
     </>
   );
