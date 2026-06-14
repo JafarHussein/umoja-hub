@@ -51,53 +51,46 @@
   --duration-panel: 250ms;
   --easing-standard: ease-in-out;
 
-  /* ─── Website V2 Design System ─────────────────────────────────────────────
-   * These vars are used by (website) route group components only.
-   * Dashboard components use the tokens above. */
+  /* ─── Website Design System (FRONTEND.md) ───────────────────────────────────
+   * Used by (website) route group only. Dashboard uses tokens above. */
 
-  /* Website fonts — resolved from CSS variables set by next/font on <html> */
-  --font-jakarta: var(--font-jakarta, sans-serif);
-  --font-geist: var(--font-sans, sans-serif);
-  --font-geist-mono: var(--font-geist-mono, monospace);
+  /* Canvas */
+  --ws-canvas-base: #F5F4F0;
+  --ws-canvas-elevated: #F0EEE9;
 
-  /* Website surfaces — light-first */
-  --ws-surface-base: #ffffff;
-  --ws-surface-raised: #f7f7f7;
-  --ws-surface-recessed: #f0f0f0;
-  --ws-surface-dark: #0a0a09;
-  --ws-surface-dark-2: #151514;
-  --ws-surface-dark-3: #1e1e1c;
+  /* Surfaces */
+  --ws-surface-primary: #ECE8E1;
+  --ws-surface-secondary: #E5E1DA;
+  --ws-surface-success: #E5ECE8;
+  --ws-surface-warning: #EFE7DA;
+  --ws-surface-review: #E9E2DF;
+  --ws-surface-technical: #E3E6E8;
 
-  /* Website hub colors */
-  --ws-hub-green: #16a34a;
-  --ws-hub-green-dark: #15803d;
-  --ws-hub-green-tint: #f0fdf4;
-  --ws-hub-green-border: #86efac;
-  --ws-hub-blue: #2563eb;
-  --ws-hub-blue-dark: #1d4ed8;
-  --ws-hub-blue-tint: #eff6ff;
-  --ws-hub-blue-border: #93c5fd;
+  /* Text */
+  --ws-text-heading: #1D232A;
+  --ws-text-body: #353C45;
+  --ws-text-secondary: #636C76;
+  --ws-text-meta: #8A919A;
 
-  /* Website text (light surfaces) */
-  --ws-text-primary: #111110;
-  --ws-text-secondary: #6b6b69;
-  --ws-text-tertiary: #9a9a98;
+  /* Borders */
+  --ws-border-soft: #D8D3CC;
+  --ws-border-default: #C8C2BA;
+  --ws-border-divider: #BDB7AF;
 
-  /* Website text (dark surfaces) */
-  --ws-text-bright: #f5f5f3;
-  --ws-text-dim: #9b9b99;
-  --ws-text-faint: #5e5e5c;
+  /* Accents */
+  --ws-copper: #B86A3D;
+  --ws-copper-hover: #A05A30;
+  --ws-teal: #2E7D78;
+  --ws-violet: #6B5A9A;
 
-  /* Website status colors */
-  --ws-status-pending: #b45309;
-  --ws-status-pending-tint: #fef3c7;
-  --ws-status-denied: #dc2626;
-  --ws-status-denied-tint: #fef2f2;
-
-  /* Website borders */
-  --ws-border-light: #e5e5e3;
-  --ws-border-medium: #d4d4d2;
-  --ws-border-dark: #2a2a28;
-  --ws-border-verified: #86efac;
-  --ws-border-verified-edu: #93c5fd;
+  /* Motion (Figma 03/Motion spec) */
+  --ws-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ws-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ws-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ws-ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --ws-dur-instant: 80ms;
+  --ws-dur-fast: 150ms;
+  --ws-dur-standard: 250ms;
+  --ws-dur-enter: 350ms;
+  --ws-dur-exit: 200ms;
 }
