@@ -22,5 +22,5 @@ test('a matching query returns the listing and reflects the term', async ({ page
 
 test('a non-matching query shows the empty state', async ({ page }) => {
   await page.goto('/marketplace?q=zzqnomatchxyz');
-  await expect(page.getByText('No listings found')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('No listings found').first()).toBeVisible({ timeout: 30_000 });
 });
