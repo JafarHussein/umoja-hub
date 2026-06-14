@@ -33,6 +33,7 @@ import {
   PeerReviewStatus,
   SupplierInputCategory,
   SupplierVerificationStatus,
+  OAuthProvider,
 } from '@/types';
 import {
   E2E_USERS,
@@ -135,9 +136,29 @@ function roleData(fixture: E2EUserFixture): Record<string, unknown> {
         },
       };
     case Role.LECTURER:
-      return { lecturerData: { isVerified: fixture.isVerified } };
+      // UI-12 identity records: department + staff ID are onboarding-captured,
+      // read-only in the lecturer profile. oauthProvider drives the "Sign-in
+      // provider" row.
+      return {
+        oauthProvider: OAuthProvider.GOOGLE,
+        lecturerData: {
+          isVerified: fixture.isVerified,
+          departmentAssignment: 'Computer Science',
+          academicStaffId: 'STAFF-E2E-001',
+        },
+      };
     case Role.STUDENT:
-      return { studentData: { githubUsername: 'e2e-student' } };
+      // UI-12 identity records: githubUsername is OAuth-sourced, the
+      // institutional fields are onboarding-captured — all read-only.
+      return {
+        oauthProvider: OAuthProvider.GITHUB,
+        studentData: {
+          githubUsername: 'e2e-student',
+          institutionalEmail: 'student@uni.e2e.test',
+          institutionalEmailVerified: true,
+          academicRegistrationNumber: 'REG-E2E-001',
+        },
+      };
     default:
       return {};
   }
