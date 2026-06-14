@@ -34,6 +34,7 @@ import {
   SupplierInputCategory,
   SupplierVerificationStatus,
   OAuthProvider,
+  WithdrawalRequestStatus,
 } from '@/types';
 import {
   E2E_USERS,
@@ -97,6 +98,12 @@ const FIXTURE_LECTURER_ENGAGEMENT_ID = '000000000000000000000024';
 // (shown in both the farmer and buyer hubs via GET /api/suppliers) renders a
 // card with registrations. Upserted by businessName so re-runs are idempotent.
 const FIXTURE_SUPPLIER_NAME = 'E2E Agrovet Supplies';
+
+// UI-13 admin payout queue: one REQUESTED withdrawal so the queue renders a
+// decidable row. Owned by the UNVERIFIED farmer fixture (the verified farmer's
+// withdrawals are wiped for the UI-02 ledger determinism), with a fixed _id so
+// re-runs reset it back to REQUESTED even if a prior run decided it.
+const FIXTURE_PAYOUT_ID = '000000000000000000000030';
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -532,6 +539,24 @@ export default async function globalSetup(): Promise<void> {
     },
     { upsert: true, setDefaultsOnInsert: true }
   );
+
+  // UI-13 admin payout queue: a REQUESTED withdrawal owned by the unverified
+  // farmer fixture so the queue has a decidable row. Fixed _id + $set status
+  // makes it idempotent (a prior run's decision is reset back to REQUESTED).
+  if (unverifiedFarmerId) {
+    await WithdrawalRequestModel.findOneAndUpdate(
+      { _id: FIXTURE_PAYOUT_ID },
+      {
+        $set: {
+          farmerId: unverifiedFarmerId,
+          amountKES: 2500,
+          status: WithdrawalRequestStatus.REQUESTED,
+        },
+        $unset: { resolvedBy: '', resolvedAt: '', note: '' },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+  }
 
   // UI-11 supplier directory: a single VERIFIED supplier with registrations so
   // the read-only directory renders a populated card in both hubs.
