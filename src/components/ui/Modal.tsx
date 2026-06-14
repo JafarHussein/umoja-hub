@@ -71,23 +71,23 @@ export function Modal({
         ref={panelRef}
         tabIndex={-1}
         className={[
-          'relative w-full rounded bg-surface-elevated border border-white/10',
+          'relative w-full rounded bg-surface border border-border',
           'shadow-xl transition-all duration-250',
           'focus:outline-none',
           sizeClasses[size],
         ].join(' ')}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-white/5">
+        <div className="flex items-start justify-between p-6 border-b border-border">
           <div className="space-y-1">
             <h2
               id="modal-title"
-              className="font-heading text-t3 font-medium text-text-primary"
+              className="font-heading text-t3 font-medium text-fg"
             >
               {title}
             </h2>
             {description && (
-              <p id="modal-description" className="font-body text-t5 text-text-secondary">
+              <p id="modal-description" className="font-body text-t5 text-fg-muted">
                 {description}
               </p>
             )}
@@ -95,7 +95,7 @@ export function Modal({
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-sm text-text-disabled hover:text-text-secondary transition-all duration-150 -mr-2 -mt-1"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-sm text-fg-subtle hover:text-fg-muted transition-all duration-150 -mr-2 -mt-1"
           >
             <svg
               width="16"
@@ -148,7 +148,7 @@ export function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-6">
-        <p className="font-body text-t4 text-text-secondary">{message}</p>
+        <p className="font-body text-t4 text-fg-muted">{message}</p>
         <div className="flex gap-3 justify-end">
           <Button variant="ghost" onClick={onClose} disabled={isLoading}>
             Cancel

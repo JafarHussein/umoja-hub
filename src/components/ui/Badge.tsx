@@ -17,46 +17,53 @@ export interface IBadgeProps {
   className?: string;
 }
 
+// Semantic state classes — theme-aware unified tokens (one accent + meaningful
+// state colours). REVISION_REQUIRED folds into `warning` (an attention state).
+const SUCCESS = 'bg-success/15 text-success border-success/30';
+const WARNING = 'bg-warning/15 text-warning border-warning/30';
+const DANGER = 'bg-danger/15 text-danger border-danger/30';
+const NEUTRAL = 'bg-surface-raised text-fg-muted border-border';
+
 function getStatusColor(label: string): string {
   const upper = label.toUpperCase();
 
   // Verification statuses
   if (upper === VerificationStatus.APPROVED || upper === 'VERIFIED' || upper === FarmerTrustTier.PREMIUM || upper === FarmerTrustTier.TRUSTED || upper === StudentTier.ADVANCED || upper === ProjectStatus.VERIFIED) {
-    return 'bg-accent-green/15 text-accent-green border-accent-green/30';
+    return SUCCESS;
   }
   if (upper === VerificationStatus.PENDING || upper === 'UNDER_PEER_REVIEW' || upper === 'UNDER_LECTURER_REVIEW' || upper === FarmerTrustTier.ESTABLISHED || upper === StudentTier.INTERMEDIATE || upper === ProjectStatus.UNDER_PEER_REVIEW || upper === ProjectStatus.UNDER_LECTURER_REVIEW) {
-    return 'bg-yellow-950/40 text-yellow-400 border-yellow-800/40';
+    return WARNING;
   }
   if (upper === VerificationStatus.REJECTED || upper === 'DENIED' || upper === ProjectStatus.DENIED) {
-    return 'bg-red-950/40 text-red-400 border-red-800/40';
+    return DANGER;
   }
   if (upper === 'REVISION_REQUIRED' || upper === ProjectStatus.REVISION_REQUIRED) {
-    return 'bg-orange-950/40 text-orange-400 border-orange-800/40';
+    return WARNING;
   }
   if (upper === FarmerTrustTier.NEW || upper === StudentTier.BEGINNER || upper === VerificationStatus.UNSUBMITTED) {
-    return 'bg-surface-secondary text-text-secondary border-white/10';
+    return NEUTRAL;
   }
 
   // Default neutral
-  return 'bg-surface-secondary text-text-secondary border-white/10';
+  return NEUTRAL;
 }
 
 export function Badge({ variant = 'status', label, className = '' }: IBadgeProps): React.ReactElement {
   const colorClass =
     variant === 'neutral'
-      ? 'bg-surface-secondary text-text-secondary border-white/10'
+      ? NEUTRAL
       : variant === 'success'
-        ? 'bg-accent-green/15 text-accent-green border-accent-green/30'
+        ? SUCCESS
         : variant === 'warning'
-          ? 'bg-yellow-950/40 text-yellow-400 border-yellow-800/40'
+          ? WARNING
           : variant === 'error'
-            ? 'bg-red-950/40 text-red-400 border-red-800/40'
+            ? DANGER
             : getStatusColor(label);
 
   return (
     <span
       className={[
-        'inline-flex items-center rounded-[2px] border px-2 py-0.5 font-mono text-t6 font-medium uppercase tracking-wide',
+        'inline-flex items-center rounded-sm border px-2 py-0.5 font-mono text-t6 font-medium uppercase tracking-wide',
         colorClass,
         className,
       ].join(' ')}

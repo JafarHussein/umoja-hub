@@ -19,10 +19,10 @@ export interface ITextareaProps extends React.TextareaHTMLAttributes<HTMLTextAre
 
 const baseInputClasses = [
   'w-full min-h-[44px] px-3 py-2 rounded-sm font-body text-t5',
-  'bg-surface-secondary text-text-primary placeholder-text-disabled',
-  'border border-white/10',
+  'bg-surface-raised text-fg placeholder:text-fg-subtle',
+  'border border-border',
   'transition-all duration-150',
-  'focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green',
+  'focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand',
   'disabled:opacity-40 disabled:cursor-not-allowed',
 ].join(' ');
 
@@ -40,7 +40,7 @@ export function Input({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="font-body text-t6 text-text-secondary">
+        <label htmlFor={inputId} className="font-body text-t6 text-fg-muted">
           {label}
         </label>
       )}
@@ -52,17 +52,17 @@ export function Input({
         aria-invalid={error ? true : undefined}
         className={[
           baseInputClasses,
-          error ? 'border-red-700/60 focus:border-red-500 focus:ring-red-500' : '',
+          error ? 'border-danger focus:border-danger focus:ring-danger' : '',
           className,
         ].join(' ')}
       />
       {error && (
-        <p id={`${inputId}-error`} className="font-body text-t6 text-red-400" role="alert">
+        <p id={`${inputId}-error`} className="font-body text-t6 text-danger" role="alert">
           {error}
         </p>
       )}
       {hint && !error && (
-        <p id={`${inputId}-hint`} className="font-body text-t6 text-text-disabled">
+        <p id={`${inputId}-hint`} className="font-body text-t6 text-fg-subtle">
           {hint}
         </p>
       )}
@@ -83,7 +83,7 @@ export function Textarea({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={textareaId} className="font-body text-t6 text-text-secondary">
+        <label htmlFor={textareaId} className="font-body text-t6 text-fg-muted">
           {label}
         </label>
       )}
@@ -94,22 +94,22 @@ export function Textarea({
         aria-invalid={error ? true : undefined}
         className={[
           'w-full min-h-[120px] px-3 py-2 rounded-sm font-body text-t5 resize-y',
-          'bg-surface-secondary text-text-primary placeholder-text-disabled',
-          'border border-white/10',
+          'bg-surface-raised text-fg placeholder:text-fg-subtle',
+          'border border-border',
           'transition-all duration-150',
-          'focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green',
+          'focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand',
           'disabled:opacity-40 disabled:cursor-not-allowed',
-          error ? 'border-red-700/60 focus:border-red-500 focus:ring-red-500' : '',
+          error ? 'border-danger focus:border-danger focus:ring-danger' : '',
           className,
         ].join(' ')}
       />
       {error && (
-        <p id={`${textareaId}-error`} className="font-body text-t6 text-red-400" role="alert">
+        <p id={`${textareaId}-error`} className="font-body text-t6 text-danger" role="alert">
           {error}
         </p>
       )}
       {hint && !error && (
-        <p id={`${textareaId}-hint`} className="font-body text-t6 text-text-disabled">
+        <p id={`${textareaId}-hint`} className="font-body text-t6 text-fg-subtle">
           {hint}
         </p>
       )}
