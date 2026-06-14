@@ -13,6 +13,7 @@ import MediationRequestModel from '@/lib/models/MediationRequest.model';
 import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
 import ProjectEngagementModel from '@/lib/models/ProjectEngagement.model';
 import PeerReviewModel from '@/lib/models/PeerReview.model';
+import VerifiedSupplierModel from '@/lib/models/VerifiedSupplier.model';
 import {
   Role,
   OnboardingStage,
@@ -30,6 +31,8 @@ import {
   ProjectStatus,
   StudentTier,
   PeerReviewStatus,
+  SupplierInputCategory,
+  SupplierVerificationStatus,
 } from '@/types';
 import {
   E2E_USERS,
@@ -88,6 +91,11 @@ const FIXTURE_PEER_AUTHOR_ID = '000000000000000000000023';
 // lecturer can open. Dangling author (never populated → "Unknown student"),
 // kept off the student fixture so it doesn't shadow the UI-08 `me` engagement.
 const FIXTURE_LECTURER_ENGAGEMENT_ID = '000000000000000000000024';
+
+// UI-11 supplier directory: one VERIFIED supplier so the read-only directory
+// (shown in both the farmer and buyer hubs via GET /api/suppliers) renders a
+// card with registrations. Upserted by businessName so re-runs are idempotent.
+const FIXTURE_SUPPLIER_NAME = 'E2E Agrovet Supplies';
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -499,6 +507,26 @@ export default async function globalSetup(): Promise<void> {
             },
           ],
         },
+      },
+    },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+
+  // UI-11 supplier directory: a single VERIFIED supplier with registrations so
+  // the read-only directory renders a populated card in both hubs.
+  await VerifiedSupplierModel.findOneAndUpdate(
+    { businessName: FIXTURE_SUPPLIER_NAME },
+    {
+      $set: {
+        businessName: FIXTURE_SUPPLIER_NAME,
+        contactPhone: '+254700000020',
+        contactEmail: 'supplies@e2e.test',
+        county: 'Nakuru',
+        physicalAddress: 'Nakuru Industrial Area, Plot 14',
+        inputCategories: [SupplierInputCategory.FERTILIZER, SupplierInputCategory.SEED],
+        registrations: { kebsNumber: 'KEBS-E2E-001', kephisNumber: 'KEPHIS-E2E-001' },
+        verificationStatus: SupplierVerificationStatus.VERIFIED,
+        verifiedAt: FIXTURE_ENGAGEMENT_DOC_AT,
       },
     },
     { upsert: true, setDefaultsOnInsert: true }
