@@ -30,6 +30,12 @@ jest.mock('@/lib/models/GroupOrder.model', () => ({
   default: { findOne: jest.fn((...a: unknown[]) => mockGroupOrderFindOne(...a)) },
 }));
 
+const mockUserFindById = jest.fn();
+jest.mock('@/lib/models/User.model', () => ({
+  __esModule: true,
+  default: { findById: jest.fn((...a: unknown[]) => mockUserFindById(...a)) },
+}));
+
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/options', () => ({ authOptions: {} }));
 
@@ -92,6 +98,16 @@ function makeGetRequest() {
   });
 }
 
+// JOIN requires the session farmer to be verified — prime the User mock with
+// a verified (or unverified) farmerData lookup result.
+function primeJoiningFarmer(isVerified = true) {
+  mockUserFindById.mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ farmerData: { isVerified } }),
+    }),
+  });
+}
+
 // Lazy-import after mocks are registered
 import { PATCH, GET } from '../route';
 
@@ -100,7 +116,10 @@ import { PATCH, GET } from '../route';
 // ---------------------------------------------------------------------------
 
 describe('PATCH /api/groups/[groupId]/orders/[orderId]', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    primeJoiningFarmer();
+  });
 
   // --- JOIN ---
 
@@ -139,6 +158,23 @@ describe('PATCH /api/groups/[groupId]/orders/[orderId]', () => {
 
     expect(res.status).toBe(200);
     expect(body.data.status).toBe(GroupOrderStatus.MINIMUM_MET);
+  });
+
+  it('JOIN: returns 403 when the joining farmer is not verified', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(makeFarmerSession());
+    mockGroupOrderFindOne.mockResolvedValue(makeGroupOrder());
+    mockGroupFindOne.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(makeGroup()) }) });
+    primeJoiningFarmer(false);
+
+    const res = await PATCH(
+      makePatchRequest({ action: 'JOIN' }),
+      { params: Promise.resolve({ groupId: GROUP_ID, orderId: ORDER_ID }) }
+    );
+
+    expect(res.status).toBe(403);
+    const body = await res.json() as { code: string };
+    expect(body.code).toBe('FARMER_NOT_VERIFIED');
+    expect(mockGroupOrderSave).not.toHaveBeenCalled();
   });
 
   it('JOIN: returns 409 when farmer is already participating', async () => {

@@ -7,6 +7,9 @@ const config: Config = {
   coverageProvider: 'v8',
   testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  // Playwright specs live under e2e/ and use `.spec.ts`, which Jest's default
+  // testMatch would otherwise pick up and fail on. They run via `npm run test:e2e`.
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/e2e/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

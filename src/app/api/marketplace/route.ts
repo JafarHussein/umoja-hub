@@ -30,6 +30,43 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const cursor = searchParams.get('cursor');
     const limit = Math.min(Number(searchParams.get('limit') ?? '20'), 100);
 
+    // ── own=true: authenticated farmer's own listings (all statuses) ──────
+    // Powers the dashboard "My Listings" view. Unlike the public branch this
+    // includes SOLD_OUT and INACTIVE listings, and is scoped to the session
+    // farmer — never combined with the public filters below.
+    if (searchParams.get('own') === 'true') {
+      const session = await getServerSession(authOptions);
+      requireRole(session, Role.FARMER);
+
+      const ownFilter: Record<string, unknown> = { farmerId: session!.user.id };
+      if (cursor) {
+        if (!mongoose.isValidObjectId(cursor)) {
+          return NextResponse.json(
+            { error: 'Invalid cursor value.', code: 'VALIDATION_FAILED' },
+            { status: 400 }
+          );
+        }
+        ownFilter['_id'] = { $lt: new mongoose.Types.ObjectId(cursor) };
+      }
+
+      const ownListings = await MarketplaceListing.find(ownFilter)
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .select(
+          'title cropName currentPricePerUnit unit quantityAvailable pickupCounty listingStatus isVerifiedListing createdAt'
+        )
+        .lean();
+
+      const ownHasMore = ownListings.length > limit;
+      const ownPage = ownHasMore ? ownListings.slice(0, limit) : ownListings;
+      const ownNextCursor = ownHasMore ? (ownPage.at(-1)?._id?.toString() ?? null) : null;
+      const ownTotal = await MarketplaceListing.countDocuments({
+        farmerId: session!.user.id,
+      });
+
+      return NextResponse.json({ data: ownPage, nextCursor: ownNextCursor, total: ownTotal });
+    }
+
     const filter: Record<string, unknown> = {
       listingStatus: ListingStatus.AVAILABLE,
     };

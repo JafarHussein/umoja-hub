@@ -25,7 +25,6 @@ interface IListingDetail {
   buyerContactPreference: BuyerContactPreference[];
   createdAt: string;
   farmer: {
-    _id: string;
     firstName: string;
     lastName: string;
     county: string;
@@ -40,6 +39,12 @@ interface IListingDetail {
   } | null;
 }
 
+// GET /api/marketplace/[listingId] returns { data: { ...listing, farmer, trustScore } }
+// where farmer is null when the owning account no longer resolves.
+type IListingApiDetail = Omit<IListingDetail, 'farmer'> & {
+  farmer: IListingDetail['farmer'] | null;
+};
+
 async function fetchListing(listingId: string): Promise<IListingDetail | null> {
   const baseUrl = process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000';
   const res = await fetch(`${baseUrl}/api/marketplace/${listingId}`, {
@@ -47,8 +52,13 @@ async function fetchListing(listingId: string): Promise<IListingDetail | null> {
   });
   if (res.status === 404) return null;
   if (!res.ok) return null;
-  const data = (await res.json()) as { listing: IListingDetail };
-  return data.listing;
+  const body = (await res.json()) as { data: IListingApiDetail | null };
+  if (!body.data) return null;
+
+  return {
+    ...body.data,
+    farmer: body.data.farmer ?? { firstName: '—', lastName: '', county: '' },
+  };
 }
 
 interface IPageProps {

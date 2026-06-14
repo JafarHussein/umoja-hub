@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/options';
+import { connectDB } from '@/lib/db';
+import { payoutRequestSchema } from '@/lib/validation/payoutSchema';
+import { computeEscrowBalance } from '@/lib/foodhub/escrow';
+import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
+import { Role, UserStatus, WithdrawalRequestStatus } from '@/types';
+
+// ---------------------------------------------------------------------------
+// POST /api/farmers/payout-requests — Farmer requests a manual payout
+// Auth: FARMER (ACTIVE)
+// Rules: one open (REQUESTED) request at a time; amount must not exceed the
+// derived available escrow balance. Settlement itself is an admin decision —
+// there is no automated B2C disbursement.
+// GET — Farmer's own payout request history + live balance.
+// ---------------------------------------------------------------------------
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    const requestId = crypto.randomUUID();
+    const session = await getServerSession(authOptions);
+    requireRole(session, Role.FARMER);
+
+    const body: unknown = await req.json();
+    const parsed = payoutRequestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: 'The submitted data is invalid. Check the details and try again.',
+          code: 'VALIDATION_FAILED',
+          details: parsed.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const farmerId = session!.user.id;
+
+    const { default: User } = await import('@/lib/models/User.model');
+    const farmer = await User.findById(farmerId).select('status').lean();
+    if (farmer?.status !== UserStatus.ACTIVE) {
+      throw new AppError('Your account has been suspended.', 403, 'ACCOUNT_SUSPENDED');
+    }
+
+    const { default: WithdrawalRequest } = await import('@/lib/models/WithdrawalRequest.model');
+
+    // One open request at a time keeps the admin queue and the committed-
+    // funds math simple: a farmer adjusts by waiting for a decision, not by
+    // stacking overlapping requests.
+    const openRequest = await WithdrawalRequest.findOne({
+      farmerId,
+      status: WithdrawalRequestStatus.REQUESTED,
+    } as object)
+      .select('_id')
+      .lean();
+
+    if (openRequest) {
+      throw new AppError(
+        'You already have a payout request awaiting review.',
+        409,
+        'PAYOUT_REQUEST_PENDING'
+      );
+    }
+
+    const balance = await computeEscrowBalance(farmerId);
+
+    if (parsed.data.amountKES > balance.availableKES) {
+      throw new AppError(
+        `Requested amount exceeds your available balance of KES ${balance.availableKES.toLocaleString()}.`,
+        409,
+        'PAYOUT_INSUFFICIENT_BALANCE'
+      );
+    }
+
+    const request = await WithdrawalRequest.create({
+      farmerId,
+      amountKES: parsed.data.amountKES,
+      status: WithdrawalRequestStatus.REQUESTED,
+    });
+
+    logger.info('farmers/payout-requests', 'Payout request created', {
+      requestId,
+      withdrawalRequestId: String(request._id),
+      farmerId,
+      amountKES: parsed.data.amountKES,
+      availableKES: balance.availableKES,
+    });
+
+    return NextResponse.json(
+      {
+        data: request,
+        balance: {
+          ...balance,
+          // Reflect the funds this new request just committed.
+          committedPayoutsKES: balance.committedPayoutsKES + parsed.data.amountKES,
+          availableKES: balance.availableKES - parsed.data.amountKES,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function GET(_req: NextRequest): Promise<NextResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+    requireRole(session, Role.FARMER);
+
+    await connectDB();
+
+    const farmerId = session!.user.id;
+    const { default: WithdrawalRequest } = await import('@/lib/models/WithdrawalRequest.model');
+
+    const [requests, balance] = await Promise.all([
+      WithdrawalRequest.find({ farmerId } as object)
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
+      computeEscrowBalance(farmerId),
+    ]);
+
+    return NextResponse.json({ data: requests, balance });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}

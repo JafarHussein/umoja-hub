@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { KENYAN_COUNTIES, ListingUnit, DocumentType } from '@/types';
+import { KENYAN_COUNTIES, ListingUnit, ListingStatus, DocumentType } from '@/types';
 
 const kenyanPhoneRegex = /^(?:\+254|0)[17]\d{8}$/;
 const cloudinaryUrlRegex = /^https:\/\/res\.cloudinary\.com\//;
@@ -59,6 +59,14 @@ export const cropListingSchema = z.object({
     .min(1, 'Select at least one contact preference'),
 });
 
+// Owner-facing partial update for an existing listing. Extends the creation
+// fields with listingStatus, restricted to the two farmer-controllable states:
+// AVAILABLE (reactivate) and INACTIVE (pause). SOLD_OUT is system-managed by
+// the atomic stock reservation and must never be set by a client.
+export const listingUpdateSchema = cropListingSchema.partial().extend({
+  listingStatus: z.enum([ListingStatus.AVAILABLE, ListingStatus.INACTIVE]).optional(),
+});
+
 export const adminVerifyFarmerSchema = z.object({
   farmerId: z.string().min(1, 'Farmer ID is required'),
   decision: z.enum(['APPROVED', 'REJECTED']),
@@ -68,4 +76,5 @@ export const adminVerifyFarmerSchema = z.object({
 export type FarmerProfileInput = z.infer<typeof farmerProfileSchema>;
 export type VerificationDocInput = z.infer<typeof verificationDocSchema>;
 export type CropListingInput = z.infer<typeof cropListingSchema>;
+export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 export type AdminVerifyFarmerInput = z.infer<typeof adminVerifyFarmerSchema>;

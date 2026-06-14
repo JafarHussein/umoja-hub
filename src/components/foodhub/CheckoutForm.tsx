@@ -20,7 +20,12 @@ type CheckoutState =
   | 'paid'
   | 'failed'
   | 'timeout'
+  // Atomic inventory reserve lost the race (server ORDER_INSUFFICIENT_STOCK /
+  // listing unavailable) — surfaced explicitly so the buyer refreshes stock.
+  | 'inventory_unavailable'
   | 'error';
+
+const POLL_WINDOW_SECONDS = 90;
 
 interface IOrderResult {
   orderId: string;
@@ -48,6 +53,7 @@ export function CheckoutForm({
   const [state, setState] = useState<CheckoutState>('idle');
   const [orderResult, setOrderResult] = useState<IOrderResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(POLL_WINDOW_SECONDS);
 
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollingDeadline = useRef<number>(0);
@@ -67,14 +73,26 @@ export function CheckoutForm({
 
   const startPolling = useCallback(
     (orderId: string) => {
-      pollingDeadline.current = Date.now() + 90_000;
+      const deadline = Date.now() + POLL_WINDOW_SECONDS * 1_000;
+      pollingDeadline.current = deadline;
+      setRemainingSeconds(POLL_WINDOW_SECONDS);
 
+      // Single 1s timer: drives the visible countdown ticker every second and
+      // polls payment status every 3rd tick. The bounded window ends in an
+      // explicit timeout, never an indefinite navigation lock (corrected D01).
+      let tick = 0;
       const timer = setInterval(() => {
-        if (Date.now() >= pollingDeadline.current) {
+        const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1_000));
+        setRemainingSeconds(remaining);
+
+        if (Date.now() >= deadline) {
           stopPolling();
           setState('timeout');
           return;
         }
+
+        tick += 1;
+        if (tick % 3 !== 0) return;
 
         void (async () => {
           try {
@@ -92,7 +110,7 @@ export function CheckoutForm({
             // transient network error — continue polling
           }
         })();
-      }, 3_000);
+      }, 1_000);
 
       pollingTimer.current = timer;
     },
@@ -128,9 +146,19 @@ export function CheckoutForm({
         }),
       });
 
-      const body = (await res.json()) as { data?: IOrderResult; error?: string };
+      const body = (await res.json()) as { data?: IOrderResult; error?: string; code?: string };
 
       if (!res.ok) {
+        // Explicit inventory-lock-failed path: the atomic reserve lost the race
+        // or the listing went unavailable between page load and submit.
+        if (
+          body.code === 'ORDER_INSUFFICIENT_STOCK' ||
+          body.code === 'FARMER_LISTING_UNAVAILABLE'
+        ) {
+          setErrorMessage(body.error ?? 'This quantity is no longer available.');
+          setState('inventory_unavailable');
+          return;
+        }
         setErrorMessage(body.error ?? 'Failed to place order. Please try again.');
         setState('error');
         return;
@@ -174,14 +202,23 @@ export function CheckoutForm({
           </p>
         </div>
 
-        <div className="space-y-2" aria-hidden="true">
-          <div className="h-4 w-44 bg-surface-secondary rounded-[4px] animate-pulse" />
-          <div className="h-4 w-32 bg-surface-secondary rounded-[4px] animate-pulse" />
-          <div className="h-4 w-40 bg-surface-secondary rounded-[4px] animate-pulse" />
+        {/* 90-second poll ticker — bounded, with an explicit countdown */}
+        <div className="space-y-2" role="timer" aria-live="polite">
+          <div className="flex items-center justify-between">
+            <p className="text-t5 font-body text-text-secondary">Waiting for confirmation</p>
+            <p className="text-t5 font-mono text-text-primary tabular-nums">{remainingSeconds}s</p>
+          </div>
+          <div className="h-1 bg-surface-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-accent-green transition-all duration-1000 ease-linear"
+              style={{ width: `${(remainingSeconds / POLL_WINDOW_SECONDS) * 100}%` }}
+            />
+          </div>
         </div>
 
         <p className="text-t6 font-body text-text-disabled">
-          Enter your PIN on your phone. This usually takes under 30 seconds.
+          Enter your PIN on your phone. We&apos;ll stop checking after{' '}
+          {POLL_WINDOW_SECONDS} seconds and let you retry.
         </p>
       </div>
     );
@@ -246,9 +283,12 @@ export function CheckoutForm({
     );
   }
 
-  // ── Checkout form (idle | submitting | error | failed | timeout) ──────────
+  // ── Checkout form (idle | submitting | error | failed | timeout | lock) ───
   const showErrorBar =
-    state === 'error' || state === 'failed' || state === 'timeout';
+    state === 'error' ||
+    state === 'failed' ||
+    state === 'timeout' ||
+    state === 'inventory_unavailable';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -272,15 +312,28 @@ export function CheckoutForm({
               ? 'Payment was declined.'
               : state === 'timeout'
               ? 'Payment timed out — no confirmation received.'
+              : state === 'inventory_unavailable'
+              ? (errorMessage ?? 'This quantity is no longer available.') +
+                ' Refresh to see current stock.'
               : (errorMessage ?? 'Something went wrong.')}
           </p>
-          <button
-            type="button"
-            onClick={handleRetry}
-            className="text-t5 font-body text-red-400 underline underline-offset-2 hover:text-red-300 transition-colors duration-150 ml-4 flex-shrink-0"
-          >
-            Retry
-          </button>
+          {state === 'inventory_unavailable' ? (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="text-t5 font-body text-red-400 underline underline-offset-2 hover:text-red-300 transition-colors duration-150 ml-4 flex-shrink-0"
+            >
+              Refresh stock
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="text-t5 font-body text-red-400 underline underline-offset-2 hover:text-red-300 transition-colors duration-150 ml-4 flex-shrink-0"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
 

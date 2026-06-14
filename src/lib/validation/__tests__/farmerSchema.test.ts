@@ -2,6 +2,7 @@ import {
   farmerProfileSchema,
   verificationDocSchema,
   cropListingSchema,
+  listingUpdateSchema,
   adminVerifyFarmerSchema,
 } from '../farmerSchema';
 
@@ -84,6 +85,47 @@ describe('farmerProfileSchema', () => {
     expect(
       farmerProfileSchema.safeParse({ ...valid, farmSizeAcres: -1 }).success
     ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// listingUpdateSchema
+// ---------------------------------------------------------------------------
+
+describe('listingUpdateSchema', () => {
+  it('accepts a status-only update to INACTIVE (pause)', () => {
+    expect(listingUpdateSchema.safeParse({ listingStatus: 'INACTIVE' }).success).toBe(true);
+  });
+
+  it('accepts a status-only update to AVAILABLE (reactivate)', () => {
+    expect(listingUpdateSchema.safeParse({ listingStatus: 'AVAILABLE' }).success).toBe(true);
+  });
+
+  it('rejects SOLD_OUT — system-managed status', () => {
+    expect(listingUpdateSchema.safeParse({ listingStatus: 'SOLD_OUT' }).success).toBe(false);
+  });
+
+  it('rejects an unknown status value', () => {
+    expect(listingUpdateSchema.safeParse({ listingStatus: 'ARCHIVED' }).success).toBe(false);
+  });
+
+  it('accepts partial listing fields alongside a status change', () => {
+    const result = listingUpdateSchema.safeParse({
+      listingStatus: 'AVAILABLE',
+      quantityAvailable: 50,
+      currentPricePerUnit: 45,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('still enforces field rules from the creation schema on updates', () => {
+    expect(
+      listingUpdateSchema.safeParse({ quantityAvailable: -5 }).success
+    ).toBe(false);
+  });
+
+  it('accepts an empty object (no-op update)', () => {
+    expect(listingUpdateSchema.safeParse({}).success).toBe(true);
   });
 });
 

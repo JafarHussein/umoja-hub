@@ -8,6 +8,9 @@ import {
   Role,
   OrderPaymentStatus,
   OrderFulfillmentStatus,
+  MediationCategory,
+  MediationRequestStatus,
+  MEDIATION_ESCALATION_HOURS,
 } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +36,22 @@ interface IBuyerOrder {
 interface IOrdersResponse {
   orders: IBuyerOrder[];
 }
+
+interface IMediation {
+  _id: string;
+  status: MediationRequestStatus;
+  category: MediationCategory;
+  description: string;
+  resolutionNote?: string | null;
+  createdAt: string;
+}
+
+const MEDIATION_CATEGORY_LABEL: Record<MediationCategory, string> = {
+  [MediationCategory.NOT_DELIVERED]: 'Order not delivered',
+  [MediationCategory.QUALITY_ISSUE]: 'Quality issue',
+  [MediationCategory.WRONG_QUANTITY]: 'Wrong quantity',
+  [MediationCategory.OTHER]: 'Other',
+};
 
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
@@ -87,6 +106,15 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   const [ratingError, setRatingError] = useState<string | null>(null);
   const [hasRated, setHasRated] = useState(false);
 
+  const [mediation, setMediation] = useState<IMediation | null>(null);
+  const [escalateOpen, setEscalateOpen] = useState(false);
+  const [mediationForm, setMediationForm] = useState<{
+    category: MediationCategory;
+    description: string;
+  }>({ category: MediationCategory.NOT_DELIVERED, description: '' });
+  const [mediationState, setMediationState] = useState<ActionState>('idle');
+  const [mediationError, setMediationError] = useState<string | null>(null);
+
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -121,6 +149,17 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     }
   }, [params.orderId]);
 
+  const fetchMediation = useCallback(async (): Promise<void> => {
+    try {
+      const res = await fetch(`/api/orders/${params.orderId}/mediation`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { data: IMediation | null };
+      setMediation(data.data);
+    } catch {
+      // Non-fatal — the page still renders without the mediation banner.
+    }
+  }, [params.orderId]);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login');
@@ -132,8 +171,9 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         return;
       }
       void fetchOrder();
+      void fetchMediation();
     }
-  }, [status, session, router, fetchOrder]);
+  }, [status, session, router, fetchOrder, fetchMediation]);
 
   // Start polling if order is PENDING_PAYMENT on load
   useEffect(() => {
@@ -226,6 +266,39 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     }
   }
 
+  async function submitMediation(e: React.FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault();
+    if (!order) return;
+    setMediationError(null);
+    if (mediationForm.description.trim().length < 20) {
+      setMediationError('Describe the problem in at least 20 characters.');
+      return;
+    }
+    setMediationState('submitting');
+    try {
+      const res = await fetch(`/api/orders/${order._id}/mediation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: mediationForm.category,
+          description: mediationForm.description.trim(),
+        }),
+      });
+      const body = (await res.json()) as { data?: IMediation; error?: string };
+      if (!res.ok) {
+        setMediationError(body.error ?? 'Could not file your escalation.');
+        setMediationState('error');
+        return;
+      }
+      if (body.data) setMediation(body.data);
+      setEscalateOpen(false);
+      setMediationState('idle');
+    } catch {
+      setMediationError('Something went wrong. Please try again.');
+      setMediationState('error');
+    }
+  }
+
   // ── Loading ─────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
@@ -291,6 +364,29 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   }
 
   // ── Ready ────────────────────────────────────────────────────────────────
+  // Mediation is decoupled from the order state machine: an OPEN/IN_REVIEW
+  // escalation only surfaces a banner; it never changes the order's status.
+  const activeMediation =
+    mediation &&
+    (mediation.status === MediationRequestStatus.OPEN ||
+      mediation.status === MediationRequestStatus.IN_REVIEW)
+      ? mediation
+      : null;
+
+  // 48-h client gate (mirrors the server's MEDIATION_TOO_EARLY rule): mediation
+  // opens 48h after payment, giving the farmer time to fulfil first.
+  const paidMs = order.paidAt ? new Date(order.paidAt).getTime() : null;
+  const eligibleAtMs = paidMs !== null ? paidMs + MEDIATION_ESCALATION_HOURS * 60 * 60 * 1000 : null;
+  const canEscalate = eligibleAtMs !== null && Date.now() >= eligibleAtMs;
+  const eligibleDate =
+    eligibleAtMs !== null
+      ? new Date(eligibleAtMs).toLocaleDateString('en-KE', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : null;
+
   return (
     <div className="min-h-screen bg-surface-primary">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -331,6 +427,26 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             />
           </div>
         </div>
+
+        {/* UNDER_MEDIATION alert bar — decoupled from order state */}
+        {activeMediation && (
+          <div className="bg-yellow-950/40 border border-yellow-800/40 rounded-[4px] p-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" aria-hidden="true" />
+              <p className="text-t4 font-body font-medium text-yellow-400">
+                Under platform mediation
+              </p>
+            </div>
+            <p className="text-t5 font-body text-text-secondary mt-2">
+              Our mediation team{' '}
+              {activeMediation.status === MediationRequestStatus.IN_REVIEW
+                ? 'is reviewing'
+                : 'has received'}{' '}
+              your escalation ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order
+              status is unchanged while this is resolved.
+            </p>
+          </div>
+        )}
 
         {/* Progress timeline */}
         <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
@@ -421,6 +537,113 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             >
               Mark as received
             </Button>
+          </div>
+        )}
+
+        {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}
+        {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && !activeMediation && (
+          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              Problem with this order?
+            </p>
+
+            {!canEscalate ? (
+              <p className="text-t5 font-body text-text-secondary">
+                Give {order.farmer.firstName} time to fulfil your order. If it still hasn&apos;t
+                arrived, you can escalate to platform mediation from {eligibleDate}.
+              </p>
+            ) : !escalateOpen ? (
+              <>
+                <p className="text-t5 font-body text-text-secondary">
+                  Haven&apos;t received your order? Our team can step in to help resolve it.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setEscalateOpen(true)}
+                  className="w-full"
+                >
+                  Escalate to Platform Mediation
+                </Button>
+              </>
+            ) : (
+              <form onSubmit={(e) => void submitMediation(e)} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="mediation-category"
+                    className="text-t5 font-body text-text-secondary block"
+                  >
+                    What went wrong?
+                  </label>
+                  <select
+                    id="mediation-category"
+                    value={mediationForm.category}
+                    onChange={(e) =>
+                      setMediationForm((prev) => ({
+                        ...prev,
+                        category: e.target.value as MediationCategory,
+                      }))
+                    }
+                    className="w-full min-h-[44px] bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-text-primary focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                  >
+                    {Object.values(MediationCategory).map((c) => (
+                      <option key={c} value={c} className="bg-surface-elevated">
+                        {MEDIATION_CATEGORY_LABEL[c]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="mediation-description"
+                    className="text-t5 font-body text-text-secondary block"
+                  >
+                    Describe the problem{' '}
+                    <span className="text-text-disabled">(at least 20 characters)</span>
+                  </label>
+                  <textarea
+                    id="mediation-description"
+                    rows={4}
+                    value={mediationForm.description}
+                    onChange={(e) =>
+                      setMediationForm((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                    className="w-full bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-text-primary placeholder:text-text-disabled resize-none focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                    placeholder="Tell our team what happened so we can help."
+                  />
+                </div>
+
+                {mediationError && (
+                  <p className="text-t5 font-body text-red-400" role="alert">
+                    {mediationError}
+                  </p>
+                )}
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="md"
+                    onClick={() => {
+                      setEscalateOpen(false);
+                      setMediationError(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    isLoading={mediationState === 'submitting'}
+                    className="flex-1"
+                  >
+                    Submit escalation
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 

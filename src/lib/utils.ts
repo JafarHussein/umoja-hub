@@ -69,7 +69,7 @@ export function handleApiError(error: unknown): NextResponse {
 // ---------------------------------------------------------------------------
 
 export function requireRole(
-  session: { user: { role?: string } } | null,
+  session: { user: { role?: string | null } } | null,
   ...roles: string[]
 ): void {
   if (!session) {
@@ -81,15 +81,16 @@ export function requireRole(
 }
 
 // ---------------------------------------------------------------------------
-// hashPassword / verifyPassword — bcrypt wrappers
+// hashSecret / verifySecret — bcrypt wrappers for short-lived secrets
+// (e.g. the student institutional-email pin). No passwords exist post-AUTH-07.
 // ---------------------------------------------------------------------------
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+export async function hashSecret(secret: string): Promise<string> {
+  return bcrypt.hash(secret, BCRYPT_SALT_ROUNDS);
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
+export async function verifySecret(secret: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(secret, hash);
 }
 
 // ---------------------------------------------------------------------------

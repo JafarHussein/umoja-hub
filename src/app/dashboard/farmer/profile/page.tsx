@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, VerificationStatus, FarmerTrustTier, DocumentType } from '@/types';
+import { LinkGroupTokenForm } from '@/components/foodhub/LinkGroupTokenForm';
 
 interface IFarmerData {
   cropsGrown: string[];
@@ -424,6 +425,9 @@ export default function FarmerProfilePage(): React.ReactElement {
           </form>
         )}
       </section>
+
+      {/* ── Group membership (UI-05) ─────────────────────────────────────── */}
+      <LinkGroupTokenForm />
 
       {/* ── Trust score breakdown — shown only when APPROVED ─────────────── */}
       {farmerData.verificationStatus === VerificationStatus.APPROVED && (

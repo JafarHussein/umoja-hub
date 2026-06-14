@@ -31,6 +31,15 @@ dist/
 # -----------------------------------------------------------------------------
 coverage/
 
+# Playwright e2e / visual-regression harness. Baselines under
+# e2e/__screenshots__/ ARE committed (they are the regression reference); the
+# generated reports, traces, and minted session cookies are not.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+e2e/.auth/
+
 # -----------------------------------------------------------------------------
 # TypeScript build cache
 # -----------------------------------------------------------------------------

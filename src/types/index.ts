@@ -22,6 +22,24 @@ export enum VerificationStatus {
   REJECTED = 'REJECTED',
 }
 
+// Progressive onboarding funnel (Decision 02-A). A new OAuth user has no role
+// and walks ROLE_SELECTION → IDENTITY_INPUT → VERIFICATION_UPLOAD → COMPLETED.
+// AUTH-02 writes the starting stage on OAuth account creation; AUTH-05 advances
+// it as each onboarding step is submitted.
+export enum OnboardingStage {
+  ROLE_SELECTION = 'ROLE_SELECTION',
+  IDENTITY_INPUT = 'IDENTITY_INPUT',
+  VERIFICATION_UPLOAD = 'VERIFICATION_UPLOAD',
+  COMPLETED = 'COMPLETED',
+}
+
+// Identity provider a user authenticated with (Decision 01-B). Absent for
+// legacy credentials accounts until the CredentialsProvider is retired (AUTH-07).
+export enum OAuthProvider {
+  GOOGLE = 'google',
+  GITHUB = 'github',
+}
+
 export enum OrderPaymentStatus {
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PAID = 'PAID',
@@ -165,6 +183,26 @@ export enum BuyerContactPreference {
   PLATFORM_MESSAGE = 'PLATFORM_MESSAGE',
 }
 
+export enum WithdrawalRequestStatus {
+  REQUESTED = 'REQUESTED',
+  APPROVED = 'APPROVED',
+  PAID = 'PAID',
+  REJECTED = 'REJECTED',
+}
+
+export enum MediationRequestStatus {
+  OPEN = 'OPEN',
+  IN_REVIEW = 'IN_REVIEW',
+  RESOLVED = 'RESOLVED',
+}
+
+export enum MediationCategory {
+  NOT_DELIVERED = 'NOT_DELIVERED',
+  QUALITY_ISSUE = 'QUALITY_ISSUE',
+  WRONG_QUANTITY = 'WRONG_QUANTITY',
+  OTHER = 'OTHER',
+}
+
 // ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------
@@ -198,3 +236,4 @@ export const BCRYPT_SALT_ROUNDS = 12;
 export const REVIEW_MIN_WORD_COUNT = 50;
 export const MAX_ASSISTANT_MESSAGE_CHARS = 1000;
 export const GITHUB_CACHE_TTL_MINUTES = 60;
+export const MEDIATION_ESCALATION_HOURS = 48;

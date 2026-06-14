@@ -31,6 +31,8 @@ type OrderLean = {
   totalAmountKES: number;
   paymentStatus: OrderPaymentStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
+  fulfillmentType: string;
+  buyerPhone: string;
   mpesaCheckoutRequestId?: string;
   farmerId: { toString(): string };
   buyerId: { toString(): string };
@@ -166,14 +168,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           totalAmountKES: order.totalAmountKES,
           paymentStatus: order.paymentStatus,
           fulfillmentStatus: order.fulfillmentStatus,
+          fulfillmentType: order.fulfillmentType,
+          buyerPhone: order.buyerPhone,
           buyer: {
             firstName: buyer?.firstName ?? '—',
             lastName: buyer?.lastName ?? '',
           },
+          // The Daraja webhook sets fulfillmentStatus to IN_FULFILLMENT at the moment of
+          // payment, so an order never sits in PAID + AWAITING_PAYMENT. The farmer's
+          // dispatch attestation is therefore gated on payment received and not yet
+          // confirmed — confirmedByFarmerAt is what the reliability score measures.
           canConfirmDispatch:
             order.paymentStatus === OrderPaymentStatus.PAID &&
-            order.fulfillmentStatus === OrderFulfillmentStatus.AWAITING_PAYMENT,
+            order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+            !order.confirmedByFarmerAt,
           createdAt: order.createdAt.toISOString(),
+          // The handover countdown is anchored to paidAt: confirming within 24 h of
+          // payment is what farmerTrustCalculator counts as on-time.
+          paidAt: order.paidAt?.toISOString() ?? null,
+          confirmedByFarmerAt: order.confirmedByFarmerAt?.toISOString() ?? null,
+          receivedByBuyerAt: order.receivedByBuyerAt?.toISOString() ?? null,
         };
       }),
       nextCursor: farmerNextCursor,
