@@ -212,7 +212,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lecturerReviewId: String(lecturerReview._id),
     });
 
-    return NextResponse.json({ data: lecturerReview }, { status: 201 });
+    // 6. Reveal the peer review only now that the decision is irreversibly
+    // recorded — the detail GET withholds it to keep assessments independent.
+    const { default: PeerReview } = await import('@/lib/models/PeerReview.model');
+    const rawPeerReviewId = rawRecord['peerReviewId'];
+    const peerReview = rawPeerReviewId
+      ? await PeerReview.findById(rawPeerReviewId)
+          .select('scores comments submittedAt status')
+          .lean()
+      : null;
+
+    return NextResponse.json({ data: lecturerReview, peerReview }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

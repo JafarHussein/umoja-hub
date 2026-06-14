@@ -22,6 +22,24 @@ export enum VerificationStatus {
   REJECTED = 'REJECTED',
 }
 
+// Progressive onboarding funnel (Decision 02-A). A new OAuth user has no role
+// and walks ROLE_SELECTION → IDENTITY_INPUT → VERIFICATION_UPLOAD → COMPLETED.
+// AUTH-02 writes the starting stage on OAuth account creation; AUTH-05 advances
+// it as each onboarding step is submitted.
+export enum OnboardingStage {
+  ROLE_SELECTION = 'ROLE_SELECTION',
+  IDENTITY_INPUT = 'IDENTITY_INPUT',
+  VERIFICATION_UPLOAD = 'VERIFICATION_UPLOAD',
+  COMPLETED = 'COMPLETED',
+}
+
+// Identity provider a user authenticated with (Decision 01-B). Absent for
+// legacy credentials accounts until the CredentialsProvider is retired (AUTH-07).
+export enum OAuthProvider {
+  GOOGLE = 'google',
+  GITHUB = 'github',
+}
+
 export enum OrderPaymentStatus {
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PAID = 'PAID',
@@ -165,6 +183,71 @@ export enum BuyerContactPreference {
   PLATFORM_MESSAGE = 'PLATFORM_MESSAGE',
 }
 
+export enum WithdrawalRequestStatus {
+  REQUESTED = 'REQUESTED',
+  APPROVED = 'APPROVED',
+  PAID = 'PAID',
+  REJECTED = 'REJECTED',
+}
+
+export enum MediationRequestStatus {
+  OPEN = 'OPEN',
+  IN_REVIEW = 'IN_REVIEW',
+  RESOLVED = 'RESOLVED',
+}
+
+export enum MediationCategory {
+  NOT_DELIVERED = 'NOT_DELIVERED',
+  QUALITY_ISSUE = 'QUALITY_ISSUE',
+  WRONG_QUANTITY = 'WRONG_QUANTITY',
+  OTHER = 'OTHER',
+}
+
+// ---------------------------------------------------------------------------
+// Payments — provider abstraction + simulation layer
+// The order/webhook contract is provider-agnostic: the simulator emits the same
+// Daraja-shaped callbacks the real provider would, through the same processor.
+// ---------------------------------------------------------------------------
+
+export enum PaymentProviderName {
+  SIMULATION = 'simulation',
+  DARAJA_SANDBOX = 'daraja-sandbox',
+  DARAJA_PRODUCTION = 'daraja-production',
+}
+
+// Outcomes a simulated STK push can resolve to. Each maps to a real Daraja
+// ResultCode so the downstream contract is identical to production.
+export enum SimulatedOutcome {
+  SUCCESS = 'SUCCESS',
+  INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
+  USER_CANCELLED = 'USER_CANCELLED',
+  PHONE_UNREACHABLE = 'PHONE_UNREACHABLE',
+  TIMEOUT = 'TIMEOUT',
+  NETWORK_FAILURE = 'NETWORK_FAILURE',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  // The callback is never delivered — exercises the stuck-payment/reconciliation
+  // path (the order sits PENDING_PAYMENT until the cron reconciles it).
+  LOST = 'LOST',
+}
+
+export enum SimulatedPaymentStatus {
+  SCHEDULED = 'SCHEDULED',
+  DELIVERED = 'DELIVERED',
+  LOST = 'LOST',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentEventType {
+  INITIATED = 'INITIATED',
+  CALLBACK_RECEIVED = 'CALLBACK_RECEIVED',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  DUPLICATE = 'DUPLICATE',
+  TIMEOUT = 'TIMEOUT',
+  LOST = 'LOST',
+  RECONCILED = 'RECONCILED',
+}
+
 // ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------
@@ -198,3 +281,4 @@ export const BCRYPT_SALT_ROUNDS = 12;
 export const REVIEW_MIN_WORD_COUNT = 50;
 export const MAX_ASSISTANT_MESSAGE_CHARS = 1000;
 export const GITHUB_CACHE_TTL_MINUTES = 60;
+export const MEDIATION_ESCALATION_HOURS = 48;

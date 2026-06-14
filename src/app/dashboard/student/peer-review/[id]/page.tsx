@@ -49,6 +49,31 @@ const DOC_TAB_LABELS: Record<DocTab, string> = {
 
 const DOC_TABS: DocTab[] = ['problemBreakdown', 'approachPlan', 'finalReflection'];
 
+// Preset rubric criteria. Selected boxes serialize (in this fixed order) into a
+// canonical comment string per dimension — no free-text, so reviews stay
+// structured and comparable while still satisfying peerReviewSchema (non-empty).
+const CODE_QUALITY_CRITERIA = [
+  'Readable structure and naming',
+  'Handles errors and edge cases',
+  'Avoids unnecessary complexity',
+  'Includes tests or verification',
+  'Consistent, idiomatic style',
+];
+
+const DOC_CLARITY_CRITERIA = [
+  'Problem clearly explained',
+  'Approach is well justified',
+  'Reflection shows genuine learning',
+  'Steps are reproducible',
+  'Concise and well organized',
+];
+
+// Canonical serialization: filter the preset list in declared order so the
+// stored comment is deterministic regardless of click order.
+function serializeCriteria(preset: string[], selected: string[]): string {
+  return preset.filter((c) => selected.includes(c)).join('; ');
+}
+
 // ── Score selector ─────────────────────────────────────────────────────────
 
 function ScoreSelector({
@@ -83,6 +108,62 @@ function ScoreSelector({
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Criteria checklist ──────────────────────────────────────────────────────
+
+function CriteriaGroup({
+  legend,
+  options,
+  selected,
+  onToggle,
+}: {
+  legend: string;
+  options: string[];
+  selected: string[];
+  onToggle: (option: string) => void;
+}): React.ReactElement {
+  return (
+    <fieldset className="space-y-1.5">
+      <legend className="text-t5 font-body text-text-secondary mb-1">{legend}</legend>
+      {options.map((option) => {
+        const checked = selected.includes(option);
+        return (
+          <label
+            key={option}
+            className="flex items-center gap-2.5 cursor-pointer select-none py-1"
+          >
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => onToggle(option)}
+              className="peer sr-only"
+            />
+            <span
+              className={[
+                'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[3px] border text-[10px] transition-colors duration-150',
+                'peer-focus-visible:ring-1 peer-focus-visible:ring-accent-green',
+                checked
+                  ? 'border-accent-green bg-accent-green/15 text-accent-green'
+                  : 'border-zinc-700 text-transparent',
+              ].join(' ')}
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+            <span
+              className={[
+                'text-t5 font-body',
+                checked ? 'text-text-primary' : 'text-text-secondary',
+              ].join(' ')}
+            >
+              {option}
+            </span>
+          </label>
+        );
+      })}
+    </fieldset>
   );
 }
 
@@ -131,8 +212,17 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   const [codeQualityScore, setCodeQualityScore] = useState(0);
   const [docClarityScore, setDocClarityScore] = useState(0);
-  const [codeQualityComment, setCodeQualityComment] = useState('');
-  const [docClarityComment, setDocClarityComment] = useState('');
+  const [codeCriteria, setCodeCriteria] = useState<string[]>([]);
+  const [docCriteria, setDocCriteria] = useState<string[]>([]);
+
+  function toggleCriterion(
+    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    option: string
+  ): void {
+    setList((prev) =>
+      prev.includes(option) ? prev.filter((c) => c !== option) : [...prev, option]
+    );
+  }
 
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -176,8 +266,10 @@ export default function PeerReviewDetailPage(): React.ReactElement {
       setSubmitError('Please select a score for both dimensions.');
       return;
     }
-    if (!codeQualityComment.trim() || !docClarityComment.trim()) {
-      setSubmitError('Please provide comments for both dimensions.');
+    const codeComment = serializeCriteria(CODE_QUALITY_CRITERIA, codeCriteria);
+    const docComment = serializeCriteria(DOC_CLARITY_CRITERIA, docCriteria);
+    if (!codeComment || !docComment) {
+      setSubmitError('Select at least one criterion for both dimensions.');
       return;
     }
 
@@ -190,7 +282,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scores: { codeQuality: codeQualityScore, documentationClarity: docClarityScore },
-          comments: { codeQuality: codeQualityComment.trim(), documentationClarity: docClarityComment.trim() },
+          comments: { codeQuality: codeComment, documentationClarity: docComment },
         }),
       });
 
@@ -207,7 +299,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
               ...prev,
               status: PeerReviewStatus.SUBMITTED,
               scores: { codeQuality: codeQualityScore, documentationClarity: docClarityScore },
-              comments: { codeQuality: codeQualityComment.trim(), documentationClarity: docClarityComment.trim() },
+              comments: { codeQuality: codeComment, documentationClarity: docComment },
             }
           : null
       );
@@ -260,6 +352,11 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   const engagement = review.engagement;
   const isSubmitted = review.status === PeerReviewStatus.SUBMITTED;
+  const canSubmit =
+    codeQualityScore > 0 &&
+    docClarityScore > 0 &&
+    codeCriteria.length > 0 &&
+    docCriteria.length > 0;
 
   const briefTitle = engagement
     ? engagement.track === ProjectTrack.AI_BRIEF
@@ -294,8 +391,16 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-          {/* Left — project content */}
+          {/* Left — project content (anonymized) */}
           <div className="md:col-span-7 space-y-4">
+
+            {/* Anonymity notice — the author's identity is withheld from reviewers */}
+            <div className="bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-4 py-2.5">
+              <p className="text-t6 font-body text-text-secondary">
+                Anonymous submission — the author&apos;s identity is withheld so you can review the
+                work on its merits.
+              </p>
+            </div>
 
             {/* Brief metadata */}
             {engagement && (
@@ -419,37 +524,31 @@ export default function PeerReviewDetailPage(): React.ReactElement {
                   Review form
                 </p>
 
-                <ScoreSelector
-                  label="Code quality"
-                  value={codeQualityScore}
-                  onChange={setCodeQualityScore}
-                />
-
-                <div className="space-y-1.5">
-                  <p className="text-t5 font-body text-text-secondary">Code quality comment</p>
-                  <textarea
-                    value={codeQualityComment}
-                    onChange={(e) => setCodeQualityComment(e.target.value)}
-                    placeholder="What did you observe about the code quality?"
-                    rows={3}
-                    className="w-full bg-surface-secondary border border-zinc-800/50 rounded-sm px-3 py-2.5 font-body text-t5 text-text-primary placeholder-text-disabled resize-none focus:outline-none focus:border-accent-green/50 transition-colors duration-150"
+                <div className="space-y-2.5">
+                  <ScoreSelector
+                    label="Code quality"
+                    value={codeQualityScore}
+                    onChange={setCodeQualityScore}
+                  />
+                  <CriteriaGroup
+                    legend="Code quality criteria"
+                    options={CODE_QUALITY_CRITERIA}
+                    selected={codeCriteria}
+                    onToggle={(o) => toggleCriterion(setCodeCriteria, o)}
                   />
                 </div>
 
-                <ScoreSelector
-                  label="Documentation clarity"
-                  value={docClarityScore}
-                  onChange={setDocClarityScore}
-                />
-
-                <div className="space-y-1.5">
-                  <p className="text-t5 font-body text-text-secondary">Documentation comment</p>
-                  <textarea
-                    value={docClarityComment}
-                    onChange={(e) => setDocClarityComment(e.target.value)}
-                    placeholder="How clear and thorough was the documentation?"
-                    rows={3}
-                    className="w-full bg-surface-secondary border border-zinc-800/50 rounded-sm px-3 py-2.5 font-body text-t5 text-text-primary placeholder-text-disabled resize-none focus:outline-none focus:border-accent-green/50 transition-colors duration-150"
+                <div className="space-y-2.5">
+                  <ScoreSelector
+                    label="Documentation clarity"
+                    value={docClarityScore}
+                    onChange={setDocClarityScore}
+                  />
+                  <CriteriaGroup
+                    legend="Documentation clarity criteria"
+                    options={DOC_CLARITY_CRITERIA}
+                    selected={docCriteria}
+                    onToggle={(o) => toggleCriterion(setDocCriteria, o)}
                   />
                 </div>
 
@@ -463,7 +562,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
                   variant="primary"
                   size="md"
                   className="w-full"
-                  disabled={submitState === 'submitting'}
+                  disabled={!canSubmit || submitState === 'submitting'}
                   onClick={() => void handleSubmit()}
                 >
                   {submitState === 'submitting' ? 'Submitting...' : 'Submit review'}

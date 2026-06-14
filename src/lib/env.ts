@@ -5,17 +5,17 @@
  * rather than failing silently at runtime.
  */
 
-const requiredEnvVars = [
+// Always required, regardless of the active payment provider.
+const baseRequiredEnvVars = [
   'MONGODB_URI',
   'NEXTAUTH_SECRET',
   'NEXTAUTH_URL',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GITHUB_CLIENT_ID',
+  'GITHUB_CLIENT_SECRET',
   'GROQ_API_KEY',
   'OPENAI_API_KEY',
-  'MPESA_CONSUMER_KEY',
-  'MPESA_CONSUMER_SECRET',
-  'MPESA_SHORTCODE',
-  'MPESA_PASSKEY',
-  'MPESA_CALLBACK_URL',
   'AFRICASTALKING_API_KEY',
   'AFRICASTALKING_USERNAME',
   'OPEN_WEATHER_MAP_API_KEY',
@@ -32,16 +32,38 @@ const requiredEnvVars = [
   'ADMIN_PHONE_NUMBER',
 ] as const;
 
-type RequiredEnvVar = (typeof requiredEnvVars)[number];
+// Required only when a real Daraja provider is active. With
+// PAYMENT_PROVIDER=simulation (the default) the platform runs without any M-Pesa
+// credentials — the simulator never calls Safaricom.
+const darajaEnvVars = [
+  'MPESA_CONSUMER_KEY',
+  'MPESA_CONSUMER_SECRET',
+  'MPESA_SHORTCODE',
+  'MPESA_PASSKEY',
+  'MPESA_CALLBACK_URL',
+] as const;
+
+type RequiredEnvVar = (typeof baseRequiredEnvVars)[number] | (typeof darajaEnvVars)[number];
+
+/** True when PAYMENT_PROVIDER selects a real Daraja provider. */
+function darajaCredentialsRequired(): boolean {
+  const provider = (process.env['PAYMENT_PROVIDER'] ?? 'simulation').toLowerCase();
+  return provider === 'daraja-sandbox' || provider === 'daraja-production';
+}
 
 /**
  * Validates all required environment variables are present.
+ * The M-Pesa credentials are required only when a Daraja provider is selected.
  * Call this at application startup (not at module load time in serverless).
  */
 export function validateEnv(): void {
+  const required: readonly string[] = darajaCredentialsRequired()
+    ? [...baseRequiredEnvVars, ...darajaEnvVars]
+    : baseRequiredEnvVars;
+
   const missing: string[] = [];
 
-  for (const key of requiredEnvVars) {
+  for (const key of required) {
     if (!process.env[key]) {
       missing.push(key);
     }

@@ -23,14 +23,24 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<NextRe
     await connectDB();
 
     const { default: FarmerGroup } = await import('@/lib/models/FarmerGroup.model');
+    // Register the User schema so the members ref can be populated (the schema
+    // is otherwise unregistered in a cold serverless context → MissingSchemaError).
+    await import('@/lib/models/User.model');
 
-    const group = await FarmerGroup.findById(groupId).lean();
+    // Roster identities for the read-only Group Operations hub (UI-04). Payment
+    // fields are deliberately not selected — the hub shows no per-member payment.
+    const group = await FarmerGroup.findById(groupId)
+      .populate('members', 'firstName lastName county farmerData.isVerified')
+      .lean();
     if (!group) {
       throw new AppError('Group not found.', 404, 'DB_NOT_FOUND');
     }
 
     if (session!.user.role !== Role.ADMIN) {
-      const isMember = (group.members as unknown[]).some((m) => String(m) === session!.user.id);
+      // members may be populated objects or raw ids — normalise to the id.
+      const isMember = (group.members as Array<{ _id?: unknown }>).some(
+        (m) => String(m?._id ?? m) === session!.user.id
+      );
       if (!isMember) {
         throw new AppError('You are not a member of this group.', 403, 'AUTH_FORBIDDEN');
       }
@@ -106,9 +116,20 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
         );
       }
       const { default: User } = await import('@/lib/models/User.model');
-      const targetUser = await User.findById(targetId).select('role').lean();
+      const targetUser = await User.findById(targetId)
+        .select('role farmerData.isVerified')
+        .lean();
       if (!targetUser || targetUser.role !== Role.FARMER) {
         throw new AppError('User not found or is not a farmer.', 404, 'DB_NOT_FOUND');
+      }
+      // Group participation is restricted to verified farmers — the published
+      // cooperative methodology promises this gate; enforce it server-side.
+      if (!targetUser.farmerData?.isVerified) {
+        throw new AppError(
+          'Only verified farmers can be added to a group.',
+          403,
+          'FARMER_NOT_VERIFIED'
+        );
       }
       update = { $addToSet: { members: targetId }, $inc: { memberCount: 1 } };
     } else {

@@ -5,6 +5,9 @@ import { connectDB } from '@/lib/db';
 import FarmerGroup from '@/lib/models/FarmerGroup.model';
 import GroupOrder from '@/lib/models/GroupOrder.model';
 import VerifiedSupplier from '@/lib/models/VerifiedSupplier.model';
+// Registers the User schema so participatingMembers.userId can be populated in
+// GET (otherwise MissingSchemaError in a cold serverless context).
+import '@/lib/models/User.model';
 import { groupOrderSchema } from '@/lib/validation/groupSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, MIN_GROUP_ORDER_MEMBERS, SupplierVerificationStatus } from '@/types';
@@ -48,6 +51,20 @@ export async function POST(
     );
     if (!isMember) {
       throw new AppError('You are not a member of this group.', 403, 'AUTH_FORBIDDEN');
+    }
+
+    // The proposer auto-joins as the order's first participant, so proposing
+    // carries the same verified-farmer requirement as joining.
+    const { default: User } = await import('@/lib/models/User.model');
+    const proposer = await User.findById(session!.user.id)
+      .select('farmerData.isVerified')
+      .lean();
+    if (!proposer?.farmerData?.isVerified) {
+      throw new AppError(
+        'Only verified farmers can propose group orders.',
+        403,
+        'FARMER_NOT_VERIFIED'
+      );
     }
 
     // Enforce minimum members for a group order

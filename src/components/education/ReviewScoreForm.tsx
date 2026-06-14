@@ -4,9 +4,18 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LecturerDecision, REVIEW_MIN_WORD_COUNT } from '@/types';
 
+// Peer review data revealed by POST /api/lecturer/reviews after the decision
+// is recorded — the detail GET withholds it to keep assessments independent.
+export interface IPeerReviewReveal {
+  scores?: { codeQuality?: number; documentationClarity?: number };
+  comments?: { codeQuality?: string; documentationClarity?: string };
+  submittedAt?: string;
+  status: string;
+}
+
 export interface IReviewScoreFormProps {
   engagementId: string;
-  onSuccess: () => void;
+  onSuccess: (peerReview: IPeerReviewReveal | null) => void;
 }
 
 type SubmitState = 'idle' | 'submitting';
@@ -177,8 +186,9 @@ export function ReviewScoreForm({
         return;
       }
 
+      const data = (await res.json()) as { peerReview?: IPeerReviewReveal | null };
       setSubmitState('idle');
-      onSuccess();
+      onSuccess(data.peerReview ?? null);
     } catch {
       setSubmitError('Network error. Try again.');
       setSubmitState('idle');

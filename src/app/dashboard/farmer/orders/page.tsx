@@ -30,11 +30,76 @@ interface IFarmerOrder {
   paidAt?: string | null;
   confirmedByFarmerAt?: string | null;
   receivedByBuyerAt?: string | null;
+  // Authoritative gate from GET /api/orders (PAID && IN_FULFILLMENT &&
+  // !confirmedByFarmerAt). The client must never recompute this.
+  canConfirmDispatch: boolean;
   createdAt: string;
   buyer: {
     firstName: string;
     lastName: string;
   };
+}
+
+// Farmers who confirm carrier handover within 24 h of payment count as on-time
+// in farmerTrustCalculator. The prompt counts down against that window.
+const HANDOVER_WINDOW_HOURS = 24;
+
+type HandoverUrgency = 'ok' | 'warning' | 'elapsed';
+
+function handoverState(
+  paidAt: string,
+  now: number
+): { urgency: HandoverUrgency; label: string } {
+  const deadline = new Date(paidAt).getTime() + HANDOVER_WINDOW_HOURS * 60 * 60 * 1000;
+  const remainingMs = deadline - now;
+  if (remainingMs <= 0) {
+    return { urgency: 'elapsed', label: 'Handover window elapsed' };
+  }
+  const totalMinutes = Math.floor(remainingMs / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const urgency: HandoverUrgency = remainingMs <= 6 * 60 * 60 * 1000 ? 'warning' : 'ok';
+  return { urgency, label: `${hours}h ${minutes}m left to confirm` };
+}
+
+// Live 24-h handover countdown. Re-reads the clock every minute; tone escalates
+// green -> yellow -> red as the on-time window closes (matching Badge precedent).
+function HandoverCountdown({ paidAt }: { paidAt: string }): React.ReactElement {
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const { urgency, label } = handoverState(paidAt, now);
+
+  const tone =
+    urgency === 'elapsed'
+      ? 'text-red-400 border-red-800/40 bg-red-950/40'
+      : urgency === 'warning'
+        ? 'text-yellow-400 border-yellow-800/40 bg-yellow-950/40'
+        : 'text-accent-green border-accent-green/30 bg-accent-green/10';
+
+  const dot =
+    urgency === 'elapsed'
+      ? 'bg-red-500'
+      : urgency === 'warning'
+        ? 'bg-yellow-400'
+        : 'bg-accent-green';
+
+  return (
+    <span
+      className={[
+        'inline-flex items-center gap-1.5 rounded-[2px] border px-2 py-0.5 font-mono text-t6 font-medium uppercase tracking-wide whitespace-nowrap',
+        tone,
+      ].join(' ')}
+      role="status"
+    >
+      <span className={['w-1.5 h-1.5 rounded-full flex-shrink-0', dot].join(' ')} aria-hidden="true" />
+      {label}
+    </span>
+  );
 }
 
 interface IOrdersResponse {
@@ -87,13 +152,15 @@ export default function FarmerOrdersPage(): React.ReactElement {
         body: JSON.stringify({ fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT }),
       });
       if (res.ok) {
+        const confirmedAt = new Date().toISOString();
         setOrders((prev) =>
           prev.map((o) =>
             o._id === orderId
               ? {
                   ...o,
                   fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT,
-                  confirmedByFarmerAt: new Date().toISOString(),
+                  confirmedByFarmerAt: confirmedAt,
+                  canConfirmDispatch: false,
                 }
               : o,
           ),
@@ -104,7 +171,8 @@ export default function FarmerOrdersPage(): React.ReactElement {
               ? {
                   ...prev,
                   fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT,
-                  confirmedByFarmerAt: new Date().toISOString(),
+                  confirmedByFarmerAt: confirmedAt,
+                  canConfirmDispatch: false,
                 }
               : null,
           );
@@ -123,10 +191,6 @@ export default function FarmerOrdersPage(): React.ReactElement {
       minute: '2-digit',
     });
   }
-
-  const canConfirmDispatch = (order: IFarmerOrder): boolean =>
-    order.paymentStatus === OrderPaymentStatus.PAID &&
-    order.fulfillmentStatus === OrderFulfillmentStatus.AWAITING_PAYMENT;
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
@@ -264,26 +328,31 @@ export default function FarmerOrdersPage(): React.ReactElement {
               />
 
               {/* Actions */}
-              <div className="flex items-center gap-2">
-                {canConfirmDispatch(order) && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    isLoading={confirmingId === order._id}
-                    onClick={() => void confirmDispatch(order._id)}
-                    aria-label={`Confirm dispatch for order ${order.orderReferenceId}`}
-                  >
-                    Confirm dispatch
-                  </Button>
+              <div className="flex flex-col items-end gap-2">
+                {order.canConfirmDispatch && order.paidAt && (
+                  <HandoverCountdown paidAt={order.paidAt} />
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedOrder(order)}
-                  aria-label={`View details for order ${order.orderReferenceId}`}
-                >
-                  Details
-                </Button>
+                <div className="flex items-center gap-2">
+                  {order.canConfirmDispatch && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      isLoading={confirmingId === order._id}
+                      onClick={() => void confirmDispatch(order._id)}
+                      aria-label={`Confirm carrier handover for order ${order.orderReferenceId}`}
+                    >
+                      Confirm Carrier Handover
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedOrder(order)}
+                    aria-label={`View details for order ${order.orderReferenceId}`}
+                  >
+                    Details
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -361,16 +430,26 @@ export default function FarmerOrdersPage(): React.ReactElement {
             </div>
 
             {/* Action */}
-            {canConfirmDispatch(selectedOrder) && (
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                isLoading={confirmingId === selectedOrder._id}
-                onClick={() => void confirmDispatch(selectedOrder._id)}
-              >
-                Confirm dispatch
-              </Button>
+            {selectedOrder.canConfirmDispatch && (
+              <div className="space-y-3">
+                {selectedOrder.paidAt && (
+                  <div className="flex items-center justify-between gap-3 rounded bg-surface-secondary border border-white/5 p-3">
+                    <p className="text-t6 font-body text-text-secondary">
+                      Confirm within 24 h of payment to keep your reliability score on-time.
+                    </p>
+                    <HandoverCountdown paidAt={selectedOrder.paidAt} />
+                  </div>
+                )}
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  isLoading={confirmingId === selectedOrder._id}
+                  onClick={() => void confirmDispatch(selectedOrder._id)}
+                >
+                  Confirm Carrier Handover
+                </Button>
+              </div>
             )}
           </div>
         </Modal>

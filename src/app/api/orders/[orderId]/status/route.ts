@@ -76,6 +76,17 @@ export async function PATCH(
           'ORDER_INVALID_STATUS_TRANSITION'
         );
       }
+      // Confirming dispatch must never regress an order the buyer has already
+      // closed out (COMPLETED) or one under dispute. The webhook parks paid
+      // orders in IN_FULFILLMENT, so that is the only state this transition
+      // may act on.
+      if (order.fulfillmentStatus !== OrderFulfillmentStatus.IN_FULFILLMENT) {
+        throw new AppError(
+          'This order cannot be updated to the requested status at this stage.',
+          409,
+          'ORDER_INVALID_STATUS_TRANSITION'
+        );
+      }
     } else if (newStatus === OrderFulfillmentStatus.RECEIVED) {
       if (userRole !== Role.BUYER || buyerId !== session.user.id) {
         throw new AppError(

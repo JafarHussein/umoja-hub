@@ -69,9 +69,19 @@ function makeParams(groupId = GROUP_ID) {
 describe('GET /api/groups/[groupId]', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  // GET populates the member roster, so findById resolves through .populate().lean().
+  function groupChain(value: unknown) {
+    return { populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(value) }) };
+  }
+  // After populate, members are objects keyed by _id (not raw id strings).
+  const populatedGroup = {
+    ...mockGroup,
+    members: [{ _id: CREATOR_ID }, { _id: MEMBER_ID }],
+  };
+
   it('returns group data for a member', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(CREATOR_SESSION);
-    mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
+    mockGroupFindById.mockReturnValue(groupChain(populatedGroup));
 
     const res = await GET(makeGetRequest(), makeParams());
     const body = await res.json() as { data: typeof mockGroup };
@@ -82,7 +92,7 @@ describe('GET /api/groups/[groupId]', () => {
 
   it('returns 403 when non-member FARMER requests group', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(OUTSIDER_SESSION);
-    mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
+    mockGroupFindById.mockReturnValue(groupChain(populatedGroup));
 
     const res = await GET(makeGetRequest(), makeParams());
 
@@ -91,7 +101,7 @@ describe('GET /api/groups/[groupId]', () => {
 
   it('allows ADMIN to view any group', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(ADMIN_SESSION);
-    mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
+    mockGroupFindById.mockReturnValue(groupChain(populatedGroup));
 
     const res = await GET(makeGetRequest(), makeParams());
 
@@ -100,7 +110,7 @@ describe('GET /api/groups/[groupId]', () => {
 
   it('returns 404 when group does not exist', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(ADMIN_SESSION);
-    mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+    mockGroupFindById.mockReturnValue(groupChain(null));
 
     const res = await GET(makeGetRequest(), makeParams());
 
@@ -115,7 +125,9 @@ describe('PATCH /api/groups/[groupId] — member management', () => {
     (getServerSession as jest.Mock).mockResolvedValue(CREATOR_SESSION);
     mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
     mockUserFindById.mockReturnValue({
-      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ role: 'FARMER' }) }),
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ role: 'FARMER', farmerData: { isVerified: true } }),
+      }),
     });
     mockGroupFindByIdAndUpdate.mockResolvedValue({ ...mockGroup, memberCount: 3 });
 
@@ -129,6 +141,23 @@ describe('PATCH /api/groups/[groupId] — member management', () => {
       { new: true }
     );
     expect(body.data.memberCount).toBe(3);
+  });
+
+  it('returns 403 when trying to ADD an unverified farmer', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(CREATOR_SESSION);
+    mockGroupFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockGroup) });
+    mockUserFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ role: 'FARMER', farmerData: { isVerified: false } }),
+      }),
+    });
+
+    const res = await PATCH(makePatchRequest({ action: 'ADD', userId: TARGET_ID }), makeParams());
+
+    expect(res.status).toBe(403);
+    const body = await res.json() as { code: string };
+    expect(body.code).toBe('FARMER_NOT_VERIFIED');
+    expect(mockGroupFindByIdAndUpdate).not.toHaveBeenCalled();
   });
 
   it('allows creator to REMOVE an existing member', async () => {

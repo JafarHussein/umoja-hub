@@ -67,6 +67,12 @@ jest.mock('@/lib/models/LecturerEffectiveness.model', () => ({
   },
 }));
 
+const mockPeerReviewFindById = jest.fn();
+jest.mock('@/lib/models/PeerReview.model', () => ({
+  __esModule: true,
+  default: { findById: jest.fn((...a: unknown[]) => mockPeerReviewFindById(...a)) },
+}));
+
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/options', () => ({ authOptions: {} }));
 
@@ -169,6 +175,43 @@ describe('POST /api/lecturer/reviews', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(LECTURER_SESSION);
+  });
+
+  it('reveals the withheld peer review in the response after the decision', async () => {
+    setupHappyPath();
+    const PEER_REVIEW_ID = '64a1b2c3d4e5f6a7b8c9d0a9';
+    mockEngagementFindOne.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ ...ACTIVE_ENGAGEMENT, peerReviewId: PEER_REVIEW_ID }),
+    });
+    mockPeerReviewFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({
+          scores: { codeQuality: 4, documentationClarity: 5 },
+          comments: { codeQuality: 'Solid work', documentationClarity: 'Clear docs' },
+          status: 'SUBMITTED',
+        }),
+      }),
+    });
+
+    const res = await POST(makeRequest(VALID_BODY));
+    const body = await res.json() as {
+      peerReview: { scores: { codeQuality: number } } | null;
+    };
+
+    expect(res.status).toBe(201);
+    expect(mockPeerReviewFindById).toHaveBeenCalledWith(PEER_REVIEW_ID);
+    expect(body.peerReview?.scores.codeQuality).toBe(4);
+  });
+
+  it('returns peerReview null when the engagement has no peer review reference', async () => {
+    setupHappyPath();
+
+    const res = await POST(makeRequest(VALID_BODY));
+    const body = await res.json() as { peerReview: unknown };
+
+    expect(res.status).toBe(201);
+    expect(body.peerReview).toBeNull();
+    expect(mockPeerReviewFindById).not.toHaveBeenCalled();
   });
 
   it('creates review, advances engagement to VERIFIED, and increments portfolio stats', async () => {

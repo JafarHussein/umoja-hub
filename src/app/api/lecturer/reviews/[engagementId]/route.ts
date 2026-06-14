@@ -44,12 +44,17 @@ export async function GET(
 
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
 
+    // Peer review scores are deliberately withheld here (field excluded, not
+    // just unpopulated) so the lecturer's assessment is made independently —
+    // the published /trust methodology promises this. The scores are revealed
+    // in the POST /api/lecturer/reviews response after the decision is
+    // recorded. Supersedes the earlier client-side masking approach.
     const engagement = await ProjectEngagement.findOne({
       _id: engagementId,
       status: ProjectStatus.UNDER_LECTURER_REVIEW,
     } as object)
+      .select('-peerReviewId')
       .populate('studentId', 'firstName lastName')
-      .populate('peerReviewId', 'scores comments submittedAt status')
       .lean();
 
     if (!engagement) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/button';
 
@@ -24,11 +24,14 @@ export interface IDocumentsTabProps {
   onDocumentSaved: (type: DocumentType, saved: IProcessDocument) => void;
 }
 
+type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+
 interface IEditorState {
   content: string;
-  saveState: 'idle' | 'saving' | 'error';
+  saveState: SaveState;
   errorMsg: string | null;
   savedAt: string | null;
+  hash: string | null;
 }
 
 interface IDocEditors {
@@ -36,6 +39,9 @@ interface IDocEditors {
   approachPlan: IEditorState;
   finalReflection: IEditorState;
 }
+
+const MIN_CONTENT = 50;
+const AUTOSAVE_DELAY_MS = 1_500;
 
 const DOC_CONFIG: { type: DocumentType; label: string; hint: string }[] = [
   {
@@ -70,6 +76,7 @@ function makeEditorState(doc: IProcessDocument | undefined): IEditorState {
     saveState: 'idle',
     errorMsg: null,
     savedAt: doc?.submittedAt ?? null,
+    hash: doc?.hash ?? null,
   };
 }
 
@@ -84,25 +91,36 @@ export function DocumentsTab({
     finalReflection: makeEditorState(documents.finalReflection),
   });
 
+  // Per-document auto-save debounce timers.
+  const timers = useRef<Record<DocumentType, ReturnType<typeof setTimeout> | null>>({
+    problemBreakdown: null,
+    approachPlan: null,
+    finalReflection: null,
+  });
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      (Object.values(pending) as (ReturnType<typeof setTimeout> | null)[]).forEach((t) => {
+        if (t) clearTimeout(t);
+      });
+    };
+  }, []);
+
   function updateEditor(type: DocumentType, patch: Partial<IEditorState>): void {
-    setEditors((prev) => ({
-      ...prev,
-      [type]: { ...prev[type], ...patch },
-    }));
+    setEditors((prev) => ({ ...prev, [type]: { ...prev[type], ...patch } }));
   }
 
-  const handleSave = useCallback(
-    async (docType: DocumentType): Promise<void> => {
-      const currentContent = editors[docType].content;
-      if (currentContent.length < 50) return;
-
+  const save = useCallback(
+    async (docType: DocumentType, content: string): Promise<void> => {
+      if (content.length < MIN_CONTENT) return;
       updateEditor(docType, { saveState: 'saving', errorMsg: null });
 
       try {
         const res = await fetch(`/api/education/engagements/${engagementId}/documents`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ documentType: docType, content: currentContent }),
+          body: JSON.stringify({ documentType: docType, content }),
         });
 
         const body = (await res.json()) as {
@@ -110,7 +128,7 @@ export function DocumentsTab({
           error?: string;
         };
 
-        if (!res.ok) {
+        if (!res.ok || !body.data) {
           updateEditor(docType, {
             saveState: 'error',
             errorMsg: body.error ?? 'Failed to save. Try again.',
@@ -118,32 +136,56 @@ export function DocumentsTab({
           return;
         }
 
-        const submittedAt = body.data?.submittedAt ?? null;
-        updateEditor(docType, { saveState: 'idle', savedAt: submittedAt, errorMsg: null });
-
-        if (body.data) {
-          onDocumentSaved(docType, {
-            content: currentContent,
-            hash: body.data.hash,
-            submittedAt: body.data.submittedAt,
-          });
-        }
-      } catch {
         updateEditor(docType, {
-          saveState: 'error',
-          errorMsg: 'Network error. Try again.',
+          saveState: 'saved',
+          savedAt: body.data.submittedAt,
+          hash: body.data.hash,
+          errorMsg: null,
         });
+        onDocumentSaved(docType, {
+          content,
+          hash: body.data.hash,
+          submittedAt: body.data.submittedAt,
+        });
+      } catch {
+        updateEditor(docType, { saveState: 'error', errorMsg: 'Network error. Try again.' });
       }
     },
-    [editors, engagementId, onDocumentSaved]
+    [engagementId, onDocumentSaved]
   );
+
+  function handleChange(docType: DocumentType, content: string): void {
+    updateEditor(docType, { content, errorMsg: null, saveState: 'dirty' });
+
+    // Debounced auto-save: drafts save themselves once they pass the minimum.
+    const existing = timers.current[docType];
+    if (existing) clearTimeout(existing);
+    if (content.length < MIN_CONTENT) return;
+    timers.current[docType] = setTimeout(() => {
+      void save(docType, content);
+    }, AUTOSAVE_DELAY_MS);
+  }
+
+  function statusLabel(editor: IEditorState): string {
+    switch (editor.saveState) {
+      case 'saving':
+        return 'Saving…';
+      case 'dirty':
+        return editor.content.length < MIN_CONTENT ? 'Not yet saved' : 'Unsaved changes';
+      case 'saved':
+      case 'idle':
+      default:
+        return editor.savedAt ? `Saved · ${formatDate(editor.savedAt)}` : 'Not yet saved';
+    }
+  }
 
   return (
     <div className="p-4 space-y-0">
       {DOC_CONFIG.map((cfg, idx) => {
         const editor = editors[cfg.type];
         const isSaving = editor.saveState === 'saving';
-        const saveDisabled = editor.content.length < 50 || isSaving;
+        const saveDisabled = editor.content.length < MIN_CONTENT || isSaving;
+        const isSaved = editor.savedAt !== null && editor.saveState !== 'saving';
 
         return (
           <div key={cfg.type}>
@@ -157,22 +199,21 @@ export function DocumentsTab({
               <Textarea
                 rows={8}
                 value={editor.content}
-                onChange={(e) =>
-                  updateEditor(cfg.type, { content: e.target.value, errorMsg: null })
-                }
-                hint={editor.content.length < 50 ? cfg.hint : undefined}
+                onChange={(e) => handleChange(cfg.type, e.target.value)}
+                hint={editor.content.length < MIN_CONTENT ? cfg.hint : undefined}
                 aria-label={cfg.label}
               />
 
               <div className="flex items-center justify-between">
                 <div>
-                  {editor.savedAt ? (
-                    <p className="text-t6 font-mono text-accent-green">
-                      Saved · {formatDate(editor.savedAt)}
-                    </p>
-                  ) : (
-                    <p className="text-t6 font-body text-text-disabled">Not yet saved</p>
-                  )}
+                  <p
+                    className={[
+                      'text-t6 font-mono',
+                      isSaved ? 'text-accent-green' : 'text-text-disabled',
+                    ].join(' ')}
+                  >
+                    {statusLabel(editor)}
+                  </p>
                   {editor.saveState === 'error' && editor.errorMsg && (
                     <p className="text-t6 font-body text-red-400 mt-0.5">{editor.errorMsg}</p>
                   )}
@@ -181,11 +222,19 @@ export function DocumentsTab({
                   variant="secondary"
                   size="sm"
                   disabled={saveDisabled}
-                  onClick={() => void handleSave(cfg.type)}
+                  onClick={() => void save(cfg.type, editor.content)}
                 >
                   {isSaving ? 'Saving...' : 'Save'}
                 </Button>
               </div>
+
+              {/* Per-document hash string (corrected VIEW-DET-01) */}
+              {editor.hash && (
+                <p className="text-t6 font-mono text-text-disabled break-all">
+                  <span className="uppercase tracking-widest text-text-secondary">SHA-256</span>{' '}
+                  {editor.hash}
+                </p>
+              )}
             </div>
           </div>
         );

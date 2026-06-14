@@ -93,6 +93,14 @@ const TAB_CONFIG: { id: WorkspaceTab; label: string }[] = [
   { id: 'ai-usage', label: 'AI Usage' },
 ];
 
+// The three process documents whose presence gates finalization (each carries
+// its own per-document hash — there is no single compiled hash).
+const DOC_ITEMS: { type: DocumentType; label: string }[] = [
+  { type: 'problemBreakdown', label: 'Problem Breakdown' },
+  { type: 'approachPlan', label: 'Approach Plan' },
+  { type: 'finalReflection', label: 'Final Reflection' },
+];
+
 // ── Loading skeleton ──────────────────────────────────────────────────────────
 
 function PageSkeleton(): React.ReactElement {
@@ -311,6 +319,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('overview');
+  const [finalized, setFinalized] = useState(false);
 
   const fetchEngagement = useCallback(async (): Promise<void> => {
     try {
@@ -505,11 +514,8 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   const tabsUnlocked = engagement.status !== ProjectStatus.BRIEF_GENERATED;
 
-  const allDocsPresent = !!(
-    engagement.documents.problemBreakdown &&
-    engagement.documents.approachPlan &&
-    engagement.documents.finalReflection
-  );
+  const completedCount = DOC_ITEMS.filter((d) => engagement.documents[d.type]).length;
+  const allDocsPresent = completedCount === DOC_ITEMS.length;
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -641,26 +647,100 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                 </>
               )}
 
-              {/* IN_PROGRESS */}
+              {/* IN_PROGRESS — 3/3 checklist, then Finalize & Hash → Submit */}
               {engagement.status === ProjectStatus.IN_PROGRESS && (
-                <div className="space-y-2">
-                  <p className="text-t5 font-body text-accent-green">Project is active</p>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full"
-                    disabled={!allDocsPresent || submitState === 'submitting'}
-                    onClick={() => void handleSubmitProject()}
-                  >
-                    {submitState === 'submitting' ? 'Submitting...' : 'Submit for review'}
-                  </Button>
-                  {!allDocsPresent && (
-                    <p className="text-t6 font-body text-text-disabled">
-                      Complete all 3 process documents to submit.
+                <div className="space-y-4">
+                  {/* Submission checklist */}
+                  <div className="space-y-2">
+                    <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                      Submission checklist
                     </p>
-                  )}
-                  {submitError && (
-                    <p className="text-t6 font-body text-red-400">{submitError}</p>
+                    <ul className="space-y-1.5">
+                      {DOC_ITEMS.map((item) => {
+                        const done = Boolean(engagement.documents[item.type]);
+                        return (
+                          <li key={item.type} className="flex items-center gap-2">
+                            <span
+                              className={[
+                                'flex h-4 w-4 items-center justify-center rounded-full border text-[10px]',
+                                done
+                                  ? 'border-accent-green bg-accent-green/15 text-accent-green'
+                                  : 'border-zinc-700 text-text-disabled',
+                              ].join(' ')}
+                              aria-hidden="true"
+                            >
+                              {done ? '✓' : ''}
+                            </span>
+                            <span
+                              className={[
+                                'text-t5 font-body',
+                                done ? 'text-text-primary' : 'text-text-secondary',
+                              ].join(' ')}
+                            >
+                              {item.label}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="text-t6 font-mono text-text-secondary">
+                      {completedCount} of {DOC_ITEMS.length} documents
+                    </p>
+                  </div>
+
+                  {!finalized ? (
+                    <>
+                      <Button
+                        variant="primary"
+                        size="md"
+                        className="w-full"
+                        disabled={!allDocsPresent}
+                        onClick={() => setFinalized(true)}
+                      >
+                        Finalize &amp; Hash for Review
+                      </Button>
+                      {!allDocsPresent && (
+                        <p className="text-t6 font-body text-text-disabled">
+                          Complete all 3 documents to finalize.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Three per-document hash strings (no compiled hash) */}
+                      <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                        Document hashes
+                      </p>
+                      <div className="space-y-2.5">
+                        {DOC_ITEMS.map((item) => (
+                          <div key={item.type}>
+                            <p className="text-t6 font-body text-text-secondary">{item.label}</p>
+                            <p className="text-t6 font-mono text-text-disabled break-all">
+                              {engagement.documents[item.type]?.hash ?? '—'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        variant="primary"
+                        size="md"
+                        className="w-full"
+                        disabled={submitState === 'submitting'}
+                        onClick={() => void handleSubmitProject()}
+                      >
+                        {submitState === 'submitting' ? 'Submitting...' : 'Submit for Review'}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setFinalized(false)}
+                        className="text-t6 font-body text-text-secondary hover:text-text-primary transition-colors duration-150"
+                      >
+                        ← Back to editing
+                      </button>
+                      {submitError && (
+                        <p className="text-t6 font-body text-red-400">{submitError}</p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
