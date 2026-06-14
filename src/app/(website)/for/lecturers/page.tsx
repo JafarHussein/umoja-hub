@@ -32,162 +32,147 @@ const STEPS = [
   },
 ] as const;
 
+const INVOLVEMENT_ROWS = [
+  {
+    label: 'Time commitment per review',
+    paras: [
+      'One review requires: reading three documents (Problem Breakdown, Approach Plan, Final Reflection), reviewing the peer score and commentary, completing a four-dimension rubric assessment with substantive written commentary — minimum 50 words of specific assessment, not summary.',
+      'Expect 45–90 minutes per review.',
+    ],
+  },
+  {
+    label: 'What you decide',
+    paras: [
+      'VERIFIED, REVISION_REQUIRED, or DENIED.',
+      'Each decision requires written commentary explaining the specific reasons. A one-word decision with no commentary does not meet the standard — it will be returned for resubmission.',
+    ],
+  },
+  {
+    label: 'What you can review',
+    paras: [
+      'Only submissions on tracks where you are verified. You cannot review submissions from students at your own institution or from students with whom you have a verifiable direct teaching relationship. Conflict of interest prevention is structural — not optional.',
+    ],
+  },
+] as const;
+
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+const SECTION_LABEL = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle';
+
 export default function ForLecturersPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-[#131619] px-[160px] py-[120px] flex flex-col gap-7">
-        <p className="font-jakarta font-500 text-[0.875rem] tracking-[0.02em] text-[#9581cc]">
-          For Lecturers
-        </p>
-        <h1 className="font-jakarta font-800 text-[4.5rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] w-[900px]">
-          Review.
-          <br />
-          Your name on every decision.
-        </h1>
-        <p className="font-jakarta font-400 text-[1.25rem] leading-[1.6] text-[#A9A29A] w-[800px]">
-          Verified lecturers are the trust mechanism for the Education Hub. A VERIFIED decision from
-          a named, credentials-confirmed reviewer carries weight with employers. Without you, the
-          verification chain breaks.
-        </p>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-7 py-24`}>
+          <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+            For Lecturers
+          </p>
+          <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+            Review.
+            <br />
+            Your name on every decision.
+          </h1>
+          <p className="max-w-3xl text-xl leading-relaxed text-fg-muted">
+            Verified lecturers are the trust mechanism for the Education Hub. A VERIFIED decision from
+            a named, credentials-confirmed reviewer carries weight with employers. Without you, the
+            verification chain breaks.
+          </p>
+        </div>
       </section>
 
       {/* S1 — What participation involves */}
-      <section className="bg-[#F5F4F0] px-[160px] py-[96px] flex flex-col gap-10">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#8A919A] uppercase">
-          Section 01
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15] w-[900px]">
-          What participation involves
-        </p>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <p className={SECTION_LABEL}>Section 01</p>
+          <p className="max-w-4xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            What participation involves
+          </p>
 
-        {/* Row: Time commitment */}
-        <div className="bg-white border-b border-[#D8D3CC] py-8 flex gap-10 w-full">
-          <p className="font-jakarta font-600 text-[1.25rem] leading-[1.3] text-[#1D232A] w-[320px] shrink-0">
-            Time commitment per review
-          </p>
-          <div className="flex-1 flex flex-col gap-0">
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#636C76]">
-              One review requires: reading three documents (Problem Breakdown, Approach Plan, Final
-              Reflection), reviewing the peer score and commentary, completing a four-dimension rubric
-              assessment with substantive written commentary — minimum 50 words of specific
-              assessment, not summary.
-            </p>
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#636C76] mt-4">
-              Expect 45–90 minutes per review.
-            </p>
-          </div>
-        </div>
-
-        {/* Row: What you decide */}
-        <div className="bg-white border-b border-[#D8D3CC] py-8 flex gap-10 w-full">
-          <p className="font-jakarta font-600 text-[1.25rem] leading-[1.3] text-[#1D232A] w-[320px] shrink-0">
-            What you decide
-          </p>
-          <div className="flex-1 flex flex-col gap-0">
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#636C76]">
-              VERIFIED, REVISION_REQUIRED, or DENIED.
-            </p>
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#636C76] mt-4">
-              Each decision requires written commentary explaining the specific reasons. A one-word
-              decision with no commentary does not meet the standard — it will be returned for
-              resubmission.
-            </p>
-          </div>
-        </div>
-
-        {/* Row: What you can review */}
-        <div className="bg-white border-b border-[#D8D3CC] py-8 flex gap-10 w-full">
-          <p className="font-jakarta font-600 text-[1.25rem] leading-[1.3] text-[#1D232A] w-[320px] shrink-0">
-            What you can review
-          </p>
-          <p className="flex-1 font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#636C76]">
-            Only submissions on tracks where you are verified. You cannot review submissions from
-            students at your own institution or from students with whom you have a verifiable direct
-            teaching relationship. Conflict of interest prevention is structural — not optional.
-          </p>
+          {INVOLVEMENT_ROWS.map((row) => (
+            <div
+              key={row.label}
+              className="flex w-full flex-col gap-6 border-b border-border py-8 md:flex-row md:gap-10"
+            >
+              <p className="w-full shrink-0 text-xl font-semibold leading-snug text-fg md:w-80">
+                {row.label}
+              </p>
+              <div className="flex flex-1 flex-col gap-4">
+                {row.paras.map((para) => (
+                  <p key={para} className="text-base leading-relaxed text-fg-muted">
+                    {para}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* S2 — How lecturer verification works */}
-      <section className="bg-[#1B2025] px-[160px] py-[96px] flex flex-col gap-10">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#878078] uppercase">
-          Section 02
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15] w-[900px]">
-          How lecturer verification works
-        </p>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <p className={SECTION_LABEL}>Section 02</p>
+          <p className="max-w-4xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            How lecturer verification works
+          </p>
 
-        {STEPS.map((step) => (
-          <div
-            key={step.n}
-            className="border-b border-[#2A3138] py-7 flex gap-8 items-start w-full"
-          >
-            <div className="bg-[#2A3138] px-[14px] py-[8px] shrink-0 flex items-center">
-              <span className="font-jakarta font-600 text-[1rem] text-[#9581cc]">{step.n}</span>
+          {STEPS.map((step) => (
+            <div key={step.n} className="flex w-full items-start gap-8 border-b border-border py-7">
+              <div className="flex shrink-0 items-center rounded-sm bg-surface-raised px-3.5 py-2">
+                <span className="font-semibold text-brand-text">{step.n}</span>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <p className="text-lg font-semibold leading-snug text-fg">{step.title}</p>
+                <p className="leading-relaxed text-fg-muted">{step.body}</p>
+              </div>
             </div>
-            <div className="flex flex-col gap-[10px]">
-              <p className="font-jakarta font-600 text-[1.125rem] leading-[1.3] text-[#F2F0EC]">
-                {step.title}
-              </p>
-              <p className="font-jakarta font-400 text-[1rem] leading-[1.6] text-[#A9A29A]">
-                {step.body}
-              </p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </section>
 
       {/* S3 — What constraints apply */}
-      <section className="bg-[#ECE8E1] px-[160px] py-[96px] flex flex-col gap-8">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#8A919A] uppercase">
-          Section 03
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15] w-[800px]">
-          What constraints apply
-        </p>
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-8 py-24`}>
+          <p className={SECTION_LABEL}>Section 03</p>
+          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            What constraints apply
+          </p>
 
-        {CONSTRAINTS.map((text) => (
-          <div
-            key={text}
-            className="bg-[#F5F4F0] border-l-[3px] border-[#6B5A9A] px-7 py-6 w-full"
-          >
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.6] text-[#353C45]">
-              {text}
-            </p>
-          </div>
-        ))}
+          {CONSTRAINTS.map((text) => (
+            <div key={text} className="w-full border-l-2 border-brand bg-surface px-7 py-6">
+              <p className="text-base leading-relaxed text-fg-muted">{text}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* S4 — Why + CTA */}
-      <section className="bg-[#131619] px-[160px] py-[96px] flex flex-col gap-10">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#878078] uppercase">
-          Section 04
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15] w-[800px]">
-          Why participation matters
-        </p>
-        <div className="flex flex-col gap-4 w-[900px]">
-          <p className="font-jakarta font-400 text-[1.125rem] leading-[1.65] text-[#A9A29A]">
-            The Education Hub&#39;s credibility depends on reviewer quality. A VERIFIED decision from a
-            credentialed reviewer at a recognized institution carries weight with employers. A
-            VERIFIED decision from an anonymous reviewer carries none.
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <p className={SECTION_LABEL}>Section 04</p>
+          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            Why participation matters
           </p>
-          <p className="font-jakarta font-400 text-[1.125rem] leading-[1.65] text-[#A9A29A]">
-            Your participation is the trust mechanism. Without named, credentials-confirmed
-            reviewers, the verification chain breaks. The platform&#39;s value proposition rests on your
-            name being attached to your decisions.
-          </p>
+          <div className="flex max-w-4xl flex-col gap-4">
+            <p className="text-lg leading-relaxed text-fg-muted">
+              The Education Hub&#39;s credibility depends on reviewer quality. A VERIFIED decision from a
+              credentialed reviewer at a recognized institution carries weight with employers. A
+              VERIFIED decision from an anonymous reviewer carries none.
+            </p>
+            <p className="text-lg leading-relaxed text-fg-muted">
+              Your participation is the trust mechanism. Without named, credentials-confirmed
+              reviewers, the verification chain breaks. The platform&#39;s value proposition rests on your
+              name being attached to your decisions.
+            </p>
+          </div>
+          <Link
+            href="/auth/register?role=lecturer"
+            className="inline-flex items-center self-start rounded-sm bg-brand px-10 py-4 font-semibold text-brand-fg transition-colors hover:bg-brand-hover"
+          >
+            Register as a Lecturer
+          </Link>
+          <p className="font-ibm-mono text-sm text-fg-subtle">/auth/register?role=lecturer</p>
         </div>
-        <Link
-          href="/auth/register?role=lecturer"
-          className="inline-flex items-center self-start bg-[#B86A3D] px-[40px] py-[18px] font-jakarta font-600 text-[1rem] text-[#F2F0EC] hover:opacity-90 transition-opacity"
-        >
-          Register as a Lecturer
-        </Link>
-        <p className="font-ibm-mono not-italic text-[0.8125rem] text-[#49515A]">
-          /auth/register?role=lecturer
-        </p>
       </section>
     </>
   );

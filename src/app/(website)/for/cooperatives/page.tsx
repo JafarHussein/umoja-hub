@@ -31,142 +31,140 @@ const LIMITATIONS = [
   'That collective input costs will be lower than individual purchasing in all cases',
 ] as const;
 
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+const SECTION_LABEL = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle';
+
 export default function ForCooperativesPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-[#131619] px-[160px] py-[120px] flex flex-col gap-7">
-        <p className="font-jakarta font-500 text-[0.875rem] tracking-[0.02em] text-[#D88A5A]">
-          For Cooperatives
-        </p>
-        <h1 className="font-jakarta font-800 text-[4.5rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] w-[900px]">
-          Collective input purchasing.
-          <br />
-          Bulk pricing as a group.
-        </h1>
-        <p className="font-jakarta font-400 text-[1.25rem] leading-[1.6] text-[#A9A29A] w-[840px]">
-          Individual smallholder farmers cannot access bulk pricing on their own. Cooperative groups
-          on UmojaHub place collective orders from verified suppliers — unlocking input pricing only
-          available at scale.
-        </p>
-      </section>
-
-      {/* S1 — What Groups Are */}
-      <section className="bg-[#F5F4F0] px-[160px] py-[96px] flex flex-col gap-10">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#8A919A] uppercase">
-          Section 01
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#1D232A] leading-[1.15] w-[900px]">
-          What cooperative groups are
-        </p>
-        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#353C45] w-[900px]">
-          Cooperative groups are organized farmer groups on the platform that place collective bulk
-          orders for agricultural inputs from verified suppliers. They exist inside the Food Security
-          Hub — not as a separate registration pathway.
-        </p>
-
-        <div className="bg-[#ECE8E1] border-b-2 border-[#B86A3D] p-10 flex flex-col gap-4 w-full">
-          <p className="font-jakarta font-600 text-[0.9375rem] tracking-[0.02em] text-[#B86A3D]">
-            What groups unlock
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-7 py-24`}>
+          <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+            For Cooperatives
           </p>
-          <p className="font-jakarta font-400 text-[1rem] leading-[1.6] text-[#353C45]">
-            {'→  '}Bulk agricultural input pricing not available to individual farmers
-          </p>
-          <p className="font-jakarta font-400 text-[1rem] leading-[1.6] text-[#353C45]">
-            {'→  '}Seeds, fertilizers, and tools at collective-order rates
-          </p>
-          <p className="font-jakarta font-400 text-[1rem] leading-[1.6] text-[#353C45]">
-            {'→  '}Coordinated ordering through a single verified supplier contact
+          <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+            Collective input purchasing.
+            <br />
+            Bulk pricing as a group.
+          </h1>
+          <p className="max-w-3xl text-xl leading-relaxed text-fg-muted">
+            Individual smallholder farmers cannot access bulk pricing on their own. Cooperative groups
+            on UmojaHub place collective orders from verified suppliers — unlocking input pricing only
+            available at scale.
           </p>
         </div>
       </section>
 
-      {/* S2 — How It Works */}
-      <section className="bg-[#131619] px-[160px] py-[96px] flex flex-col gap-10">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#878078] uppercase">
-          Section 02
-        </p>
-        <p className="font-jakarta font-600 text-[2.75rem] tracking-[-0.02em] text-[#F2F0EC] leading-[1.15] w-[800px]">
-          How groups work
-        </p>
+      {/* S1 — What Groups Are */}
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <p className={SECTION_LABEL}>Section 01</p>
+          <p className="max-w-4xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            What cooperative groups are
+          </p>
+          <p className="max-w-4xl text-lg leading-relaxed text-fg-muted">
+            Cooperative groups are organized farmer groups on the platform that place collective bulk
+            orders for agricultural inputs from verified suppliers. They exist inside the Food Security
+            Hub — not as a separate registration pathway.
+          </p>
 
-        {FLOW_STEPS.map((step) => (
-          <div
-            key={step.n}
-            className="border-b border-[#2A3138] py-7 flex gap-8 items-start w-full"
-          >
-            <div className="bg-[#4A3A2A] px-[14px] py-[8px] shrink-0 flex items-center">
-              <span className="font-jakarta font-600 text-[1rem] text-[#D88A5A]">{step.n}</span>
-            </div>
-            <div className="flex-1 flex flex-col gap-[10px]">
-              <p className="font-jakarta font-600 text-[1.125rem] leading-[1.3] text-[#F2F0EC]">
-                {step.title}
-              </p>
-              <p className="font-jakarta font-400 text-[1rem] leading-[1.6] text-[#A9A29A]">
-                {step.body}
-              </p>
-            </div>
+          <div className="flex w-full flex-col gap-4 border-b-2 border-brand bg-surface p-10">
+            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+              What groups unlock
+            </p>
+            <p className="leading-relaxed text-fg-muted">
+              {'→  '}Bulk agricultural input pricing not available to individual farmers
+            </p>
+            <p className="leading-relaxed text-fg-muted">
+              {'→  '}Seeds, fertilizers, and tools at collective-order rates
+            </p>
+            <p className="leading-relaxed text-fg-muted">
+              {'→  '}Coordinated ordering through a single verified supplier contact
+            </p>
           </div>
-        ))}
+        </div>
+      </section>
+
+      {/* S2 — How It Works */}
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <p className={SECTION_LABEL}>Section 02</p>
+          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+            How groups work
+          </p>
+
+          {FLOW_STEPS.map((step) => (
+            <div key={step.n} className="flex w-full items-start gap-8 border-b border-border py-7">
+              <div className="flex shrink-0 items-center rounded-sm bg-surface-raised px-3.5 py-2">
+                <span className="font-semibold text-brand-text">{step.n}</span>
+              </div>
+              <div className="flex flex-1 flex-col gap-2.5">
+                <p className="text-lg font-semibold leading-snug text-fg">{step.title}</p>
+                <p className="leading-relaxed text-fg-muted">{step.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* S3 — Who + Limitations */}
-      <section className="bg-[#ECE8E1] px-[160px] py-[96px] flex flex-col gap-10">
-        <p className="font-jakarta font-500 text-[0.75rem] tracking-[0.08em] text-[#8A919A] uppercase">
-          Section 03
-        </p>
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <p className={SECTION_LABEL}>Section 03</p>
 
-        <div className="flex gap-10 items-start w-full">
-          {/* Who can join */}
-          <div className="flex-1 flex flex-col gap-5">
-            <p className="font-jakarta font-600 text-[1.75rem] tracking-[-0.01em] leading-[1.2] text-[#1D232A]">
-              Who can join
-            </p>
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#353C45]">
-              Any verified farmer. There is no separate cooperative registration — if you are a
-              verified farmer on the platform, you can create or join a cooperative group.
-            </p>
-            <p className="font-jakarta font-400 text-[1.0625rem] leading-[1.65] text-[#353C45]">
-              Verification is required before participation. Unverified farmers cannot place
-              collective orders.
-            </p>
-          </div>
+          <div className="flex w-full flex-col items-start gap-10 md:flex-row">
+            {/* Who can join */}
+            <div className="flex flex-1 flex-col gap-5">
+              <p className="text-2xl font-semibold leading-tight tracking-tight text-fg md:text-3xl">
+                Who can join
+              </p>
+              <p className="text-base leading-relaxed text-fg-muted">
+                Any verified farmer. There is no separate cooperative registration — if you are a
+                verified farmer on the platform, you can create or join a cooperative group.
+              </p>
+              <p className="text-base leading-relaxed text-fg-muted">
+                Verification is required before participation. Unverified farmers cannot place
+                collective orders.
+              </p>
+            </div>
 
-          {/* Divider */}
-          <div className="self-stretch w-px bg-[#C8C2BA] shrink-0" />
+            {/* Divider */}
+            <div className="hidden w-px self-stretch bg-border md:block" />
 
-          {/* Limitations */}
-          <div className="flex-1 flex flex-col gap-5">
-            <p className="font-jakarta font-600 text-[1.75rem] tracking-[-0.01em] leading-[1.2] text-[#1D232A]">
-              What the platform cannot guarantee
-            </p>
-            {LIMITATIONS.map((lim) => (
-              <div key={lim} className="flex gap-3 items-center">
-                <span className="shrink-0 size-[6px] bg-[#B86A3D]" />
-                <p className="flex-1 font-jakarta font-400 text-[1rem] leading-[1.6] text-[#636C76]">
-                  {lim}
-                </p>
-              </div>
-            ))}
+            {/* Limitations */}
+            <div className="flex flex-1 flex-col gap-5">
+              <p className="text-2xl font-semibold leading-tight tracking-tight text-fg md:text-3xl">
+                What the platform cannot guarantee
+              </p>
+              {LIMITATIONS.map((lim) => (
+                <div key={lim} className="flex items-center gap-3">
+                  <span className="h-1.5 w-1.5 shrink-0 bg-fg-subtle" />
+                  <p className="flex-1 leading-relaxed text-fg-muted">{lim}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-[#131619] px-[160px] py-[80px] flex flex-col gap-6">
-        <p className="font-jakarta font-800 text-[3rem] leading-[1.1] tracking-[-0.02em] text-[#F2F0EC] w-[800px]">
-          Start with farmer verification.
-        </p>
-        <p className="font-jakarta font-400 text-[1.125rem] leading-[1.6] text-[#A9A29A] w-[760px]">
-          Cooperative group access is unlocked once you are a verified farmer. Complete farmer
-          verification first, then join or form a group from your dashboard.
-        </p>
-        <Link
-          href="/auth/register?role=FARMER"
-          className="inline-flex items-center self-start bg-[#B86A3D] px-[40px] py-[18px] font-jakarta font-600 text-[1rem] text-[#F2F0EC] hover:opacity-90 transition-opacity"
-        >
-          Register as a Farmer
-        </Link>
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-6 py-20`}>
+          <p className="max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-fg md:text-5xl">
+            Start with farmer verification.
+          </p>
+          <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
+            Cooperative group access is unlocked once you are a verified farmer. Complete farmer
+            verification first, then join or form a group from your dashboard.
+          </p>
+          <Link
+            href="/auth/register?role=FARMER"
+            className="inline-flex items-center self-start rounded-sm bg-brand px-10 py-4 font-semibold text-brand-fg transition-colors hover:bg-brand-hover"
+          >
+            Register as a Farmer
+          </Link>
+        </div>
       </section>
     </>
   );
