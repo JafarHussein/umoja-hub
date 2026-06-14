@@ -9,15 +9,42 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Shadcn remapping
-        border: 'var(--border)',
-        ring: 'var(--ring)',
-        // Dashboard surfaces (dark-only)
+        // ── Unified semantic tokens (theme-aware via CSS vars) ───────────────
+        // One set, two themes (:root dark / .theme-website light). See
+        // src/styles/globals.css. Author all new UI against THESE. Solid
+        // colours support alpha modifiers (bg-brand/15, border-danger/30);
+        // state tints come from `/10`–`/15`, not separate `-bg` tokens.
+        ring: 'rgb(var(--ring) / <alpha-value>)',
+        background: 'rgb(var(--bg) / <alpha-value>)',
+        border: {
+          DEFAULT: 'var(--border)',
+          strong: 'var(--border-strong)',
+        },
         surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          raised: 'rgb(var(--surface-raised) / <alpha-value>)',
+          sunken: 'rgb(var(--surface-sunken) / <alpha-value>)',
+          // legacy (dark-only) — retire on surface migration
           primary: '#0D1117',
           elevated: '#161B22',
           secondary: '#1F2937',
         },
+        fg: {
+          DEFAULT: 'rgb(var(--fg) / <alpha-value>)',
+          muted: 'rgb(var(--fg-muted) / <alpha-value>)',
+          subtle: 'rgb(var(--fg-subtle) / <alpha-value>)',
+        },
+        brand: {
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          hover: 'rgb(var(--brand-hover) / <alpha-value>)',
+          fg: 'rgb(var(--brand-fg) / <alpha-value>)',
+          text: 'rgb(var(--brand-text) / <alpha-value>)',
+        },
+        success: 'rgb(var(--success) / <alpha-value>)',
+        warning: 'rgb(var(--warning) / <alpha-value>)',
+        danger: 'rgb(var(--danger) / <alpha-value>)',
+        info: 'rgb(var(--info) / <alpha-value>)',
+        // ── LEGACY (dark dashboard) — retire as surfaces migrate ─────────────
         accent: {
           green: '#007F4E',
         },
