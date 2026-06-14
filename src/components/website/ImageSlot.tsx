@@ -22,7 +22,7 @@ export function ImageSlot({
 
   return (
     <div
-      className={`relative w-full overflow-hidden bg-canvas-elevated border border-ws-border-soft ${className}`}
+      className={`relative w-full overflow-hidden border border-border bg-surface-sunken ${className}`}
       style={{ aspectRatio }}
     >
       {!failed && (
