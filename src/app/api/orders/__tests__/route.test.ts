@@ -45,9 +45,22 @@ jest.mock('@/lib/foodhub/orderUtils', () => ({
   generateOrderReferenceId: jest.fn().mockResolvedValue('UMJ-2026-000001'),
 }));
 
-const mockInitiateSTKPush = jest.fn();
-jest.mock('@/lib/integrations/darajaService', () => ({
-  initiateSTKPush: jest.fn((...a: unknown[]) => mockInitiateSTKPush(...a)),
+// The order route initiates payment through the provider abstraction, not the
+// Daraja service directly. Mock the factory so the test drives the initiation
+// result regardless of the active provider.
+const mockInitiatePayment = jest.fn();
+jest.mock('@/lib/payments', () => ({
+  getPaymentProvider: () => ({
+    name: 'simulation',
+    initiatePayment: (...a: unknown[]) => mockInitiatePayment(...a),
+  }),
+  getActiveProviderName: () => 'simulation',
+  isSimulationActive: () => true,
+}));
+
+jest.mock('@/lib/models/PaymentEventLog.model', () => ({
+  __esModule: true,
+  default: { create: jest.fn().mockResolvedValue({}) },
 }));
 
 jest.mock('@/lib/models/User.model', () => ({
@@ -125,7 +138,11 @@ describe('POST /api/orders — atomic inventory reservation', () => {
     });
     mockListingFindOneAndUpdate.mockResolvedValue(mockReservedListing);
     mockOrderCreate.mockResolvedValue(mockCreatedOrder);
-    mockInitiateSTKPush.mockResolvedValue({ CheckoutRequestID: 'chk-001' });
+    mockInitiatePayment.mockResolvedValue({
+      checkoutRequestId: 'chk-001',
+      merchantRequestId: 'mer-001',
+      customerMessage: 'Request accepted',
+    });
     mockOrderFindByIdAndUpdate.mockResolvedValue({});
 
     const res = await POST(makeOrderRequest(validOrderBody));
@@ -168,7 +185,7 @@ describe('POST /api/orders — atomic inventory reservation', () => {
     });
     mockListingFindOneAndUpdate.mockResolvedValue(mockReservedListing);
     mockOrderCreate.mockResolvedValue(mockCreatedOrder);
-    mockInitiateSTKPush.mockRejectedValue(
+    mockInitiatePayment.mockRejectedValue(
       new AppError('Could not initiate M-Pesa payment.', 502, 'PAYMENT_STK_FAILED')
     );
     mockOrderFindByIdAndDelete.mockResolvedValue({});

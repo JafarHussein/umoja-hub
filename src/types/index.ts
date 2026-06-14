@@ -204,6 +204,51 @@ export enum MediationCategory {
 }
 
 // ---------------------------------------------------------------------------
+// Payments — provider abstraction + simulation layer
+// The order/webhook contract is provider-agnostic: the simulator emits the same
+// Daraja-shaped callbacks the real provider would, through the same processor.
+// ---------------------------------------------------------------------------
+
+export enum PaymentProviderName {
+  SIMULATION = 'simulation',
+  DARAJA_SANDBOX = 'daraja-sandbox',
+  DARAJA_PRODUCTION = 'daraja-production',
+}
+
+// Outcomes a simulated STK push can resolve to. Each maps to a real Daraja
+// ResultCode so the downstream contract is identical to production.
+export enum SimulatedOutcome {
+  SUCCESS = 'SUCCESS',
+  INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
+  USER_CANCELLED = 'USER_CANCELLED',
+  PHONE_UNREACHABLE = 'PHONE_UNREACHABLE',
+  TIMEOUT = 'TIMEOUT',
+  NETWORK_FAILURE = 'NETWORK_FAILURE',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  // The callback is never delivered — exercises the stuck-payment/reconciliation
+  // path (the order sits PENDING_PAYMENT until the cron reconciles it).
+  LOST = 'LOST',
+}
+
+export enum SimulatedPaymentStatus {
+  SCHEDULED = 'SCHEDULED',
+  DELIVERED = 'DELIVERED',
+  LOST = 'LOST',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentEventType {
+  INITIATED = 'INITIATED',
+  CALLBACK_RECEIVED = 'CALLBACK_RECEIVED',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  DUPLICATE = 'DUPLICATE',
+  TIMEOUT = 'TIMEOUT',
+  LOST = 'LOST',
+  RECONCILED = 'RECONCILED',
+}
+
+// ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------
 

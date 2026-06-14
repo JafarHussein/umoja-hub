@@ -7,6 +7,8 @@ import Order from '@/lib/models/Order.model';
 import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { sendSMS } from '@/lib/integrations/smsService';
 import { logger } from '@/lib/utils';
+import { isSimulationActive } from '@/lib/payments';
+import { dispatchDuePayments } from '@/lib/payments/dispatcher';
 import { PRICE_ALERT_COOLDOWN_HOURS, OrderPaymentStatus, ListingStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -108,6 +110,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   logger.info('cron/price-alert-check', 'Price alert check complete', { requestId, checked, triggered });
 
   // ---------------------------------------------------------------------------
+  // Simulated-callback delivery sweep (simulation mode only).
+  // The reliability trigger for delayed/late callbacks when the buyer is no
+  // longer polling. Delivers due simulated payments through the shared
+  // processor; LOST ones fall through to the reconciliation pass below.
+  // ---------------------------------------------------------------------------
+  let simDelivered = 0;
+  if (isSimulationActive()) {
+    try {
+      simDelivered = await dispatchDuePayments({ limit: 50 });
+    } catch (err) {
+      logger.error('cron/price-alert-check', 'Simulated callback sweep failed', { requestId, err });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Stuck payment reconciliation
   // Orders that have been PENDING_PAYMENT for >15 minutes without a Daraja
   // callback are considered timed out. Mark FAILED and restore listing inventory.
@@ -147,5 +164,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     logger.info('cron/price-alert-check', 'Stuck payment reconciliation complete', { requestId, reconciled });
   }
 
-  return NextResponse.json({ data: { checked, triggered, reconciled } });
+  return NextResponse.json({ data: { checked, triggered, simDelivered, reconciled } });
 }

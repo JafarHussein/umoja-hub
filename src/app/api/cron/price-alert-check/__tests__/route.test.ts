@@ -61,6 +61,13 @@ jest.mock('@/lib/integrations/smsService', () => ({
   sendSMS: jest.fn().mockResolvedValue({ success: true }),
 }));
 
+// The simulated-callback sweep is exercised in the payments tests + e2e; here it
+// is disabled so this suite stays focused on price alerts + reconciliation.
+jest.mock('@/lib/payments', () => ({ isSimulationActive: () => false }));
+jest.mock('@/lib/payments/dispatcher', () => ({
+  dispatchDuePayments: jest.fn().mockResolvedValue(0),
+}));
+
 import PriceAlert from '@/lib/models/PriceAlert.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import User from '@/lib/models/User.model';

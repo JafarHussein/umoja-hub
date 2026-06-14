@@ -14,6 +14,7 @@ import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
 import ProjectEngagementModel from '@/lib/models/ProjectEngagement.model';
 import PeerReviewModel from '@/lib/models/PeerReview.model';
 import VerifiedSupplierModel from '@/lib/models/VerifiedSupplier.model';
+import SimulatedPaymentModel from '@/lib/models/SimulatedPayment.model';
 import {
   Role,
   OnboardingStage,
@@ -104,6 +105,13 @@ const FIXTURE_SUPPLIER_NAME = 'E2E Agrovet Supplies';
 // withdrawals are wiped for the UI-02 ledger determinism), with a fixed _id so
 // re-runs reset it back to REQUESTED even if a prior run decided it.
 const FIXTURE_PAYOUT_ID = '000000000000000000000030';
+
+// Payment-simulation Lab: a PENDING_PAYMENT order the admin can force outcomes
+// on. Dangling farmer (never enters the fixture farmer's ledgers/orders). Reset
+// to pending each run, and its simulated-payment rows cleared, so the
+// force-success e2e is idempotent.
+const FIXTURE_SIM_ORDER_REF = 'E2E-SIM-0001';
+const FIXTURE_SIM_CHECKOUT_ID = 'ws_CO_sim_e2e';
 
 // ---------------------------------------------------------------------------
 // Global setup: provision per-role fixtures and mint their session JWTs.
@@ -539,6 +547,42 @@ export default async function globalSetup(): Promise<void> {
     },
     { upsert: true, setDefaultsOnInsert: true }
   );
+
+  // Payment-simulation Lab fixture: a PENDING_PAYMENT order (dangling farmer)
+  // the admin Payment Lab can force a real simulated outcome on. Reset to
+  // pending each run; its prior simulated-payment rows are cleared.
+  if (buyerId) {
+    const simOrder = await OrderModel.findOneAndUpdate(
+      { orderReferenceId: FIXTURE_SIM_ORDER_REF },
+      {
+        $set: {
+          listingId: FIXTURE_LISTING_ID,
+          farmerId: FIXTURE_ORDER2_FARMER_ID,
+          buyerId,
+          cropName: 'Maize',
+          quantityOrdered: 20,
+          unit: ListingUnit.KG,
+          pricePerUnit: 50,
+          totalAmountKES: 1000,
+          fulfillmentType: FulfillmentType.PICKUP,
+          buyerPhone: '+254700000012',
+          paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
+          fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
+          mpesaCheckoutRequestId: FIXTURE_SIM_CHECKOUT_ID,
+        },
+        $unset: {
+          mpesaTransactionId: '',
+          paidAt: '',
+          confirmedByFarmerAt: '',
+          receivedByBuyerAt: '',
+        },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+    if (simOrder) {
+      await SimulatedPaymentModel.deleteMany({ orderId: simOrder._id });
+    }
+  }
 
   // UI-13 admin payout queue: a REQUESTED withdrawal owned by the unverified
   // farmer fixture so the queue has a decidable row. Fixed _id + $set status

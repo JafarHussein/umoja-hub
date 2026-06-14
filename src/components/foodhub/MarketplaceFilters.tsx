@@ -11,13 +11,13 @@ export function MarketplaceFilters(): React.ReactElement {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const cropName = searchParams.get('cropName') ?? '';
+  const q = searchParams.get('q') ?? '';
   const county = searchParams.get('county') ?? '';
   const minPrice = searchParams.get('minPrice') ?? '';
   const maxPrice = searchParams.get('maxPrice') ?? '';
   const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
 
-  const hasActiveFilters = !!(cropName || county || minPrice || maxPrice || verifiedOnly);
+  const hasActiveFilters = !!(q || county || minPrice || maxPrice || verifiedOnly);
 
   function updateParam(key: string, value: string): void {
     const params = new URLSearchParams(searchParams.toString());
@@ -58,17 +58,17 @@ export function MarketplaceFilters(): React.ReactElement {
         )}
       </div>
 
-      {/* Crop name */}
+      {/* Full-text search — matches crop, title, and description */}
       <div className="space-y-1.5">
-        <label htmlFor="filter-crop" className="text-t5 font-body text-text-secondary block">
-          Crop
+        <label htmlFor="filter-search" className="text-t5 font-body text-text-secondary block">
+          Search
         </label>
         <Input
-          id="filter-crop"
+          id="filter-search"
           type="search"
           placeholder="e.g. tomatoes, maize"
-          value={cropName}
-          onChange={(e) => updateParam('cropName', e.target.value)}
+          value={q}
+          onChange={(e) => updateParam('q', e.target.value)}
         />
       </div>
 

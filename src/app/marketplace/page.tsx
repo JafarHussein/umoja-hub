@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 interface IMarketplaceSearchParams {
+  q?: string;
   cropName?: string;
   county?: string;
   minPrice?: string;
@@ -84,6 +85,7 @@ async function fetchListings(params: IMarketplaceSearchParams): Promise<IListing
   const baseUrl = process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000';
   const searchParams = new URLSearchParams();
 
+  if (params.q) searchParams.set('q', params.q);
   if (params.cropName) searchParams.set('cropName', params.cropName);
   if (params.county) searchParams.set('county', params.county);
   if (params.minPrice) searchParams.set('minPrice', params.minPrice);
