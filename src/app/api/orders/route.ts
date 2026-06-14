@@ -6,11 +6,18 @@ import Order from '@/lib/models/Order.model';
 import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { createOrderSchema } from '@/lib/validation/orderSchema';
 import { generateOrderReferenceId } from '@/lib/foodhub/orderUtils';
-import { initiateSTKPush } from '@/lib/integrations/darajaService';
+import { getPaymentProvider, getActiveProviderName } from '@/lib/payments';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { checkRateLimit } from '@/lib/rateLimit';
 import mongoose from 'mongoose';
-import { Role, OrderPaymentStatus, OrderFulfillmentStatus, ListingStatus, UserStatus } from '@/types';
+import {
+  Role,
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+  ListingStatus,
+  UserStatus,
+  PaymentEventType,
+} from '@/types';
 
 type ListingLean = {
   _id: mongoose.Types.ObjectId;
@@ -320,16 +327,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
     });
 
-    // Initiate Daraja STK Push — may throw AppError PAYMENT_STK_FAILED
+    // Initiate payment via the active provider (simulation or Daraja). The
+    // contract is identical: returns a checkout request id; the outcome arrives
+    // later as a callback. May throw AppError PAYMENT_STK_FAILED.
     let mpesaCheckoutRequestId: string;
     try {
-      const stkResult = await initiateSTKPush({
+      const initiation = await getPaymentProvider().initiatePayment({
+        orderId: String(order._id),
+        orderReferenceId: order.orderReferenceId,
         amount: totalAmountKES,
         phone: buyerPhone,
-        orderId: order.orderReferenceId,
         description: `UmojaHub ${listing.cropName}`,
+        buyerId: String(session!.user.id),
+        farmerId: String(listing.farmerId),
       });
-      mpesaCheckoutRequestId = stkResult.CheckoutRequestID;
+      mpesaCheckoutRequestId = initiation.checkoutRequestId;
     } catch (stkError) {
       // Rollback: delete the order AND restore listing inventory atomically.
       // listingStatus is unconditionally restored to AVAILABLE because we only reach
@@ -351,6 +363,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Update order with checkout request ID
     await Order.findByIdAndUpdate(order._id, { mpesaCheckoutRequestId });
+
+    // Provider-agnostic audit trail (non-blocking).
+    {
+      const { default: PaymentEventLog } = await import('@/lib/models/PaymentEventLog.model');
+      PaymentEventLog.create({
+        provider: getActiveProviderName(),
+        eventType: PaymentEventType.INITIATED,
+        orderId: order._id,
+        buyerId: session!.user.id,
+        farmerId: listing.farmerId,
+        amount: totalAmountKES,
+        paymentReference: order.orderReferenceId,
+        checkoutRequestId: mpesaCheckoutRequestId,
+        occurredAt: new Date(),
+      }).catch(() => {});
+    }
 
     logger.info('orders', 'Order created and STK Push initiated', {
       requestId,

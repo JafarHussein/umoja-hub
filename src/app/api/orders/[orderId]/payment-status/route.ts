@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import Order from '@/lib/models/Order.model';
 import { AppError, handleApiError } from '@/lib/utils';
+import { isSimulationActive } from '@/lib/payments';
+import { dispatchDuePayments } from '@/lib/payments/dispatcher';
 import { Role } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,32 @@ export async function GET(
         403,
         'AUTH_FORBIDDEN'
       );
+    }
+
+    // Simulation mode: the buyer's poll is the primary delivery trigger for due
+    // simulated callbacks. Deliver any that are due for this order, then re-read
+    // the (possibly updated) status. Real Daraja delivers via the webhook, so
+    // this is a no-op there.
+    if (isSimulationActive()) {
+      try {
+        const delivered = await dispatchDuePayments({ orderId });
+        if (delivered > 0) {
+          const fresh = (await Order.findById(orderId)
+            .select('paymentStatus fulfillmentStatus')
+            .lean()) as unknown as Pick<
+            OrderStatusLean,
+            'paymentStatus' | 'fulfillmentStatus'
+          > | null;
+          if (fresh) {
+            return NextResponse.json({
+              paymentStatus: fresh.paymentStatus,
+              fulfillmentStatus: fresh.fulfillmentStatus,
+            });
+          }
+        }
+      } catch {
+        // Delivery is best-effort; fall through to the current status.
+      }
     }
 
     return NextResponse.json({

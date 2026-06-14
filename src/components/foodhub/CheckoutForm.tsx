@@ -186,20 +186,31 @@ export function CheckoutForm({
         <div className="flex items-center gap-2.5">
           <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse flex-shrink-0" aria-hidden="true" />
           <div>
-            <p className="text-t4 font-body font-medium text-text-primary">PIN prompt sent</p>
+            <p className="text-t4 font-body font-medium text-text-primary">STK push sent</p>
             <p className="text-t5 font-body text-text-secondary mt-0.5">
-              Awaiting Daraja verification...
+              Check your phone and enter your M-Pesa PIN to confirm.
             </p>
           </div>
         </div>
 
-        <div className="bg-surface-secondary border border-zinc-800/50 rounded-[4px] p-3">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
-            Reference
-          </p>
-          <p className="text-t5 font-mono text-text-primary tabular-nums">
-            {orderResult.orderReferenceId}
-          </p>
+        {/* STK prompt details — mirrors the real M-Pesa confirmation request */}
+        <div className="bg-surface-secondary border border-zinc-800/50 rounded-[4px]">
+          {(
+            [
+              { label: 'Pay to', value: 'UmojaHub' },
+              { label: 'Amount', value: `KES ${orderResult.totalAmountKES.toLocaleString()}` },
+              { label: 'Phone', value: `+254${phoneSuffix}` },
+              { label: 'Reference', value: orderResult.orderReferenceId },
+            ] as { label: string; value: string }[]
+          ).map(({ label, value }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800/50 last:border-0"
+            >
+              <span className="text-t5 font-body text-text-secondary">{label}</span>
+              <span className="text-t5 font-mono text-text-primary tabular-nums">{value}</span>
+            </div>
+          ))}
         </div>
 
         {/* 90-second poll ticker — bounded, with an explicit countdown */}
