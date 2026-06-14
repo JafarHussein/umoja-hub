@@ -26,11 +26,11 @@ export function VerifiedBadge({
       xmlns="http://www.w3.org/2000/svg"
       aria-label={label}
       role="img"
-      className="inline-block shrink-0 translate-y-[1px]"
+      className="inline-block shrink-0 translate-y-[1px] text-brand"
     >
       <path
         d="M2.5 7L5.5 10L11.5 4"
-        stroke="#007F4E"
+        stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
