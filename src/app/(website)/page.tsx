@@ -38,7 +38,6 @@ const AUDIENCE_ROW_1 = [
     desc: 'Sell verified produce to buyers outside your network. M-Pesa payment confirmed before dispatch.',
     cta: 'See what you get →',
     href: '/for/farmers',
-    accentClass: 'text-copper',
   },
   {
     hub: 'EDUCATION HUB',
@@ -46,7 +45,6 @@ const AUDIENCE_ROW_1 = [
     desc: 'Build a verifiable project portfolio. Reviewed by credentialed lecturers who record their decision.',
     cta: 'See what you get →',
     href: '/for/students',
-    accentClass: 'text-teal',
   },
   {
     hub: 'FOOD SECURITY HUB',
@@ -54,7 +52,6 @@ const AUDIENCE_ROW_1 = [
     desc: 'Purchase produce from farmers with visible transaction history, verified identity, and public Trust Score.',
     cta: 'See how it works →',
     href: '/for/buyers',
-    accentClass: 'text-copper',
   },
 ] as const;
 
@@ -65,7 +62,6 @@ const AUDIENCE_ROW_2 = [
     desc: "Read student portfolios that include the reviewer's name, credentials, and decision rationale.",
     cta: 'See how to verify →',
     href: '/for/employers',
-    accentClass: 'text-teal',
   },
   {
     hub: 'EDUCATION HUB',
@@ -73,7 +69,6 @@ const AUDIENCE_ROW_2 = [
     desc: 'Review student project submissions. Your name, credentials, and decision are recorded permanently.',
     cta: 'Apply as lecturer →',
     href: '/for/lecturers',
-    accentClass: 'text-teal',
   },
   {
     hub: 'BOTH HUBS',
@@ -81,7 +76,6 @@ const AUDIENCE_ROW_2 = [
     desc: 'Mandate alignment and impact metrics with full methodology disclosure and auditable evidence chains.',
     cta: 'See impact data →',
     href: '/for/ngos',
-    accentClass: 'text-violet',
   },
 ] as const;
 
@@ -100,225 +94,239 @@ const PRINCIPLES = [
   },
 ] as const;
 
+// Shared section container — consistent max-width + responsive gutters.
+const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
+const EYEBROW = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand';
+
+type AudienceCardData = {
+  hub: string;
+  role: string;
+  desc: string;
+  cta: string;
+  href: string;
+};
+
+function AudienceCard({ card, delay }: { card: AudienceCardData; delay: number }) {
+  return (
+    <AnimateIn delay={delay} className="flex-1">
+      <Link
+        href={card.href}
+        className="group flex h-full flex-col gap-3 rounded-sm border border-border bg-surface p-8 transition-all duration-standard ease-standard hover:-translate-y-0.5 hover:border-border-strong"
+      >
+        <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle">
+          {card.hub}
+        </p>
+        <p className="text-xl font-semibold tracking-tight text-fg">{card.role}</p>
+        <p className="text-sm leading-relaxed text-fg-muted">{card.desc}</p>
+        <p className="mt-2 text-sm font-semibold text-brand transition-transform duration-fast group-hover:translate-x-0.5">
+          {card.cta}
+        </p>
+      </Link>
+    </AnimateIn>
+  );
+}
+
 export default function HomePage() {
   return (
     <>
-      {/* ── S1: Hero ── */}
-      <section className="bg-[#131619] px-[120px] py-[128px] flex flex-col gap-6 items-center">
-        <AnimateIn>
-          <p className="font-ibm-mono text-[0.6875rem] font-600 text-[#56A8A2] tracking-[0.08em] uppercase text-center">
-            East Africa&apos;s Verification Infrastructure
-          </p>
-        </AnimateIn>
-        <AnimateIn delay={0.08}>
-          <h1 className="font-jakarta font-800 text-[4.5rem] leading-[1.05] tracking-[-0.03em] text-[#F2F0EC] max-w-[1080px] text-center">
-            Verified Farmers.<br />
-            Verified Talent.<br />
-            East African Trust Infrastructure.
-          </h1>
-        </AnimateIn>
-        <AnimateIn delay={0.16}>
-          <p className="font-jakarta font-400 text-[1.125rem] text-[#A9A29A] leading-[1.6] max-w-[760px] text-center">
-            The verification layer connecting smallholder farmers, agricultural graduates,
-            and trusted buyers across East Africa.
-          </p>
-        </AnimateIn>
-        <AnimateIn delay={0.24}>
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Link
-              href="/for/farmers"
-              className="inline-flex items-center px-[28px] py-[16px] bg-copper text-[#F5F4F0] font-jakarta font-600 text-[1rem] rounded-[4px] hover:bg-[#A05A30] active:scale-[0.98] transition-all duration-fast ease-standard"
-            >
-              Food Security Hub →
-            </Link>
-            <Link
-              href="/education"
-              className="inline-flex items-center px-[28px] py-[16px] border border-[#39414A] text-[#D6D1CB] font-jakarta font-600 text-[1rem] rounded-[4px] hover:border-[#49515A] transition-all duration-standard ease-standard"
-            >
-              Education Hub →
-            </Link>
-          </div>
-        </AnimateIn>
-        <AnimateIn delay={0.32}>
-          <p className="font-jakarta font-500 text-[0.8125rem] text-[#636C76] tracking-[0.01em] text-center">
-            Verification methodology published · Open appeals process · Named administrators
-          </p>
-        </AnimateIn>
+      {/* ── S1: Hero (inverted dark band inside the light website) ── */}
+      <section className="theme-product bg-background">
+        <div className={`${CONTAINER} flex flex-col items-center gap-6 py-28 md:py-32 text-center`}>
+          <AnimateIn>
+            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
+              East Africa&apos;s Verification Infrastructure
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={0.08}>
+            <h1 className="max-w-5xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-7xl">
+              Verified Farmers.<br />
+              Verified Talent.<br />
+              East African Trust Infrastructure.
+            </h1>
+          </AnimateIn>
+          <AnimateIn delay={0.16}>
+            <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
+              The verification layer connecting smallholder farmers, agricultural graduates,
+              and trusted buyers across East Africa.
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={0.24}>
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <Link
+                href="/for/farmers"
+                className="inline-flex items-center rounded-sm bg-brand px-7 py-4 font-semibold text-brand-fg transition-all duration-fast ease-standard hover:bg-brand-hover active:scale-95"
+              >
+                Food Security Hub →
+              </Link>
+              <Link
+                href="/education"
+                className="inline-flex items-center rounded-sm border border-border-strong px-7 py-4 font-semibold text-fg transition-all duration-standard ease-standard hover:border-fg-subtle"
+              >
+                Education Hub →
+              </Link>
+            </div>
+          </AnimateIn>
+          <AnimateIn delay={0.32}>
+            <p className="text-sm font-medium text-fg-subtle">
+              Verification methodology published · Open appeals process · Named administrators
+            </p>
+          </AnimateIn>
+        </div>
       </section>
 
       {/* ── S2: Two Structural Failures ── */}
-      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[56px]">
-        <AnimateIn>
-          <div className="flex flex-col gap-3">
-            <p className="font-jakarta font-600 text-[0.6875rem] text-copper uppercase tracking-[0.06em]">
-              Why Verification
-            </p>
-            <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-              Two industries.<br />
-              One structural failure.
-            </h2>
-          </div>
-        </AnimateIn>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-14 py-24`}>
+          <AnimateIn>
+            <div className="flex flex-col gap-3">
+              <p className={EYEBROW}>Why Verification</p>
+              <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+                Two industries.<br />
+                One structural failure.
+              </h2>
+            </div>
+          </AnimateIn>
 
-        <div className="flex gap-8">
-          <AnimateIn className="flex-1">
-            <div className="p-[40px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full flex flex-col gap-5">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-copper shrink-0" />
-                <p className="font-jakarta font-600 text-[0.6875rem] text-copper tracking-[0.04em] uppercase">
+          <div className="flex flex-col gap-8 md:flex-row">
+            <AnimateIn className="flex-1">
+              <div className="flex h-full flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+                <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
                   Food Security Hub
                 </p>
-              </div>
-              <h3 className="font-jakarta font-600 text-[1.375rem] text-ws-text-heading tracking-[-0.01em] leading-[1.3]">
-                The Farmer Problem
-              </h3>
-              <p className="font-jakarta font-400 text-[1rem] text-ws-text-body leading-[1.6]">
-                Farmers sell through brokers who know the end-market price. The farmer does not.
-                There is no mechanism to compare offers, signal reliability to buyers they have
-                never met, or receive payment without physical presence. This is not individual
-                bad actors — it is a structural information asymmetry.
-              </p>
-            </div>
-          </AnimateIn>
-          <AnimateIn delay={0.08} className="flex-1">
-            <div className="p-[40px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full flex flex-col gap-5">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal shrink-0" />
-                <p className="font-jakarta font-600 text-[0.6875rem] text-teal tracking-[0.04em] uppercase">
-                  Education Hub
-                </p>
-              </div>
-              <h3 className="font-jakarta font-600 text-[1.375rem] text-ws-text-heading tracking-[-0.01em] leading-[1.3]">
-                The Student Problem
-              </h3>
-              <p className="font-jakarta font-400 text-[1rem] text-ws-text-body leading-[1.6]">
-                CS graduates leave with degrees that certify attendance, GitHub repos that are
-                self-reported, and CVs that describe claims no one can verify. Employers have seen
-                AI-generated portfolios and inflated credentials. This is not student dishonesty —
-                it is the absence of a trustworthy verification mechanism.
-              </p>
-            </div>
-          </AnimateIn>
-        </div>
-
-        <AnimateIn>
-          <p className="font-jakarta font-500 text-[1.125rem] text-ws-text-secondary leading-[1.6] tracking-[-0.005em] text-center w-[800px] mx-auto">
-            Both problems share the same root: the absence of a mechanism to establish trust
-            between strangers before a consequential transaction.
-          </p>
-        </AnimateIn>
-      </section>
-
-      {/* ── S3: Verification Philosophy ── */}
-      <section className="bg-canvas-elevated px-[120px] py-[96px] flex flex-col gap-[48px] items-center">
-        <AnimateIn className="text-center flex flex-col gap-3 items-center">
-          <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.06em]">
-            The Verification Philosophy
-          </p>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-            One infrastructure.<br />
-            Two hubs.
-          </h2>
-          <p className="font-jakarta font-400 text-[1rem] text-ws-text-secondary leading-[1.6] max-w-[680px]">
-            Nothing claimed on UmojaHub is unverified. Farmer identity, land documentation,
-            produce listings — and student projects, reviewer credentials, portfolio entries —
-            all pass through the same verification spine.
-          </p>
-        </AnimateIn>
-
-        {/* D01 — Verification Spine Diagram */}
-        <D01DiagramLazy />
-
-        {/* 3 Principles */}
-        <div className="flex gap-6 w-full">
-          {PRINCIPLES.map((p, i) => (
-            <AnimateIn key={p.label} delay={i * 0.08} className="flex-1">
-              <div className="bg-[#E5E1DA] border border-[#C8C2BA] rounded-[2px] p-[28px] h-full flex flex-col gap-2.5">
-                <p className="font-jakarta font-600 text-[0.8125rem] text-teal tracking-[0.01em] uppercase">
-                  {p.label}
-                </p>
-                <p className="font-jakarta font-400 text-[0.9375rem] text-ws-text-body leading-[1.55]">
-                  {p.desc}
+                <h3 className="text-xl font-semibold leading-snug tracking-tight text-fg">
+                  The Farmer Problem
+                </h3>
+                <p className="leading-relaxed text-fg-muted">
+                  Farmers sell through brokers who know the end-market price. The farmer does not.
+                  There is no mechanism to compare offers, signal reliability to buyers they have
+                  never met, or receive payment without physical presence. This is not individual
+                  bad actors — it is a structural information asymmetry.
                 </p>
               </div>
             </AnimateIn>
-          ))}
+            <AnimateIn delay={0.08} className="flex-1">
+              <div className="flex h-full flex-col gap-5 rounded-sm border border-border bg-surface p-10">
+                <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+                  Education Hub
+                </p>
+                <h3 className="text-xl font-semibold leading-snug tracking-tight text-fg">
+                  The Student Problem
+                </h3>
+                <p className="leading-relaxed text-fg-muted">
+                  CS graduates leave with degrees that certify attendance, GitHub repos that are
+                  self-reported, and CVs that describe claims no one can verify. Employers have seen
+                  AI-generated portfolios and inflated credentials. This is not student dishonesty —
+                  it is the absence of a trustworthy verification mechanism.
+                </p>
+              </div>
+            </AnimateIn>
+          </div>
+
+          <AnimateIn>
+            <p className="mx-auto max-w-3xl text-center text-lg font-medium leading-relaxed text-fg">
+              Both problems share the same root: the absence of a mechanism to establish trust
+              between strangers before a consequential transaction.
+            </p>
+          </AnimateIn>
+        </div>
+      </section>
+
+      {/* ── S3: Verification Philosophy ── */}
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col items-center gap-12 py-24`}>
+          <AnimateIn className="flex flex-col items-center gap-3 text-center">
+            <p className={EYEBROW}>The Verification Philosophy</p>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              One infrastructure.<br />
+              Two hubs.
+            </h2>
+            <p className="max-w-2xl leading-relaxed text-fg-muted">
+              Nothing claimed on UmojaHub is unverified. Farmer identity, land documentation,
+              produce listings — and student projects, reviewer credentials, portfolio entries —
+              all pass through the same verification spine.
+            </p>
+          </AnimateIn>
+
+          {/* D01 — Verification Spine Diagram */}
+          <D01DiagramLazy />
+
+          {/* 3 Principles */}
+          <div className="flex w-full flex-col gap-6 md:flex-row">
+            {PRINCIPLES.map((p, i) => (
+              <AnimateIn key={p.label} delay={i * 0.08} className="flex-1">
+                <div className="flex h-full flex-col gap-2.5 rounded-sm border border-border bg-surface p-7">
+                  <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+                    {p.label}
+                  </p>
+                  <p className="text-sm leading-relaxed text-fg-muted">{p.desc}</p>
+                </div>
+              </AnimateIn>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── S4: Verification in Practice ── */}
-      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-copper uppercase tracking-[0.06em]">
-            How It Works
-          </p>
-        </AnimateIn>
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-            Verification in practice.
-          </h2>
-        </AnimateIn>
-
-        <div className="flex gap-8">
-          {/* Farmer flow */}
-          <AnimateIn className="flex-1">
-            <div className="p-[40px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full flex flex-col">
-              <p className="font-jakarta font-600 text-[0.6875rem] text-copper uppercase tracking-[0.04em]">
-                Food Security Hub
-              </p>
-              <div className="h-5" />
-              {FARMER_FLOW.map((step, idx) => (
-                <div key={step.n}>
-                  <div className="flex gap-4 items-start">
-                    <div className="shrink-0 w-7 h-7 rounded-full bg-copper flex items-center justify-center">
-                      <span className="font-jakarta font-600 text-[0.75rem] text-[#F5F4F0]">
-                        {step.n}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-0.5 flex-1">
-                      <p className="font-jakarta font-600 text-[0.875rem] text-ws-text-heading">
-                        {step.title}
-                      </p>
-                      <p className="font-jakarta font-400 text-[0.8125rem] text-ws-text-secondary leading-[1.55]">
-                        {step.desc}
-                      </p>
-                    </div>
-                  </div>
-                  {idx < FARMER_FLOW.length - 1 && <div className="h-6" />}
-                </div>
-              ))}
-            </div>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <AnimateIn>
+            <p className={EYEBROW}>How It Works</p>
+          </AnimateIn>
+          <AnimateIn>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              Verification in practice.
+            </h2>
           </AnimateIn>
 
-          {/* Student flow */}
-          <AnimateIn delay={0.08} className="flex-1">
-            <div className="p-[40px] bg-[#E5ECE8] border border-ws-border-soft rounded-[2px] h-full flex flex-col">
-              <p className="font-jakarta font-600 text-[0.6875rem] text-teal uppercase tracking-[0.04em]">
-                Education Hub
-              </p>
-              <div className="h-5" />
-              {STUDENT_FLOW.map((step, idx) => (
-                <div key={step.n}>
-                  <div className="flex gap-4 items-start">
-                    <div className="shrink-0 w-7 h-7 rounded-full bg-teal flex items-center justify-center">
-                      <span className="font-jakarta font-600 text-[0.75rem] text-[#F5F4F0]">
-                        {step.n}
-                      </span>
+          <div className="flex flex-col gap-8 md:flex-row">
+            {/* Farmer flow */}
+            <AnimateIn className="flex-1">
+              <div className="flex h-full flex-col rounded-sm border border-border bg-surface p-10">
+                <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+                  Food Security Hub
+                </p>
+                <div className="h-5" />
+                {FARMER_FLOW.map((step, idx) => (
+                  <div key={step.n}>
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand">
+                        <span className="text-xs font-semibold text-brand-fg">{step.n}</span>
+                      </div>
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        <p className="text-sm font-semibold text-fg">{step.title}</p>
+                        <p className="text-xs leading-relaxed text-fg-muted">{step.desc}</p>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-0.5 flex-1">
-                      <p className="font-jakarta font-600 text-[0.875rem] text-ws-text-heading">
-                        {step.title}
-                      </p>
-                      <p className="font-jakarta font-400 text-[0.8125rem] text-ws-text-secondary leading-[1.55]">
-                        {step.desc}
-                      </p>
-                    </div>
+                    {idx < FARMER_FLOW.length - 1 && <div className="h-6" />}
                   </div>
-                  {idx < STUDENT_FLOW.length - 1 && <div className="h-6" />}
-                </div>
-              ))}
-            </div>
-          </AnimateIn>
+                ))}
+              </div>
+            </AnimateIn>
+
+            {/* Student flow */}
+            <AnimateIn delay={0.08} className="flex-1">
+              <div className="flex h-full flex-col rounded-sm border border-border bg-surface p-10">
+                <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+                  Education Hub
+                </p>
+                <div className="h-5" />
+                {STUDENT_FLOW.map((step, idx) => (
+                  <div key={step.n}>
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand">
+                        <span className="text-xs font-semibold text-brand-fg">{step.n}</span>
+                      </div>
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        <p className="text-sm font-semibold text-fg">{step.title}</p>
+                        <p className="text-xs leading-relaxed text-fg-muted">{step.desc}</p>
+                      </div>
+                    </div>
+                    {idx < STUDENT_FLOW.length - 1 && <div className="h-6" />}
+                  </div>
+                ))}
+              </div>
+            </AnimateIn>
+          </div>
         </div>
       </section>
 
@@ -326,68 +334,28 @@ export default function HomePage() {
       {STORYWORLD_V2 ? <StoryWorldV2Section /> : <StoryWorldSection />}
 
       {/* ── S6: Audience Routing ── */}
-      <section className="bg-canvas-base px-[120px] py-[96px] flex flex-col gap-[48px]">
-        <AnimateIn>
-          <p className="font-jakarta font-600 text-[0.6875rem] text-violet uppercase tracking-[0.06em]">
-            For Your Role
-          </p>
-        </AnimateIn>
-        <AnimateIn>
-          <h2 className="font-jakarta font-600 text-[2.25rem] text-ws-text-heading tracking-[-0.02em] leading-[1.15]">
-            Who are you here for?
-          </h2>
-        </AnimateIn>
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+          <AnimateIn>
+            <p className={EYEBROW}>For Your Role</p>
+          </AnimateIn>
+          <AnimateIn>
+            <h2 className="text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
+              Who are you here for?
+            </h2>
+          </AnimateIn>
 
-        {/* Row 1 */}
-        <div className="flex gap-6">
-          {AUDIENCE_ROW_1.map((card, i) => (
-            <AnimateIn key={card.role} delay={i * 0.08} className="flex-1">
-              <Link
-                href={card.href}
-                className="group flex flex-col gap-3 p-[32px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-standard ease-standard"
-              >
-                <p className={`font-jakarta font-600 text-[0.625rem] uppercase tracking-[0.04em] ${card.accentClass}`}>
-                  {card.hub}
-                </p>
-                <p className="font-jakarta font-600 text-[1.25rem] text-ws-text-heading tracking-[-0.01em]">
-                  {card.role}
-                </p>
-                <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-secondary leading-[1.55]">
-                  {card.desc}
-                </p>
-                <div className="h-2" />
-                <p className={`font-jakarta font-600 text-[0.8125rem] ${card.accentClass}`}>
-                  {card.cta}
-                </p>
-              </Link>
-            </AnimateIn>
-          ))}
-        </div>
+          <div className="flex flex-col gap-6 md:flex-row">
+            {AUDIENCE_ROW_1.map((card, i) => (
+              <AudienceCard key={card.role} card={card} delay={i * 0.08} />
+            ))}
+          </div>
 
-        {/* Row 2 */}
-        <div className="flex gap-6">
-          {AUDIENCE_ROW_2.map((card, i) => (
-            <AnimateIn key={card.role} delay={i * 0.08} className="flex-1">
-              <Link
-                href={card.href}
-                className="group flex flex-col gap-3 p-[32px] bg-ws-surface-primary border border-ws-border-soft rounded-[2px] h-full hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-standard ease-standard"
-              >
-                <p className={`font-jakarta font-600 text-[0.625rem] uppercase tracking-[0.04em] ${card.accentClass}`}>
-                  {card.hub}
-                </p>
-                <p className="font-jakarta font-600 text-[1.25rem] text-ws-text-heading tracking-[-0.01em]">
-                  {card.role}
-                </p>
-                <p className="font-jakarta font-400 text-[0.875rem] text-ws-text-secondary leading-[1.55]">
-                  {card.desc}
-                </p>
-                <div className="h-2" />
-                <p className={`font-jakarta font-600 text-[0.8125rem] ${card.accentClass}`}>
-                  {card.cta}
-                </p>
-              </Link>
-            </AnimateIn>
-          ))}
+          <div className="flex flex-col gap-6 md:flex-row">
+            {AUDIENCE_ROW_2.map((card, i) => (
+              <AudienceCard key={card.role} card={card} delay={i * 0.08} />
+            ))}
+          </div>
         </div>
       </section>
     </>

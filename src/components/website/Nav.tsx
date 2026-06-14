@@ -33,14 +33,14 @@ export function Nav() {
   return (
     <header
       ref={navRef}
-      className="fixed top-0 left-0 right-0 z-50 bg-canvas-elevated border-b border-ws-border-soft"
+      className="fixed top-0 left-0 right-0 z-50 bg-surface border-b border-border"
     >
-      <div className="mx-auto max-w-7xl px-[48px]">
-        <div className="flex h-[72px] items-center justify-between">
+      <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
+        <div className="flex h-16 items-center justify-between">
           {/* Wordmark */}
           <Link
             href="/"
-            className="font-jakarta font-700 text-ws-text-heading text-[1.125rem] tracking-[-0.01em] hover:opacity-80 transition-opacity duration-fast ease-standard"
+            className="font-bold text-fg text-lg tracking-tight hover:opacity-80 transition-opacity duration-fast ease-standard"
           >
             UmojaHub
           </Link>
@@ -51,7 +51,7 @@ export function Nav() {
               <Link
                 key={href}
                 href={href}
-                className="font-jakarta text-[0.875rem] font-500 text-ws-text-body hover:text-ws-text-heading transition-colors duration-fast ease-standard"
+                className="text-sm font-medium text-fg-muted hover:text-fg transition-colors duration-fast ease-standard"
               >
                 {label}
               </Link>
@@ -62,7 +62,7 @@ export function Nav() {
           <div className="hidden md:flex items-center">
             <Link
               href="/auth/register"
-              className="inline-flex items-center px-[20px] py-[10px] rounded-[4px] bg-copper text-[#F5F4F0] font-jakarta text-[0.875rem] font-600 hover:bg-[#A05A30] active:scale-[0.98] transition-all duration-fast ease-standard"
+              className="inline-flex items-center px-5 py-2.5 rounded-sm bg-brand text-brand-fg text-sm font-semibold hover:bg-brand-hover active:scale-95 transition-all duration-fast ease-standard"
             >
               Get started
             </Link>
@@ -70,7 +70,7 @@ export function Nav() {
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden p-2 text-ws-text-secondary hover:text-ws-text-heading transition-colors"
+            className="md:hidden p-2 text-fg-muted hover:text-fg transition-colors"
             onClick={() => setMobileOpen((o) => !o)}
             aria-expanded={mobileOpen}
             aria-label="Toggle navigation"
@@ -84,21 +84,21 @@ export function Nav() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-canvas-elevated border-t border-ws-border-soft px-6 py-4 space-y-4">
+        <div className="md:hidden bg-surface border-t border-border px-6 py-4 space-y-4">
           {NAV_LINKS.map(({ label, href }) => (
             <Link
               key={href}
               href={href}
-              className="block font-jakarta text-[1rem] font-500 text-ws-text-body hover:text-copper transition-colors"
+              className="block text-base font-medium text-fg-muted hover:text-brand transition-colors"
               onClick={() => setMobileOpen(false)}
             >
               {label}
             </Link>
           ))}
-          <div className="pt-2 border-t border-ws-border-soft">
+          <div className="pt-2 border-t border-border">
             <Link
               href="/auth/register"
-              className="inline-flex items-center px-[20px] py-[10px] rounded-[4px] bg-copper text-[#F5F4F0] font-jakarta text-[0.875rem] font-600"
+              className="inline-flex items-center px-5 py-2.5 rounded-sm bg-brand text-brand-fg text-sm font-semibold"
               onClick={() => setMobileOpen(false)}
             >
               Get started

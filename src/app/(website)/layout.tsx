@@ -3,7 +3,7 @@ import { Footer } from '@/components/website/Footer';
 
 export default function WebsiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-canvas-base font-jakarta text-ws-text-body antialiased">
+    <div className="theme-website min-h-screen bg-background font-jakarta text-fg-muted antialiased">
       <Nav />
       <main>{children}</main>
       <Footer />

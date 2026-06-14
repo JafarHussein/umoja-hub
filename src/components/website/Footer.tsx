@@ -41,19 +41,19 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="bg-ws-text-heading">
-      <div className="mx-auto max-w-7xl px-[120px] pt-[64px] pb-[48px] flex flex-col gap-[48px]">
+    <footer className="theme-product bg-background">
+      <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20 pt-16 pb-12 flex flex-col gap-12">
         {/* Columns row */}
-        <div className="flex items-start gap-8">
+        <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
           {/* Brand col */}
           <div className="flex-1 flex flex-col gap-3">
             <Link
               href="/"
-              className="font-jakarta font-600 text-[#F2F0EC] text-[1rem] tracking-[-0.01em] hover:opacity-80 transition-opacity duration-fast ease-standard"
+              className="font-semibold text-fg text-base tracking-tight hover:opacity-80 transition-opacity duration-fast ease-standard"
             >
               UmojaHub
             </Link>
-            <p className="font-jakarta text-[0.8125rem] text-[#636C76] leading-[1.55] w-[240px]">
+            <p className="text-xs text-fg-subtle leading-relaxed max-w-xs">
               East Africa&apos;s verification infrastructure for farmers and graduates.
             </p>
           </div>
@@ -61,7 +61,7 @@ export function Footer() {
           {/* Link columns */}
           {COLUMNS.map(({ heading, links }) => (
             <div key={heading} className="flex-1 flex flex-col gap-3">
-              <p className="font-jakarta text-[0.75rem] font-600 text-[#878078] tracking-[0.24px]">
+              <p className="text-xs font-semibold text-fg-subtle tracking-wider">
                 {heading.toUpperCase()}
               </p>
               <ul className="flex flex-col gap-3">
@@ -69,7 +69,7 @@ export function Footer() {
                   <li key={href}>
                     <Link
                       href={href}
-                      className="font-jakarta text-[0.875rem] font-400 text-[#636C76] hover:text-[#D6D1CB] transition-colors duration-fast ease-standard"
+                      className="text-sm text-fg-muted hover:text-fg transition-colors duration-fast ease-standard"
                     >
                       {label}
                     </Link>
@@ -81,20 +81,20 @@ export function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-[#2A3138]" />
+        <div className="h-px bg-border" />
 
         {/* Bottom */}
-        <div className="flex items-center justify-between">
-          <p className="font-jakarta text-[0.75rem] font-400 text-[#636C76]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-fg-subtle">
             © {new Date().getFullYear()} UmojaHub. Verification methodology published at{' '}
-            <Link href="/trust" className="hover:text-[#A9A29A] transition-colors">
+            <Link href="/trust" className="hover:text-fg-muted transition-colors">
               /trust
             </Link>
             .
           </p>
           <a
             href="mailto:hello@umojahub.org"
-            className="font-ibm-mono text-[0.75rem] text-[#636C76] hover:text-[#A9A29A] transition-colors duration-fast ease-standard"
+            className="font-ibm-mono text-xs text-fg-subtle hover:text-fg-muted transition-colors duration-fast ease-standard"
           >
             hello@umojahub.org
           </a>

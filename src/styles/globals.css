@@ -21,8 +21,13 @@
 @layer base {
   /* Solid colours are stored as space-separated RGB triplets so Tailwind can
    * apply alpha via `<alpha-value>` (e.g. bg-brand/15, border-danger/30).
-   * Borders carry their own alpha and stay full rgba/hex values. */
-  :root {
+   * Borders carry their own alpha and stay full rgba/hex values.
+   *
+   * `.theme-product` shares the default (dark) values so a dark band — e.g. an
+   * inverted hero or CTA — can be dropped inside a `.theme-website` page and
+   * flip its subtree back to the product theme. */
+  :root,
+  .theme-product {
     /* ── Surfaces ─────────────────────────────────────────────── */
     --bg: 13 17 23; /* #0d1117 */
     --surface: 22 27 34; /* #161b22 */
