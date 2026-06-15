@@ -2,12 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AnimateIn } from '@/components/website/AnimateIn';
 import { D01DiagramLazy } from '@/components/website/D01DiagramLazy';
-import { StoryWorldSection } from '@/components/website/StoryWorld';
-import { StoryWorldV2Section } from '@/components/website/StoryWorld/v2';
-
-// Dev-preview flag per STORYWORLD_V2 Resolved Decision 6: V2 renders behind
-// NEXT_PUBLIC_STORYWORLD_V2 until launch, when it replaces V1 in place.
-const STORYWORLD_V2 = process.env.NEXT_PUBLIC_STORYWORLD_V2 === 'true';
 
 export const metadata: Metadata = {
   title: 'UmojaHub — East Africa\'s Verification Infrastructure',
@@ -330,8 +324,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── S5: StoryWorld — The Commons (V2) behind dev flag, Witness (V1) default ── */}
-      {STORYWORLD_V2 ? <StoryWorldV2Section /> : <StoryWorldSection />}
+      {/* ── S5: The thesis. Editorial manifesto beat (replaces the retired 3D scene). ── */}
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} grid gap-x-16 gap-y-10 py-28 lg:grid-cols-12 lg:py-36`}>
+          <AnimateIn className="lg:col-span-8">
+            <h2 className="text-4xl font-semibold leading-tight tracking-tight text-fg md:text-5xl lg:text-6xl">
+              Trust you can check,
+              <br />
+              not trust you are asked to take.
+            </h2>
+          </AnimateIn>
+
+          <AnimateIn delay={0.12} className="flex flex-col justify-end gap-6 lg:col-span-4">
+            <p className="max-w-prose text-lg leading-relaxed text-fg-muted">
+              Every farmer&apos;s record and every student&apos;s portfolio is built from real,
+              recorded events. A named person verifies each one, and the result stays public for
+              anyone to audit.
+            </p>
+            <Link
+              href="/transparency"
+              className="group inline-flex items-center gap-2 self-start text-base font-semibold text-brand transition-colors hover:text-brand-hover"
+            >
+              See the live numbers
+              <span aria-hidden className="transition-transform duration-fast group-hover:translate-x-0.5">
+                →
+              </span>
+            </Link>
+          </AnimateIn>
+        </div>
+      </section>
 
       {/* ── S6: Audience Routing ── */}
       <section className="bg-background">

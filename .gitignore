@@ -97,3 +97,6 @@ umojahub_all_documentation.md
 IMPLEMENTATION_PLAN.md
 
 .vercel
+
+# Installed agent skills (taste-skill etc.) - local tooling
+.agents/
