@@ -1,26 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { MediaFrame } from '@/components/website/MediaFrame';
 
 export const metadata: Metadata = {
-  title: 'For Buyers — Food Security Hub · UmojaHub',
+  title: 'For Buyers: Food Security Hub · UmojaHub',
   description:
     'Buy directly from verified Kenyan farmers. Every listing shows a Trust Score. Pay through M-Pesa.',
 };
 
 const TIERS = [
-  { name: 'NEW', desc: 'Verified identity. No transaction history yet. Use for trial orders.' },
-  {
-    name: 'ESTABLISHED',
-    desc: 'Verified identity. Completed transactions on record. Suitable for standard orders.',
-  },
-  {
-    name: 'TRUSTED',
-    desc: 'Verified identity. Strong transaction history. Preferred for large or important orders.',
-  },
-  {
-    name: 'PREMIUM',
-    desc: 'Verified identity. Excellent transaction record. Top-rated by buyers over sustained period.',
-  },
+  { name: 'New', desc: 'Verified identity. No transaction history yet. Use for trial orders.' },
+  { name: 'Established', desc: 'Verified identity. Completed transactions on record. Suitable for standard orders.' },
+  { name: 'Trusted', desc: 'Verified identity. Strong transaction history. Preferred for large or important orders.' },
+  { name: 'Premium', desc: 'Verified identity. Excellent transaction record. Top-rated by buyers over a sustained period.' },
 ] as const;
 
 const PAYMENT_STEPS = [
@@ -58,188 +50,174 @@ const RISKS = [
 ] as const;
 
 const CONTAINER = 'mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-20';
-const SECTION_LABEL = 'font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-subtle';
+const H2 = 'text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl';
 
 export default function ForBuyersPage() {
   return (
     <>
       {/* Hero */}
-      <section className="theme-product bg-background">
-        <div className={`${CONTAINER} flex flex-col gap-6 py-24`}>
-          <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand-text">
-            For Buyers
-          </p>
-          <h1 className="max-w-4xl text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
-            Verified procurement.
-            <br />
-            Read before you buy.
-          </h1>
-          <div className="flex max-w-2xl flex-col">
-            <p className="text-xl leading-relaxed text-fg-muted">
-              A verified listing tells you who you are transacting with.
+      <section className="bg-background">
+        <div className={`${CONTAINER} grid items-center gap-12 pt-24 pb-20 md:pb-28 lg:grid-cols-12`}>
+          <div className="flex flex-col gap-6 lg:col-span-7">
+            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
+              For buyers
             </p>
-            <p className="text-xl leading-relaxed text-fg-muted">
-              It does not guarantee what arrives. Read what it means before you commit.
+            <h1 className="text-5xl font-extrabold leading-none tracking-tight text-fg md:text-6xl">
+              Verified procurement.
+              <br />
+              Read before you buy.
+            </h1>
+            <p className="max-w-xl text-lg leading-relaxed text-fg-muted">
+              A verified listing tells you who you are transacting with. It does not guarantee what
+              arrives. Read what verification means before you commit.
             </p>
+            <Link
+              href="/marketplace"
+              className="inline-flex items-center justify-center self-start rounded-sm bg-brand px-7 py-4 font-semibold text-brand-fg transition-colors hover:bg-brand-hover active:scale-95"
+            >
+              Browse the Marketplace
+            </Link>
+          </div>
+          <div className="lg:col-span-5">
+            <MediaFrame
+              alt="A buyer reviewing fresh produce at a market"
+              label="Produce at market"
+              aspect="aspect-[4/5]"
+              priority
+            />
           </div>
         </div>
       </section>
 
-      {/* S1 — What Verified Means */}
-      <section className="bg-background">
-        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
+      {/* What verified means */}
+      <section className="bg-surface-sunken">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
           <div className="flex flex-col gap-3">
-            <p className={SECTION_LABEL}>Section 01</p>
-            <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
-              What verified procurement means
-            </p>
+            <h2 className={H2}>What verified procurement means</h2>
             <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
               A verified farmer listing means their identity documents were reviewed by a platform
-              administrator who confirmed they represent a real person with documented land access. The
-              verification status is not self-asserted — it is a human review decision.
+              administrator who confirmed they represent a real person with documented land access.
+              The verification status is not self-asserted. It is a human review decision.
             </p>
           </div>
-
           <div className="flex w-full flex-col gap-6 md:flex-row">
-            {/* IS card */}
-            <div className="flex flex-1 flex-col gap-5 border-b-2 border-brand bg-surface p-10">
+            <div className="flex flex-1 flex-col gap-5 rounded border-b-2 border-brand bg-surface p-10">
               <p className="text-lg font-semibold leading-snug text-brand">What this tells you</p>
               <p className="leading-relaxed text-fg-muted">
-                {'→  '}You are transacting with a real person whose identity has been reviewed
+                You are transacting with a real person whose identity has been reviewed.
               </p>
               <p className="leading-relaxed text-fg-muted">
-                {'→  '}Their listing includes their Trust Score and tier — a visible record of
-                transaction history and buyer ratings
+                Their listing includes their Trust Score and tier, a visible record of transaction
+                history and buyer ratings.
               </p>
             </div>
-
-            {/* IS NOT card */}
-            <div className="flex flex-1 flex-col gap-5 border-b-2 border-border-strong bg-surface p-10">
-              <p className="text-lg font-semibold leading-snug text-fg">
-                What this does NOT tell you
-              </p>
-              <p className="leading-relaxed text-fg-muted">{'×  '}Produce quality at the time of your order</p>
-              <p className="leading-relaxed text-fg-muted">
-                {'×  '}Whether what arrives matches the listing exactly
-              </p>
-              <p className="leading-relaxed text-fg-muted">{'×  '}An absolute guarantee of fulfillment</p>
+            <div className="flex flex-1 flex-col gap-5 rounded border-b-2 border-border-strong bg-surface p-10">
+              <p className="text-lg font-semibold leading-snug text-fg">What this does not tell you</p>
+              <p className="leading-relaxed text-fg-muted">Produce quality at the time of your order.</p>
+              <p className="leading-relaxed text-fg-muted">Whether what arrives matches the listing exactly.</p>
+              <p className="leading-relaxed text-fg-muted">An absolute guarantee of fulfillment.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* S2 — Trust Score Tiers */}
-      <section className="theme-product bg-background">
-        <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
-          <p className={SECTION_LABEL}>Section 02</p>
-          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
-            How to read Trust Scores
-          </p>
-          <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
-            Trust Score is calculated from four components: verification status, completed transaction
-            count, buyer ratings, and order reliability. It is not an opinion — it is a record.
-          </p>
-
-          <div className="flex w-full flex-col gap-4 md:flex-row">
+      {/* Trust tiers */}
+      <section className="bg-background">
+        <div className={`${CONTAINER} flex flex-col gap-10 py-24`}>
+          <div className="flex flex-col gap-3">
+            <h2 className={H2}>How to read Trust Scores</h2>
+            <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
+              Trust Score is calculated from four components: verification status, completed
+              transaction count, buyer ratings, and order reliability. It is not an opinion. It is a
+              record.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
             {TIERS.map((tier) => (
-              <div
-                key={tier.name}
-                className="flex flex-1 flex-col gap-4 rounded-sm border border-border bg-surface px-7 py-8"
-              >
-                <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-fg-muted">
-                  {tier.name}
-                </p>
+              <div key={tier.name} className="flex flex-col gap-3 bg-surface p-7">
+                <p className="text-base font-semibold text-fg">{tier.name}</p>
                 <p className="text-sm leading-relaxed text-fg-muted">{tier.desc}</p>
               </div>
             ))}
           </div>
-
-          <p className="max-w-3xl font-medium leading-relaxed text-fg-subtle">
-            For a large or important order, prefer a TRUSTED or PREMIUM farmer. For a trial order, a
-            NEW farmer&#39;s verified status still confirms real identity.
+          <p className="max-w-3xl font-medium leading-relaxed text-fg-muted">
+            For a large or important order, prefer a Trusted or Premium farmer. For a trial order, a
+            New farmer&apos;s verified status still confirms real identity.
           </p>
         </div>
       </section>
 
-      {/* S3 — Payment */}
+      {/* Payment */}
       <section className="bg-surface-sunken">
         <div className={`${CONTAINER} flex flex-col gap-12 py-24`}>
-          <p className={SECTION_LABEL}>Section 03</p>
-          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
-            How payment works
-          </p>
-
-          {PAYMENT_STEPS.map((step) => (
-            <div key={step.n} className="flex w-full items-start gap-8 border-b border-border py-6">
-              <div className="flex shrink-0 items-center justify-center rounded-sm bg-brand px-3 py-1.5">
-                <span className="font-semibold text-brand-fg">{step.n}</span>
+          <h2 className={H2}>How payment works</h2>
+          <div className="grid grid-cols-1 divide-y divide-border border-y border-border">
+            {PAYMENT_STEPS.map((step) => (
+              <div key={step.n} className="flex items-start gap-6 py-6">
+                <div className="flex shrink-0 items-center justify-center rounded-sm bg-brand px-3 py-1.5">
+                  <span className="font-semibold text-brand-fg">{step.n}</span>
+                </div>
+                <div className="flex flex-1 flex-col gap-2">
+                  <p className="text-lg font-semibold leading-snug text-fg">{step.title}</p>
+                  <p className="leading-relaxed text-fg-muted">{step.body}</p>
+                </div>
               </div>
-              <div className="flex flex-1 flex-col gap-2">
-                <p className="text-lg font-semibold leading-snug text-fg">{step.title}</p>
-                <p className="leading-relaxed text-fg-muted">{step.body}</p>
-              </div>
-            </div>
-          ))}
-
+            ))}
+          </div>
           <p className="max-w-3xl font-medium leading-relaxed text-brand">
-            You do not pay in advance of initiating an order — the STK Push is triggered at the moment
+            You do not pay in advance of initiating an order. The STK Push is triggered at the moment
             of order placement, after you have seen all relevant information.
           </p>
         </div>
       </section>
 
-      {/* S4 — Buyer Risks */}
+      {/* Buyer risks */}
       <section className="bg-background">
         <div className={`${CONTAINER} flex flex-col gap-8 py-24`}>
-          <p className={SECTION_LABEL}>Section 04</p>
-          <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-fg md:text-4xl">
-            What buyers risk
-          </p>
-          <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
-            Documented honestly. Verification addresses identity — not fulfillment quality.
-          </p>
-
+          <div className="flex flex-col gap-3">
+            <h2 className={H2}>What buyers risk</h2>
+            <p className="max-w-3xl text-lg leading-relaxed text-fg-muted">
+              Documented honestly. Verification addresses identity, not fulfillment quality.
+            </p>
+          </div>
           {RISKS.map((risk) => (
-            <div key={risk} className="flex w-full items-center gap-4">
-              <span className="h-2 w-2 shrink-0 bg-fg-subtle" />
+            <div key={risk} className="flex w-full items-center gap-4 border-b border-border pb-5 last:border-0">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-fg-subtle" />
               <p className="flex-1 leading-relaxed text-fg-muted">{risk}</p>
             </div>
           ))}
-
-          <div className="flex w-full flex-col gap-3 border-l-2 border-brand bg-surface px-10 py-8">
-            <p className="font-ibm-mono text-xs font-semibold uppercase tracking-widest text-brand">
-              Recourse
-            </p>
+          <div className="flex w-full flex-col gap-3 rounded border-l-2 border-brand bg-surface-sunken px-10 py-8">
+            <p className="text-sm font-semibold text-brand">Recourse</p>
             <p className="leading-relaxed text-fg-muted">
-              Submit a rating with explanation after receiving your order. Ratings directly affect the
-              farmer&#39;s Trust Score and future listing visibility. This is the recourse mechanism —
-              it is how accountability accrues over time.
+              Submit a rating with explanation after receiving your order. Ratings directly affect
+              the farmer&apos;s Trust Score and future listing visibility. This is the recourse
+              mechanism. It is how accountability accrues over time.
             </p>
           </div>
         </div>
       </section>
 
-      {/* S5 — Browse CTA */}
-      <section className="theme-product bg-background">
+      {/* Browse CTA */}
+      <section className="bg-surface-sunken">
         <div className={`${CONTAINER} flex flex-col gap-8 py-24`}>
-          <p className="max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-fg md:text-5xl">
+          <h2 className="max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-fg md:text-5xl">
             Browse before you commit.
-          </p>
+          </h2>
           <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
             Buyers can browse the full marketplace without registering. All active listings, farmer
-            Trust Scores, county and crop filters — visible before you create an account. Registration
+            Trust Scores, county and crop filters, visible before you create an account. Registration
             is required only to place an order.
           </p>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
               href="/marketplace"
-              className="inline-flex items-center rounded-sm bg-brand px-8 py-4 font-semibold text-brand-fg transition-colors hover:bg-brand-hover"
+              className="inline-flex items-center justify-center rounded-sm bg-brand px-8 py-4 font-semibold text-brand-fg transition-colors hover:bg-brand-hover active:scale-95"
             >
               Browse the Marketplace
             </Link>
             <Link
               href="/auth/register?role=BUYER"
-              className="inline-flex items-center rounded-sm border border-border-strong px-8 py-4 font-medium text-fg transition-colors hover:bg-surface"
+              className="inline-flex items-center justify-center rounded-sm border border-border-strong px-8 py-4 font-medium text-fg transition-colors hover:bg-surface"
             >
               Register as a Buyer
             </Link>
