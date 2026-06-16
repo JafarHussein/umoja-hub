@@ -242,6 +242,21 @@ body {
   outline-offset: 2px;
 }
 
+/* Reduced motion — honour the OS setting globally (foundation §10, WCAG 2.2
+ * SC 2.3.3). Transitions/animations collapse to near-instant; nothing
+ * essential is conveyed by motion alone. Motion is opt-in to movement, not
+ * opt-out. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

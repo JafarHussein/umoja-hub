@@ -1,17 +1,13 @@
 import type { Metadata } from 'next';
-import { Sora, IBM_Plex_Sans, JetBrains_Mono, Geist, Geist_Mono } from 'next/font/google';
+import { Sora, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
 import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
 import { cn } from "@/lib/utils";
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
-  display: 'swap',
-});
-
+// Platform typefaces (foundation §8): Sora (headings) / IBM Plex Sans (body) /
+// JetBrains Mono (data). Latin-subset, weights trimmed to those in use.
+// Geist / Geist Mono were loaded but unused — removed in Visual System V1 P4
+// to cut font payload (2G constraint, §5/§6).
 const sora = Sora({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
@@ -62,8 +58,6 @@ export default function RootLayout({
         sora.variable,
         ibmPlexSans.variable,
         jetbrainsMono.variable,
-        geist.variable,
-        geistMono.variable,
         'font-sans'
       )}
     >

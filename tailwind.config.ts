@@ -65,32 +65,42 @@ const config: Config = {
         mono: ['var(--font-jetbrains-mono)', 'monospace'],
       },
       fontSize: {
-        // Dashboard scale (6-point)
+        // Dashboard scale (6-point) — compact, data-dense product surfaces
         t1: ['32px', { lineHeight: '1.2', fontWeight: '600' }],
         t2: ['24px', { lineHeight: '1.3', fontWeight: '600' }],
         t3: ['20px', { lineHeight: '1.4', fontWeight: '500' }],
         t4: ['16px', { lineHeight: '1.5', fontWeight: '400' }],
         t5: ['14px', { lineHeight: '1.5', fontWeight: '400' }],
         t6: ['12px', { lineHeight: '1.4', fontWeight: '400' }],
+        // Website reading scale — long-form Documentation Stream. Same families:
+        // display / read-h* pair with font-heading (Sora); read-* body copy with
+        // font-body (IBM Plex Sans). Comfortable measure + generous line-height.
+        display: ['3.5rem', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'display-sm': ['2.5rem', { lineHeight: '1.1', letterSpacing: '-0.015em', fontWeight: '700' }],
+        'read-h2': ['1.75rem', { lineHeight: '1.25', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'read-h3': ['1.25rem', { lineHeight: '1.4', fontWeight: '600' }],
+        'read-lead': ['1.375rem', { lineHeight: '1.6', fontWeight: '400' }],
+        'read-body': ['1.125rem', { lineHeight: '1.7', fontWeight: '400' }],
+        'read-meta': ['0.875rem', { lineHeight: '1.5', letterSpacing: '0.01em', fontWeight: '400' }],
+      },
+      maxWidth: {
+        // Reading measure for the Documentation Stream (~68 characters)
+        reading: '68ch',
       },
       borderRadius: {
         DEFAULT: '6px',
         sm: '4px',
       },
+      // Functional motion only (foundation §10): the two durations actually in
+      // use (150 micro / 250 panel) + one standard easing. The StoryWorld-era
+      // instant/fast/standard/enter/exit durations and decelerate/accelerate/
+      // sharp easings were unused and are removed.
       transitionDuration: {
         '150': '150ms',
         '250': '250ms',
-        instant: '80ms',
-        fast: '150ms',
-        standard: '250ms',
-        enter: '350ms',
-        exit: '200ms',
       },
       transitionTimingFunction: {
         standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        decelerate: 'cubic-bezier(0, 0, 0.2, 1)',
-        accelerate: 'cubic-bezier(0.4, 0, 1, 1)',
-        sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
       },
       keyframes: {
         shimmer: {
