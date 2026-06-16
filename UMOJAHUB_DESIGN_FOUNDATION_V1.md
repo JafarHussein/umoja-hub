@@ -103,8 +103,8 @@ Distinctiveness comes from **doing the trustworthy/clear/grounded thing better t
 > This foundation fixes **principles and constraints**, not final pixels. Specific scales/values are ratified in a follow-up "Visual System V1" *after this doc is approved*, built in Figma + tokens (`design-reset/11–13`).
 
 - **Color:** one semantic set; **brand green `#007f4e`** as the single accent that does the work; color carries **meaning** (success/warning/danger/info/verified), never decoration; all combinations meet AA, validated in sunlight/cheap-screen conditions. *(01 T-2, 09)*
-- **Surfaces:** start from the working dark product theme as the proven base; any website/light theme is a **mode of the same token set**, not a parallel system. *(02)*
-- **Typography:** **one** typographic voice across product and website (collapse the current two-font split); subset aggressively; type scale optimized for small screens and readability, not display drama. *(01 T-3, 13)*
+- **Surfaces (DECIDED — see §15.1):** **one token set, themed by mode.** The product (dashboard) keeps its **dark** theme; the website is a **light** mode of the *same* semantic tokens — chosen because the Documentation Stream is dense, long-form reading where a light, document-like surface is more readable and reads as research-grade to auditors/institutions. The two are modes of one system, never parallel palettes. *(02; §13)*
+- **Typography (DECIDED — see §15.2):** **one typographic voice across the whole platform** — **Sora** (headings) / **IBM Plex Sans** (body) / **JetBrains Mono** (mono), the fonts the product already ships. No new website typeface. **Aggressively subset** (Latin + needed glyphs) — font payload is a performance requirement for mid-range Android on 2G, not an aesthetic choice. Type scale optimized for small-screen readability, not display drama. *(01 T-3, 13)*
 - **Components:** standardize `ui/` primitives on **Radix-backed, a11y-by-default** behavior (shadcn copy-in already present), evolving the working app rather than restarting it. *(06 §5, 13)*
 - **Verification/trust cues:** a consistent, legible visual language for "verified," provenance, status, and scores — this is UmojaHub's signature surface, the place to invest distinctiveness. *(05 §1)*
 
@@ -181,7 +181,15 @@ Distinctiveness comes from **doing the trustworthy/clear/grounded thing better t
 
 *(The original four-module proposal maps to topics 1, 2, 5, 7; topics 3, 4, 6, 8, 9, 10 were missing and are required by `WEBSITE_PURPOSE_V1`'s ownership list.)*
 
-**Audience entry points.** Because the website does not know a visitor's role (`WEBSITE_PURPOSE_V1` Rule 4), audience framings (`/for/farmers`, etc.) become **curated doorways into the Stream** — a short orientation that links into the relevant topics — not separate, parallel bodies of content. One canonical truth; audience-specific entrances into it. This is the resolution to open question §15.3 (no more N duplicated audience pages).
+**Audience entry points (DECIDED — see §15.3).** Because the website does not know a visitor's role (`WEBSITE_PURPOSE_V1` Rule 4), audience framings become **curated doorways into the Stream** — a short orientation that links into the relevant topics — not separate, parallel bodies of content. One canonical truth; audience-specific entrances into it. The approved set is **five doorways**:
+
+1. **Farmers** — the producers
+2. **Buyers** — the market
+3. **Students** — the Education Hub
+4. **Employers** — the verifiers
+5. **Institutions & Partners** — consolidating NGOs, government, academic institutions, researchers, and funders (they share governance/methodology/impact information needs, so one analytical doorway serves them; aligns with `WEBSITE_PURPOSE_V1` Rule 4 Role Independence and the findability evidence in `design-reset/10`)
+
+A doorway is a thin entry layer over the shared Stream; it never holds content that isn't reachable canonically in the Stream.
 
 ---
 
@@ -192,11 +200,16 @@ Distinctiveness comes from **doing the trustworthy/clear/grounded thing better t
 - The **semantic token architecture** (`rgb(var(--x)/<alpha>)`).
 - **Product-truth docs** as the ongoing evidence base.
 
-## 15. Open questions for approval
+## 15. Decisions & open questions
 
-1. **Default surface theme** for the *website*: dark (matching product) or a light mode of the same tokens? *(recommend: decide in Visual System V1 via Figma exploration; do not fork the token system either way)*
-2. **Single typeface family** to unify product + website (collapsing Sora/Jakarta) — needs a pick.
-3. **Audience doorways**: §13 resolves the old 7-page `/for/*` sprawl — audiences become curated entry points into one canonical Stream, not parallel pages. Remaining decision: confirm the *set* of doorways to expose (farmers, buyers, students, employers, NGOs, government, researchers/funders).
+**Resolved (owner sign-off recorded):**
+
+1. ✅ **Default surface theme — LIGHT (website).** The website is a **light mode of the one shared token set**; the product stays **dark**. Rationale: the Documentation Stream is dense long-form reading, where a light, document-like surface is more readable and reads as research-grade to auditors/institutions. Constraint affirmed: **one token set, themed by mode — never two parallel systems.** *(applied in §8 Surfaces)*
+2. ✅ **Unifying typeface — KEEP EXISTING.** **Sora / IBM Plex Sans / JetBrains Mono** across the entire platform; no new website typeface. Rationale: a single typographic voice is a trust signal, and minimizing font payload is a performance requirement for mid-range Android on 2G. Mandate: **aggressive subsetting.** *(applied in §8 Typography)*
+3. ✅ **Audience doorways — FIVE, CONSOLIDATED.** Farmers · Buyers · Students · Employers · Institutions & Partners (NGOs + government + academic institutions + researchers + funders). Rationale: reduces menu clutter while serving the analytical institutional audience through one doorway with shared information needs. *(applied in §13 Audience entry points)*
+
+**Still open:**
+
 4. **Flagged docs** in `design-reset/03 §3` (`WEBSITE_PURPOSE_V1`, `WEBSITE_WEBAPP_BOUNDARY`, `WEBSITE_ENFORCEMENT_RULES`, `APPLICATION_USER_JOURNEYS`) — kept as input; confirm keep, or delete for a barer slate.
 
 ## 16. What approval unlocks
