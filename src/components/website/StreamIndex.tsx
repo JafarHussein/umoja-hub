@@ -13,13 +13,13 @@ export function StreamIndex() {
       <ol className="space-y-3">
         {streamTopics.map((t) => (
           <li key={t.id}>
-            <a href={`#${t.id}`} className="font-medium text-fg hover:text-brand-text">
+            <a href={`/#${t.id}`} className="font-medium text-fg hover:text-brand-text">
               {String(t.n).padStart(2, '0')} · {t.title}
             </a>
             <ul className="mt-1 ml-1 space-y-1 border-l border-border pl-3">
               {t.sections.map((s) => (
                 <li key={s.id}>
-                  <a href={`#${s.id}`} className="text-fg-muted hover:text-brand-text">
+                  <a href={`/#${s.id}`} className="text-fg-muted hover:text-brand-text">
                     {s.title}
                   </a>
                 </li>

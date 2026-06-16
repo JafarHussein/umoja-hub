@@ -9,6 +9,8 @@ import { TopicGovernance } from '@/components/website/topics/TopicGovernance';
 import { TopicEvidence } from '@/components/website/topics/TopicEvidence';
 import { TopicServices } from '@/components/website/topics/TopicServices';
 import { TopicRisks } from '@/components/website/topics/TopicRisks';
+import Link from 'next/link';
+import { doorways } from '@/components/website/doorways';
 
 /**
  * The Documentation Stream (foundation §13). Topics render in canonical spine
@@ -26,6 +28,20 @@ export default function WebsiteHome() {
           documentation explains how the platform works and what it does not guarantee — read it in
           full, no account required.
         </p>
+        <nav aria-label="Start where you fit" className="mt-6">
+          <p className="font-mono text-read-meta uppercase tracking-wide text-fg-subtle">
+            New here? Start where you fit
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-body text-read-meta">
+            {doorways.map((d) => (
+              <li key={d.slug}>
+                <Link href={`/for/${d.slug}`} className="text-brand-text hover:underline">
+                  {d.audience}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </header>
 
       <TopicOverview />
