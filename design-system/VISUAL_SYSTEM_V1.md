@@ -91,7 +91,7 @@ The `ui/` primitives (`button`, `Card`, `Input`, `Modal`, `Badge`, `VerifiedBadg
 ## 8. Phasing
 
 1. **P1 — Primitives & semantic spine:** extract primitives, formalize `product` semantic tokens (no visual change), add 3-tier structure + Figma variables. — ✅ **CODE DONE** (TIER 1 primitives + TIER 2 product semantics in `globals.css`, value-identical; type-check/lint/test/build green). *Figma variables deferred to the Figma library step (needs a Figma file context).*
-2. **P2 — Light mode:** author `website` light values for every semantic token; AA-validate both modes.
+2. **P2 — Light mode:** author `website` light values for every semantic token; AA-validate both modes. — ✅ **DONE.** `.theme-website` block + light-side TIER 1 primitives (warm-neutral ramp, dark-green accents, AA-tuned state hues) in `globals.css`. WCAG 2.2 AA computed for all light-mode text/UI pairings: `fg` 15.99:1, `fg-muted` 6.63:1, `fg-subtle` 4.83:1, `brand-text` 6.27:1, white-on-brand 5.07:1, state ≥5.0:1 (success/warning darkened from dark-mode hues to clear 4.5:1 on `--bg`). Dark mode unchanged (shipping palette). Not yet *applied* (no website root yet) and primitives not yet flipping — that's P3. Build/test green.
 3. **P3 — Component re-binding:** fix the shadcn remap + primitive audits; verify primitives in both modes (Storybook-style harness or a scratch route).
 4. **P4 — Type + motion + spacing finalization:** scales, subsetting, reduced-motion rule.
 5. **P5 — Legacy migration + docs:** migrate/remove legacy aliases, publish `TOKENS.md`, Code Connect.

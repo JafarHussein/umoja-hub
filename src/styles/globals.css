@@ -44,11 +44,28 @@
     --c-green-500: 0 153 96; /* #009960 */
     --c-green-600: 0 127 78; /* #007f4e */
 
-    /* State hues */
+    /* State hues (tuned for dark surfaces) */
     --c-success: 63 185 80; /* #3fb950 */
     --c-warning: 210 153 34; /* #d29922 */
     --c-danger: 248 81 73; /* #f85149 */
     --c-info: 88 166 255; /* #58a6ff */
+
+    /* Light-mode additions (Visual System V1 P2) */
+    --c-black: 0 0 0;
+    /* Warm-neutral ramp — restrained warmth; higher number = darker */
+    --c-warm-100: 250 250 248; /* #fafaf8 — page bg */
+    --c-warm-200: 240 239 235; /* #f0efeb — sunken */
+    --c-warm-600: 107 111 118; /* #6b6f76 — subtle text */
+    --c-warm-700: 86 90 97; /* #565a61 — muted text */
+    --c-warm-950: 28 30 33; /* #1c1e21 — primary text */
+    /* Dark greens for accents on light */
+    --c-green-700: 0 107 66; /* #006b42 — brand hover (light) */
+    --c-green-800: 10 107 71; /* #0a6b47 — brand text (light) */
+    /* State hues tuned AA (>=4.5:1) on light --bg */
+    --c-success-700: 35 121 63; /* #23793f */
+    --c-warning-700: 143 99 20; /* #8f6314 */
+    --c-danger-700: 181 54 37; /* #b53625 */
+    --c-info-700: 47 95 194; /* #2f5fc2 */
   }
 
   /* TIER 2 · SEMANTIC — PRODUCT mode (dark, the default).
@@ -88,12 +105,46 @@
     --info: var(--c-info);
   }
 
-  /* NOTE: The light "website" theme (.theme-website) and the warm website
-   * palette (--ws-*) were removed in the UI/UX reset (design-reset/). The
-   * website is being rebuilt from scratch against
-   * UMOJAHUB_DESIGN_FOUNDATION_V1.md; until then only the product (dark)
-   * theme below exists. Do NOT reintroduce a second theme without the
-   * foundation. */
+  /* TIER 2 · SEMANTIC — WEBSITE mode (light).
+   * Same semantic token names as product, re-mapped to light values — one
+   * token system, themed by mode (never a parallel system). Applied via
+   * class="theme-website" on the website layout root (wired with the website
+   * build, foundation §16.3). Restrained warm off-white surface (decision
+   * §11.1). All text/UI pairings validated WCAG 2.2 AA in this mode; success
+   * and warning are darkened from the dark-mode hues to clear 4.5:1 on --bg.
+   * NOTE: the ui/ primitives still bind to the dark-only shadcn remap below;
+   * making them flip per mode is Visual System V1 P3. */
+  .theme-website {
+    /* Surfaces */
+    --bg: var(--c-warm-100);
+    --surface: var(--c-white);
+    --surface-raised: var(--c-white);
+    --surface-sunken: var(--c-warm-200);
+
+    /* Foreground / text */
+    --fg: var(--c-warm-950);
+    --fg-muted: var(--c-warm-700);
+    --fg-subtle: var(--c-warm-600);
+
+    /* Borders (dark-on-light, carry their own alpha) */
+    --border: rgb(var(--c-black) / 0.10);
+    --border-strong: rgb(var(--c-black) / 0.16);
+
+    /* Brand accent (the one accent) */
+    --brand: var(--c-green-600);
+    --brand-hover: var(--c-green-700);
+    --brand-fg: var(--c-white);
+    --brand-text: var(--c-green-800); /* dark green, AA on light --bg */
+
+    /* Focus ring */
+    --ring: var(--c-green-600);
+
+    /* State (AA on light) */
+    --success: var(--c-success-700);
+    --warning: var(--c-warning-700);
+    --danger: var(--c-danger-700);
+    --info: var(--c-info-700);
+  }
 
   /* ── LEGACY compatibility layer ─────────────────────────────────────────
    * Retained verbatim from the retired theme.css so surfaces not yet
