@@ -259,26 +259,31 @@ body {
 }
 
 @layer base {
-  /* Remap shadcn CSS variables to the UmojaHub design system — dark-only */
+  /* shadcn compatibility shim — maps shadcn's expected variable names to our
+   * TIER 2 semantic tokens (product/dark values). No component currently uses
+   * shadcn utilities (bg-card, bg-primary, …); this is kept only so any
+   * shadcn-derived primitive resolves to the design system.
+   * IMPORTANT: --border and --ring are intentionally NOT redeclared here — the
+   * earlier mode-aware semantic tokens (:root/.theme-product and .theme-website)
+   * own them. (Previously this block hard-coded --ring:#007f4e, which won on
+   * :root and made rgb(var(--ring)) invalid — breaking dashboard focus rings.) */
   :root {
-    --background: #0d1117;
-    --foreground: #e6edf3;
-    --card: #161b22;
-    --card-foreground: #e6edf3;
-    --popover: #161b22;
-    --popover-foreground: #e6edf3;
-    --primary: #007f4e;
-    --primary-foreground: #e6edf3;
-    --secondary: #1f2937;
-    --secondary-foreground: #e6edf3;
-    --muted: #161b22;
-    --muted-foreground: #8b949e;
-    --accent: #1f2937;
-    --accent-foreground: #e6edf3;
-    --destructive: #dc2626;
-    --border: rgba(255, 255, 255, 0.08);
-    --input: #161b22;
-    --ring: #007f4e;
+    --background: rgb(var(--bg));
+    --foreground: rgb(var(--fg));
+    --card: rgb(var(--surface));
+    --card-foreground: rgb(var(--fg));
+    --popover: rgb(var(--surface));
+    --popover-foreground: rgb(var(--fg));
+    --primary: rgb(var(--brand));
+    --primary-foreground: rgb(var(--brand-fg));
+    --secondary: rgb(var(--surface-raised));
+    --secondary-foreground: rgb(var(--fg));
+    --muted: rgb(var(--surface));
+    --muted-foreground: rgb(var(--fg-muted));
+    --accent: rgb(var(--surface-raised));
+    --accent-foreground: rgb(var(--fg));
+    --destructive: rgb(var(--danger));
+    --input: rgb(var(--surface));
     --radius: 6px;
   }
   * {
