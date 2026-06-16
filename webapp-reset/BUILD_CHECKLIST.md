@@ -13,14 +13,14 @@
 ## Phase 1 — Lo-fi wireframes, every role end-to-end  ⏳ IN PROGRESS
 Grayscale, structure-only, **named illustration slots**.
 
-**Shared entry (front door)**
+**Shared entry (front door)** ✅ COMPLETE
 - [x] Welcome · [x] Intent · [x] Education · [x] Role confirmation (last)
-- [ ] Sign in
-- [ ] Context: language
-- [ ] Context: location
-- [ ] Role-specific setup
-- [ ] Verification handoff (the anxiety-reducing screen)
-- [ ] Done / first-run
+- [x] Sign in
+- [x] Context: language
+- [x] Context: location
+- [x] Role-specific setup (farmer; other roles' tails reuse the pattern)
+- [x] Verification handoff (the anxiety-reducing screen)
+- [x] Done / first-run
 
 **Farmer end-to-end**
 - [ ] Home · [ ] Verification status · [ ] List produce (capture → preview → publish)
