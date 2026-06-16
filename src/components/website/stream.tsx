@@ -8,16 +8,35 @@
 import type { ReactNode } from 'react';
 import type { StreamTopic } from './streamTopics';
 
+/**
+ * Hover/focus-revealed deep-link affordance on a heading (foundation §13.4 —
+ * addressable anchors are a citation/trust feature). A plain anchor, so it works
+ * server-rendered with no JS; `reveal` is the group-hover variant scoped to the
+ * owning heading, and focus-visible surfaces it for keyboard users.
+ */
+function AnchorLink({ id, title, reveal }: { id: string; title: string; reveal: string }) {
+  return (
+    <a
+      href={`#${id}`}
+      aria-label={`Link to “${title}”`}
+      className={`ml-2 align-middle font-mono text-[0.7em] text-fg-subtle opacity-0 transition-opacity hover:text-brand-text focus-visible:opacity-100 ${reveal}`}
+    >
+      #
+    </a>
+  );
+}
+
 export function Topic({ topic, children }: { topic: StreamTopic; children: ReactNode }) {
   return (
     <section
       id={topic.id}
       aria-labelledby={`${topic.id}-h`}
-      className="scroll-mt-24 mt-16 border-t border-border pt-16 first:mt-0 first:border-t-0 first:pt-0"
+      className="group/topic scroll-mt-24 mt-16 border-t border-border pt-16 first:mt-0 first:border-t-0 first:pt-0"
     >
       <p className="font-mono text-read-meta text-fg-subtle">{String(topic.n).padStart(2, '0')}</p>
       <h2 id={`${topic.id}-h`} className="mt-1 font-heading text-read-h2 text-fg">
         {topic.title}
+        <AnchorLink id={topic.id} title={topic.title} reveal="group-hover/topic:opacity-100" />
       </h2>
       <div className="mt-8 space-y-12">{children}</div>
     </section>
@@ -26,9 +45,10 @@ export function Topic({ topic, children }: { topic: StreamTopic; children: React
 
 export function Sub({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-24">
+    <section id={id} aria-labelledby={`${id}-h`} className="group/sub scroll-mt-24">
       <h3 id={`${id}-h`} className="font-heading text-read-h3 text-fg">
         {title}
+        <AnchorLink id={id} title={title} reveal="group-hover/sub:opacity-100" />
       </h3>
       <div className="mt-3 max-w-reading space-y-4">{children}</div>
     </section>

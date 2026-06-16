@@ -130,8 +130,11 @@
     --fg-subtle: var(--c-warm-600);
     --fg-disabled: var(--c-warm-450);
 
-    /* Borders (dark-on-light, carry their own alpha) */
-    --border: rgb(var(--c-black) / 0.10);
+    /* Borders (dark-on-light, carry their own alpha). Nudged from 0.10 → 0.12
+     * for divider legibility on the warm off-white while keeping §11.1 restraint
+     * (these are decorative dividers paired with a surface-fill change, not the
+     * sole means of conveying structure). */
+    --border: rgb(var(--c-black) / 0.12);
     --border-strong: rgb(var(--c-black) / 0.16);
 
     /* Brand accent (the one accent) */
@@ -201,6 +204,20 @@ body {
 :focus-visible {
   outline: 2px solid rgb(var(--ring));
   outline-offset: 2px;
+}
+
+/* Reduced motion — honour the OS preference platform-wide (foundation §9).
+ * Collapses transitions/animations and disables smooth scrolling so the
+ * scroll-spy index and any hover transitions degrade to instant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Reduced motion — honour the OS setting globally (foundation §10, WCAG 2.2

@@ -10,10 +10,11 @@
  * observer simply finds nothing and the index stays a plain link list.
  */
 import { useEffect, useState } from 'react';
-import { streamTopics } from './streamTopics';
+import { streamTopics, type StreamTopic } from './streamTopics';
 
 export function StreamIndex({ showHeading = true }: { showHeading?: boolean }) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     const ids: string[] = [];
@@ -39,13 +40,37 @@ export function StreamIndex({ showHeading = true }: { showHeading?: boolean }) {
     return () => observer.disconnect();
   }, []);
 
+  const q = query.trim().toLowerCase();
+  const filtered: StreamTopic[] = q
+    ? streamTopics
+        .map((t) => {
+          const topicMatch = t.title.toLowerCase().includes(q);
+          const sections = topicMatch
+            ? t.sections
+            : t.sections.filter((s) => s.title.toLowerCase().includes(q));
+          return topicMatch || sections.length > 0 ? { ...t, sections } : null;
+        })
+        .filter((t): t is StreamTopic => t !== null)
+    : streamTopics;
+
   return (
     <nav aria-label="Contents" className="font-body text-read-meta">
       {showHeading ? (
         <p className="mb-3 font-mono uppercase tracking-wide text-fg-subtle">Contents</p>
       ) : null}
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Filter topics"
+        aria-label="Filter the table of contents"
+        className="mb-3 w-full rounded border border-border bg-surface px-2 py-1 font-body text-read-meta text-fg placeholder:text-fg-subtle"
+      />
+      {filtered.length === 0 ? (
+        <p className="font-body text-read-meta text-fg-subtle">No matching topics.</p>
+      ) : null}
       <ol className="space-y-3">
-        {streamTopics.map((t) => {
+        {filtered.map((t) => {
           const topicActive = activeId === t.id;
           return (
             <li key={t.id}>
