@@ -76,4 +76,62 @@ export const streamTopics: StreamTopic[] = [
       { id: 'payments-commission', title: 'No commission' },
     ],
   },
+  {
+    n: 5,
+    id: 'education',
+    title: 'The student verification engine',
+    sections: [
+      { id: 'education-process', title: 'Process over artifact' },
+      { id: 'education-review', title: 'Peer review, then lecturer' },
+      { id: 'education-outcomes', title: 'The three outcomes' },
+    ],
+  },
+  {
+    n: 6,
+    id: 'identity',
+    title: 'Verification & identity',
+    sections: [
+      { id: 'identity-farmers', title: 'Verifying a farmer' },
+      { id: 'identity-lecturers', title: 'Verifying a lecturer' },
+      { id: 'identity-documents', title: 'What happens to your documents' },
+    ],
+  },
+  {
+    n: 7,
+    id: 'governance',
+    title: 'Governance & accountability',
+    sections: [
+      { id: 'governance-who', title: 'Who decides' },
+      { id: 'governance-record', title: 'What is recorded' },
+      { id: 'governance-appeals', title: 'Appeals & recourse' },
+    ],
+  },
+  {
+    n: 8,
+    id: 'evidence',
+    title: 'Evidence & metrics',
+    sections: [
+      { id: 'evidence-transparency', title: 'The public numbers' },
+      { id: 'evidence-honesty', title: 'Small numbers, honestly' },
+    ],
+  },
+  {
+    n: 9,
+    id: 'services',
+    title: 'Third-party services & data',
+    sections: [
+      { id: 'services-used', title: 'Services we rely on' },
+      { id: 'services-data', title: 'What is stored, and where' },
+    ],
+  },
+  {
+    n: 10,
+    id: 'risks',
+    title: 'Risks & recourse, by audience',
+    sections: [
+      { id: 'risks-farmers', title: 'Farmers' },
+      { id: 'risks-buyers', title: 'Buyers' },
+      { id: 'risks-students', title: 'Students & employers' },
+    ],
+  },
 ];
