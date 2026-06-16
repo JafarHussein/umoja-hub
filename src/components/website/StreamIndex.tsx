@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { streamTopics } from './streamTopics';
 
-export function StreamIndex() {
+export function StreamIndex({ showHeading = true }: { showHeading?: boolean }) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,7 +41,9 @@ export function StreamIndex() {
 
   return (
     <nav aria-label="Contents" className="font-body text-read-meta">
-      <p className="mb-3 font-mono uppercase tracking-wide text-fg-subtle">On this page</p>
+      {showHeading ? (
+        <p className="mb-3 font-mono uppercase tracking-wide text-fg-subtle">Contents</p>
+      ) : null}
       <ol className="space-y-3">
         {streamTopics.map((t) => {
           const topicActive = activeId === t.id;

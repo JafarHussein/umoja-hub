@@ -12,7 +12,7 @@ import { Footer } from '@/components/website/Footer';
  */
 export default function NotFound() {
   return (
-    <div className="theme-website flex min-h-screen flex-col bg-background text-fg">
+    <div className="theme-website flex min-h-[100dvh] flex-col bg-background text-fg">
       <WebsiteNav />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-20">
         <div className="max-w-reading">

@@ -32,7 +32,7 @@ export default function WebsiteLayout({ children }: { children: ReactNode }) {
             Contents
           </summary>
           <div className="px-4 pb-4">
-            <StreamIndex />
+            <StreamIndex showHeading={false} />
           </div>
         </details>
         <aside className="hidden lg:block">
