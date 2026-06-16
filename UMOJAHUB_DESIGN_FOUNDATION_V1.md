@@ -1,7 +1,7 @@
 # UMOJAHUB_DESIGN_FOUNDATION_V1
 
-**Status: DRAFT — AWAITING APPROVAL.**
-No new design work — no screens, components, visual systems, or style documents — may begin until this document is approved. This is the single source of truth that replaces every prior, contradictory "authoritative" design document.
+**Status: APPROVED — 2026-06-16.**
+This is the single source of truth that replaces every prior, contradictory "authoritative" design document. With approval, the build phase (§16) is unlocked: all new UI/UX work — screens, components, visual systems, style documents — must conform to this foundation and trace to its evidence. Changes to it are made by amendment, not by spawning a competing "authoritative" doc.
 
 **Evidence base:** `design-reset/01`–`15` (audit + sourced research) and the surviving product-truth docs (`UMOJAHUB_PLATFORM_CAPABILITIES_REFERENCE.md`, `context/FOOD_HUB_ECOSYSTEM_MAP.md`, `context/EDUCATION_HUB_ECOSYSTEM_MAP.md`, `context/APPLICATION_USER_JOURNEYS.md`, `context/WEBSITE_PURPOSE_V1.md`). Every decision below cites evidence; none is preference.
 
@@ -208,15 +208,15 @@ A doorway is a thin entry layer over the shared Stream; it never holds content t
 2. ✅ **Unifying typeface — KEEP EXISTING.** **Sora / IBM Plex Sans / JetBrains Mono** across the entire platform; no new website typeface. Rationale: a single typographic voice is a trust signal, and minimizing font payload is a performance requirement for mid-range Android on 2G. Mandate: **aggressive subsetting.** *(applied in §8 Typography)*
 3. ✅ **Audience doorways — FIVE, CONSOLIDATED.** Farmers · Buyers · Students · Employers · Institutions & Partners (NGOs + government + academic institutions + researchers + funders). Rationale: reduces menu clutter while serving the analytical institutional audience through one doorway with shared information needs. *(applied in §13 Audience entry points)*
 
-**Still open:**
+4. ✅ **Flagged docs — KEPT.** `WEBSITE_PURPOSE_V1`, `WEBSITE_WEBAPP_BOUNDARY`, `WEBSITE_ENFORCEMENT_RULES`, and `APPLICATION_USER_JOURNEYS` are retained as the foundation's cited evidence base (this foundation references `WEBSITE_PURPOSE_V1` throughout; deleting it would orphan those references).
 
-4. **Flagged docs** in `design-reset/03 §3` (`WEBSITE_PURPOSE_V1`, `WEBSITE_WEBAPP_BOUNDARY`, `WEBSITE_ENFORCEMENT_RULES`, `APPLICATION_USER_JOURNEYS`) — kept as input; confirm keep, or delete for a barer slate.
+*All open questions resolved. Foundation approved 2026-06-16.*
 
 ## 16. What approval unlocks
 
-On approval, the next (separate) deliverables — **not before** — are:
-1. **Visual System V1** (final color/type/spacing/component tokens) in Figma + code tokens.
-2. **App-shell hardening** plan (a11y, empty states, performance) — evolve the working product.
-3. **Website build** — implement the Documentation Stream (§13): the persistent index, the canonical spine, deep-linkable topics, per-topic lazy loading, and the complete content map — performance-budgeted and trust-forward.
+**Unlocked (approved 2026-06-16).** The next (separate) deliverables, each conforming to this foundation:
+1. **Visual System V1** — final color/type/spacing/component tokens in Figma + code tokens, implementing the §8 decisions (light website mode of the shared token set; Sora/IBM Plex Sans/JetBrains Mono, subset).
+2. **App-shell hardening** — a11y (WCAG 2.2 AA), empty states, performance — evolve the working product, don't restart it.
+3. **Website build** — implement the Documentation Stream (§13): the persistent index, the canonical spine, the five audience doorways (§13), deep-linkable topics, per-topic lazy loading, and the complete content map — performance-budgeted and trust-forward.
 
-Until then, this document stands alone. Design begins only after it is approved.
+These run against this foundation as the source of truth; it is amended, never superseded by a competing doc.
