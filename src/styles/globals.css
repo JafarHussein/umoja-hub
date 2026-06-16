@@ -59,33 +59,12 @@
     --info: 88 166 255; /* #58a6ff */
   }
 
-  /* WEBSITE theme — light editorial. Same token names, light values.
-   * Applied via `class="theme-website"` on the (website) layout wrapper. */
-  .theme-website {
-    --bg: 247 246 242; /* #f7f6f2 */
-    --surface: 255 255 255; /* #ffffff */
-    --surface-raised: 255 255 255; /* #ffffff */
-    --surface-sunken: 239 237 231; /* #efede7 */
-
-    --fg: 29 35 42; /* #1d232a */
-    --fg-muted: 84 92 102; /* #545c66 */
-    --fg-subtle: 122 130 140; /* #7a828c */
-
-    --border: #e3dfd7;
-    --border-strong: #cfc9bf;
-
-    --brand: 0 127 78; /* #007f4e */
-    --brand-hover: 0 107 66; /* #006b42 */
-    --brand-fg: 255 255 255; /* #ffffff */
-    --brand-text: 10 107 71; /* #0a6b47 — accent text on light, AA on --bg */
-
-    --ring: 0 127 78; /* #007f4e */
-
-    --success: 44 138 78; /* #2c8a4e */
-    --warning: 154 107 22; /* #9a6b16 */
-    --danger: 181 54 37; /* #b53625 */
-    --info: 47 95 194; /* #2f5fc2 */
-  }
+  /* NOTE: The light "website" theme (.theme-website) and the warm website
+   * palette (--ws-*) were removed in the UI/UX reset (design-reset/). The
+   * website is being rebuilt from scratch against
+   * UMOJAHUB_DESIGN_FOUNDATION_V1.md; until then only the product (dark)
+   * theme below exists. Do NOT reintroduce a second theme without the
+   * foundation. */
 
   /* ── LEGACY compatibility layer ─────────────────────────────────────────
    * Retained verbatim from the retired theme.css so surfaces not yet
@@ -132,37 +111,6 @@
     --duration-micro: 150ms;
     --duration-panel: 250ms;
     --easing-standard: ease-in-out;
-
-    /* Website (warm) legacy tokens — consumed by not-yet-migrated
-       (website) pages and the StoryWorld scenes (slated to be cut). */
-    --ws-canvas-base: #f5f4f0;
-    --ws-canvas-elevated: #f0eee9;
-    --ws-surface-primary: #ece8e1;
-    --ws-surface-secondary: #e5e1da;
-    --ws-surface-success: #e5ece8;
-    --ws-surface-warning: #efe7da;
-    --ws-surface-review: #e9e2df;
-    --ws-surface-technical: #e3e6e8;
-    --ws-text-heading: #1d232a;
-    --ws-text-body: #353c45;
-    --ws-text-secondary: #636c76;
-    --ws-text-meta: #8a919a;
-    --ws-border-soft: #d8d3cc;
-    --ws-border-default: #c8c2ba;
-    --ws-border-divider: #bdb7af;
-    --ws-copper: #b86a3d;
-    --ws-copper-hover: #a05a30;
-    --ws-teal: #2e7d78;
-    --ws-violet: #6b5a9a;
-    --ws-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-    --ws-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
-    --ws-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
-    --ws-ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
-    --ws-dur-instant: 80ms;
-    --ws-dur-fast: 150ms;
-    --ws-dur-standard: 250ms;
-    --ws-dur-enter: 350ms;
-    --ws-dur-exit: 200ms;
   }
 }
 
