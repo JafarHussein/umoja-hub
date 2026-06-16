@@ -5,58 +5,87 @@
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════════════════════════
- * UmojaHub Unified Design Tokens — single source of truth
- * (Phase 3.2 — replaces the former src/styles/theme.css mirror.)
+ * UmojaHub Design Tokens — single source of truth.
+ * Authority: UMOJAHUB_DESIGN_FOUNDATION_V1.md. Spec: design-system/VISUAL_SYSTEM_V1.md.
  *
- * ONE semantic token set, TWO themes:
- *   :root            → PRODUCT theme (dark dashboard) — the default
- *   .theme-website   → WEBSITE theme (light editorial) — applied on the
- *                      (website) route group during surface migration.
+ * ONE token system, themed by MODE (never parallel systems):
+ *   :root / .theme-product   PRODUCT mode (dark dashboard) — the default, below.
+ *   website (light) mode     authored in Visual System V1 phase P2 (not yet present).
  *
- * Rules (UI_UX_STRATEGY.md §3): one accent (brand green) does the work;
- * colour carries meaning, never decoration; contrast is decisive (WCAG AA).
- * Consume these via the Tailwind utilities bound in tailwind.config.ts
- * (bg-background, bg-surface, text-fg, bg-brand, border-border, …).
+ * Rules (foundation): one accent (brand green) does the work; colour carries
+ * meaning, never decoration; contrast is decisive (WCAG 2.2 AA). Author UI
+ * against the TIER 2 semantic tokens via the Tailwind utilities in
+ * tailwind.config.ts (bg-background, bg-surface, text-fg, bg-brand, border-border).
  * ════════════════════════════════════════════════════════════════════════ */
 @layer base {
-  /* Solid colours are stored as space-separated RGB triplets so Tailwind can
-   * apply alpha via `<alpha-value>` (e.g. bg-brand/15, border-danger/30).
-   * Borders carry their own alpha and stay full rgba/hex values.
-   *
-   * `.theme-product` shares the default (dark) values so a dark band — e.g. an
-   * inverted hero or CTA — can be dropped inside a `.theme-website` page and
-   * flip its subtree back to the product theme. */
+  /* Three tiers (design-system/VISUAL_SYSTEM_V1.md §3):
+   *   TIER 1 PRIMITIVES — raw palette, mode-agnostic; components never use these.
+   *   TIER 2 SEMANTIC   — role + intent, re-mapped per mode; the ONLY tier UI consumes.
+   *   TIER 3 COMPONENT  — scoped, added only when semantic can't express a need.
+   * Solid colours are space-separated RGB triplets so Tailwind can apply alpha
+   * via `<alpha-value>` (e.g. bg-brand/15, border-danger/30). Borders carry
+   * their own alpha. */
+
+  /* TIER 1 · PRIMITIVES — raw palette. Do NOT consume directly; use TIER 2. */
+  :root {
+    /* Neutrals (cool gray ramp) */
+    --c-white: 255 255 255;
+    --c-neutral-25: 230 237 243; /* #e6edf3 */
+    --c-neutral-400: 139 148 158; /* #8b949e */
+    --c-neutral-500: 110 118 129; /* #6e7681 */
+    --c-neutral-800: 31 41 55; /* #1f2937 */
+    --c-neutral-900: 22 27 34; /* #161b22 */
+    --c-neutral-950: 13 17 23; /* #0d1117 */
+    --c-neutral-975: 1 4 9; /* #010409 */
+
+    /* Brand green ramp */
+    --c-green-300: 63 185 138; /* #3fb98a */
+    --c-green-400: 45 165 111; /* #2da56f */
+    --c-green-500: 0 153 96; /* #009960 */
+    --c-green-600: 0 127 78; /* #007f4e */
+
+    /* State hues */
+    --c-success: 63 185 80; /* #3fb950 */
+    --c-warning: 210 153 34; /* #d29922 */
+    --c-danger: 248 81 73; /* #f85149 */
+    --c-info: 88 166 255; /* #58a6ff */
+  }
+
+  /* TIER 2 · SEMANTIC — PRODUCT mode (dark, the default).
+   * `.theme-product` shares :root so a dark band can be nested inside a future
+   * light surface and flip its subtree back to product. Each token re-maps a
+   * TIER 1 primitive; computed values are identical to pre-tiering. */
   :root,
   .theme-product {
-    /* ── Surfaces ─────────────────────────────────────────────── */
-    --bg: 13 17 23; /* #0d1117 */
-    --surface: 22 27 34; /* #161b22 */
-    --surface-raised: 31 41 55; /* #1f2937 */
-    --surface-sunken: 1 4 9; /* #010409 */
+    /* Surfaces */
+    --bg: var(--c-neutral-950);
+    --surface: var(--c-neutral-900);
+    --surface-raised: var(--c-neutral-800);
+    --surface-sunken: var(--c-neutral-975);
 
-    /* ── Foreground / text ────────────────────────────────────── */
-    --fg: 230 237 243; /* #e6edf3 */
-    --fg-muted: 139 148 158; /* #8b949e */
-    --fg-subtle: 110 118 129; /* #6e7681 */
+    /* Foreground / text */
+    --fg: var(--c-neutral-25);
+    --fg-muted: var(--c-neutral-400);
+    --fg-subtle: var(--c-neutral-500);
 
-    /* ── Borders (carry their own alpha) ──────────────────────── */
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
+    /* Borders (carry their own alpha) */
+    --border: rgb(var(--c-white) / 0.08);
+    --border-strong: rgb(var(--c-white) / 0.16);
 
-    /* ── Brand accent (the one accent) ────────────────────────── */
-    --brand: 0 127 78; /* #007f4e */
-    --brand-hover: 0 153 96; /* #009960 */
-    --brand-fg: 255 255 255; /* #ffffff */
-    --brand-text: 63 185 138; /* #3fb98a — accent text on dark, AA on --bg */
+    /* Brand accent (the one accent) */
+    --brand: var(--c-green-600);
+    --brand-hover: var(--c-green-500);
+    --brand-fg: var(--c-white);
+    --brand-text: var(--c-green-300); /* accent text on dark, AA on --bg */
 
-    /* ── Focus ring ───────────────────────────────────────────── */
-    --ring: 45 165 111; /* #2da56f */
+    /* Focus ring */
+    --ring: var(--c-green-400);
 
-    /* ── State (meaning, not decoration) ──────────────────────── */
-    --success: 63 185 80; /* #3fb950 */
-    --warning: 210 153 34; /* #d29922 */
-    --danger: 248 81 73; /* #f85149 */
-    --info: 88 166 255; /* #58a6ff */
+    /* State (meaning, not decoration) */
+    --success: var(--c-success);
+    --warning: var(--c-warning);
+    --danger: var(--c-danger);
+    --info: var(--c-info);
   }
 
   /* NOTE: The light "website" theme (.theme-website) and the warm website

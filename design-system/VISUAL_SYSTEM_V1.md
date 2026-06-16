@@ -90,7 +90,7 @@ The `ui/` primitives (`button`, `Card`, `Input`, `Modal`, `Badge`, `VerifiedBadg
 
 ## 8. Phasing
 
-1. **P1 — Primitives & semantic spine:** extract primitives, formalize `product` semantic tokens (no visual change), add 3-tier structure + Figma variables.
+1. **P1 — Primitives & semantic spine:** extract primitives, formalize `product` semantic tokens (no visual change), add 3-tier structure + Figma variables. — ✅ **CODE DONE** (TIER 1 primitives + TIER 2 product semantics in `globals.css`, value-identical; type-check/lint/test/build green). *Figma variables deferred to the Figma library step (needs a Figma file context).*
 2. **P2 — Light mode:** author `website` light values for every semantic token; AA-validate both modes.
 3. **P3 — Component re-binding:** fix the shadcn remap + primitive audits; verify primitives in both modes (Storybook-style harness or a scratch route).
 4. **P4 — Type + motion + spacing finalization:** scales, subsetting, reduced-motion rule.
