@@ -1,9 +1,159 @@
-@import './theme.css';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ════════════════════════════════════════════════════════════════════════
+ * UmojaHub Design Tokens — single source of truth.
+ * Authority: UMOJAHUB_DESIGN_FOUNDATION_V1.md. Spec: design-system/VISUAL_SYSTEM_V1.md.
+ *
+ * ONE token system, themed by MODE (never parallel systems):
+ *   :root / .theme-product   PRODUCT mode (dark dashboard) — the default, below.
+ *   website (light) mode     authored in Visual System V1 phase P2 (not yet present).
+ *
+ * Rules (foundation): one accent (brand green) does the work; colour carries
+ * meaning, never decoration; contrast is decisive (WCAG 2.2 AA). Author UI
+ * against the TIER 2 semantic tokens via the Tailwind utilities in
+ * tailwind.config.ts (bg-background, bg-surface, text-fg, bg-brand, border-border).
+ * ════════════════════════════════════════════════════════════════════════ */
+@layer base {
+  /* Three tiers (design-system/VISUAL_SYSTEM_V1.md §3):
+   *   TIER 1 PRIMITIVES — raw palette, mode-agnostic; components never use these.
+   *   TIER 2 SEMANTIC   — role + intent, re-mapped per mode; the ONLY tier UI consumes.
+   *   TIER 3 COMPONENT  — scoped, added only when semantic can't express a need.
+   * Solid colours are space-separated RGB triplets so Tailwind can apply alpha
+   * via `<alpha-value>` (e.g. bg-brand/15, border-danger/30). Borders carry
+   * their own alpha. */
+
+  /* TIER 1 · PRIMITIVES — raw palette. Do NOT consume directly; use TIER 2. */
+  :root {
+    /* Neutrals (cool gray ramp) */
+    --c-white: 255 255 255;
+    --c-neutral-25: 230 237 243; /* #e6edf3 */
+    --c-neutral-400: 139 148 158; /* #8b949e */
+    --c-neutral-500: 110 118 129; /* #6e7681 */
+    --c-neutral-700: 72 79 88; /* #484f58 — disabled text (dark) */
+    --c-neutral-800: 31 41 55; /* #1f2937 */
+    --c-neutral-900: 22 27 34; /* #161b22 */
+    --c-neutral-950: 13 17 23; /* #0d1117 */
+    --c-neutral-975: 1 4 9; /* #010409 */
+
+    /* Brand green ramp */
+    --c-green-300: 63 185 138; /* #3fb98a */
+    --c-green-400: 45 165 111; /* #2da56f */
+    --c-green-500: 0 153 96; /* #009960 */
+    --c-green-600: 0 127 78; /* #007f4e */
+
+    /* State hues (tuned for dark surfaces) */
+    --c-success: 63 185 80; /* #3fb950 */
+    --c-warning: 210 153 34; /* #d29922 */
+    --c-danger: 248 81 73; /* #f85149 */
+    --c-info: 88 166 255; /* #58a6ff */
+
+    /* Light-mode additions (Visual System V1 P2) */
+    --c-black: 0 0 0;
+    /* Warm-neutral ramp — restrained warmth; higher number = darker */
+    --c-warm-100: 250 250 248; /* #fafaf8 — page bg */
+    --c-warm-200: 240 239 235; /* #f0efeb — sunken */
+    --c-warm-450: 174 178 184; /* #aeb2b8 — disabled text (light) */
+    --c-warm-600: 107 111 118; /* #6b6f76 — subtle text */
+    --c-warm-700: 86 90 97; /* #565a61 — muted text */
+    --c-warm-950: 28 30 33; /* #1c1e21 — primary text */
+    /* Dark greens for accents on light */
+    --c-green-700: 0 107 66; /* #006b42 — brand hover (light) */
+    --c-green-800: 10 107 71; /* #0a6b47 — brand text (light) */
+    /* State hues tuned AA (>=4.5:1) on light --bg */
+    --c-success-700: 35 121 63; /* #23793f */
+    --c-warning-700: 143 99 20; /* #8f6314 */
+    --c-danger-700: 181 54 37; /* #b53625 */
+    --c-info-700: 47 95 194; /* #2f5fc2 */
+  }
+
+  /* TIER 2 · SEMANTIC — PRODUCT mode (dark, the default).
+   * `.theme-product` shares :root so a dark band can be nested inside a future
+   * light surface and flip its subtree back to product. Each token re-maps a
+   * TIER 1 primitive; computed values are identical to pre-tiering. */
+  :root,
+  .theme-product {
+    /* Surfaces */
+    --bg: var(--c-neutral-950);
+    --surface: var(--c-neutral-900);
+    --surface-raised: var(--c-neutral-800);
+    --surface-sunken: var(--c-neutral-975);
+
+    /* Foreground / text */
+    --fg: var(--c-neutral-25);
+    --fg-muted: var(--c-neutral-400);
+    --fg-subtle: var(--c-neutral-500);
+    --fg-disabled: var(--c-neutral-700);
+
+    /* Borders (carry their own alpha) */
+    --border: rgb(var(--c-white) / 0.08);
+    --border-strong: rgb(var(--c-white) / 0.16);
+
+    /* Brand accent (the one accent) */
+    --brand: var(--c-green-600);
+    --brand-hover: var(--c-green-500);
+    --brand-fg: var(--c-white);
+    --brand-text: var(--c-green-300); /* accent text on dark, AA on --bg */
+
+    /* Focus ring */
+    --ring: var(--c-green-400);
+
+    /* State (meaning, not decoration) */
+    --success: var(--c-success);
+    --warning: var(--c-warning);
+    --danger: var(--c-danger);
+    --info: var(--c-info);
+  }
+
+  /* TIER 2 · SEMANTIC — WEBSITE mode (light).
+   * Same semantic token names as product, re-mapped to light values — one
+   * token system, themed by mode (never a parallel system). Applied via
+   * class="theme-website" on the website layout root (wired with the website
+   * build, foundation §16.3). Restrained warm off-white surface (decision
+   * §11.1). All text/UI pairings validated WCAG 2.2 AA in this mode; success
+   * and warning are darkened from the dark-mode hues to clear 4.5:1 on --bg.
+   * NOTE: the ui/ primitives still bind to the dark-only shadcn remap below;
+   * making them flip per mode is Visual System V1 P3. */
+  .theme-website {
+    /* Surfaces */
+    --bg: var(--c-warm-100);
+    --surface: var(--c-white);
+    --surface-raised: var(--c-white);
+    --surface-sunken: var(--c-warm-200);
+
+    /* Foreground / text */
+    --fg: var(--c-warm-950);
+    --fg-muted: var(--c-warm-700);
+    --fg-subtle: var(--c-warm-600);
+    --fg-disabled: var(--c-warm-450);
+
+    /* Borders (dark-on-light, carry their own alpha) */
+    --border: rgb(var(--c-black) / 0.10);
+    --border-strong: rgb(var(--c-black) / 0.16);
+
+    /* Brand accent (the one accent) */
+    --brand: var(--c-green-600);
+    --brand-hover: var(--c-green-700);
+    --brand-fg: var(--c-white);
+    --brand-text: var(--c-green-800); /* dark green, AA on light --bg */
+
+    /* Focus ring */
+    --ring: var(--c-green-600);
+
+    /* State (AA on light) */
+    --success: var(--c-success-700);
+    --warning: var(--c-warning-700);
+    --danger: var(--c-danger-700);
+    --info: var(--c-info-700);
+  }
+
+  /* Legacy compatibility layer removed in Visual System V1 P5 — all dashboard
+   * surfaces were migrated from the --color-* / --text-t* / --space-* /
+   * --radius-* / motion aliases to the TIER 2 semantic tokens above. */
+}
 
 /* Base resets */
 *,
@@ -19,10 +169,10 @@ html {
 }
 
 body {
-  background-color: var(--color-surface-primary);
-  color: var(--color-text-primary);
-  font-family: var(--font-body);
-  font-size: var(--text-t4);
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: var(--font-ibm-plex-sans), sans-serif;
+  font-size: 16px;
   line-height: 1.5;
   min-height: 100vh;
 }
@@ -32,9 +182,9 @@ body {
   .skeleton {
     background: linear-gradient(
       90deg,
-      #161b22 25%,
-      #1f2937 50%,
-      #161b22 75%
+      rgb(var(--surface)) 25%,
+      rgb(var(--surface-raised)) 50%,
+      rgb(var(--surface)) 75%
     );
     background-size: 200% 100%;
     animation: shimmer 1.8s ease-in-out infinite;
@@ -43,16 +193,30 @@ body {
 
 /* Selection */
 ::selection {
-  background-color: rgba(0, 127, 78, 0.3);
-  color: #e6edf3;
+  background-color: rgb(var(--brand) / 0.18);
+  color: rgb(var(--fg));
 }
 
-/* Focus ring — green, consistent across all interactive elements */
+/* Focus ring — brand, consistent across all interactive elements */
 :focus-visible {
-  outline: 2px solid #007f4e;
+  outline: 2px solid rgb(var(--ring));
   outline-offset: 2px;
 }
 
+/* Reduced motion — honour the OS setting globally (foundation §10, WCAG 2.2
+ * SC 2.3.3). Transitions/animations collapse to near-instant; nothing
+ * essential is conveyed by motion alone. Motion is opt-in to movement, not
+ * opt-out. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar {
@@ -71,26 +235,31 @@ body {
 }
 
 @layer base {
-  /* Remap shadcn CSS variables to the UmojaHub design system — dark-only */
+  /* shadcn compatibility shim — maps shadcn's expected variable names to our
+   * TIER 2 semantic tokens (product/dark values). No component currently uses
+   * shadcn utilities (bg-card, bg-primary, …); this is kept only so any
+   * shadcn-derived primitive resolves to the design system.
+   * IMPORTANT: --border and --ring are intentionally NOT redeclared here — the
+   * earlier mode-aware semantic tokens (:root/.theme-product and .theme-website)
+   * own them. (Previously this block hard-coded --ring:#007f4e, which won on
+   * :root and made rgb(var(--ring)) invalid — breaking dashboard focus rings.) */
   :root {
-    --background: #0D1117;
-    --foreground: #E6EDF3;
-    --card: #161B22;
-    --card-foreground: #E6EDF3;
-    --popover: #161B22;
-    --popover-foreground: #E6EDF3;
-    --primary: #007F4E;
-    --primary-foreground: #E6EDF3;
-    --secondary: #1F2937;
-    --secondary-foreground: #E6EDF3;
-    --muted: #161B22;
-    --muted-foreground: #8B949E;
-    --accent: #1F2937;
-    --accent-foreground: #E6EDF3;
-    --destructive: #DC2626;
-    --border: rgba(255, 255, 255, 0.08);
-    --input: #161B22;
-    --ring: #007F4E;
+    --background: rgb(var(--bg));
+    --foreground: rgb(var(--fg));
+    --card: rgb(var(--surface));
+    --card-foreground: rgb(var(--fg));
+    --popover: rgb(var(--surface));
+    --popover-foreground: rgb(var(--fg));
+    --primary: rgb(var(--brand));
+    --primary-foreground: rgb(var(--brand-fg));
+    --secondary: rgb(var(--surface-raised));
+    --secondary-foreground: rgb(var(--fg));
+    --muted: rgb(var(--surface));
+    --muted-foreground: rgb(var(--fg-muted));
+    --accent: rgb(var(--surface-raised));
+    --accent-foreground: rgb(var(--fg));
+    --destructive: rgb(var(--danger));
+    --input: rgb(var(--surface));
     --radius: 6px;
   }
   * {

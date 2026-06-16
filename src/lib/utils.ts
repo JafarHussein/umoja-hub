@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { createHash } from 'crypto';
 import { BCRYPT_SALT_ROUNDS } from '@/types';
 
 // ---------------------------------------------------------------------------
-// cn — shadcn/ui utility for merging Tailwind class names
+// cn — re-exported from the canonical definition in src/lib/cn.ts so there is
+// a single implementation. Existing `@/lib/utils` imports keep working.
 // ---------------------------------------------------------------------------
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from './cn';
 
 // ---------------------------------------------------------------------------
 // AppError — structured application error with HTTP status and error code

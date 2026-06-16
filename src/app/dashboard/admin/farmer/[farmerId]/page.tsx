@@ -53,33 +53,33 @@ function formatDate(iso: string): string {
 function PageSkeleton(): React.ReactElement {
   return (
     <div className="space-y-6">
-      <div className="h-3 w-36 bg-surface-secondary rounded-sm animate-pulse" />
+      <div className="h-3 w-36 bg-surface-raised rounded-sm animate-pulse" />
       <div className="space-y-2">
-        <div className="h-3 w-20 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
         <div className="flex items-center gap-3">
-          <div className="h-7 w-52 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-5 w-16 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-7 w-52 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-5 w-16 bg-surface-raised rounded-sm animate-pulse" />
         </div>
       </div>
       {[4, 3, 2].map((rows, i) => (
-        <div key={i} className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4 space-y-3">
-          <div className="h-3 w-28 bg-surface-secondary rounded-sm animate-pulse" />
+        <div key={i} className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
+          <div className="h-3 w-28 bg-surface-raised rounded-sm animate-pulse" />
           <div>
             {Array.from({ length: rows }).map((_, j) => (
               <div
                 key={j}
                 className="flex justify-between py-2.5 border-b border-zinc-800/50 last:border-0"
               >
-                <div className="h-4 w-24 bg-surface-secondary rounded-sm animate-pulse" />
-                <div className="h-4 w-36 bg-surface-secondary rounded-sm animate-pulse" />
+                <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
+                <div className="h-4 w-36 bg-surface-raised rounded-sm animate-pulse" />
               </div>
             ))}
           </div>
         </div>
       ))}
       <div className="flex gap-3">
-        <div className="h-11 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-        <div className="h-11 w-24 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-11 w-32 bg-surface-raised rounded-sm animate-pulse" />
+        <div className="h-11 w-24 bg-surface-raised rounded-sm animate-pulse" />
       </div>
     </div>
   );
@@ -167,9 +167,9 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
 
   if (pageState === 'not-found') {
     return (
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-8 text-center">
-        <p className="text-t4 font-body text-text-primary">Farmer not found.</p>
-        <p className="text-t5 font-body text-text-secondary mt-1">
+      <div className="bg-surface border border-zinc-800/50 rounded-sm p-8 text-center">
+        <p className="text-t4 font-body text-fg">Farmer not found.</p>
+        <p className="text-t5 font-body text-fg-muted mt-1">
           This record may have been removed or the ID is invalid.
         </p>
         <div className="mt-4">
@@ -186,10 +186,10 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load farmer profile
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchFarmer()}>
@@ -208,7 +208,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
       {/* Back link */}
       <Link
         href="/dashboard/admin/verification-queue"
-        className="inline-flex items-center gap-1.5 text-t6 font-body text-text-disabled hover:text-text-secondary transition-colors duration-150"
+        className="inline-flex items-center gap-1.5 text-t6 font-body text-fg-disabled hover:text-fg-muted transition-colors duration-150"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
@@ -224,11 +224,11 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
 
       {/* Page header */}
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
           Admin · Farmer Verification
         </p>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
             {farmer.firstName} {farmer.lastName}
           </h1>
           {verificationStatus && <Badge label={verificationStatus} />}
@@ -236,43 +236,43 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
       </div>
 
       {/* Personal information */}
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
           Personal information
         </p>
         <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary">Phone</span>
-          <span className="text-t5 font-mono text-text-primary tabular-nums">{farmer.phoneNumber}</span>
+          <span className="text-t5 font-body text-fg-muted">Phone</span>
+          <span className="text-t5 font-mono text-fg tabular-nums">{farmer.phoneNumber}</span>
         </div>
         <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary">Email</span>
-          <span className="text-t5 font-mono text-text-primary">{farmer.email}</span>
+          <span className="text-t5 font-body text-fg-muted">Email</span>
+          <span className="text-t5 font-mono text-fg">{farmer.email}</span>
         </div>
         <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary">County</span>
-          <span className="text-t5 font-body text-text-primary">{farmer.county}</span>
+          <span className="text-t5 font-body text-fg-muted">County</span>
+          <span className="text-t5 font-body text-fg">{farmer.county}</span>
         </div>
         <div className="flex items-center justify-between py-2.5">
-          <span className="text-t5 font-body text-text-secondary">Registered</span>
-          <span className="text-t5 font-body text-text-disabled">{formatDate(farmer.createdAt)}</span>
+          <span className="text-t5 font-body text-fg-muted">Registered</span>
+          <span className="text-t5 font-body text-fg-disabled">{formatDate(farmer.createdAt)}</span>
         </div>
       </div>
 
       {/* Farm details */}
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4 space-y-3">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
           Farm details
         </p>
         {farmer.farmerData ? (
           <>
             {farmer.farmerData.cropsGrown.length > 0 && (
               <div>
-                <p className="text-t6 font-body text-text-secondary mb-2">Crops grown</p>
+                <p className="text-t6 font-body text-fg-muted mb-2">Crops grown</p>
                 <div className="flex flex-wrap gap-2">
                   {farmer.farmerData.cropsGrown.map((crop) => (
                     <span
                       key={crop}
-                      className="text-t6 font-body text-text-secondary bg-surface-secondary border border-zinc-800/50 rounded-[2px] px-2 py-1"
+                      className="text-t6 font-body text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-1"
                     >
                       {crop}
                     </span>
@@ -282,12 +282,12 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
             )}
             {farmer.farmerData.livestockKept.length > 0 && (
               <div>
-                <p className="text-t6 font-body text-text-secondary mb-2">Livestock kept</p>
+                <p className="text-t6 font-body text-fg-muted mb-2">Livestock kept</p>
                 <div className="flex flex-wrap gap-2">
                   {farmer.farmerData.livestockKept.map((animal) => (
                     <span
                       key={animal}
-                      className="text-t6 font-body text-text-secondary bg-surface-secondary border border-zinc-800/50 rounded-[2px] px-2 py-1"
+                      className="text-t6 font-body text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-1"
                     >
                       {animal}
                     </span>
@@ -299,16 +299,16 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
               <div className="border-t border-zinc-800/50 pt-1">
                 {farmer.farmerData.farmSizeAcres != null && (
                   <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50 last:border-0">
-                    <span className="text-t5 font-body text-text-secondary">Farm size</span>
-                    <span className="text-t5 font-mono text-text-primary tabular-nums">
+                    <span className="text-t5 font-body text-fg-muted">Farm size</span>
+                    <span className="text-t5 font-mono text-fg tabular-nums">
                       {farmer.farmerData.farmSizeAcres} acres
                     </span>
                   </div>
                 )}
                 {farmer.farmerData.primaryLanguage && (
                   <div className="flex items-center justify-between py-2.5">
-                    <span className="text-t5 font-body text-text-secondary">Primary language</span>
-                    <span className="text-t5 font-body text-text-primary">
+                    <span className="text-t5 font-body text-fg-muted">Primary language</span>
+                    <span className="text-t5 font-body text-fg">
                       {farmer.farmerData.primaryLanguage}
                     </span>
                   </div>
@@ -317,27 +317,27 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
             )}
           </>
         ) : (
-          <p className="text-t5 font-body text-text-disabled">No farm data on record.</p>
+          <p className="text-t5 font-body text-fg-disabled">No farm data on record.</p>
         )}
       </div>
 
       {/* Verification document */}
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4 space-y-1">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-1">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
           Verification document
         </p>
         {farmer.farmerData?.documentType ? (
           <>
             <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-              <span className="text-t5 font-body text-text-secondary">Type</span>
-              <span className="text-t5 font-body text-text-primary">
+              <span className="text-t5 font-body text-fg-muted">Type</span>
+              <span className="text-t5 font-body text-fg">
                 {DOC_TYPE_LABELS[farmer.farmerData.documentType]}
               </span>
             </div>
             {farmer.farmerData.documentNumber && (
               <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                <span className="text-t5 font-body text-text-secondary">Number</span>
-                <span className="text-t5 font-mono text-text-primary tabular-nums">
+                <span className="text-t5 font-body text-fg-muted">Number</span>
+                <span className="text-t5 font-mono text-fg tabular-nums">
                   {farmer.farmerData.documentNumber}
                 </span>
               </div>
@@ -348,7 +348,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
                   href={farmer.farmerData.documentImageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-t5 font-body text-accent-green hover:underline underline-offset-2"
+                  className="inline-flex items-center gap-2 text-t5 font-body text-brand hover:underline underline-offset-2"
                 >
                   View document image
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -365,7 +365,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
             )}
           </>
         ) : (
-          <p className="text-t5 font-body text-text-disabled">No verification document submitted.</p>
+          <p className="text-t5 font-body text-fg-disabled">No verification document submitted.</p>
         )}
       </div>
 
@@ -393,10 +393,10 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
           </Button>
         </div>
       ) : (
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm px-4 py-3">
-          <p className="text-t5 font-body text-text-secondary">
+        <div className="bg-surface border border-zinc-800/50 rounded-sm px-4 py-3">
+          <p className="text-t5 font-body text-fg-muted">
             Verification is{' '}
-            <span className="text-text-primary font-medium">
+            <span className="text-fg font-medium">
               {verificationStatus?.toLowerCase() ?? 'not set'}
             </span>
             . No further action required.

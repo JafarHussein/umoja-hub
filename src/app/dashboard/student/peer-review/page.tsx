@@ -18,16 +18,16 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="space-y-1.5">
-          <div className="h-3 w-24 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-40 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-40 bg-surface-raised rounded-sm animate-pulse" />
         </div>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-6 space-y-3">
-          <div className="h-4 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-4 w-56 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-9 w-28 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-6 space-y-3">
+          <div className="h-4 w-32 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-4 w-56 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-9 w-28 bg-surface-raised rounded-sm animate-pulse" />
         </div>
       </div>
     </div>
@@ -75,13 +75,13 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load peer review assignment.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load peer review assignment.</p>
             <button
               onClick={() => { setPageState('loading'); void fetchAssignment(); }}
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               Retry
             </button>
@@ -92,28 +92,28 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
             Student · Peer Review
           </p>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
             My Review Assignment
           </h1>
         </div>
 
         {review === null ? (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">No review assignment</p>
-            <p className="text-t5 font-body text-text-disabled mt-1">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">No review assignment</p>
+            <p className="text-t5 font-body text-fg-disabled mt-1">
               You will be assigned a project to review after another student submits theirs.
             </p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Assignment
               </p>
               <Badge label={review.status} />
@@ -121,12 +121,12 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
 
             <div className="space-y-0">
               <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                <span className="text-t5 font-body text-text-secondary">Review ID</span>
-                <span className="text-t6 font-mono text-text-disabled">{review._id}</span>
+                <span className="text-t5 font-body text-fg-muted">Review ID</span>
+                <span className="text-t6 font-mono text-fg-disabled">{review._id}</span>
               </div>
               <div className="flex items-center justify-between py-2.5">
-                <span className="text-t5 font-body text-text-secondary">Assigned</span>
-                <span className="text-t5 font-mono text-text-secondary tabular-nums">
+                <span className="text-t5 font-body text-fg-muted">Assigned</span>
+                <span className="text-t5 font-mono text-fg-muted tabular-nums">
                   {new Date(review.createdAt).toLocaleDateString('en-KE', {
                     year: 'numeric',
                     month: 'short',
@@ -138,7 +138,7 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
 
             <Link
               href={`/dashboard/student/peer-review/${review._id}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent-green text-text-primary rounded-sm font-body text-t5 hover:opacity-90 transition-all duration-150 min-h-[44px]"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand text-fg rounded-sm font-body text-t5 hover:opacity-90 transition-all duration-150 min-h-[44px]"
             >
               Open review →
             </Link>

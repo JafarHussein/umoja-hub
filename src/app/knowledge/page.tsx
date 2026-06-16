@@ -52,7 +52,7 @@ function ArticleGridSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-64 bg-surface-secondary border border-white/5 rounded animate-shimmer"
+          className="h-64 bg-surface-raised border border-white/5 rounded animate-shimmer"
           style={{
             backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
             backgroundSize: '200% 100%',
@@ -72,18 +72,18 @@ export default async function KnowledgePage({
   const articles = await getArticles(category);
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8 md:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading text-t1 text-text-primary mb-2">Knowledge Hub</h1>
-          <p className="font-body text-t4 text-text-secondary">
+          <h1 className="font-heading text-t1 text-fg mb-2">Knowledge Hub</h1>
+          <p className="font-body text-t4 text-fg-muted">
             Agricultural guidance grounded in KEBS, KALRO, KEPHIS, and FAO Kenya standards.
           </p>
         </div>
 
         {/* Search + filter — client component */}
-        <Suspense fallback={<div className="h-16 bg-surface-secondary border border-white/5 rounded animate-pulse mb-6" />}>
+        <Suspense fallback={<div className="h-16 bg-surface-raised border border-white/5 rounded animate-pulse mb-6" />}>
           <KnowledgeHubClient categories={CATEGORIES} currentCategory={category ?? ''} />
         </Suspense>
 
@@ -95,8 +95,8 @@ export default async function KnowledgePage({
               href={cat.value ? `/knowledge?category=${cat.value}` : '/knowledge'}
               className={`px-3 py-2 rounded-sm font-body text-t5 border transition-all duration-150 min-h-[44px] flex items-center ${
                 category === cat.value || (!category && !cat.value)
-                  ? 'bg-accent-green text-white border-accent-green'
-                  : 'bg-surface-secondary text-text-secondary border-white/5 hover:text-text-primary'
+                  ? 'bg-brand text-white border-brand'
+                  : 'bg-surface-raised text-fg-muted border-white/5 hover:text-fg'
               }`}
             >
               {cat.label}
@@ -107,9 +107,9 @@ export default async function KnowledgePage({
         {/* Article grid */}
         <Suspense fallback={<ArticleGridSkeleton />}>
           {articles.length === 0 ? (
-            <div className="text-center py-16 bg-surface-elevated border border-white/5 rounded">
-              <p className="font-body text-t4 text-text-secondary mb-2">No articles found</p>
-              <p className="font-body text-t5 text-text-disabled">
+            <div className="text-center py-16 bg-surface border border-white/5 rounded">
+              <p className="font-body text-t4 text-fg-muted mb-2">No articles found</p>
+              <p className="font-body text-t5 text-fg-disabled">
                 Try a different category or check back later — our editorial team publishes new articles weekly.
               </p>
             </div>

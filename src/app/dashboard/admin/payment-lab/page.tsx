@@ -160,7 +160,7 @@ export default function AdminPaymentLabPage(): React.ReactElement {
   if (pageState === 'error' || !data) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load the Payment Lab
         </p>
         <Button variant="secondary" onClick={() => void fetchData()}>
@@ -187,8 +187,8 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary">Payment Lab</h1>
-          <p className="text-t5 font-body text-text-secondary mt-0.5 max-w-2xl">
+          <h1 className="text-t2 font-heading font-semibold text-fg">Payment Lab</h1>
+          <p className="text-t5 font-body text-fg-muted mt-0.5 max-w-2xl">
             Drive payment scenarios against live orders and watch orders, notifications, audit, and
             trust react exactly as in production. The only thing simulated is the M-Pesa callback.
           </p>
@@ -200,7 +200,7 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       </div>
 
       {!data.simulationActive && (
-        <p className="text-t5 font-body text-text-secondary border border-yellow-800/40 bg-yellow-950/40 rounded px-4 py-3">
+        <p className="text-t5 font-body text-fg-muted border border-yellow-800/40 bg-yellow-950/40 rounded px-4 py-3">
           A real Daraja provider is active — scenario triggers are disabled. Metrics below reflect
           real payment events.
         </p>
@@ -209,43 +209,43 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {stats.map((s) => (
-          <div key={s.label} className="bg-surface-elevated border border-white/5 rounded p-3">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+          <div key={s.label} className="bg-surface border border-white/5 rounded p-3">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               {s.label}
             </p>
-            <p className="text-t3 font-mono text-text-primary">{s.value}</p>
+            <p className="text-t3 font-mono text-fg">{s.value}</p>
           </div>
         ))}
       </div>
 
       {notice && (
-        <p className="text-t6 font-body text-text-secondary" role="status">
+        <p className="text-t6 font-body text-fg-muted" role="status">
           {notice}
         </p>
       )}
 
       {/* Trigger panel — awaiting-payment orders */}
       <section className="space-y-3">
-        <h2 className="text-t3 font-heading font-medium text-text-primary">Awaiting payment</h2>
+        <h2 className="text-t3 font-heading font-medium text-fg">Awaiting payment</h2>
         {data.pendingOrders.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface-elevated px-4 py-8 text-center">
-            <p className="text-t5 font-body text-text-secondary">
+          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
+            <p className="text-t5 font-body text-fg-muted">
               No orders are awaiting payment. Place an order, then fire a scenario here.
             </p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+          <div className="bg-surface border border-white/5 rounded overflow-hidden">
             {data.pendingOrders.map((o) => (
               <div
                 key={o.orderId}
                 className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 border-b border-white/5 last:border-0"
               >
                 <div className="min-w-0 flex-1 basis-[14rem]">
-                  <p className="text-t5 font-body text-text-primary truncate">
+                  <p className="text-t5 font-body text-fg truncate">
                     {o.orderReferenceId}{' '}
-                    <span className="text-text-secondary">· {o.cropName}</span>
+                    <span className="text-fg-muted">· {o.cropName}</span>
                   </p>
-                  <p className="text-t6 font-body text-text-disabled truncate">
+                  <p className="text-t6 font-body text-fg-disabled truncate">
                     {o.buyerName} · {formatKES(o.totalAmountKES)}
                   </p>
                 </div>
@@ -259,7 +259,7 @@ export default function AdminPaymentLabPage(): React.ReactElement {
                         [o.orderId]: e.target.value as PaymentLabAction,
                       }))
                     }
-                    className="min-h-[36px] bg-surface-secondary border border-white/10 rounded-sm text-t6 font-body text-text-primary px-2 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                    className="min-h-[36px] bg-surface-raised border border-white/10 rounded-sm text-t6 font-body text-fg px-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                   >
                     {PAYMENT_LAB_ACTIONS.map((a) => (
                       <option key={a} value={a}>
@@ -286,17 +286,17 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Recent events */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-t3 font-heading font-medium text-text-primary">Recent events</h2>
+          <h2 className="text-t3 font-heading font-medium text-fg">Recent events</h2>
           <Button variant="ghost" size="sm" onClick={() => void fetchData()}>
             Refresh
           </Button>
         </div>
         {data.recentEvents.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface-elevated px-4 py-8 text-center">
-            <p className="text-t5 font-body text-text-secondary">No payment events yet.</p>
+          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
+            <p className="text-t5 font-body text-fg-muted">No payment events yet.</p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+          <div className="bg-surface border border-white/5 rounded overflow-hidden">
             {data.recentEvents.map((e, i) => (
               <div
                 key={`${e.occurredAt}-${i}`}
@@ -304,16 +304,16 @@ export default function AdminPaymentLabPage(): React.ReactElement {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Badge variant={EVENT_VARIANT[e.eventType] ?? 'neutral'} label={e.eventType} />
-                  <span className="text-t6 font-mono text-text-disabled truncate">
+                  <span className="text-t6 font-mono text-fg-disabled truncate">
                     {e.paymentReference ?? '—'}
                   </span>
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
-                  <span className="text-t6 font-mono text-text-secondary">{formatKES(e.amount)}</span>
+                  <span className="text-t6 font-mono text-fg-muted">{formatKES(e.amount)}</span>
                   {e.resultCode != null && (
-                    <span className="text-t6 font-mono text-text-disabled">code {e.resultCode}</span>
+                    <span className="text-t6 font-mono text-fg-disabled">code {e.resultCode}</span>
                   )}
-                  <span className="text-t6 font-body text-text-disabled">
+                  <span className="text-t6 font-body text-fg-disabled">
                     {formatTime(e.occurredAt)}
                   </span>
                 </div>

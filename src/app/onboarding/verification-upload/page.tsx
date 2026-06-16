@@ -46,7 +46,7 @@ export default function VerificationUploadPage(): React.ReactElement {
 
   return (
     <OnboardingShell step={3} title="Verify your account">
-      <p className="font-body text-t5 text-text-secondary">Loading your details…</p>
+      <p className="font-body text-t5 text-fg-muted">Loading your details…</p>
     </OnboardingShell>
   );
 }
@@ -160,7 +160,7 @@ function StudentVerification(): React.ReactElement {
             maxLength={6}
             required
           />
-          <p className="font-body text-t6 text-text-disabled">
+          <p className="font-body text-t6 text-fg-disabled">
             {expired
               ? 'Your code has expired. Request a new one.'
               : `Code expires in ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}
@@ -176,7 +176,7 @@ function StudentVerification(): React.ReactElement {
               setExpiresAt(null);
               setError('');
             }}
-            className="font-body text-t6 text-accent-green hover:opacity-80"
+            className="font-body text-t6 text-brand hover:opacity-80"
           >
             Use a different email / resend code
           </button>
@@ -261,7 +261,7 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
         {role === Role.FARMER && (
           <>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="documentType" className="font-body text-t6 text-text-secondary">
+              <label htmlFor="documentType" className="font-body text-t6 text-fg-muted">
                 Document type
               </label>
               <select
@@ -288,7 +288,7 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="document" className="font-body text-t6 text-text-secondary">
+          <label htmlFor="document" className="font-body text-t6 text-fg-muted">
             {copy.fileLabel}
           </label>
           <input
@@ -297,20 +297,20 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
             accept="image/*,application/pdf"
             onChange={(e) => void handleFile(e)}
             disabled={uploadState === 'uploading'}
-            className="font-body text-t6 text-text-secondary file:mr-3 file:rounded-sm file:border-0 file:bg-surface-secondary file:px-3 file:py-1.5 file:text-text-primary"
+            className="font-body text-t6 text-fg-muted file:mr-3 file:rounded-sm file:border-0 file:bg-surface-raised file:px-3 file:py-1.5 file:text-fg"
           />
           {uploadState === 'uploading' && (
-            <p className="font-body text-t6 text-text-disabled">Uploading…</p>
+            <p className="font-body text-t6 text-fg-disabled">Uploading…</p>
           )}
           {uploadState === 'done' && (
-            <p className="font-body text-t6 text-accent-green">Upload complete.</p>
+            <p className="font-body text-t6 text-brand">Upload complete.</p>
           )}
         </div>
 
         <Button type="submit" variant="primary" size="lg" isLoading={isLoading} disabled={!canSubmit} className="w-full mt-2">
           Submit and finish
         </Button>
-        <p className="font-body text-t6 text-text-disabled">
+        <p className="font-body text-t6 text-fg-disabled">
           You can start using UmojaHub right away — an administrator reviews your documents separately.
         </p>
       </form>

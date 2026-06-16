@@ -50,7 +50,7 @@ function ScoreSelector({
 }): React.ReactElement {
   return (
     <div className="space-y-1.5">
-      <p className="text-t5 font-body text-text-secondary">{label}</p>
+      <p className="text-t5 font-body text-fg-muted">{label}</p>
       <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -59,10 +59,10 @@ function ScoreSelector({
             onClick={() => onChange(n)}
             className={[
               'w-9 h-9 rounded-sm font-mono text-t5 border transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
               value === n
-                ? 'bg-accent-green/10 border-accent-green text-accent-green'
-                : 'bg-surface-secondary border-zinc-800/50 text-text-secondary hover:border-white/20',
+                ? 'bg-brand/10 border-brand text-brand'
+                : 'bg-surface-raised border-zinc-800/50 text-fg-muted hover:border-white/20',
             ].join(' ')}
             aria-pressed={value === n}
           >
@@ -89,11 +89,11 @@ function CommentField({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <p className="text-t5 font-body text-text-secondary">{label}</p>
+        <p className="text-t5 font-body text-fg-muted">{label}</p>
         <span
           className={[
             'text-t6 font-mono tabular-nums',
-            met ? 'text-accent-green' : 'text-text-disabled',
+            met ? 'text-brand' : 'text-fg-disabled',
           ].join(' ')}
         >
           {words}/{REVIEW_MIN_WORD_COUNT}
@@ -104,10 +104,10 @@ function CommentField({
         onChange={(e) => onChange(e.target.value)}
         rows={4}
         className={[
-          'w-full bg-surface-secondary border rounded-sm px-3 py-2.5 font-body text-t5',
-          'text-text-primary placeholder-text-disabled resize-none',
+          'w-full bg-surface-raised border rounded-sm px-3 py-2.5 font-body text-t5',
+          'text-fg placeholder-fg-disabled resize-none',
           'focus:outline-none transition-colors duration-150',
-          met ? 'border-zinc-800/50 focus:border-accent-green/50' : 'border-zinc-800/50',
+          met ? 'border-zinc-800/50 focus:border-brand/50' : 'border-zinc-800/50',
         ].join(' ')}
         placeholder={`Write at least ${REVIEW_MIN_WORD_COUNT} words...`}
       />
@@ -197,7 +197,7 @@ export function ReviewScoreForm({
 
   return (
     <div className="space-y-6">
-      <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+      <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
         Review form
       </p>
 
@@ -225,15 +225,15 @@ export function ReviewScoreForm({
         ))}
 
         <div className="space-y-1.5">
-          <p className="text-t5 font-body text-text-secondary">
+          <p className="text-t5 font-body text-fg-muted">
             Overall feedback{' '}
-            <span className="text-text-disabled">(optional)</span>
+            <span className="text-fg-disabled">(optional)</span>
           </p>
           <textarea
             value={overallFeedback}
             onChange={(e) => setOverallFeedback(e.target.value)}
             rows={3}
-            className="w-full bg-surface-secondary border border-zinc-800/50 rounded-sm px-3 py-2.5 font-body text-t5 text-text-primary placeholder-text-disabled resize-none focus:outline-none focus:border-accent-green/50 transition-colors duration-150"
+            className="w-full bg-surface-raised border border-zinc-800/50 rounded-sm px-3 py-2.5 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-brand/50 transition-colors duration-150"
             placeholder="Any additional comments for the student..."
           />
         </div>
@@ -241,7 +241,7 @@ export function ReviewScoreForm({
 
       {/* Decision */}
       <div className="space-y-2 pt-2 border-t border-zinc-800/50">
-        <p className="text-t5 font-body text-text-secondary">Decision</p>
+        <p className="text-t5 font-body text-fg-muted">Decision</p>
         <div className="space-y-1.5">
           {DECISIONS.map(({ value, label }) => (
             <label
@@ -250,7 +250,7 @@ export function ReviewScoreForm({
                 'flex items-center gap-3 px-3 py-2.5 rounded-sm border cursor-pointer transition-colors duration-150',
                 decision === value
                   ? value === LecturerDecision.VERIFIED
-                    ? 'border-accent-green bg-accent-green/5'
+                    ? 'border-brand bg-brand/5'
                     : value === LecturerDecision.DENIED
                       ? 'border-red-800/50 bg-red-950/10'
                       : 'border-amber-800/50 bg-amber-950/10'
@@ -263,18 +263,18 @@ export function ReviewScoreForm({
                 value={value}
                 checked={decision === value}
                 onChange={() => setDecision(value)}
-                className="accent-accent-green"
+                className="accent-brand"
               />
               <span
                 className={[
                   'text-t5 font-body',
                   decision === value
                     ? value === LecturerDecision.VERIFIED
-                      ? 'text-accent-green'
+                      ? 'text-brand'
                       : value === LecturerDecision.DENIED
                         ? 'text-red-400'
                         : 'text-amber-400'
-                    : 'text-text-secondary',
+                    : 'text-fg-muted',
                 ].join(' ')}
               >
                 {label}
@@ -292,7 +292,7 @@ export function ReviewScoreForm({
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
             rows={3}
-            className="w-full bg-surface-secondary border border-red-900/40 rounded-sm px-3 py-2.5 font-body text-t5 text-text-primary placeholder-text-disabled resize-none focus:outline-none focus:border-red-700/50 transition-colors duration-150"
+            className="w-full bg-surface-raised border border-red-900/40 rounded-sm px-3 py-2.5 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-red-700/50 transition-colors duration-150"
             placeholder="Explain why this project is being denied..."
           />
         </div>

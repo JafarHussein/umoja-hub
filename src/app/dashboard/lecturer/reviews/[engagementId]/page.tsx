@@ -90,27 +90,27 @@ function briefTitle(engagement: IEngagementDetail): string {
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="h-4 w-24 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
         <div className="space-y-1.5">
-          <div className="h-3 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-56 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-32 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-56 bg-surface-raised rounded-sm animate-pulse" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-7 space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-                <div className="h-4 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-                <div className="h-4 w-full bg-surface-secondary rounded-sm animate-pulse" />
-                <div className="h-4 w-3/4 bg-surface-secondary rounded-sm animate-pulse" />
+              <div key={i} className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+                <div className="h-4 w-32 bg-surface-raised rounded-sm animate-pulse" />
+                <div className="h-4 w-full bg-surface-raised rounded-sm animate-pulse" />
+                <div className="h-4 w-3/4 bg-surface-raised rounded-sm animate-pulse" />
               </div>
             ))}
           </div>
           <div className="md:col-span-5">
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-10 bg-surface-secondary rounded-sm animate-pulse" />
+                <div key={i} className="h-10 bg-surface-raised rounded-sm animate-pulse" />
               ))}
             </div>
           </div>
@@ -181,11 +181,11 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'unverified') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-amber-900/30 rounded-[4px] p-8 text-center">
+          <div className="bg-surface border border-amber-900/30 rounded-[4px] p-8 text-center">
             <p className="text-t4 font-body text-amber-400">Account not yet verified</p>
-            <p className="text-t5 font-body text-text-disabled mt-1">
+            <p className="text-t5 font-body text-fg-disabled mt-1">
               An administrator must verify your account before you can submit reviews.
             </p>
           </div>
@@ -196,13 +196,13 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'not_found' || !engagement) {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Engagement not found or already reviewed.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Engagement not found or already reviewed.</p>
             <Link
               href="/dashboard/lecturer/queue"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← Review queue
             </Link>
@@ -214,13 +214,13 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load engagement.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load engagement.</p>
             <Link
               href="/dashboard/lecturer/queue"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← Review queue
             </Link>
@@ -236,25 +236,25 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
   const activeDoc = engagement.documents[activeDocTab];
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         <Link
           href="/dashboard/lecturer/queue"
-          className="inline-flex text-t5 font-body text-text-secondary hover:text-text-primary transition-colors duration-150"
+          className="inline-flex text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
         >
           ← Review queue
         </Link>
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               Lecturer · Review
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
               {briefTitle(engagement)}
             </h1>
-            <p className="text-t5 font-body text-text-secondary mt-1">
+            <p className="text-t5 font-body text-fg-muted mt-1">
               {studentFullName(engagement.studentId)}
             </p>
           </div>
@@ -270,7 +270,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
           <div className="md:col-span-7 space-y-4">
 
             {/* Process documents */}
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
               <div className="flex border-b border-zinc-800/50">
                 {DOC_TABS.map(({ id, label }) => (
                   <button
@@ -279,10 +279,10 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
                     onClick={() => setActiveDocTab(id)}
                     className={[
                       'px-4 py-2.5 text-t5 font-body border-b-2 transition-colors duration-150',
-                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green focus-visible:ring-inset',
+                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset',
                       activeDocTab === id
-                        ? 'border-accent-green text-text-primary'
-                        : 'border-transparent text-text-secondary hover:text-text-primary',
+                        ? 'border-brand text-fg'
+                        : 'border-transparent text-fg-muted hover:text-fg',
                     ].join(' ')}
                   >
                     {label}
@@ -292,18 +292,18 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
               <div className="p-4">
                 {activeDoc ? (
                   <div className="space-y-2">
-                    <p className="text-t6 font-mono text-text-disabled">
+                    <p className="text-t6 font-mono text-fg-disabled">
                       Submitted{' '}
                       {new Date(activeDoc.submittedAt).toLocaleDateString('en-KE', {
                         year: 'numeric', month: 'short', day: 'numeric',
                       })}
                     </p>
-                    <p className="text-t5 font-body text-text-primary leading-relaxed whitespace-pre-wrap">
+                    <p className="text-t5 font-body text-fg leading-relaxed whitespace-pre-wrap">
                       {activeDoc.content}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-t5 font-body text-text-disabled py-4 text-center">
+                  <p className="text-t5 font-body text-fg-disabled py-4 text-center">
                     Document not submitted.
                   </p>
                 )}
@@ -312,17 +312,17 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
             {/* Blocker log */}
             {engagement.documents.blockerLog.length > 0 && (
-              <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+              <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
                 <div className="px-4 py-3 border-b border-zinc-800/50">
-                  <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                  <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                     Blocker log · {engagement.documents.blockerLog.length}
                   </p>
                 </div>
                 {engagement.documents.blockerLog.map((entry, i) => (
                   <div key={i} className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-1.5">
-                    <p className="text-t5 font-body text-text-primary">{entry.stuckOn}</p>
-                    <p className="text-t5 font-body text-text-secondary">{entry.resolution}</p>
-                    <p className="text-t6 font-mono text-text-disabled tabular-nums">
+                    <p className="text-t5 font-body text-fg">{entry.stuckOn}</p>
+                    <p className="text-t5 font-body text-fg-muted">{entry.resolution}</p>
+                    <p className="text-t6 font-mono text-fg-disabled tabular-nums">
                       {entry.durationHours}h
                     </p>
                   </div>
@@ -332,21 +332,21 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
             {/* AI usage log */}
             {engagement.documents.aiUsageLog.length > 0 && (
-              <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+              <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
                 <div className="px-4 py-3 border-b border-zinc-800/50">
-                  <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                  <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                     AI usage log · {engagement.documents.aiUsageLog.length}
                   </p>
                 </div>
                 {engagement.documents.aiUsageLog.map((entry, i) => (
                   <div key={i} className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-t6 font-mono text-text-disabled bg-surface-secondary border border-zinc-800/50 rounded-[2px] px-2 py-0.5">
+                      <span className="text-t6 font-mono text-fg-disabled bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-0.5">
                         {entry.toolUsed}
                       </span>
                     </div>
-                    <p className="text-t5 font-body text-text-secondary line-clamp-2">{entry.prompt}</p>
-                    <p className="text-t5 font-body text-text-primary">{entry.studentAction}</p>
+                    <p className="text-t5 font-body text-fg-muted line-clamp-2">{entry.prompt}</p>
+                    <p className="text-t5 font-body text-fg">{entry.studentAction}</p>
                   </div>
                 ))}
               </div>
@@ -354,39 +354,39 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
             {/* Peer review scores */}
             {peerReview && (
-              <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                   Peer review scores
                 </p>
                 {revealedPeerReview && (
-                  <p className="text-t6 font-body text-text-disabled">
+                  <p className="text-t6 font-body text-fg-disabled">
                     Revealed after your decision was recorded — peer scores are
                     withheld during assessment to keep reviews independent.
                   </p>
                 )}
                 <div className="space-y-0">
                   <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                    <span className="text-t5 font-body text-text-secondary">Code quality</span>
-                    <span className="text-t4 font-mono font-semibold text-text-primary tabular-nums">
+                    <span className="text-t5 font-body text-fg-muted">Code quality</span>
+                    <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
                       {peerReview.scores?.codeQuality ?? '—'}/5
                     </span>
                   </div>
                   <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                    <span className="text-t5 font-body text-text-secondary">Documentation</span>
-                    <span className="text-t4 font-mono font-semibold text-text-primary tabular-nums">
+                    <span className="text-t5 font-body text-fg-muted">Documentation</span>
+                    <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
                       {peerReview.scores?.documentationClarity ?? '—'}/5
                     </span>
                   </div>
                   {peerReview.comments?.codeQuality && (
                     <div className="py-2.5 border-b border-zinc-800/50 space-y-0.5">
-                      <p className="text-t6 font-body text-text-disabled">Code quality comment</p>
-                      <p className="text-t5 font-body text-text-secondary">{peerReview.comments.codeQuality}</p>
+                      <p className="text-t6 font-body text-fg-disabled">Code quality comment</p>
+                      <p className="text-t5 font-body text-fg-muted">{peerReview.comments.codeQuality}</p>
                     </div>
                   )}
                   {peerReview.comments?.documentationClarity && (
                     <div className="py-2.5 space-y-0.5">
-                      <p className="text-t6 font-body text-text-disabled">Documentation comment</p>
-                      <p className="text-t5 font-body text-text-secondary">{peerReview.comments.documentationClarity}</p>
+                      <p className="text-t6 font-body text-fg-disabled">Documentation comment</p>
+                      <p className="text-t5 font-body text-fg-muted">{peerReview.comments.documentationClarity}</p>
                     </div>
                   )}
                 </div>
@@ -396,21 +396,21 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
           {/* Right — review form or success */}
           <div className="md:col-span-5">
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4">
               {submitted ? (
                 <div className="space-y-4 text-center py-4">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-accent-green flex-shrink-0" />
-                    <p className="text-t3 font-heading font-semibold text-accent-green">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand flex-shrink-0" />
+                    <p className="text-t3 font-heading font-semibold text-brand">
                       Review submitted
                     </p>
                   </div>
-                  <p className="text-t5 font-body text-text-secondary">
+                  <p className="text-t5 font-body text-fg-muted">
                     The student has been notified and the engagement status has been updated.
                   </p>
                   <Link
                     href="/dashboard/lecturer/queue"
-                    className="inline-flex items-center gap-1 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+                    className="inline-flex items-center gap-1 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
                   >
                     ← Back to queue
                   </Link>

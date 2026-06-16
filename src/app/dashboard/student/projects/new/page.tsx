@@ -101,10 +101,10 @@ export default function NewProjectPage(): React.ReactElement {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-1.5">
-          <div className="h-3 w-24 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-48 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-48 bg-surface-raised rounded-sm animate-pulse" />
         </div>
       </div>
     );
@@ -112,26 +112,26 @@ export default function NewProjectPage(): React.ReactElement {
 
   if (formState === 'generating') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
           <div className="flex items-center gap-2.5">
             <div
-              className="w-2 h-2 rounded-full bg-accent-green animate-pulse flex-shrink-0"
+              className="w-2 h-2 rounded-full bg-brand animate-pulse flex-shrink-0"
               aria-hidden="true"
             />
             <div>
-              <p className="text-t4 font-body font-medium text-text-primary">
+              <p className="text-t4 font-body font-medium text-fg">
                 Generating your brief...
               </p>
-              <p className="text-t5 font-body text-text-secondary mt-0.5">
+              <p className="text-t5 font-body text-fg-muted mt-0.5">
                 This usually takes 10–20 seconds.
               </p>
             </div>
           </div>
           <div className="space-y-2" aria-hidden="true">
-            <div className="h-4 w-44 bg-surface-secondary rounded-sm animate-pulse" />
-            <div className="h-4 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-            <div className="h-4 w-40 bg-surface-secondary rounded-sm animate-pulse" />
+            <div className="h-4 w-44 bg-surface-raised rounded-sm animate-pulse" />
+            <div className="h-4 w-32 bg-surface-raised rounded-sm animate-pulse" />
+            <div className="h-4 w-40 bg-surface-raised rounded-sm animate-pulse" />
           </div>
         </div>
       </div>
@@ -139,13 +139,13 @@ export default function NewProjectPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
             Student · New Project
           </p>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
             Create project brief
           </h1>
         </div>
@@ -173,7 +173,7 @@ export default function NewProjectPage(): React.ReactElement {
 
           {/* Track selector */}
           <div className="space-y-1.5">
-            <p className="text-t5 font-body text-text-secondary">Project track</p>
+            <p className="text-t5 font-body text-fg-muted">Project track</p>
             <div className="flex gap-2" role="group" aria-label="Project track">
               {(Object.values(ProjectTrack) as ProjectTrack[]).map((t) => (
                 <button
@@ -183,22 +183,22 @@ export default function NewProjectPage(): React.ReactElement {
                   aria-pressed={track === t}
                   className={[
                     'flex-1 h-9 rounded-[4px] text-t5 font-body border transition-all duration-150',
-                    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green',
+                    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
                     track === t
-                      ? 'bg-accent-green text-surface-primary border-accent-green'
-                      : 'bg-surface-secondary text-text-secondary border-zinc-800/50 hover:border-white/20',
+                      ? 'bg-brand text-background border-brand'
+                      : 'bg-surface-raised text-fg-muted border-zinc-800/50 hover:border-white/20',
                   ].join(' ')}
                 >
                   {TRACK_LABEL[t]}
                 </button>
               ))}
             </div>
-            <p className="text-t6 font-body text-text-disabled">{TRACK_HINT[track]}</p>
+            <p className="text-t6 font-body text-fg-disabled">{TRACK_HINT[track]}</p>
           </div>
 
           {/* Tier selector */}
           <div className="space-y-1.5">
-            <p className="text-t5 font-body text-text-secondary">Difficulty tier</p>
+            <p className="text-t5 font-body text-fg-muted">Difficulty tier</p>
             <div className="flex gap-2" role="group" aria-label="Difficulty tier">
               {(Object.values(StudentTier) as StudentTier[]).map((t) => (
                 <button
@@ -208,10 +208,10 @@ export default function NewProjectPage(): React.ReactElement {
                   aria-pressed={tier === t}
                   className={[
                     'flex-1 h-9 rounded-[4px] text-t5 font-body border transition-all duration-150',
-                    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green',
+                    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
                     tier === t
-                      ? 'bg-accent-green text-surface-primary border-accent-green'
-                      : 'bg-surface-secondary text-text-secondary border-zinc-800/50 hover:border-white/20',
+                      ? 'bg-brand text-background border-brand'
+                      : 'bg-surface-raised text-fg-muted border-zinc-800/50 hover:border-white/20',
                   ].join(' ')}
                 >
                   {TIER_LABEL[t]}

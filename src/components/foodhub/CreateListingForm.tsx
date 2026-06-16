@@ -159,7 +159,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
 
         {/* Crop name */}
         <div className="space-y-1.5">
-          <label htmlFor="crop-name" className="font-body text-t6 text-text-secondary">
+          <label htmlFor="crop-name" className="font-body text-t6 text-fg-muted">
             Crop
           </label>
           <select
@@ -167,7 +167,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
             value={form.cropName}
             onChange={(e) => set('cropName', e.target.value)}
             className={[
-              'w-full min-h-[44px] bg-surface-secondary border rounded-sm font-body text-t5 text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150',
+              'w-full min-h-[44px] bg-surface-raised border rounded-sm font-body text-t5 text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150',
               errors.cropName ? 'border-red-700/60' : 'border-white/10',
             ].join(' ')}
           >
@@ -208,14 +208,14 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
             required
           />
           <div className="space-y-1.5">
-            <label htmlFor="unit" className="font-body text-t6 text-text-secondary">
+            <label htmlFor="unit" className="font-body text-t6 text-fg-muted">
               Unit
             </label>
             <select
               id="unit"
               value={form.unit}
               onChange={(e) => set('unit', e.target.value as ListingUnit)}
-              className="w-full min-h-[44px] bg-surface-secondary border border-white/10 rounded-sm font-body text-t5 text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+              className="w-full min-h-[44px] bg-surface-raised border border-white/10 rounded-sm font-body text-t5 text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
             >
               {(Object.values(ListingUnit) as ListingUnit[]).map((u) => (
                 <option key={u} value={u}>
@@ -239,7 +239,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
 
         {/* Pickup county */}
         <div className="space-y-1.5">
-          <label htmlFor="pickup-county" className="font-body text-t6 text-text-secondary">
+          <label htmlFor="pickup-county" className="font-body text-t6 text-fg-muted">
             Pickup county
           </label>
           <select
@@ -247,7 +247,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
             value={form.pickupCounty}
             onChange={(e) => set('pickupCounty', e.target.value)}
             className={[
-              'w-full min-h-[44px] bg-surface-secondary border rounded-sm font-body text-t5 text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150',
+              'w-full min-h-[44px] bg-surface-raised border rounded-sm font-body text-t5 text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150',
               errors.pickupCounty ? 'border-red-700/60' : 'border-white/10',
             ].join(' ')}
           >
@@ -287,7 +287,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
 
         {/* Contact preference */}
         <div className="space-y-1.5">
-          <p className="font-body text-t6 text-text-secondary">Buyer contact preference</p>
+          <p className="font-body text-t6 text-fg-muted">Buyer contact preference</p>
           <div className="flex gap-2" role="group" aria-label="Contact preference">
             {(Object.values(BuyerContactPreference) as BuyerContactPreference[]).map((pref) => (
               <button
@@ -296,10 +296,10 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
                 onClick={() => toggleContactPref(pref)}
                 aria-pressed={form.buyerContactPreference.includes(pref)}
                 className={[
-                  'flex-1 min-h-[44px] rounded-sm text-t5 font-body border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green',
+                  'flex-1 min-h-[44px] rounded-sm text-t5 font-body border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                   form.buyerContactPreference.includes(pref)
-                    ? 'bg-accent-green text-surface-primary border-accent-green'
-                    : 'bg-surface-secondary text-text-secondary border-white/10 hover:border-white/20',
+                    ? 'bg-brand text-background border-brand'
+                    : 'bg-surface-raised text-fg-muted border-white/10 hover:border-white/20',
                 ].join(' ')}
               >
                 {pref === BuyerContactPreference.PHONE ? 'Phone call' : 'Platform message'}

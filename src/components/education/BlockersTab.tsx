@@ -86,7 +86,7 @@ export function BlockersTab({
     <div className="p-4 space-y-6">
       {/* Add form */}
       <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
           Log a blocker
         </p>
 
@@ -129,23 +129,23 @@ export function BlockersTab({
 
       {/* Log list */}
       <div className="space-y-2">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
           Blocker log
         </p>
 
         {blockers.length === 0 ? (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-6 text-center">
-            <p className="text-t5 font-body text-text-secondary">No blockers logged yet.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-6 text-center">
+            <p className="text-t5 font-body text-fg-muted">No blockers logged yet.</p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
             {blockers.map((blocker, idx) => (
               <div
                 key={idx}
                 className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-0.5"
               >
-                <p className="text-t5 font-body text-text-primary">{blocker.stuckOn}</p>
-                <p className="text-t6 font-mono text-text-disabled">
+                <p className="text-t5 font-body text-fg">{blocker.stuckOn}</p>
+                <p className="text-t6 font-mono text-fg-disabled">
                   {blocker.resolution} · {blocker.durationHours}h
                   {blocker.loggedAt ? ` · ${formatDate(blocker.loggedAt)}` : ''}
                 </p>

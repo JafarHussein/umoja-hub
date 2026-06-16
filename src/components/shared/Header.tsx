@@ -22,7 +22,7 @@ export function Header({ role, firstName, onSignOut }: IHeaderProps): React.Reac
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="flex items-center justify-between h-14 px-6 bg-surface-elevated border-b border-white/5 shrink-0">
+    <header className="flex items-center justify-between h-14 px-6 bg-surface border-b border-white/5 shrink-0">
       {/* Page context — populated by each page via slot or prop in future phases */}
       <div />
 
@@ -37,10 +37,10 @@ export function Header({ role, firstName, onSignOut }: IHeaderProps): React.Reac
             aria-label="Open user menu"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-2 rounded-sm px-3 text-text-secondary hover:text-text-primary hover:bg-surface-secondary transition-all duration-150 font-body text-t5"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-2 rounded-sm px-3 text-fg-muted hover:text-fg hover:bg-surface-raised transition-all duration-150 font-body text-t5"
           >
             {/* Avatar initial */}
-            <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-accent-green/20 text-accent-green font-mono text-t6 font-medium uppercase">
+            <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-brand/20 text-brand font-mono text-t6 font-medium uppercase">
               {firstName.charAt(0)}
             </span>
             <span className="hidden sm:block">{firstName}</span>
@@ -74,7 +74,7 @@ export function Header({ role, firstName, onSignOut }: IHeaderProps): React.Reac
               {/* Dropdown */}
               <div
                 role="menu"
-                className="absolute right-0 top-full mt-1 z-20 w-44 rounded bg-surface-elevated border border-white/10 shadow-xl py-1"
+                className="absolute right-0 top-full mt-1 z-20 w-44 rounded bg-surface border border-white/10 shadow-xl py-1"
               >
                 <button
                   role="menuitem"
@@ -82,7 +82,7 @@ export function Header({ role, firstName, onSignOut }: IHeaderProps): React.Reac
                     setMenuOpen(false);
                     onSignOut();
                   }}
-                  className="w-full flex items-center gap-2 px-4 min-h-[44px] font-body text-t5 text-text-secondary hover:text-text-primary hover:bg-surface-secondary transition-all duration-150 text-left"
+                  className="w-full flex items-center gap-2 px-4 min-h-[44px] font-body text-t5 text-fg-muted hover:text-fg hover:bg-surface-raised transition-all duration-150 text-left"
                 >
                   <svg
                     width="14"

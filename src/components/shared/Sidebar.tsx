@@ -77,13 +77,13 @@ export function Sidebar({ role, currentPath }: ISidebarProps): React.ReactElemen
   const navItems = navByRole[role] ?? [];
 
   return (
-    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface-elevated border-r border-white/5 shrink-0">
+    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface border-r border-white/5 shrink-0">
       {/* Wordmark */}
       <div className="flex items-center gap-2 px-4 h-14 border-b border-white/5 shrink-0">
-        <div className="h-5 w-5 rounded-sm bg-accent-green shrink-0" />
+        <div className="h-5 w-5 rounded-sm bg-brand shrink-0" />
         <span className="font-heading text-t4 font-semibold">
-          <span className="text-text-primary">Umoja</span>
-          <span className="text-accent-green">Hub</span>
+          <span className="text-fg">Umoja</span>
+          <span className="text-brand">Hub</span>
         </span>
       </div>
 
@@ -100,12 +100,12 @@ export function Sidebar({ role, currentPath }: ISidebarProps): React.ReactElemen
                 'flex items-center gap-3 px-3 min-h-[44px] rounded-sm font-body text-t5',
                 'transition-all duration-150',
                 isActive
-                  ? 'bg-surface-secondary text-text-primary'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary/50',
+                  ? 'bg-surface-raised text-fg'
+                  : 'text-fg-muted hover:text-fg hover:bg-surface-raised/50',
               ].join(' ')}
               aria-current={isActive ? 'page' : undefined}
             >
-              <span className={isActive ? 'text-accent-green' : 'text-text-disabled'}>
+              <span className={isActive ? 'text-brand' : 'text-fg-disabled'}>
                 {item.icon}
               </span>
               {item.label}
@@ -116,7 +116,7 @@ export function Sidebar({ role, currentPath }: ISidebarProps): React.ReactElemen
 
       {/* Role chip at bottom */}
       <div className="px-4 py-3 border-t border-white/5">
-        <span className="font-mono text-t6 text-text-disabled uppercase tracking-widest">
+        <span className="font-mono text-t6 text-fg-disabled uppercase tracking-widest">
           {role}
         </span>
       </div>

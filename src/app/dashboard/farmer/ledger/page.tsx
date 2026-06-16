@@ -167,10 +167,10 @@ export default function FarmerLedgerPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load your settlement ledger
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchData()}>
@@ -185,8 +185,8 @@ export default function FarmerLedgerPage(): React.ReactElement {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary">Settlement</h1>
-          <p className="text-t5 font-body text-text-secondary mt-0.5">
+          <h1 className="text-t2 font-heading font-semibold text-fg">Settlement</h1>
+          <p className="text-t5 font-body text-fg-muted mt-0.5">
             Funds the platform has received on your behalf. Payouts are released manually after
             review — there is no automated disbursement.
           </p>
@@ -204,56 +204,56 @@ export default function FarmerLedgerPage(): React.ReactElement {
 
       {/* Balance summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-surface-elevated border border-white/5 rounded p-4">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+        <div className="bg-surface border border-white/5 rounded p-4">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
             Received by platform
           </p>
-          <p className="text-t2 font-mono text-text-primary">
+          <p className="text-t2 font-mono text-fg">
             {formatKES(balance?.grossReceivedKES ?? 0)}
           </p>
         </div>
-        <div className="bg-surface-elevated border border-white/5 rounded p-4">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+        <div className="bg-surface border border-white/5 rounded p-4">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
             Committed to payouts
           </p>
-          <p className="text-t2 font-mono text-text-primary">
+          <p className="text-t2 font-mono text-fg">
             {formatKES(balance?.committedPayoutsKES ?? 0)}
           </p>
         </div>
-        <div className="bg-surface-elevated border border-accent-green/30 rounded p-4">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+        <div className="bg-surface border border-brand/30 rounded p-4">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
             Available to request
           </p>
-          <p className="text-t2 font-mono text-accent-green">{formatKES(availableKES)}</p>
+          <p className="text-t2 font-mono text-brand">{formatKES(availableKES)}</p>
         </div>
       </div>
 
       {hasOpenRequest && (
-        <p className="text-t6 font-body text-text-secondary">
+        <p className="text-t6 font-body text-fg-muted">
           You have a payout request awaiting review. You can file another once it is resolved.
         </p>
       )}
 
       {/* Payout request history */}
       <section className="space-y-3">
-        <h2 className="text-t3 font-heading font-medium text-text-primary">Payout requests</h2>
+        <h2 className="text-t3 font-heading font-medium text-fg">Payout requests</h2>
         {requests.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface-elevated px-4 py-8 text-center">
-            <p className="text-t5 font-body text-text-secondary">No payout requests yet.</p>
+          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
+            <p className="text-t5 font-body text-fg-muted">No payout requests yet.</p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+          <div className="bg-surface border border-white/5 rounded overflow-hidden">
             <div className="grid grid-cols-[auto_auto_1fr_auto] gap-4 px-4 py-3 border-b border-white/5">
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Amount
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Status
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Note
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest text-right">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
                 Requested
               </span>
             </div>
@@ -262,14 +262,14 @@ export default function FarmerLedgerPage(): React.ReactElement {
                 key={req._id}
                 className="grid grid-cols-[auto_auto_1fr_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
               >
-                <span className="text-t5 font-mono text-text-primary whitespace-nowrap">
+                <span className="text-t5 font-mono text-fg whitespace-nowrap">
                   {formatKES(req.amountKES)}
                 </span>
                 <Badge variant={STATUS_VARIANT[req.status]} label={req.status} />
-                <span className="text-t6 font-body text-text-secondary min-w-0 truncate">
+                <span className="text-t6 font-body text-fg-muted min-w-0 truncate">
                   {req.note ?? '—'}
                 </span>
-                <span className="text-t6 font-body text-text-disabled text-right whitespace-nowrap">
+                <span className="text-t6 font-body text-fg-disabled text-right whitespace-nowrap">
                   {formatDate(req.createdAt)}
                 </span>
               </div>
@@ -280,31 +280,31 @@ export default function FarmerLedgerPage(): React.ReactElement {
 
       {/* Settlement ledger — PAID-order line items */}
       <section className="space-y-3">
-        <h2 className="text-t3 font-heading font-medium text-text-primary">Payments received</h2>
-        <p className="text-t6 font-body text-text-secondary">
+        <h2 className="text-t3 font-heading font-medium text-fg">Payments received</h2>
+        <p className="text-t6 font-body text-fg-muted">
           Each payment below has been received by the platform — payout pending until you request
           settlement and an administrator releases it.
         </p>
         {lineItems.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface-elevated px-4 py-8 text-center">
-            <p className="text-t5 font-body text-text-secondary">No payments received yet.</p>
+          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
+            <p className="text-t5 font-body text-fg-muted">No payments received yet.</p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+          <div className="bg-surface border border-white/5 rounded overflow-hidden">
             <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Ref
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Item
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest text-right">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
                 Amount
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Fulfillment
               </span>
-              <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest text-right">
+              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
                 Received
               </span>
             </div>
@@ -313,20 +313,20 @@ export default function FarmerLedgerPage(): React.ReactElement {
                 key={item.orderId}
                 className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
               >
-                <span className="text-t6 font-mono text-text-disabled whitespace-nowrap">
+                <span className="text-t6 font-mono text-fg-disabled whitespace-nowrap">
                   {item.orderReferenceId}
                 </span>
-                <p className="text-t5 font-body text-text-primary capitalize min-w-0 truncate">
+                <p className="text-t5 font-body text-fg capitalize min-w-0 truncate">
                   {item.cropName}{' '}
-                  <span className="font-normal text-text-secondary">
+                  <span className="font-normal text-fg-muted">
                     · {item.quantityOrdered} {item.unit.toLowerCase()}
                   </span>
                 </p>
-                <span className="text-t5 font-mono text-text-primary text-right whitespace-nowrap">
+                <span className="text-t5 font-mono text-fg text-right whitespace-nowrap">
                   {formatKES(item.amountKES)}
                 </span>
                 <Badge variant="neutral" label={item.fulfillmentStatus} />
-                <span className="text-t6 font-body text-text-disabled text-right whitespace-nowrap">
+                <span className="text-t6 font-body text-fg-disabled text-right whitespace-nowrap">
                   {formatDate(item.paidAt)}
                 </span>
               </div>

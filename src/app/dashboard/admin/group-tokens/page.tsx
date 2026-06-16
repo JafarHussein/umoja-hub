@@ -114,8 +114,8 @@ export default function AdminGroupTokensPage(): React.ReactElement {
     <div className="space-y-6 max-w-xl">
       {/* Header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">Group Tokens</h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5">
+        <h1 className="text-t2 font-heading font-semibold text-fg">Group Tokens</h1>
+        <p className="text-t5 font-body text-fg-muted mt-0.5">
           Mint a single-use join code for a cooperative group. The code is texted to the recipient
           farmer, who redeems it from their settings pane. Each code works once and then expires.
         </p>
@@ -123,19 +123,19 @@ export default function AdminGroupTokensPage(): React.ReactElement {
 
       {/* Mint result */}
       {result && (
-        <div className="bg-surface-elevated border border-accent-green/30 rounded p-4 space-y-3">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <div className="bg-surface border border-brand/30 rounded p-4 space-y-3">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
             Token minted
           </p>
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-t1 font-mono text-accent-green tracking-[0.2em]">
+            <span className="text-t1 font-mono text-brand tracking-[0.2em]">
               {result.token}
             </span>
             <Button variant="secondary" size="sm" onClick={() => void copyToken()}>
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
-          <p className="text-t6 font-body text-text-secondary">
+          <p className="text-t6 font-body text-fg-muted">
             Texted to the recipient. Expires{' '}
             {new Date(result.expiresAt).toLocaleDateString('en-KE', {
               day: 'numeric',
@@ -150,9 +150,9 @@ export default function AdminGroupTokensPage(): React.ReactElement {
       {/* Mint form */}
       <form
         onSubmit={(e) => void mint(e)}
-        className="bg-surface-elevated border border-white/5 rounded p-4 space-y-4"
+        className="bg-surface border border-white/5 rounded p-4 space-y-4"
       >
-        <h2 className="text-t3 font-heading font-medium text-text-primary">Mint a join code</h2>
+        <h2 className="text-t3 font-heading font-medium text-fg">Mint a join code</h2>
 
         <Input
           label="Group ID"
@@ -171,14 +171,14 @@ export default function AdminGroupTokensPage(): React.ReactElement {
         />
 
         <div className="space-y-1.5">
-          <label htmlFor="expiry" className="text-t5 font-body text-text-secondary block">
+          <label htmlFor="expiry" className="text-t5 font-body text-fg-muted block">
             Expires in
           </label>
           <select
             id="expiry"
             value={expiresInHours}
             onChange={(e) => setExpiresInHours(Number(e.target.value))}
-            className="w-full min-h-[44px] bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+            className="w-full min-h-[44px] bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
           >
             {EXPIRY_OPTIONS.map((opt) => (
               <option key={opt.hours} value={opt.hours}>

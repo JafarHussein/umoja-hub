@@ -90,7 +90,7 @@ export function AIUsageTab({
     <div className="p-4 space-y-6">
       {/* Add form */}
       <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
           Log AI usage
         </p>
 
@@ -140,32 +140,32 @@ export function AIUsageTab({
 
       {/* Log list */}
       <div className="space-y-2">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
           AI usage log
         </p>
 
         {entries.length === 0 ? (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-6 text-center">
-            <p className="text-t5 font-body text-text-secondary">No AI usage logged yet.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-6 text-center">
+            <p className="text-t5 font-body text-fg-muted">No AI usage logged yet.</p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
             {entries.map((entry, idx) => (
               <div
                 key={idx}
                 className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-0.5"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-t5 font-body font-medium text-text-primary">
+                  <p className="text-t5 font-body font-medium text-fg">
                     {entry.toolUsed}
                   </p>
                   {entry.loggedAt && (
-                    <p className="text-t6 font-mono text-text-disabled flex-shrink-0">
+                    <p className="text-t6 font-mono text-fg-disabled flex-shrink-0">
                       {formatDate(entry.loggedAt)}
                     </p>
                   )}
                 </div>
-                <p className="text-t6 font-body text-text-secondary">
+                <p className="text-t6 font-body text-fg-muted">
                   {entry.prompt.length > 120
                     ? `${entry.prompt.slice(0, 120)}…`
                     : entry.prompt}

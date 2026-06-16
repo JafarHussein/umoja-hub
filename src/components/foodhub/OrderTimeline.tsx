@@ -109,10 +109,10 @@ export function OrderTimeline({
               className={[
                 'w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors duration-150',
                 step.isComplete
-                  ? 'bg-accent-green'
+                  ? 'bg-brand'
                   : step.isActive
-                  ? 'bg-accent-green/40 ring-1 ring-accent-green/40'
-                  : 'bg-surface-secondary border border-white/10',
+                  ? 'bg-brand/40 ring-1 ring-brand/40'
+                  : 'bg-surface-raised border border-white/10',
               ].join(' ')}
               aria-label={step.isComplete ? `${step.label}: done` : step.label}
             />
@@ -123,7 +123,7 @@ export function OrderTimeline({
             <div
               className={[
                 'h-px w-6 mx-1',
-                steps[index + 1]?.isComplete ? 'bg-accent-green' : 'bg-white/10',
+                steps[index + 1]?.isComplete ? 'bg-brand' : 'bg-white/10',
               ].join(' ')}
               aria-hidden="true"
             />
@@ -203,7 +203,7 @@ export function OrderTimelineDetailed({
         <div className="w-2.5 h-2.5 rounded-full bg-red-500 mt-1 flex-shrink-0" />
         <div>
           <p className="text-t4 text-red-400 font-body font-medium">Dispute raised</p>
-          <p className="text-t5 text-text-secondary mt-0.5">
+          <p className="text-t5 text-fg-muted mt-0.5">
             This order has an active dispute. The UmojaHub team has been notified.
           </p>
         </div>
@@ -221,17 +221,17 @@ export function OrderTimelineDetailed({
               className={[
                 'w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 transition-colors duration-150',
                 step.isComplete
-                  ? 'bg-accent-green'
+                  ? 'bg-brand'
                   : step.isActive
-                  ? 'bg-accent-green/40 ring-1 ring-accent-green/40'
-                  : 'bg-surface-secondary border border-white/10',
+                  ? 'bg-brand/40 ring-1 ring-brand/40'
+                  : 'bg-surface-raised border border-white/10',
               ].join(' ')}
             />
             {index < steps.length - 1 && (
               <div
                 className={[
                   'w-px flex-1 mt-1 mb-1',
-                  steps[index + 1]?.isComplete ? 'bg-accent-green/40' : 'bg-white/5',
+                  steps[index + 1]?.isComplete ? 'bg-brand/40' : 'bg-white/5',
                 ].join(' ')}
                 aria-hidden="true"
               />
@@ -243,13 +243,13 @@ export function OrderTimelineDetailed({
             <p
               className={[
                 'text-t5 font-body',
-                step.isComplete ? 'text-text-primary' : 'text-text-disabled',
+                step.isComplete ? 'text-fg' : 'text-fg-disabled',
               ].join(' ')}
             >
               {step.label}
             </p>
             {step.detail && (
-              <p className="text-t6 text-text-disabled mt-0.5">{step.detail}</p>
+              <p className="text-t6 text-fg-disabled mt-0.5">{step.detail}</p>
             )}
           </div>
         </li>

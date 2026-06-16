@@ -16,12 +16,12 @@ interface IGroupOrderCardProps {
 
 function getStatusColor(status: string): string {
   switch (status) {
-    case 'OPEN': return 'text-accent-green bg-accent-green/10 border-accent-green/20';
+    case 'OPEN': return 'text-brand bg-brand/10 border-brand/20';
     case 'MINIMUM_MET': return 'text-blue-400 bg-blue-900/20 border-blue-800/30';
-    case 'CLOSED': return 'text-text-secondary bg-surface-secondary border-white/5';
-    case 'FULFILLED': return 'text-text-secondary bg-surface-secondary border-white/5';
+    case 'CLOSED': return 'text-fg-muted bg-surface-raised border-white/5';
+    case 'FULFILLED': return 'text-fg-muted bg-surface-raised border-white/5';
     case 'CANCELLED': return 'text-red-400 bg-red-900/20 border-red-800/30';
-    default: return 'text-text-secondary bg-surface-secondary border-white/5';
+    default: return 'text-fg-muted bg-surface-raised border-white/5';
   }
 }
 
@@ -55,12 +55,12 @@ export default function GroupOrderCard({
   const statusColorClasses = getStatusColor(status);
 
   return (
-    <div className="bg-surface-elevated border border-white/5 rounded p-6">
+    <div className="bg-surface border border-white/5 rounded p-6">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h4 className="font-heading text-t3 text-text-primary">{inputType}</h4>
-          <p className="font-body text-t5 text-text-secondary mt-1">{supplierName}</p>
+          <h4 className="font-heading text-t3 text-fg">{inputType}</h4>
+          <p className="font-body text-t5 text-fg-muted mt-1">{supplierName}</p>
         </div>
         <span
           className={`font-body text-t6 px-2 py-1 rounded-[2px] border ${statusColorClasses}`}
@@ -71,31 +71,31 @@ export default function GroupOrderCard({
 
       {/* Price and quantity */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-surface-secondary border border-white/5 rounded p-3">
-          <p className="font-body text-t6 text-text-secondary mb-1">Per member</p>
-          <p className="font-mono text-t3 text-text-primary">KES {pricePerMember.toLocaleString()}</p>
+        <div className="bg-surface-raised border border-white/5 rounded p-3">
+          <p className="font-body text-t6 text-fg-muted mb-1">Per member</p>
+          <p className="font-mono text-t3 text-fg">KES {pricePerMember.toLocaleString()}</p>
         </div>
-        <div className="bg-surface-secondary border border-white/5 rounded p-3">
-          <p className="font-body text-t6 text-text-secondary mb-1">Quantity</p>
-          <p className="font-mono text-t3 text-text-primary">{quantityPerMember} units</p>
+        <div className="bg-surface-raised border border-white/5 rounded p-3">
+          <p className="font-body text-t6 text-fg-muted mb-1">Quantity</p>
+          <p className="font-mono text-t3 text-fg">{quantityPerMember} units</p>
         </div>
       </div>
 
       {/* Member progress */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-body text-t5 text-text-secondary">
+          <span className="font-body text-t5 text-fg-muted">
             {currentMemberCount} / {minimumMembers} members
           </span>
           {membersNeeded > 0 && (
-            <span className="font-body text-t6 text-text-disabled">
+            <span className="font-body text-t6 text-fg-disabled">
               {membersNeeded} more needed
             </span>
           )}
         </div>
-        <div className="h-1.5 bg-surface-secondary rounded-full overflow-hidden">
+        <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
           <div
-            className="h-full bg-accent-green rounded-full transition-all duration-250"
+            className="h-full bg-brand rounded-full transition-all duration-250"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -103,7 +103,7 @@ export default function GroupOrderCard({
 
       {/* Deadline */}
       <div className="flex items-center justify-between">
-        <p className="font-body text-t6 text-text-disabled">
+        <p className="font-body text-t6 text-fg-disabled">
           Deadline:{' '}
           {new Date(joiningDeadline).toLocaleDateString('en-KE', {
             day: 'numeric',
@@ -111,7 +111,7 @@ export default function GroupOrderCard({
             year: 'numeric',
           })}
         </p>
-        <p className="font-body text-t6 text-text-secondary">
+        <p className="font-body text-t6 text-fg-muted">
           {getDeadlineText(joiningDeadline)}
         </p>
       </div>

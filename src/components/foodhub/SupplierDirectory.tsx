@@ -115,8 +115,8 @@ export default function SupplierDirectory(): React.ReactElement {
     <div className="space-y-6">
       {/* Page header — read-only, administrator-curated */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">Verified Suppliers</h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5 max-w-2xl">
+        <h1 className="text-t2 font-heading font-semibold text-fg">Verified Suppliers</h1>
+        <p className="text-t5 font-body text-fg-muted mt-0.5 max-w-2xl">
           Agricultural input suppliers reviewed by UmojaHub. This directory is administrator-curated
           — suppliers are added after credential verification and cannot self-register. Contact a
           supplier directly to discuss group orders.
@@ -128,7 +128,7 @@ export default function SupplierDirectory(): React.ReactElement {
         <div className="space-y-1.5">
           <label
             htmlFor="supplier-county"
-            className="text-t6 font-mono text-text-disabled uppercase tracking-widest block"
+            className="text-t6 font-mono text-fg-disabled uppercase tracking-widest block"
           >
             County
           </label>
@@ -136,7 +136,7 @@ export default function SupplierDirectory(): React.ReactElement {
             id="supplier-county"
             value={county}
             onChange={(e) => setCounty(e.target.value)}
-            className="min-w-[12rem] min-h-[44px] bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+            className="min-w-[12rem] min-h-[44px] bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
           >
             <option value="">All counties</option>
             {KENYAN_COUNTIES.map((c) => (
@@ -150,7 +150,7 @@ export default function SupplierDirectory(): React.ReactElement {
         <div className="space-y-1.5">
           <label
             htmlFor="supplier-category"
-            className="text-t6 font-mono text-text-disabled uppercase tracking-widest block"
+            className="text-t6 font-mono text-fg-disabled uppercase tracking-widest block"
           >
             Input category
           </label>
@@ -158,7 +158,7 @@ export default function SupplierDirectory(): React.ReactElement {
             id="supplier-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="min-w-[12rem] min-h-[44px] bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+            className="min-w-[12rem] min-h-[44px] bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
           >
             <option value="">All categories</option>
             {Object.values(SupplierInputCategory).map((cat) => (
@@ -173,7 +173,7 @@ export default function SupplierDirectory(): React.ReactElement {
           <button
             type="button"
             onClick={clearFilters}
-            className="min-h-[44px] text-t5 font-body text-text-secondary hover:text-text-primary transition-colors duration-150 underline underline-offset-2"
+            className="min-h-[44px] text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150 underline underline-offset-2"
           >
             Clear filters
           </button>
@@ -185,10 +185,10 @@ export default function SupplierDirectory(): React.ReactElement {
         <ListSkeleton rows={4} />
       ) : pageState === 'error' ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-t4 font-body font-medium text-text-primary mb-2">
+          <p className="text-t4 font-body font-medium text-fg mb-2">
             Could not load the supplier directory
           </p>
-          <p className="text-t5 font-body text-text-secondary mb-4">
+          <p className="text-t5 font-body text-fg-muted mb-4">
             Check your connection and try again.
           </p>
           <Button variant="secondary" onClick={() => void fetchFirstPage()}>
@@ -196,8 +196,8 @@ export default function SupplierDirectory(): React.ReactElement {
           </Button>
         </div>
       ) : suppliers.length === 0 ? (
-        <div className="border border-white/5 rounded bg-surface-elevated px-4 py-12 text-center">
-          <p className="text-t5 font-body text-text-secondary">
+        <div className="border border-white/5 rounded bg-surface px-4 py-12 text-center">
+          <p className="text-t5 font-body text-fg-muted">
             {hasActiveFilters
               ? 'No verified suppliers match these filters.'
               : 'No verified suppliers in the directory yet.'}

@@ -87,7 +87,7 @@ function ScoreSelector({
 }): React.ReactElement {
   return (
     <div className="space-y-1.5">
-      <p className="text-t5 font-body text-text-secondary">{label}</p>
+      <p className="text-t5 font-body text-fg-muted">{label}</p>
       <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -96,10 +96,10 @@ function ScoreSelector({
             onClick={() => onChange(n)}
             className={[
               'w-9 h-9 rounded-sm font-mono text-t5 border transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
               value === n
-                ? 'bg-accent-green/10 border-accent-green text-accent-green'
-                : 'bg-surface-secondary border-zinc-800/50 text-text-secondary hover:border-white/20',
+                ? 'bg-brand/10 border-brand text-brand'
+                : 'bg-surface-raised border-zinc-800/50 text-fg-muted hover:border-white/20',
             ].join(' ')}
             aria-pressed={value === n}
           >
@@ -126,7 +126,7 @@ function CriteriaGroup({
 }): React.ReactElement {
   return (
     <fieldset className="space-y-1.5">
-      <legend className="text-t5 font-body text-text-secondary mb-1">{legend}</legend>
+      <legend className="text-t5 font-body text-fg-muted mb-1">{legend}</legend>
       {options.map((option) => {
         const checked = selected.includes(option);
         return (
@@ -143,9 +143,9 @@ function CriteriaGroup({
             <span
               className={[
                 'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[3px] border text-[10px] transition-colors duration-150',
-                'peer-focus-visible:ring-1 peer-focus-visible:ring-accent-green',
+                'peer-focus-visible:ring-1 peer-focus-visible:ring-brand',
                 checked
-                  ? 'border-accent-green bg-accent-green/15 text-accent-green'
+                  ? 'border-brand bg-brand/15 text-brand'
                   : 'border-zinc-700 text-transparent',
               ].join(' ')}
               aria-hidden="true"
@@ -155,7 +155,7 @@ function CriteriaGroup({
             <span
               className={[
                 'text-t5 font-body',
-                checked ? 'text-text-primary' : 'text-text-secondary',
+                checked ? 'text-fg' : 'text-fg-muted',
               ].join(' ')}
             >
               {option}
@@ -171,25 +171,25 @@ function CriteriaGroup({
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="h-4 w-24 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
         <div className="space-y-1.5">
-          <div className="h-3 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-48 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-32 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-48 bg-surface-raised rounded-sm animate-pulse" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-7 space-y-4">
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-4 bg-surface-secondary rounded-sm animate-pulse" style={{ width: `${70 + i * 5}%` }} />
+                <div key={i} className="h-4 bg-surface-raised rounded-sm animate-pulse" style={{ width: `${70 + i * 5}%` }} />
               ))}
             </div>
           </div>
           <div className="md:col-span-5">
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-10 bg-surface-secondary rounded-sm animate-pulse" />
+                <div key={i} className="h-10 bg-surface-raised rounded-sm animate-pulse" />
               ))}
             </div>
           </div>
@@ -316,13 +316,13 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'not_found' || !review) {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Review not found.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Review not found.</p>
             <Link
               href="/dashboard/student/peer-review"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← My review
             </Link>
@@ -334,13 +334,13 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load review.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load review.</p>
             <Link
               href="/dashboard/student/peer-review"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← My review
             </Link>
@@ -367,22 +367,22 @@ export default function PeerReviewDetailPage(): React.ReactElement {
   const activeDoc = engagement?.documents?.[activeDocTab];
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         <Link
           href="/dashboard/student/peer-review"
-          className="inline-flex text-t5 font-body text-text-secondary hover:text-text-primary transition-colors duration-150"
+          className="inline-flex text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
         >
           ← My review
         </Link>
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               Student · Peer Review
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
               {briefTitle}
             </h1>
           </div>
@@ -395,8 +395,8 @@ export default function PeerReviewDetailPage(): React.ReactElement {
           <div className="md:col-span-7 space-y-4">
 
             {/* Anonymity notice — the author's identity is withheld from reviewers */}
-            <div className="bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-4 py-2.5">
-              <p className="text-t6 font-body text-text-secondary">
+            <div className="bg-surface-raised border border-zinc-800/50 rounded-[4px] px-4 py-2.5">
+              <p className="text-t6 font-body text-fg-muted">
                 Anonymous submission — the author&apos;s identity is withheld so you can review the
                 work on its merits.
               </p>
@@ -404,23 +404,23 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
             {/* Brief metadata */}
             {engagement && (
-              <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-0">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-0">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
                   Project info
                 </p>
                 <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                  <span className="text-t5 font-body text-text-secondary">Track</span>
+                  <span className="text-t5 font-body text-fg-muted">Track</span>
                   <Badge variant="neutral" label={engagement.track} />
                 </div>
                 <div className="flex items-center justify-between py-2.5">
-                  <span className="text-t5 font-body text-text-secondary">Tier</span>
+                  <span className="text-t5 font-body text-fg-muted">Tier</span>
                   <Badge variant="neutral" label={engagement.tier} />
                 </div>
               </div>
             )}
 
             {/* Process documents */}
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
               <div className="flex border-b border-zinc-800/50">
                 {DOC_TABS.map((tab) => (
                   <button
@@ -429,10 +429,10 @@ export default function PeerReviewDetailPage(): React.ReactElement {
                     onClick={() => setActiveDocTab(tab)}
                     className={[
                       'px-4 py-2.5 text-t5 font-body border-b-2 transition-colors duration-150',
-                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green focus-visible:ring-inset',
+                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset',
                       activeDocTab === tab
-                        ? 'border-accent-green text-text-primary'
-                        : 'border-transparent text-text-secondary hover:text-text-primary',
+                        ? 'border-brand text-fg'
+                        : 'border-transparent text-fg-muted hover:text-fg',
                     ].join(' ')}
                   >
                     {DOC_TAB_LABELS[tab]}
@@ -443,7 +443,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
               <div className="p-4">
                 {activeDoc ? (
                   <div className="space-y-2">
-                    <p className="text-t6 font-mono text-text-disabled">
+                    <p className="text-t6 font-mono text-fg-disabled">
                       Submitted{' '}
                       {new Date(activeDoc.submittedAt).toLocaleDateString('en-KE', {
                         year: 'numeric',
@@ -451,12 +451,12 @@ export default function PeerReviewDetailPage(): React.ReactElement {
                         day: 'numeric',
                       })}
                     </p>
-                    <p className="text-t5 font-body text-text-primary leading-relaxed whitespace-pre-wrap">
+                    <p className="text-t5 font-body text-fg leading-relaxed whitespace-pre-wrap">
                       {activeDoc.content}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-t5 font-body text-text-disabled py-4 text-center">
+                  <p className="text-t5 font-body text-fg-disabled py-4 text-center">
                     Document not submitted.
                   </p>
                 )}
@@ -468,26 +468,26 @@ export default function PeerReviewDetailPage(): React.ReactElement {
           <div className="md:col-span-5">
 
             {isSubmitted ? (
-              <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-accent-green flex-shrink-0" />
-                  <p className="text-t4 font-body text-accent-green">Review submitted</p>
+                  <span className="w-2 h-2 rounded-full bg-brand flex-shrink-0" />
+                  <p className="text-t4 font-body text-brand">Review submitted</p>
                 </div>
 
                 {review.scores && (
                   <div className="space-y-0">
-                    <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
                       Scores
                     </p>
                     <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                      <span className="text-t5 font-body text-text-secondary">Code quality</span>
-                      <span className="text-t4 font-mono font-semibold text-text-primary tabular-nums">
+                      <span className="text-t5 font-body text-fg-muted">Code quality</span>
+                      <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
                         {review.scores.codeQuality ?? '—'}/5
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2.5">
-                      <span className="text-t5 font-body text-text-secondary">Documentation</span>
-                      <span className="text-t4 font-mono font-semibold text-text-primary tabular-nums">
+                      <span className="text-t5 font-body text-fg-muted">Documentation</span>
+                      <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
                         {review.scores.documentationClarity ?? '—'}/5
                       </span>
                     </div>
@@ -496,21 +496,21 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
                 {review.comments && (
                   <div className="space-y-3">
-                    <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                       Comments
                     </p>
                     {review.comments.codeQuality && (
                       <div className="space-y-1">
-                        <p className="text-t6 font-body text-text-disabled">Code quality</p>
-                        <p className="text-t5 font-body text-text-secondary">
+                        <p className="text-t6 font-body text-fg-disabled">Code quality</p>
+                        <p className="text-t5 font-body text-fg-muted">
                           {review.comments.codeQuality}
                         </p>
                       </div>
                     )}
                     {review.comments.documentationClarity && (
                       <div className="space-y-1">
-                        <p className="text-t6 font-body text-text-disabled">Documentation</p>
-                        <p className="text-t5 font-body text-text-secondary">
+                        <p className="text-t6 font-body text-fg-disabled">Documentation</p>
+                        <p className="text-t5 font-body text-fg-muted">
                           {review.comments.documentationClarity}
                         </p>
                       </div>
@@ -519,8 +519,8 @@ export default function PeerReviewDetailPage(): React.ReactElement {
                 )}
               </div>
             ) : (
-              <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                   Review form
                 </p>
 

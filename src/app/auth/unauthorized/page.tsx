@@ -43,10 +43,10 @@ export default function UnauthorizedPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm text-center">
         {/* Error icon */}
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded border border-white/10 bg-surface-elevated mb-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded border border-white/10 bg-surface mb-6">
           <svg
             width="20"
             height="20"
@@ -56,7 +56,7 @@ export default function UnauthorizedPage(): React.ReactElement {
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-text-secondary"
+            className="text-fg-muted"
             aria-hidden="true"
           >
             <circle cx="12" cy="12" r="10" />
@@ -65,22 +65,22 @@ export default function UnauthorizedPage(): React.ReactElement {
           </svg>
         </div>
 
-        <h1 className="font-heading font-semibold text-t2 text-text-primary mb-2">
+        <h1 className="font-heading font-semibold text-t2 text-fg mb-2">
           Access denied
         </h1>
 
         {isLoading ? (
-          <p className="font-body text-t5 text-text-secondary mb-6">
+          <p className="font-body text-t5 text-fg-muted mb-6">
             Checking your session&hellip;
           </p>
         ) : roleLabel ? (
-          <p className="font-body text-t5 text-text-secondary mb-6">
+          <p className="font-body text-t5 text-fg-muted mb-6">
             You are signed in as a{' '}
-            <span className="font-mono text-text-primary">{roleLabel}</span> and do not have
+            <span className="font-mono text-fg">{roleLabel}</span> and do not have
             permission to access this section.
           </p>
         ) : (
-          <p className="font-body text-t5 text-text-secondary mb-6">
+          <p className="font-body text-t5 text-fg-muted mb-6">
             You do not have permission to access this page.
           </p>
         )}

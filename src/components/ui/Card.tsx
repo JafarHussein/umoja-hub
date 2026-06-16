@@ -10,10 +10,10 @@ export interface ICardProps {
 }
 
 const variantClasses: Record<CardVariant, string> = {
-  standard: 'bg-surface-elevated border border-white/5',
-  elevated: 'bg-surface-secondary border border-white/5',
+  standard: 'bg-surface border border-border',
+  elevated: 'bg-surface-raised border border-border',
   interactive:
-    'bg-surface-elevated border border-white/5 cursor-pointer hover:border-white/10 transition-all duration-150',
+    'bg-surface border border-border cursor-pointer hover:border-border-strong transition-all duration-150',
 };
 
 export function Card({

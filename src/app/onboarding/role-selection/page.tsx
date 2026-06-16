@@ -81,14 +81,14 @@ export default function RoleSelectionPage(): React.ReactElement {
                 aria-pressed={role === value}
                 className={[
                   'min-h-[56px] px-3 py-2 rounded-sm text-left border transition-all duration-150',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   role === value
-                    ? 'border-accent-green bg-accent-green/10 text-text-primary'
-                    : 'border-white/10 bg-surface-secondary text-text-secondary hover:border-white/20 hover:text-text-primary',
+                    ? 'border-brand bg-brand/10 text-fg'
+                    : 'border-white/10 bg-surface-raised text-fg-muted hover:border-white/20 hover:text-fg',
                 ].join(' ')}
               >
                 <span className="block font-body font-medium text-t5">{label}</span>
-                <span className="block font-body text-t6 text-text-disabled mt-0.5 leading-tight">
+                <span className="block font-body text-t6 text-fg-disabled mt-0.5 leading-tight">
                   {description}
                 </span>
               </button>

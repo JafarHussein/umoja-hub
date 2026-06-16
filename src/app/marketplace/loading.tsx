@@ -3,9 +3,9 @@ import { CardSkeleton } from '@/components/ui/SkeletonLoader';
 
 export default function MarketplaceLoading(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       {/* Header skeleton */}
-      <div className="border-b border-white/5 bg-surface-primary sticky top-0 z-10">
+      <div className="border-b border-white/5 bg-background sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="skeleton h-4 w-12 rounded" aria-hidden="true" />
           <div className="skeleton h-5 w-28 rounded" aria-hidden="true" />

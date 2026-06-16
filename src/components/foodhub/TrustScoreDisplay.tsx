@@ -8,10 +8,10 @@ export interface ITrustScoreDisplayProps {
 }
 
 const tierColor: Record<FarmerTrustTier, string> = {
-  [FarmerTrustTier.NEW]: 'text-text-disabled',
-  [FarmerTrustTier.ESTABLISHED]: 'text-text-secondary',
-  [FarmerTrustTier.TRUSTED]: 'text-accent-green',
-  [FarmerTrustTier.PREMIUM]: 'text-accent-green',
+  [FarmerTrustTier.NEW]: 'text-fg-disabled',
+  [FarmerTrustTier.ESTABLISHED]: 'text-fg-muted',
+  [FarmerTrustTier.TRUSTED]: 'text-brand',
+  [FarmerTrustTier.PREMIUM]: 'text-brand',
 };
 
 /**

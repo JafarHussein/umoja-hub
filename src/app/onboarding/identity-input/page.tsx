@@ -66,12 +66,12 @@ export default function IdentityInputPage(): React.ReactElement {
   if (role === null) {
     return (
       <OnboardingShell step={2} title="Tell us about you">
-        <p className="font-body text-t5 text-text-secondary">
+        <p className="font-body text-t5 text-fg-muted">
           Loading your details… If this persists, return to{' '}
           <button
             type="button"
             onClick={() => router.push('/onboarding/role-selection')}
-            className="text-accent-green hover:opacity-80"
+            className="text-brand hover:opacity-80"
           >
             role selection
           </button>
@@ -109,7 +109,7 @@ export default function IdentityInputPage(): React.ReactElement {
         />
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="county" className="font-body text-t6 text-text-secondary">
+          <label htmlFor="county" className="font-body text-t6 text-fg-muted">
             County
           </label>
           <select

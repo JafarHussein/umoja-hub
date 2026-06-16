@@ -7,8 +7,8 @@ interface IArticleSourceBadgeProps {
 
 export default function ArticleSourceBadge({ sourceInstitution, sourceUrl }: IArticleSourceBadgeProps) {
   const badge = (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-surface-secondary border border-white/5 rounded-sm">
-      <span className="font-mono text-t6 text-accent-green font-medium tracking-wide uppercase">
+    <span className="inline-flex items-center gap-1 px-2 py-1 bg-surface-raised border border-white/5 rounded-sm">
+      <span className="font-mono text-t6 text-brand font-medium tracking-wide uppercase">
         {sourceInstitution}
       </span>
     </span>

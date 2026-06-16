@@ -211,8 +211,8 @@ export default function AdminMediationPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">Mediation</h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5">
+        <h1 className="text-t2 font-heading font-semibold text-fg">Mediation</h1>
+        <p className="text-t5 font-body text-fg-muted mt-0.5">
           {queueSize} open escalation{queueSize !== 1 ? 's' : ''}. Resolving a case records a note
           only — it does not change the order status or either party&apos;s trust score.
         </p>
@@ -232,8 +232,8 @@ export default function AdminMediationPage(): React.ReactElement {
               className={[
                 'min-h-[36px] px-3 rounded-sm font-mono text-t6 uppercase tracking-widest transition-all duration-150',
                 isActive
-                  ? 'bg-surface-secondary text-text-primary'
-                  : 'text-text-disabled hover:text-text-secondary hover:bg-surface-secondary/50',
+                  ? 'bg-surface-raised text-fg'
+                  : 'text-fg-disabled hover:text-fg-muted hover:bg-surface-raised/50',
               ].join(' ')}
             >
               {tab.replace('_', ' ')}
@@ -245,7 +245,7 @@ export default function AdminMediationPage(): React.ReactElement {
       {/* Body */}
       {pageState === 'error' ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-t4 font-body font-medium text-text-primary mb-2">
+          <p className="text-t4 font-body font-medium text-fg mb-2">
             Could not load the mediation queue
           </p>
           <Button variant="secondary" onClick={() => void fetchQueue(statusFilter)}>
@@ -253,8 +253,8 @@ export default function AdminMediationPage(): React.ReactElement {
           </Button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="border border-white/5 rounded bg-surface-elevated px-4 py-12 text-center">
-          <p className="text-t5 font-body text-text-secondary">
+        <div className="border border-white/5 rounded bg-surface px-4 py-12 text-center">
+          <p className="text-t5 font-body text-fg-muted">
             No {statusFilter.replace('_', ' ').toLowerCase()} cases.
           </p>
         </div>
@@ -264,45 +264,45 @@ export default function AdminMediationPage(): React.ReactElement {
             {requests.map((req) => (
               <div
                 key={req._id}
-                className="bg-surface-elevated border border-white/5 rounded p-4 space-y-3"
+                className="bg-surface border border-white/5 rounded p-4 space-y-3"
               >
                 {/* Top row: order ref + category + status */}
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                   <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <span className="text-t5 font-mono text-text-primary whitespace-nowrap">
+                    <span className="text-t5 font-mono text-fg whitespace-nowrap">
                       {req.order?.orderReferenceId ?? 'Unknown order'}
                     </span>
                     <Badge variant="neutral" label={req.category} />
                     <Badge variant={STATUS_VARIANT[req.status]} label={req.status} />
                   </div>
-                  <span className="text-t6 font-body text-text-disabled whitespace-nowrap">
+                  <span className="text-t6 font-body text-fg-disabled whitespace-nowrap">
                     {formatDate(req.createdAt)}
                   </span>
                 </div>
 
                 {/* Parties + order summary */}
-                <div className="flex flex-wrap gap-x-6 gap-y-1 text-t6 font-body text-text-secondary">
+                <div className="flex flex-wrap gap-x-6 gap-y-1 text-t6 font-body text-fg-muted">
                   <span>
-                    <span className="text-text-disabled">Buyer: </span>
+                    <span className="text-fg-disabled">Buyer: </span>
                     {partyName(req.buyer, 'Unknown buyer')}
                   </span>
                   <span>
-                    <span className="text-text-disabled">Farmer: </span>
+                    <span className="text-fg-disabled">Farmer: </span>
                     {partyName(req.farmer, 'Unknown farmer')}
                   </span>
                   <span>
-                    <span className="text-text-disabled">Order: </span>
+                    <span className="text-fg-disabled">Order: </span>
                     {req.order?.cropName ?? '—'} · {formatKES(req.order?.totalAmountKES)}
                   </span>
                 </div>
 
                 {/* Buyer's complaint */}
-                <p className="text-t5 font-body text-text-primary">{req.description}</p>
+                <p className="text-t5 font-body text-fg">{req.description}</p>
 
                 {/* Resolution note (resolved cases) */}
                 {req.resolutionNote && (
-                  <p className="text-t6 font-body text-text-secondary border-l-2 border-accent-green/40 pl-3">
-                    <span className="text-text-disabled">Resolution: </span>
+                  <p className="text-t6 font-body text-fg-muted border-l-2 border-brand/40 pl-3">
+                    <span className="text-fg-disabled">Resolution: </span>
                     {req.resolutionNote}
                   </p>
                 )}
@@ -355,8 +355,8 @@ export default function AdminMediationPage(): React.ReactElement {
         <div className="space-y-4">
           {pending?.decision === 'RESOLVED' ? (
             <div className="space-y-1.5">
-              <label htmlFor="mediation-note" className="text-t5 font-body text-text-secondary block">
-                Resolution note <span className="text-text-disabled">(required)</span>
+              <label htmlFor="mediation-note" className="text-t5 font-body text-fg-muted block">
+                Resolution note <span className="text-fg-disabled">(required)</span>
               </label>
               <textarea
                 id="mediation-note"
@@ -364,12 +364,12 @@ export default function AdminMediationPage(): React.ReactElement {
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
                 maxLength={500}
-                className="w-full bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 py-2 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                className="w-full bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 py-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                 placeholder="Record how this escalation was resolved. This does not change the order."
               />
             </div>
           ) : (
-            <p className="text-t5 font-body text-text-secondary">
+            <p className="text-t5 font-body text-fg-muted">
               Mark this escalation as under review so the parties know an administrator is looking
               into it. The order status is unaffected.
             </p>

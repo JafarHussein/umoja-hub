@@ -44,14 +44,14 @@ function Row({
 }): React.ReactElement {
   return (
     <div className="grid grid-cols-[10rem_1fr] gap-4 px-4 py-3 border-b border-white/5 last:border-0 items-center">
-      <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">{label}</span>
-      <span className="text-t5 font-body text-text-primary min-w-0 break-words">{children}</span>
+      <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">{label}</span>
+      <span className="text-t5 font-body text-fg min-w-0 break-words">{children}</span>
     </div>
   );
 }
 
 function Value({ value }: { value: string | null }): React.ReactElement {
-  if (!value) return <span className="text-text-disabled">Not provided</span>;
+  if (!value) return <span className="text-fg-disabled">Not provided</span>;
   return <>{value}</>;
 }
 
@@ -83,10 +83,10 @@ export default function IdentityRecords({ role }: { role: Role }): React.ReactEl
   if (pageState === 'error' || !identity) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load your identity records
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchIdentity()}>
@@ -103,8 +103,8 @@ export default function IdentityRecords({ role }: { role: Role }): React.ReactEl
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">Profile</h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5 max-w-2xl">
+        <h1 className="text-t2 font-heading font-semibold text-fg">Profile</h1>
+        <p className="text-t5 font-body text-fg-muted mt-0.5 max-w-2xl">
           Your identity records. These are set when you sign in or during onboarding and cannot be
           edited here — contact an administrator if any of them need to be corrected.
         </p>
@@ -112,11 +112,11 @@ export default function IdentityRecords({ role }: { role: Role }): React.ReactEl
 
       <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-t3 font-heading font-medium text-text-primary">Identity records</h2>
+          <h2 className="text-t3 font-heading font-medium text-fg">Identity records</h2>
           <Badge variant="neutral" label="Read-only" />
         </div>
 
-        <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+        <div className="bg-surface border border-white/5 rounded overflow-hidden">
           {/* Shared OAuth-sourced anchors */}
           <Row label="Email">
             <Value value={identity.email} />
@@ -163,7 +163,7 @@ export default function IdentityRecords({ role }: { role: Role }): React.ReactEl
           )}
         </div>
 
-        <p className="text-t6 font-body text-text-secondary">
+        <p className="text-t6 font-body text-fg-muted">
           Identity records are administrator-correctable only. They anchor your account and the
           trust the platform places in it, so they are deliberately not self-editable.
         </p>

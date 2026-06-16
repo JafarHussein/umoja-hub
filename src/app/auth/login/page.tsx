@@ -41,18 +41,18 @@ function LoginContent(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8">
-          <span className="font-heading font-semibold text-t2 text-text-primary">Umoja</span>
-          <span className="font-heading font-semibold text-t2 text-accent-green">Hub</span>
+          <span className="font-heading font-semibold text-t2 text-fg">Umoja</span>
+          <span className="font-heading font-semibold text-t2 text-brand">Hub</span>
         </div>
 
-        <div className="bg-surface-elevated border border-white/5 rounded p-6">
-          <h1 className="font-heading font-semibold text-t2 text-text-primary mb-1">
+        <div className="bg-surface border border-white/5 rounded p-6">
+          <h1 className="font-heading font-semibold text-t2 text-fg mb-1">
             Sign in to UmojaHub
           </h1>
-          <p className="font-body text-t5 text-text-secondary mb-6">
+          <p className="font-body text-t5 text-fg-muted mb-6">
             Continue with Google or GitHub. New here? This creates your account.
           </p>
 
@@ -90,7 +90,7 @@ function LoginContent(): React.ReactElement {
             </Button>
           </div>
 
-          <p className="mt-6 font-body text-t6 text-text-disabled">
+          <p className="mt-6 font-body text-t6 text-fg-disabled">
             Students sign in with GitHub. Farmers, buyers and lecturers use Google.
           </p>
         </div>

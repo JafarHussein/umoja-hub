@@ -302,23 +302,23 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Loading ─────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           <div className="space-y-1.5">
-            <div className="h-3 w-20 bg-surface-secondary rounded-[4px] animate-pulse" />
-            <div className="h-7 w-40 bg-surface-secondary rounded-[4px] animate-pulse" />
+            <div className="h-3 w-20 bg-surface-raised rounded-[4px] animate-pulse" />
+            <div className="h-7 w-40 bg-surface-raised rounded-[4px] animate-pulse" />
           </div>
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex justify-between">
-                <div className="h-4 w-24 bg-surface-secondary rounded-[4px] animate-pulse" />
-                <div className="h-4 w-32 bg-surface-secondary rounded-[4px] animate-pulse" />
+                <div className="h-4 w-24 bg-surface-raised rounded-[4px] animate-pulse" />
+                <div className="h-4 w-32 bg-surface-raised rounded-[4px] animate-pulse" />
               </div>
             ))}
           </div>
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-4 w-full bg-surface-secondary rounded-[4px] animate-pulse" />
+              <div key={i} className="h-4 w-full bg-surface-raised rounded-[4px] animate-pulse" />
             ))}
           </div>
         </div>
@@ -329,13 +329,13 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Not found ────────────────────────────────────────────────────────────
   if (pageState === 'not_found' || !order) {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Order not found.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Order not found.</p>
             <Link
               href="/dashboard/buyer/orders"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← Back to orders
             </Link>
@@ -348,10 +348,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Error ────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load order.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load order.</p>
             <div className="mt-3">
               <Button variant="ghost" size="sm" onClick={() => void fetchOrder()}>
                 Retry
@@ -388,13 +388,13 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       : null;
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         {/* Back link */}
         <Link
           href="/dashboard/buyer/orders"
-          className="inline-flex items-center gap-1.5 text-t5 font-body text-text-secondary hover:text-text-primary transition-colors duration-150"
+          className="inline-flex items-center gap-1.5 text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path
@@ -410,10 +410,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
         {/* Page header */}
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
             {order.orderReferenceId}
           </p>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight capitalize">
+          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight capitalize">
             {order.cropName}
           </h1>
           <div className="flex items-center gap-2 mt-2">
@@ -437,7 +437,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                 Under platform mediation
               </p>
             </div>
-            <p className="text-t5 font-body text-text-secondary mt-2">
+            <p className="text-t5 font-body text-fg-muted mt-2">
               Our mediation team{' '}
               {activeMediation.status === MediationRequestStatus.IN_REVIEW
                 ? 'is reviewing'
@@ -449,8 +449,8 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         )}
 
         {/* Progress timeline */}
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
             Progress
           </p>
           <OrderTimelineDetailed
@@ -463,9 +463,9 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </div>
 
         {/* Order details */}
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px]">
+        <div className="bg-surface border border-zinc-800/50 rounded-[4px]">
           <div className="px-4 pt-4 pb-2">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Order details
             </p>
           </div>
@@ -484,10 +484,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
               key={label}
               className="flex items-center justify-between px-4 py-2.5 border-t border-zinc-800/50"
             >
-              <span className="text-t5 font-body text-text-secondary">{label}</span>
+              <span className="text-t5 font-body text-fg-muted">{label}</span>
               <span
                 className={[
-                  'text-t5 text-text-primary capitalize',
+                  'text-t5 text-fg capitalize',
                   mono ? 'font-mono tabular-nums' : 'font-body',
                 ].join(' ')}
               >
@@ -501,14 +501,14 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
         {/* PENDING_PAYMENT — waiting for M-Pesa */}
         {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
             <div className="flex items-center gap-2.5">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" aria-hidden="true" />
-              <p className="text-t4 font-body font-medium text-text-primary">
+              <p className="text-t4 font-body font-medium text-fg">
                 Awaiting payment
               </p>
             </div>
-            <p className="text-t5 font-body text-text-secondary">
+            <p className="text-t5 font-body text-fg-muted">
               Check your phone and enter your M-Pesa PIN to complete this order.
             </p>
           </div>
@@ -516,11 +516,11 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
         {/* IN_FULFILLMENT — mark as received */}
         {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Confirm receipt
             </p>
-            <p className="text-t5 font-body text-text-secondary">
+            <p className="text-t5 font-body text-fg-muted">
               Have you received your order from {order.farmer.firstName}?
             </p>
             {receiveError && (
@@ -542,19 +542,19 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
         {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}
         {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && !activeMediation && (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Problem with this order?
             </p>
 
             {!canEscalate ? (
-              <p className="text-t5 font-body text-text-secondary">
+              <p className="text-t5 font-body text-fg-muted">
                 Give {order.farmer.firstName} time to fulfil your order. If it still hasn&apos;t
                 arrived, you can escalate to platform mediation from {eligibleDate}.
               </p>
             ) : !escalateOpen ? (
               <>
-                <p className="text-t5 font-body text-text-secondary">
+                <p className="text-t5 font-body text-fg-muted">
                   Haven&apos;t received your order? Our team can step in to help resolve it.
                 </p>
                 <Button
@@ -571,7 +571,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                 <div className="space-y-1.5">
                   <label
                     htmlFor="mediation-category"
-                    className="text-t5 font-body text-text-secondary block"
+                    className="text-t5 font-body text-fg-muted block"
                   >
                     What went wrong?
                   </label>
@@ -584,10 +584,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                         category: e.target.value as MediationCategory,
                       }))
                     }
-                    className="w-full min-h-[44px] bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-text-primary focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                    className="w-full min-h-[44px] bg-surface-raised border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-fg focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                   >
                     {Object.values(MediationCategory).map((c) => (
-                      <option key={c} value={c} className="bg-surface-elevated">
+                      <option key={c} value={c} className="bg-surface">
                         {MEDIATION_CATEGORY_LABEL[c]}
                       </option>
                     ))}
@@ -597,10 +597,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                 <div className="space-y-1.5">
                   <label
                     htmlFor="mediation-description"
-                    className="text-t5 font-body text-text-secondary block"
+                    className="text-t5 font-body text-fg-muted block"
                   >
                     Describe the problem{' '}
-                    <span className="text-text-disabled">(at least 20 characters)</span>
+                    <span className="text-fg-disabled">(at least 20 characters)</span>
                   </label>
                   <textarea
                     id="mediation-description"
@@ -609,7 +609,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                     onChange={(e) =>
                       setMediationForm((prev) => ({ ...prev, description: e.target.value }))
                     }
-                    className="w-full bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-text-primary placeholder:text-text-disabled resize-none focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                    className="w-full bg-surface-raised border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-fg placeholder:text-fg-disabled resize-none focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                     placeholder="Tell our team what happened so we can help."
                   />
                 </div>
@@ -649,14 +649,14 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
         {/* COMPLETED + not rated — rating form */}
         {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && !hasRated && (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Rate this order
             </p>
             <form onSubmit={(e) => void handleRatingSubmit(e)} className="space-y-4">
               {/* Star selector */}
               <div>
-                <p className="text-t5 font-body text-text-secondary mb-2">
+                <p className="text-t5 font-body text-fg-muted mb-2">
                   How was your experience with {order.farmer.firstName}?
                 </p>
                 <div className="flex gap-1" role="group" aria-label="Rating">
@@ -666,10 +666,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                       type="button"
                       onClick={() => setRatingForm((prev) => ({ ...prev, rating: star }))}
                       aria-label={`${star} star${star !== 1 ? 's' : ''}`}
-                      className="text-2xl leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green rounded-[2px]"
+                      className="text-2xl leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand rounded-[2px]"
                     >
                       <span
-                        className={ratingForm.rating >= star ? 'text-accent-green' : 'text-text-disabled'}
+                        className={ratingForm.rating >= star ? 'text-brand' : 'text-fg-disabled'}
                       >
                         ★
                       </span>
@@ -682,17 +682,17 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
               <div className="space-y-1.5">
                 <label
                   htmlFor="rating-comment"
-                  className="text-t5 font-body text-text-secondary block"
+                  className="text-t5 font-body text-fg-muted block"
                 >
                   Comment{' '}
-                  <span className="text-text-disabled">(optional)</span>
+                  <span className="text-fg-disabled">(optional)</span>
                 </label>
                 <textarea
                   id="rating-comment"
                   rows={3}
                   value={ratingForm.comment}
                   onChange={(e) => setRatingForm((prev) => ({ ...prev, comment: e.target.value }))}
-                  className="w-full bg-surface-secondary border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-text-primary placeholder:text-text-disabled resize-none focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                  className="w-full bg-surface-raised border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-fg placeholder:text-fg-disabled resize-none focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                   placeholder="Share your experience..."
                 />
               </div>
@@ -719,8 +719,8 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
         {/* COMPLETED + already rated */}
         {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && hasRated && (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4">
-            <p className="text-t5 font-body text-text-secondary">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4">
+            <p className="text-t5 font-body text-fg-muted">
               You have rated this order.
             </p>
           </div>

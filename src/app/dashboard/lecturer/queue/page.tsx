@@ -26,22 +26,22 @@ type PageState = 'loading' | 'ready' | 'unverified' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="space-y-1.5">
-          <div className="h-3 w-24 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-40 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-40 bg-surface-raised rounded-sm animate-pulse" />
         </div>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+        <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 last:border-0">
               <div className="space-y-1.5">
-                <div className="h-4 w-40 bg-surface-secondary rounded-sm animate-pulse" />
-                <div className="h-3 w-24 bg-surface-secondary rounded-sm animate-pulse" />
+                <div className="h-4 w-40 bg-surface-raised rounded-sm animate-pulse" />
+                <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
               </div>
               <div className="flex items-center gap-3">
-                <div className="h-5 w-16 bg-surface-secondary rounded-[2px] animate-pulse" />
-                <div className="h-5 w-20 bg-surface-secondary rounded-[2px] animate-pulse" />
+                <div className="h-5 w-16 bg-surface-raised rounded-[2px] animate-pulse" />
+                <div className="h-5 w-20 bg-surface-raised rounded-[2px] animate-pulse" />
               </div>
             </div>
           ))}
@@ -118,7 +118,7 @@ export default function LecturerQueuePage(): React.ReactElement {
 
   if (pageState === 'unverified') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
           <VerificationLockout
             tone="pending"
@@ -132,13 +132,13 @@ export default function LecturerQueuePage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load review queue.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load review queue.</p>
             <button
               onClick={() => { setPageState('loading'); void fetchQueue(); }}
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               Retry
             </button>
@@ -149,50 +149,50 @@ export default function LecturerQueuePage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               Lecturer · Review Queue
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
               Pending Reviews
             </h1>
           </div>
-          <span className="text-t3 font-mono font-semibold text-text-primary tabular-nums">
+          <span className="text-t3 font-mono font-semibold text-fg tabular-nums">
             {queue.length}
           </span>
         </div>
 
         {queue.length === 0 ? (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">No pending reviews</p>
-            <p className="text-t5 font-body text-text-disabled mt-1">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">No pending reviews</p>
+            <p className="text-t5 font-body text-fg-disabled mt-1">
               Projects will appear here once students complete peer review.
             </p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
             {queue.map((item) => (
               <Link
                 key={item._id}
                 href={`/dashboard/lecturer/reviews/${item._id}`}
-                className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 last:border-0 hover:bg-surface-secondary transition-colors duration-150"
+                className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 last:border-0 hover:bg-surface-raised transition-colors duration-150"
               >
                 <div className="space-y-0.5 min-w-0 mr-4">
-                  <p className="text-t5 font-body text-text-primary truncate">
+                  <p className="text-t5 font-body text-fg truncate">
                     {briefTitle(item)}
                   </p>
-                  <p className="text-t6 font-body text-text-secondary">
+                  <p className="text-t6 font-body text-fg-muted">
                     {studentName(item.studentId)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Badge variant="neutral" label={item.tier} />
                   <Badge variant="neutral" label={item.track} />
-                  <span className="text-t6 font-mono text-text-disabled tabular-nums ml-2">
+                  <span className="text-t6 font-mono text-fg-disabled tabular-nums ml-2">
                     {new Date(item.createdAt).toLocaleDateString('en-KE', {
                       month: 'short',
                       day: 'numeric',
