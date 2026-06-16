@@ -46,4 +46,34 @@ export const streamTopics: StreamTopic[] = [
       { id: 'trust-tiers', title: 'Tiers & recalculation' },
     ],
   },
+  {
+    n: 2,
+    id: 'producer',
+    title: 'The producer interface (farmer)',
+    sections: [
+      { id: 'producer-listings', title: 'Listing produce' },
+      { id: 'producer-prices', title: 'Price intelligence' },
+      { id: 'producer-assistant', title: 'The farm assistant' },
+    ],
+  },
+  {
+    n: 3,
+    id: 'buyer',
+    title: 'The buyer path',
+    sections: [
+      { id: 'buyer-browse', title: 'Browsing the marketplace' },
+      { id: 'buyer-reading-trust', title: 'Reading a Trust Score' },
+      { id: 'buyer-recourse', title: 'If something goes wrong' },
+    ],
+  },
+  {
+    n: 4,
+    id: 'payments',
+    title: 'Payments & money',
+    sections: [
+      { id: 'payments-flow', title: 'How payment works' },
+      { id: 'payments-pilot', title: 'Pilot mode' },
+      { id: 'payments-commission', title: 'No commission' },
+    ],
+  },
 ];
