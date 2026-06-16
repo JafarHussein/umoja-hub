@@ -1,4 +1,4 @@
-import { Topic, Sub, Lead, P, Limitation } from '../stream';
+import { Topic, Sub, Lead, P, Limitation, FlowDiagram } from '../stream';
 import { topic } from '../streamTopics';
 
 export function TopicPayments() {
@@ -12,6 +12,16 @@ export function TopicPayments() {
           enters their M-Pesa PIN. If the push fails, the order is cancelled and the stock released.
           The buyer&rsquo;s screen waits up to 90 seconds and then shows the order as paid or failed.
         </P>
+        <FlowDiagram
+          caption="The order & payment lifecycle"
+          steps={[
+            { label: 'Order placed', note: 'Stock is reserved atomically, so two buyers can never claim the same units.' },
+            { label: 'STK push sent', note: 'The buyer enters their M-Pesa PIN.' },
+            { label: 'Paid', note: 'Payment is confirmed. If it fails, the order is cancelled and the stock released.' },
+            { label: 'Receipt confirmed', note: 'The buyer marks the order received.' },
+            { label: 'Completed', note: "The farmer's Trust Score recalculates." },
+          ]}
+        />
         <Limitation>
           <p>
             The buyer commits money first, then confirms receipt. There is no escrow: the platform

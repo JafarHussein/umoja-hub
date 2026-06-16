@@ -60,3 +60,74 @@ export function Limitation({
     </aside>
   );
 }
+
+/**
+ * Functional flow diagram (WEBSITE_PURPOSE_V1 Principle 8). Inline, token-styled
+ * HTML — no image bytes (cheap on 2G), real text (screen-reader friendly), no
+ * decorative motion. A vertical ordered sequence of steps with optional
+ * meaning-coloured terminal outcomes.
+ */
+export interface FlowStep {
+  label: string;
+  note?: string;
+}
+
+export interface FlowOutcome {
+  label: string;
+  tone: 'success' | 'warning' | 'danger';
+}
+
+const OUTCOME_TONE: Record<FlowOutcome['tone'], string> = {
+  success: 'border-success/40 text-success',
+  warning: 'border-warning/40 text-warning',
+  danger: 'border-danger/40 text-danger',
+};
+
+export function FlowDiagram({
+  caption,
+  steps,
+  outcomes,
+}: {
+  caption: string;
+  steps: FlowStep[];
+  outcomes?: FlowOutcome[];
+}) {
+  return (
+    <figure className="my-5 max-w-reading rounded border border-border bg-surface p-4">
+      <ol className="space-y-0">
+        {steps.map((s, i) => (
+          <li key={s.label}>
+            <div className="rounded border border-border bg-background p-3">
+              <p className="font-body text-read-body font-medium text-fg">
+                <span className="font-mono text-fg-subtle">{i + 1}.</span> {s.label}
+              </p>
+              {s.note ? (
+                <p className="mt-1 font-body text-read-meta text-fg-muted">{s.note}</p>
+              ) : null}
+            </div>
+            {i < steps.length - 1 || outcomes ? (
+              <div aria-hidden="true" className="flex justify-center py-1 text-fg-subtle">
+                ↓
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+      {outcomes ? (
+        <ul className="flex flex-wrap gap-2">
+          {outcomes.map((o) => (
+            <li
+              key={o.label}
+              className={`rounded border px-2 py-1 font-mono text-read-meta uppercase tracking-wide ${OUTCOME_TONE[o.tone]}`}
+            >
+              {o.label}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <figcaption className="mt-3 font-mono text-read-meta uppercase tracking-wide text-fg-subtle">
+        {caption}
+      </figcaption>
+    </figure>
+  );
+}

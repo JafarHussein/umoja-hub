@@ -1,4 +1,4 @@
-import { Topic, Sub, Lead, P, Limitation } from '../stream';
+import { Topic, Sub, Lead, P, Limitation, FlowDiagram } from '../stream';
 import { topic } from '../streamTopics';
 
 export function TopicIdentity() {
@@ -13,6 +13,17 @@ export function TopicIdentity() {
           (ESTABLISHED). On rejection, the farmer is sent the reason by SMS and can correct and
           resubmit.
         </P>
+        <FlowDiagram
+          caption="Farmer identity verification"
+          steps={[
+            { label: 'Submit', note: 'Identity document, its number, and a photo.' },
+            { label: 'Admin review', note: 'A named administrator checks the document.' },
+          ]}
+          outcomes={[
+            { label: 'Approved → verified, score 40', tone: 'success' },
+            { label: 'Rejected → reason sent, resubmit', tone: 'warning' },
+          ]}
+        />
         <Limitation>
           <p>
             Verification checks a claimed identity against a submitted document. It is not a

@@ -1,4 +1,4 @@
-import { Topic, Sub, Lead, P, Limitation } from '../stream';
+import { Topic, Sub, Lead, P, Limitation, FlowDiagram } from '../stream';
 import { topic } from '../streamTopics';
 
 export function TopicEducation() {
@@ -32,6 +32,21 @@ export function TopicEducation() {
           scoring four dimensions — problem understanding, solution quality, process quality, and AI
           usage — with at least fifty words of written justification for each.
         </P>
+        <FlowDiagram
+          caption="From brief to decision"
+          steps={[
+            { label: 'Brief', note: 'AI-generated in a Kenyan context, or an open-source contribution.' },
+            { label: 'Work', note: 'Three documents plus blocker and AI-usage logs; each document is hashed on submission.' },
+            { label: 'Submit', note: 'All three documents are required.' },
+            { label: 'Peer review', note: 'Another student, anonymously.' },
+            { label: 'Lecturer decision', note: 'Credential-verified, four rubric dimensions.' },
+          ]}
+          outcomes={[
+            { label: 'Verified', tone: 'success' },
+            { label: 'Revision required', tone: 'warning' },
+            { label: 'Denied', tone: 'danger' },
+          ]}
+        />
         <Limitation>
           <p>
             Peer reviewers are assigned automatically and cannot be chosen or declined. The lecturer
