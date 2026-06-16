@@ -148,25 +148,62 @@ Distinctiveness comes from **doing the trustworthy/clear/grounded thing better t
 
 ---
 
-## 13. What carries over (not reset)
+## 13. Website information architecture — the Documentation Stream
+
+**Purpose.** This is the architectural pattern for the public website. It operationalizes `WEBSITE_PURPOSE_V1` Content Principles 6–8 (completeness over rationing; paired limitation; functional visuals). It **supersedes the earlier "endless scroll" proposal**: it delivers the same all-out, un-rationed consumption of the truth while resolving the findability, deep-linking, performance, and accessibility costs a single endless surface would impose. *(Evidence: `design-reset/10` IA, `15` anti-patterns, `05`/`08` performance & motion, `09` accessibility.)*
+
+**The non-negotiable it must satisfy.** A visitor can reach total understanding of any platform mechanic **without leaving to hunt across fragments and without rationing** — complete depth, continuously readable, on demand.
+
+**The pattern: a documentation surface — not a marketing site, and not one endless page.**
+
+1. **Persistent index (table of contents).** Every topic is reachable from a visible, persistent index — a sidebar on wide screens; an accessible, always-available menu on small screens (never hamburger-only for the primary index, per `design-reset/10`). The whole truth is always one deliberate action away. This is how "never ration, never leave to find" is satisfied.
+2. **Deep, self-contained topic sections.** Each topic is explained completely *inline*, top to bottom, as one continuous reading unit — no "read more," no pagination, no truncation within a topic. This is where the original goal — *linear, uninterrupted consumption of the truth* — actually lives: within a topic you move through its full depth without interruption.
+3. **A canonical reading spine.** Topics are ordered into one recommended front-to-back path for the visitor who wants to read the platform cover-to-cover. The spine serves the linear reader; the index serves the question-driven reader. Both reach total understanding; neither is forced through the other's path. *(Resolves the conflict with `WEBSITE_PURPOSE_V1` Communication Principle 2 — "answer the question being asked, not a designed narrative.")*
+4. **Addressable anchors.** Every section and subsection has a stable, deep-linkable URL fragment. A researcher cites "trust-score methodology"; a student sends an employer a link straight to "what Portfolio Verified means." Deep-linking is a trust feature for the auditor/employer audiences (`WEBSITE_PURPOSE_V1` Rule 2) — a single endless page degrades it.
+5. **Per-topic loading; lazy, lightweight assets.** Topics and their diagrams load as the visitor reaches them, not all at once. Reading one module never costs — in seconds or megabytes — the entire platform's documentation. This is the decisive reason to reject one endless surface: it would force the Wajir-farmer-on-2G (`WEBSITE_PURPOSE_V1` Communication Principle 1) to download everything to read anything. Diagrams follow `design-reset/08`: lightweight formats, no decorative motion, reduced-motion safe.
+6. **Limitation pairing is structural.** Per `WEBSITE_PURPOSE_V1` Principle 7, each capability's limitation renders in the *same reading unit* as the capability — adjacent, never footnoted.
+
+**Why this beats endless scroll on its own terms.** The endless-scroll aim was "force linear, uninterrupted consumption so the visitor can't ration the truth." The Documentation Stream keeps the uninterrupted depth (within-topic continuity + a canonical spine) and adds what a single surface cannot: instant findability, citable deep links, and a load cost proportional to what is actually read. The proposal's own reference — **Stripe's documentation — works exactly this way: navigable, deep-linkable, topic-fragmented, and complete.** Depth comes *through* navigability, not the absence of it.
+
+**Content map — the complete owned surface.** The Stream's topics are the *full* set the website owns (`WEBSITE_PURPOSE_V1` "Information Ownership Rules"), not a subset:
+
+- **0. What UmojaHub is & why it exists** — orientation; the trust-cannot-be-assumed thesis
+- **1. Trust architecture** — the four trust-score components, weightings, recalculation triggers
+- **2. The producer interface (farmer)** — listings, price intelligence, AI farm assistant + limitations
+- **3. The buyer path** — marketplace browse, reading trust scores, recourse
+- **4. Payments & money** — the M-Pesa lifecycle from both sides; no commission
+- **5. The academic / student verification engine** — three-document structure, four-dimension assessment, outcomes (VERIFIED / REVISION_REQUIRED / DENIED), the lecturer role
+- **6. Verification & identity** — process, criteria, timeline, what happens to documents
+- **7. Governance & accountability** — named administrators + credentials, decision criteria, the appeals/recourse protocol with timelines
+- **8. Evidence & metrics** — live operational numbers, published honestly however small
+- **9. Third-party services & data governance** — which services, why, what data
+- **10. Risks & recourse, per audience** — what happens when something goes wrong
+
+*(The original four-module proposal maps to topics 1, 2, 5, 7; topics 3, 4, 6, 8, 9, 10 were missing and are required by `WEBSITE_PURPOSE_V1`'s ownership list.)*
+
+**Audience entry points.** Because the website does not know a visitor's role (`WEBSITE_PURPOSE_V1` Rule 4), audience framings (`/for/farmers`, etc.) become **curated doorways into the Stream** — a short orientation that links into the relevant topics — not separate, parallel bodies of content. One canonical truth; audience-specific entrances into it. This is the resolution to open question §15.3 (no more N duplicated audience pages).
+
+---
+
+## 14. What carries over (not reset)
 
 - The **working product** (dashboard/marketplace/onboarding/auth) — plumbing, RBAC, 659 passing tests. We **evolve** its identity, not its logic.
 - **Brand green `#007f4e`** — the one continuous identity element.
 - The **semantic token architecture** (`rgb(var(--x)/<alpha>)`).
 - **Product-truth docs** as the ongoing evidence base.
 
-## 14. Open questions for approval
+## 15. Open questions for approval
 
 1. **Default surface theme** for the *website*: dark (matching product) or a light mode of the same tokens? *(recommend: decide in Visual System V1 via Figma exploration; do not fork the token system either way)*
 2. **Single typeface family** to unify product + website (collapsing Sora/Jakarta) — needs a pick.
-3. **Audience-page consolidation**: the old site had 7 `/for/*` pages; IA evidence (`10`) favors a smaller, flat set — confirm the audience list before rebuild.
+3. **Audience doorways**: §13 resolves the old 7-page `/for/*` sprawl — audiences become curated entry points into one canonical Stream, not parallel pages. Remaining decision: confirm the *set* of doorways to expose (farmers, buyers, students, employers, NGOs, government, researchers/funders).
 4. **Flagged docs** in `design-reset/03 §3` (`WEBSITE_PURPOSE_V1`, `WEBSITE_WEBAPP_BOUNDARY`, `WEBSITE_ENFORCEMENT_RULES`, `APPLICATION_USER_JOURNEYS`) — kept as input; confirm keep, or delete for a barer slate.
 
-## 15. What approval unlocks
+## 16. What approval unlocks
 
 On approval, the next (separate) deliverables — **not before** — are:
 1. **Visual System V1** (final color/type/spacing/component tokens) in Figma + code tokens.
 2. **App-shell hardening** plan (a11y, empty states, performance) — evolve the working product.
-3. **Website rebuild** plan against this foundation (flat IA, performance-budgeted, trust-forward).
+3. **Website build** — implement the Documentation Stream (§13): the persistent index, the canonical spine, deep-linkable topics, per-topic lazy loading, and the complete content map — performance-budgeted and trust-forward.
 
 Until then, this document stands alone. Design begins only after it is approved.

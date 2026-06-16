@@ -94,6 +94,15 @@ Stating what the platform does not do, cannot verify, or does not track is a str
 **Principle 5 — Every section earns its place.**
 A section on the website exists only if removing it would leave a visitor less informed. Content that exists to create visual interest, to fill space, to appear comprehensive, or to demonstrate effort is eliminated. The test: would a visitor who skipped this section make a worse decision about whether to use the platform? If no, the section is cut.
 
+**Principle 6 — Completeness over rationing (the all-out standard).**
+Every platform capability is explained in full: how it works, what it verifies, what it cannot guarantee, and the criteria that govern it. Information is never truncated for brevity, never withheld to manufacture a reason to register, and never split so that understanding requires assembling fragments scattered across the surface. A visitor must be able to reach total understanding of any single mechanic in one continuous, self-directed reading — without rationing their learning and without abandoning a topic half-explained. This principle does not override Principle 5: depth is unbounded only for content that earns its place. Completeness is the standard; length is not the goal. A section is as long as the truth requires and not one sentence longer.
+
+**Principle 7 — Paired limitation.**
+Every capability is immediately followed by an explicit statement of what it does not cover, positioned directly alongside the claim it qualifies — never in a footer, on a separate page, or in legal text. This makes Rule 7 structural: the limitation is part of the same reading unit as the capability, so no visitor can encounter a claim without also encountering its boundary.
+
+**Principle 8 — Functional visuals carry evidentiary weight.**
+Where live product screenshots are unavailable or insufficient, the website explains mechanics through diagrams, schematics, and flowcharts — the M-Pesa payment lifecycle, the trust-score calculation, the verification workflow, data flows. These visuals are held to the same standard as the text: they inform, they are accurate, and they are limited in scope. A visual that exists to decorate, to impress, or to suggest a sophistication the platform has not earned is cut under Principle 5 exactly as text would be.
+
 ---
 
 ## TRUST PRINCIPLES
