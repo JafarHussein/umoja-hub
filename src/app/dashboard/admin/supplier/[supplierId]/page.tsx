@@ -42,33 +42,33 @@ function formatDate(iso: string): string {
 function PageSkeleton(): React.ReactElement {
   return (
     <div className="space-y-6">
-      <div className="h-3 w-36 bg-surface-secondary rounded-sm animate-pulse" />
+      <div className="h-3 w-36 bg-surface-raised rounded-sm animate-pulse" />
       <div className="space-y-2">
-        <div className="h-3 w-20 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
         <div className="flex items-center gap-3">
-          <div className="h-7 w-52 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-5 w-16 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-7 w-52 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-5 w-16 bg-surface-raised rounded-sm animate-pulse" />
         </div>
       </div>
       {[4, 3].map((rows, i) => (
-        <div key={i} className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4 space-y-3">
-          <div className="h-3 w-28 bg-surface-secondary rounded-sm animate-pulse" />
+        <div key={i} className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
+          <div className="h-3 w-28 bg-surface-raised rounded-sm animate-pulse" />
           <div>
             {Array.from({ length: rows }).map((_, j) => (
               <div
                 key={j}
                 className="flex justify-between py-2.5 border-b border-zinc-800/50 last:border-0"
               >
-                <div className="h-4 w-24 bg-surface-secondary rounded-sm animate-pulse" />
-                <div className="h-4 w-36 bg-surface-secondary rounded-sm animate-pulse" />
+                <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
+                <div className="h-4 w-36 bg-surface-raised rounded-sm animate-pulse" />
               </div>
             ))}
           </div>
         </div>
       ))}
       <div className="flex gap-3">
-        <div className="h-11 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-        <div className="h-11 w-24 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-11 w-32 bg-surface-raised rounded-sm animate-pulse" />
+        <div className="h-11 w-24 bg-surface-raised rounded-sm animate-pulse" />
       </div>
     </div>
   );
@@ -153,9 +153,9 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
 
   if (pageState === 'not-found') {
     return (
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-8 text-center">
-        <p className="text-t4 font-body text-text-primary">Supplier not found.</p>
-        <p className="text-t5 font-body text-text-secondary mt-1">
+      <div className="bg-surface border border-zinc-800/50 rounded-sm p-8 text-center">
+        <p className="text-t4 font-body text-fg">Supplier not found.</p>
+        <p className="text-t5 font-body text-fg-muted mt-1">
           This record may have been removed or the ID is invalid.
         </p>
         <div className="mt-4">
@@ -172,10 +172,10 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load supplier profile
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchSupplier()}>
@@ -203,7 +203,7 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
       {/* Back link */}
       <Link
         href="/dashboard/admin/supplier-verification"
-        className="inline-flex items-center gap-1.5 text-t6 font-body text-text-disabled hover:text-text-secondary transition-colors duration-150"
+        className="inline-flex items-center gap-1.5 text-t6 font-body text-fg-disabled hover:text-fg-muted transition-colors duration-150"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
@@ -219,11 +219,11 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
 
       {/* Page header */}
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
           Admin · Supplier Verification
         </p>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
             {supplier.businessName}
           </h1>
           {verificationStatus && <Badge label={verificationStatus} />}
@@ -231,49 +231,49 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
       </div>
 
       {/* Business information */}
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
           Business information
         </p>
         <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary">Phone</span>
-          <span className="text-t5 font-mono text-text-primary tabular-nums">
+          <span className="text-t5 font-body text-fg-muted">Phone</span>
+          <span className="text-t5 font-mono text-fg tabular-nums">
             {supplier.contactPhone}
           </span>
         </div>
         {supplier.contactEmail && (
           <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-            <span className="text-t5 font-body text-text-secondary">Email</span>
-            <span className="text-t5 font-mono text-text-primary">{supplier.contactEmail}</span>
+            <span className="text-t5 font-body text-fg-muted">Email</span>
+            <span className="text-t5 font-mono text-fg">{supplier.contactEmail}</span>
           </div>
         )}
         <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary">County</span>
-          <span className="text-t5 font-body text-text-primary">{supplier.county}</span>
+          <span className="text-t5 font-body text-fg-muted">County</span>
+          <span className="text-t5 font-body text-fg">{supplier.county}</span>
         </div>
         {supplier.physicalAddress && (
           <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-            <span className="text-t5 font-body text-text-secondary">Address</span>
-            <span className="text-t5 font-body text-text-primary">{supplier.physicalAddress}</span>
+            <span className="text-t5 font-body text-fg-muted">Address</span>
+            <span className="text-t5 font-body text-fg">{supplier.physicalAddress}</span>
           </div>
         )}
         <div className="flex items-center justify-between py-2.5">
-          <span className="text-t5 font-body text-text-secondary">Registered</span>
-          <span className="text-t5 font-body text-text-disabled">{formatDate(supplier.createdAt)}</span>
+          <span className="text-t5 font-body text-fg-muted">Registered</span>
+          <span className="text-t5 font-body text-fg-disabled">{formatDate(supplier.createdAt)}</span>
         </div>
       </div>
 
       {/* Input categories */}
       {supplier.inputCategories.length > 0 && (
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4 space-y-3">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+        <div className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
             Input categories
           </p>
           <div className="flex flex-wrap gap-2">
             {supplier.inputCategories.map((cat) => (
               <span
                 key={cat}
-                className="text-t6 font-mono text-text-secondary bg-surface-secondary border border-zinc-800/50 rounded-[2px] px-2 py-1 uppercase"
+                className="text-t6 font-mono text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-1 uppercase"
               >
                 {cat}
               </span>
@@ -284,8 +284,8 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
 
       {/* Regulatory registrations */}
       {regLines.length > 0 && (
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm p-4">
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+        <div className="bg-surface border border-zinc-800/50 rounded-sm p-4">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
             Regulatory registrations
           </p>
           {regLines.map((reg, i) => (
@@ -293,8 +293,8 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
               key={reg.label}
               className={`flex items-center justify-between py-2.5 ${i < regLines.length - 1 ? 'border-b border-zinc-800/50' : ''}`}
             >
-              <span className="text-t5 font-body text-text-secondary">{reg.label}</span>
-              <span className="text-t5 font-mono text-text-primary tabular-nums">{reg.value}</span>
+              <span className="text-t5 font-body text-fg-muted">{reg.label}</span>
+              <span className="text-t5 font-mono text-fg tabular-nums">{reg.value}</span>
             </div>
           ))}
         </div>
@@ -330,10 +330,10 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
           </div>
         </>
       ) : (
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-sm px-4 py-3">
-          <p className="text-t5 font-body text-text-secondary">
+        <div className="bg-surface border border-zinc-800/50 rounded-sm px-4 py-3">
+          <p className="text-t5 font-body text-fg-muted">
             Supplier is{' '}
-            <span className="text-text-primary font-medium">
+            <span className="text-fg font-medium">
               {verificationStatus?.toLowerCase() ?? 'not reviewed'}
             </span>
             . No further action required.

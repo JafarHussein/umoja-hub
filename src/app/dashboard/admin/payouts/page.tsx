@@ -215,8 +215,8 @@ export default function AdminPayoutsPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">Payout Requests</h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5">
+        <h1 className="text-t2 font-heading font-semibold text-fg">Payout Requests</h1>
+        <p className="text-t5 font-body text-fg-muted mt-0.5">
           {queueSize} request{queueSize !== 1 ? 's' : ''} awaiting review. Payouts are released
           manually — there is no automated disbursement.
         </p>
@@ -236,8 +236,8 @@ export default function AdminPayoutsPage(): React.ReactElement {
               className={[
                 'min-h-[36px] px-3 rounded-sm font-mono text-t6 uppercase tracking-widest transition-all duration-150',
                 isActive
-                  ? 'bg-surface-secondary text-text-primary'
-                  : 'text-text-disabled hover:text-text-secondary hover:bg-surface-secondary/50',
+                  ? 'bg-surface-raised text-fg'
+                  : 'text-fg-disabled hover:text-fg-muted hover:bg-surface-raised/50',
               ].join(' ')}
             >
               {tab}
@@ -249,7 +249,7 @@ export default function AdminPayoutsPage(): React.ReactElement {
       {/* Body */}
       {pageState === 'error' ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-t4 font-body font-medium text-text-primary mb-2">
+          <p className="text-t4 font-body font-medium text-fg mb-2">
             Could not load the payout queue
           </p>
           <Button variant="secondary" onClick={() => void fetchQueue(statusFilter)}>
@@ -257,36 +257,36 @@ export default function AdminPayoutsPage(): React.ReactElement {
           </Button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="border border-white/5 rounded bg-surface-elevated px-4 py-12 text-center">
-          <p className="text-t5 font-body text-text-secondary">
+        <div className="border border-white/5 rounded bg-surface px-4 py-12 text-center">
+          <p className="text-t5 font-body text-fg-muted">
             No {statusFilter.toLowerCase()} payout requests.
           </p>
         </div>
       ) : (
         <>
-          <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+          <div className="bg-surface border border-white/5 rounded overflow-hidden">
             {requests.map((req) => (
               <div
                 key={req._id}
                 className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 border-b border-white/5 last:border-0"
               >
                 <div className="min-w-0 flex-1 basis-[14rem]">
-                  <p className="text-t5 font-body text-text-primary truncate">
+                  <p className="text-t5 font-body text-fg truncate">
                     {farmerName(req.farmer)}
                   </p>
-                  <p className="text-t6 font-body text-text-disabled truncate">
+                  <p className="text-t6 font-body text-fg-disabled truncate">
                     {req.farmer?.county ?? '—'}
                     {req.farmer?.phoneNumber ? ` · ${req.farmer.phoneNumber}` : ''} · requested{' '}
                     {formatDate(req.createdAt)}
                   </p>
                   {req.note && (
-                    <p className="text-t6 font-body text-text-secondary mt-1 truncate">
+                    <p className="text-t6 font-body text-fg-muted mt-1 truncate">
                       Note: {req.note}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-t5 font-mono text-text-primary whitespace-nowrap">
+                  <span className="text-t5 font-mono text-fg whitespace-nowrap">
                     {formatKES(req.amountKES)}
                   </span>
                   {req.status === WithdrawalRequestStatus.REQUESTED ? (
@@ -345,9 +345,9 @@ export default function AdminPayoutsPage(): React.ReactElement {
             <div className="space-y-1.5">
               <label
                 htmlFor="payout-note"
-                className="text-t5 font-body text-text-secondary block"
+                className="text-t5 font-body text-fg-muted block"
               >
-                Reason for rejection <span className="text-text-disabled">(required)</span>
+                Reason for rejection <span className="text-fg-disabled">(required)</span>
               </label>
               <textarea
                 id="payout-note"
@@ -355,7 +355,7 @@ export default function AdminPayoutsPage(): React.ReactElement {
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
                 maxLength={500}
-                className="w-full bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 py-2 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                className="w-full bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 py-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                 placeholder="Explain why this request is being rejected. The farmer is notified by SMS."
               />
             </div>
@@ -364,9 +364,9 @@ export default function AdminPayoutsPage(): React.ReactElement {
             <div className="space-y-1.5">
               <label
                 htmlFor="payout-note"
-                className="text-t5 font-body text-text-secondary block"
+                className="text-t5 font-body text-fg-muted block"
               >
-                M-Pesa reference <span className="text-text-disabled">(optional)</span>
+                M-Pesa reference <span className="text-fg-disabled">(optional)</span>
               </label>
               <textarea
                 id="payout-note"
@@ -374,13 +374,13 @@ export default function AdminPayoutsPage(): React.ReactElement {
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
                 maxLength={500}
-                className="w-full bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 py-2 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+                className="w-full bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 py-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
                 placeholder="e.g. the manual B2C transaction code"
               />
             </div>
           )}
           {pending?.decision === 'APPROVED' && (
-            <p className="text-t5 font-body text-text-secondary">
+            <p className="text-t5 font-body text-fg-muted">
               This commits the platform to paying the farmer. You will mark it paid once the manual
               M-Pesa transfer is done.
             </p>

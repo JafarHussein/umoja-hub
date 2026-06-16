@@ -24,15 +24,12 @@ const config: Config = {
           DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
           raised: 'rgb(var(--surface-raised) / <alpha-value>)',
           sunken: 'rgb(var(--surface-sunken) / <alpha-value>)',
-          // legacy (dark-only) — retire on surface migration
-          primary: '#0D1117',
-          elevated: '#161B22',
-          secondary: '#1F2937',
         },
         fg: {
           DEFAULT: 'rgb(var(--fg) / <alpha-value>)',
           muted: 'rgb(var(--fg-muted) / <alpha-value>)',
           subtle: 'rgb(var(--fg-subtle) / <alpha-value>)',
+          disabled: 'rgb(var(--fg-disabled) / <alpha-value>)',
         },
         brand: {
           DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
@@ -44,19 +41,10 @@ const config: Config = {
         warning: 'rgb(var(--warning) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)',
         info: 'rgb(var(--info) / <alpha-value>)',
-        // ── LEGACY (dark dashboard) — retire as surfaces migrate ─────────────
-        accent: {
-          green: '#007F4E',
-        },
-        text: {
-          primary: '#E6EDF3',
-          secondary: '#8B949E',
-          disabled: '#484F58',
-        },
-        // NOTE: The website palette (canvas / ws.* / copper / teal / violet)
-        // was removed in the UI/UX reset (design-reset/). The website is being
-        // rebuilt from UMOJAHUB_DESIGN_FOUNDATION_V1.md — do not reintroduce a
-        // website palette here without the foundation.
+        // NOTE: legacy accent.green / text.* / surface.primary|elevated|secondary
+        // were removed in Visual System V1 P5 (migrated to semantic tokens). The
+        // website palette (canvas/ws.*/copper/teal/violet) was removed in the
+        // reset. Do not reintroduce legacy or website palettes here.
       },
       fontFamily: {
         // Dashboard fonts — Sora / IBM Plex Sans / JetBrains Mono

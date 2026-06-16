@@ -23,7 +23,7 @@ function ChatSkeleton() {
       {[1, 2, 3].map((i) => (
         <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
           <div
-            className="h-12 rounded bg-surface-secondary border border-white/5 animate-shimmer"
+            className="h-12 rounded bg-surface-raised border border-white/5 animate-shimmer"
             style={{
               width: `${40 + i * 15}%`,
               backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
@@ -110,7 +110,7 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
 
   if (isInitializing) {
     return (
-      <div className="bg-surface-elevated border border-white/5 rounded">
+      <div className="bg-surface border border-white/5 rounded">
         <ChatSkeleton />
       </div>
     );
@@ -119,17 +119,17 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-surface-elevated border-b border-white/5 rounded-t">
+      <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-white/5 rounded-t">
         <div>
-          <h2 className="font-heading text-t3 text-text-primary">Farm Assistant</h2>
-          <p className="font-body text-t6 text-text-secondary mt-1">
+          <h2 className="font-heading text-t3 text-fg">Farm Assistant</h2>
+          <p className="font-body text-t6 text-fg-muted mt-1">
             Powered by UmojaHub AI · Groq Llama 3
           </p>
         </div>
         {weatherContext && (
           <button
             onClick={() => setWeatherPanelOpen((o) => !o)}
-            className="flex items-center gap-2 px-3 py-2 bg-surface-secondary border border-white/5 rounded-sm text-t6 font-body text-text-secondary hover:text-text-primary transition-all duration-150 min-h-[44px] min-w-[44px]"
+            className="flex items-center gap-2 px-3 py-2 bg-surface-raised border border-white/5 rounded-sm text-t6 font-body text-fg-muted hover:text-fg transition-all duration-150 min-h-[44px] min-w-[44px]"
             aria-expanded={weatherPanelOpen}
           >
             <span className="text-t6">Weather</span>
@@ -140,18 +140,18 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
 
       {/* Weather context panel */}
       {weatherContext && weatherPanelOpen && (
-        <div className="px-6 py-4 bg-surface-secondary border-b border-white/5">
-          <p className="font-body text-t6 text-text-secondary mb-2">
-            7-day forecast for <span className="text-text-primary">{weatherContext.county}</span>
+        <div className="px-6 py-4 bg-surface-raised border-b border-white/5">
+          <p className="font-body text-t6 text-fg-muted mb-2">
+            7-day forecast for <span className="text-fg">{weatherContext.county}</span>
           </p>
-          <pre className="font-mono text-t6 text-text-secondary whitespace-pre-wrap">
+          <pre className="font-mono text-t6 text-fg-muted whitespace-pre-wrap">
             {weatherContext.forecast}
           </pre>
         </div>
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface-elevated min-h-[400px]">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface min-h-[400px]">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -160,8 +160,8 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
             <div
               className={`max-w-[75%] px-4 py-3 rounded font-body text-t5 ${
                 msg.role === 'user'
-                  ? 'bg-accent-green text-white'
-                  : 'bg-surface-secondary border border-white/5 text-text-primary'
+                  ? 'bg-brand text-white'
+                  : 'bg-surface-raised border border-white/5 text-fg'
               }`}
             >
               {msg.content}
@@ -171,12 +171,12 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="px-4 py-3 bg-surface-secondary border border-white/5 rounded">
+            <div className="px-4 py-3 bg-surface-raised border border-white/5 rounded">
               <div className="flex gap-1 items-center">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-text-secondary"
+                    className="w-1.5 h-1.5 rounded-full bg-fg-muted"
                     style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                   />
                 ))}
@@ -197,7 +197,7 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 bg-surface-elevated border-t border-white/5 rounded-b">
+      <div className="px-6 py-4 bg-surface border-t border-white/5 rounded-b">
         <div className="flex gap-3">
           <textarea
             value={input}
@@ -206,17 +206,17 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
             placeholder="Ask about your crops, soil, pests, or market prices..."
             maxLength={1000}
             rows={2}
-            className="flex-1 bg-surface-secondary border border-white/5 rounded-sm px-4 py-3 font-body text-t5 text-text-primary placeholder-text-disabled resize-none focus:outline-none focus:border-accent-green/50 transition-all duration-150 min-h-[44px]"
+            className="flex-1 bg-surface-raised border border-white/5 rounded-sm px-4 py-3 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-brand/50 transition-all duration-150 min-h-[44px]"
           />
           <button
             onClick={() => void sendMessage()}
             disabled={isLoading || !input.trim()}
-            className="px-4 py-3 bg-accent-green text-white rounded-sm font-body text-t5 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-150 min-h-[44px] min-w-[44px]"
+            className="px-4 py-3 bg-brand text-white rounded-sm font-body text-t5 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-150 min-h-[44px] min-w-[44px]"
           >
             Send
           </button>
         </div>
-        <p className="font-body text-t6 text-text-disabled mt-2">
+        <p className="font-body text-t6 text-fg-disabled mt-2">
           {input.length}/1000 · Press Enter to send
         </p>
       </div>

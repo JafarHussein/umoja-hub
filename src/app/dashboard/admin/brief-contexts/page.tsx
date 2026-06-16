@@ -26,17 +26,17 @@ type PublishState = 'idle' | 'submitting';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="space-y-1.5">
-          <div className="h-3 w-24 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-48 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-48 bg-surface-raised rounded-sm animate-pulse" />
         </div>
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+        <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-1.5">
-              <div className="h-4 w-40 bg-surface-secondary rounded-sm animate-pulse" />
-              <div className="h-3 w-64 bg-surface-secondary rounded-sm animate-pulse" />
+              <div className="h-4 w-40 bg-surface-raised rounded-sm animate-pulse" />
+              <div className="h-3 w-64 bg-surface-raised rounded-sm animate-pulse" />
             </div>
           ))}
         </div>
@@ -158,13 +158,13 @@ export default function BriefContextsPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load brief context library.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load brief context library.</p>
             <button
               onClick={() => { setPageState('loading'); void fetchLibrary(); }}
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               Retry
             </button>
@@ -175,19 +175,19 @@ export default function BriefContextsPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               Admin · Brief Context Library
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
               Brief Contexts
             </h1>
             {library && (
-              <p className="text-t5 font-mono text-text-secondary mt-1 tabular-nums">
+              <p className="text-t5 font-mono text-fg-muted mt-1 tabular-nums">
                 Version {library.version} · Published{' '}
                 {new Date(library.createdAt).toLocaleDateString('en-KE', {
                   year: 'numeric', month: 'short', day: 'numeric',
@@ -206,24 +206,24 @@ export default function BriefContextsPage(): React.ReactElement {
 
         {/* Publish form */}
         {showPublishForm && (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               New library version
             </p>
-            <p className="text-t5 font-body text-text-secondary">
+            <p className="text-t5 font-body text-fg-muted">
               Paste a JSON array of context objects. Each object must include{' '}
-              <span className="font-mono text-t6 text-text-primary">id</span>,{' '}
-              <span className="font-mono text-t6 text-text-primary">industryName</span>,{' '}
-              <span className="font-mono text-t6 text-text-primary">description</span>,{' '}
-              <span className="font-mono text-t6 text-text-primary">targetTiers</span>, and{' '}
-              <span className="font-mono text-t6 text-text-primary">clientPersonaTemplate</span>.
+              <span className="font-mono text-t6 text-fg">id</span>,{' '}
+              <span className="font-mono text-t6 text-fg">industryName</span>,{' '}
+              <span className="font-mono text-t6 text-fg">description</span>,{' '}
+              <span className="font-mono text-t6 text-fg">targetTiers</span>, and{' '}
+              <span className="font-mono text-t6 text-fg">clientPersonaTemplate</span>.
             </p>
             <textarea
               value={jsonInput}
               onChange={(e) => setJsonInput(e.target.value)}
               placeholder={PLACEHOLDER_JSON}
               rows={16}
-              className="w-full bg-surface-secondary border border-zinc-800/50 rounded-sm px-3 py-2.5 font-mono text-t6 text-text-primary placeholder-text-disabled resize-y focus:outline-none focus:border-accent-green/50 transition-colors duration-150"
+              className="w-full bg-surface-raised border border-zinc-800/50 rounded-sm px-3 py-2.5 font-mono text-t6 text-fg placeholder-fg-disabled resize-y focus:outline-none focus:border-brand/50 transition-colors duration-150"
             />
             {publishError && (
               <p className="text-t5 font-body text-red-400 bg-red-950/20 border border-red-900/30 rounded-sm px-3 py-2">
@@ -244,16 +244,16 @@ export default function BriefContextsPage(): React.ReactElement {
 
         {/* Current library */}
         {pageState === 'empty' || !library ? (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">No library published yet</p>
-            <p className="text-t5 font-body text-text-disabled mt-1">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">No library published yet</p>
+            <p className="text-t5 font-body text-fg-disabled mt-1">
               Publish a version to enable AI brief generation with Kenyan industry context.
             </p>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
             <div className="px-4 py-3 border-b border-zinc-800/50">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Contexts · {library.contexts.length}
               </p>
             </div>
@@ -261,8 +261,8 @@ export default function BriefContextsPage(): React.ReactElement {
               <div key={ctx.id ?? i} className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-1.5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-0.5 min-w-0">
-                    <p className="text-t5 font-body text-text-primary">{ctx.industryName}</p>
-                    <p className="text-t6 font-body text-text-secondary line-clamp-2">{ctx.description}</p>
+                    <p className="text-t5 font-body text-fg">{ctx.industryName}</p>
+                    <p className="text-t6 font-body text-fg-muted line-clamp-2">{ctx.description}</p>
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     {ctx.targetTiers.map((tier) => (
@@ -275,13 +275,13 @@ export default function BriefContextsPage(): React.ReactElement {
                     {ctx.problemDomains.slice(0, 4).map((domain) => (
                       <span
                         key={domain}
-                        className="text-t6 font-mono text-text-disabled bg-surface-secondary border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
+                        className="text-t6 font-mono text-fg-disabled bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
                       >
                         {domain}
                       </span>
                     ))}
                     {ctx.problemDomains.length > 4 && (
-                      <span className="text-t6 font-mono text-text-disabled px-1">
+                      <span className="text-t6 font-mono text-fg-disabled px-1">
                         +{ctx.problemDomains.length - 4}
                       </span>
                     )}

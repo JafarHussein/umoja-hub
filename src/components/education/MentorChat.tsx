@@ -18,7 +18,7 @@ function ChatSkeleton(): React.ReactElement {
       {[1, 2, 3].map((i) => (
         <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
           <div
-            className="h-12 rounded-sm bg-surface-secondary border border-zinc-800/50 animate-pulse"
+            className="h-12 rounded-sm bg-surface-raised border border-zinc-800/50 animate-pulse"
             style={{ width: `${40 + i * 15}%` }}
           />
         </div>
@@ -92,7 +92,7 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
 
   if (isInitializing) {
     return (
-      <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px]">
+      <div className="bg-surface border border-zinc-800/50 rounded-[4px]">
         <ChatSkeleton />
       </div>
     );
@@ -101,15 +101,15 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 py-4 bg-surface-elevated border-b border-zinc-800/50 rounded-t-[4px]">
-        <h2 className="font-heading text-t3 text-text-primary">AI Mentor</h2>
-        <p className="font-body text-t6 text-text-secondary mt-1">
+      <div className="px-6 py-4 bg-surface border-b border-zinc-800/50 rounded-t-[4px]">
+        <h2 className="font-heading text-t3 text-fg">AI Mentor</h2>
+        <p className="font-body text-t6 text-fg-muted mt-1">
           Powered by UmojaHub AI · Groq Llama 3 · Socratic guidance
         </p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface-elevated min-h-[400px]">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface min-h-[400px]">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -119,8 +119,8 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
               className={[
                 'max-w-[75%] px-4 py-3 rounded-sm font-body text-t5',
                 msg.role === 'user'
-                  ? 'bg-accent-green text-white'
-                  : 'bg-surface-secondary border border-zinc-800/50 text-text-primary',
+                  ? 'bg-brand text-white'
+                  : 'bg-surface-raised border border-zinc-800/50 text-fg',
               ].join(' ')}
             >
               {msg.content}
@@ -130,12 +130,12 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="px-4 py-3 bg-surface-secondary border border-zinc-800/50 rounded-sm">
+            <div className="px-4 py-3 bg-surface-raised border border-zinc-800/50 rounded-sm">
               <div className="flex gap-1 items-center">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-text-secondary"
+                    className="w-1.5 h-1.5 rounded-full bg-fg-muted"
                     style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                   />
                 ))}
@@ -156,7 +156,7 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 bg-surface-elevated border-t border-zinc-800/50 rounded-b-[4px]">
+      <div className="px-6 py-4 bg-surface border-t border-zinc-800/50 rounded-b-[4px]">
         <div className="flex gap-3">
           <textarea
             value={input}
@@ -165,17 +165,17 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
             placeholder="Ask about your approach, a concept, or where you're stuck..."
             maxLength={1000}
             rows={2}
-            className="flex-1 bg-surface-secondary border border-zinc-800/50 rounded-sm px-4 py-3 font-body text-t5 text-text-primary placeholder-text-disabled resize-none focus:outline-none focus:border-accent-green/50 transition-colors duration-150 min-h-[44px]"
+            className="flex-1 bg-surface-raised border border-zinc-800/50 rounded-sm px-4 py-3 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-brand/50 transition-colors duration-150 min-h-[44px]"
           />
           <button
             onClick={() => void sendMessage()}
             disabled={isLoading || !input.trim()}
-            className="px-4 py-3 bg-accent-green text-white rounded-sm font-body text-t5 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-150 min-h-[44px] min-w-[44px]"
+            className="px-4 py-3 bg-brand text-white rounded-sm font-body text-t5 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-150 min-h-[44px] min-w-[44px]"
           >
             Send
           </button>
         </div>
-        <p className="font-body text-t6 text-text-disabled mt-2">
+        <p className="font-body text-t6 text-fg-disabled mt-2">
           {input.length}/1000 · Press Enter to send
         </p>
       </div>

@@ -61,7 +61,7 @@ export default function RootLayout({
         'font-sans'
       )}
     >
-      <body suppressHydrationWarning className="bg-surface-primary text-text-primary font-body antialiased">
+      <body suppressHydrationWarning className="bg-background text-fg font-body antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

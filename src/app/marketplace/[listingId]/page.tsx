@@ -87,23 +87,23 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
   const primaryImage = listing.imageUrls[0] ?? null;
 
   return (
-    <div className="h-screen overflow-hidden bg-surface-primary flex flex-col">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
 
       {/* ── Breadcrumb — fixed height ──────────────────────────────────────── */}
-      <div className="flex-shrink-0 border-b border-zinc-800/50 bg-surface-primary">
+      <div className="flex-shrink-0 border-b border-zinc-800/50 bg-background">
         <div className="px-6 py-3">
           <nav aria-label="Breadcrumb">
-            <ol className="flex items-center gap-2 text-t6 font-body text-text-secondary">
+            <ol className="flex items-center gap-2 text-t6 font-body text-fg-muted">
               <li>
                 <Link
                   href="/marketplace"
-                  className="hover:text-text-primary transition-colors duration-150"
+                  className="hover:text-fg transition-colors duration-150"
                 >
                   Marketplace
                 </Link>
               </li>
-              <li aria-hidden="true" className="text-text-disabled">/</li>
-              <li className="text-text-primary truncate max-w-xs">{listing.title}</li>
+              <li aria-hidden="true" className="text-fg-disabled">/</li>
+              <li className="text-fg truncate max-w-xs">{listing.title}</li>
             </ol>
           </nav>
         </div>
@@ -116,7 +116,7 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
         <div className="md:col-span-8 overflow-y-auto px-6 py-8 space-y-6">
 
           {/* Primary image */}
-          <div className="aspect-[4/3] bg-surface-secondary rounded-[4px] border border-zinc-800/50 relative overflow-hidden">
+          <div className="aspect-[4/3] bg-surface-raised rounded-[4px] border border-zinc-800/50 relative overflow-hidden">
             {primaryImage ? (
               <Image
                 src={primaryImage}
@@ -134,7 +134,7 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
                     stroke="currentColor"
                     strokeWidth="1.5"
                     strokeLinejoin="round"
-                    className="text-text-disabled"
+                    className="text-fg-disabled"
                   />
                   <circle
                     cx="33"
@@ -142,14 +142,14 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
                     r="5"
                     stroke="currentColor"
                     strokeWidth="1.5"
-                    className="text-text-disabled"
+                    className="text-fg-disabled"
                   />
                 </svg>
               </div>
             )}
             {listing.isVerifiedListing && (
               <div className="absolute top-3 right-3">
-                <span className="inline-flex items-center gap-1 bg-surface-primary/90 border border-zinc-800/50 rounded-[2px] px-2 py-1 text-t6 font-mono text-accent-green uppercase tracking-wide backdrop-blur-sm">
+                <span className="inline-flex items-center gap-1 bg-background/90 border border-zinc-800/50 rounded-[2px] px-2 py-1 text-t6 font-mono text-brand uppercase tracking-wide backdrop-blur-sm">
                   <VerifiedBadge label="Verified listing" />
                   Verified
                 </span>
@@ -159,32 +159,32 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
 
           {/* Crop identity */}
           <div>
-            <p className="text-t6 font-mono text-text-secondary uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-muted uppercase tracking-widest mb-1">
               {listing.cropName}
             </p>
-            <h1 className="text-t1 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t1 font-heading font-semibold text-fg tracking-tight">
               {listing.title}
             </h1>
           </div>
 
           {/* Price */}
           <div className="flex items-baseline gap-2">
-            <span className="text-t1 font-mono font-semibold text-text-primary tabular-nums">
+            <span className="text-t1 font-mono font-semibold text-fg tabular-nums">
               KES {listing.currentPricePerUnit.toLocaleString()}
             </span>
-            <span className="text-t4 font-body text-text-secondary">
+            <span className="text-t4 font-body text-fg-muted">
               / {listing.unit.toLowerCase()}
             </span>
           </div>
 
           {/* Farmer identity card */}
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Farmer
             </p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className="text-t4 font-body font-medium text-text-primary">
+                <span className="text-t4 font-body font-medium text-fg">
                   {farmerName}
                 </span>
                 {listing.isVerifiedListing && (
@@ -198,7 +198,7 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
                 />
               )}
             </div>
-            <div className="flex items-center gap-4 text-t5 font-body text-text-secondary">
+            <div className="flex items-center gap-4 text-t5 font-body text-fg-muted">
               <span>{listing.farmer.county}</span>
               {listing.trustScore && listing.trustScore.ratingScore.totalRatings >= 3 && (
                 <span>
@@ -211,58 +211,58 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
 
           {/* Description */}
           <div className="space-y-2">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               About this listing
             </p>
-            <p className="text-t4 font-body text-text-secondary leading-relaxed">
+            <p className="text-t4 font-body text-fg-muted leading-relaxed">
               {listing.description}
             </p>
           </div>
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                 Stock
               </p>
-              <p className="text-t4 font-body font-medium text-text-primary">
+              <p className="text-t4 font-body font-medium text-fg">
                 <span className="font-mono tabular-nums">
                   {listing.quantityAvailable.toLocaleString()}
                 </span>{' '}
-                <span className="text-text-secondary font-normal">
+                <span className="text-fg-muted font-normal">
                   {listing.unit.toLowerCase()}
                 </span>
               </p>
             </div>
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                 Location
               </p>
-              <p className="text-t4 font-body font-medium text-text-primary">
+              <p className="text-t4 font-body font-medium text-fg">
                 {listing.pickupCounty}
               </p>
             </div>
           </div>
 
           {/* Pickup details */}
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-1">
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Pickup details
             </p>
-            <p className="text-t5 font-body text-text-secondary">{listing.pickupDescription}</p>
+            <p className="text-t5 font-body text-fg-muted">{listing.pickupDescription}</p>
           </div>
 
           {/* Contact preference */}
           {listing.buyerContactPreference.length > 0 && (
             <div>
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
                 Contact method
               </p>
               <div className="flex gap-2">
                 {listing.buyerContactPreference.map((pref) => (
                   <span
                     key={pref}
-                    className="text-t6 font-mono text-text-secondary bg-surface-elevated border border-zinc-800/50 rounded-[2px] px-2 py-1 uppercase"
+                    className="text-t6 font-mono text-fg-muted bg-surface border border-zinc-800/50 rounded-[2px] px-2 py-1 uppercase"
                   >
                     {pref === BuyerContactPreference.PHONE ? 'Phone' : 'Platform message'}
                   </span>
@@ -282,7 +282,7 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
             maxQuantity={listing.quantityAvailable}
             pickupCounty={listing.pickupCounty}
           />
-          <p className="text-t6 font-body text-text-disabled text-center mt-6">
+          <p className="text-t6 font-body text-fg-disabled text-center mt-6">
             Payments processed via M-Pesa. No platform fee.
           </p>
         </div>

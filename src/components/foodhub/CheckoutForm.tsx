@@ -184,17 +184,17 @@ export function CheckoutForm({
     return (
       <div className="space-y-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse flex-shrink-0" aria-hidden="true" />
+          <div className="w-2 h-2 rounded-full bg-brand animate-pulse flex-shrink-0" aria-hidden="true" />
           <div>
-            <p className="text-t4 font-body font-medium text-text-primary">STK push sent</p>
-            <p className="text-t5 font-body text-text-secondary mt-0.5">
+            <p className="text-t4 font-body font-medium text-fg">STK push sent</p>
+            <p className="text-t5 font-body text-fg-muted mt-0.5">
               Check your phone and enter your M-Pesa PIN to confirm.
             </p>
           </div>
         </div>
 
         {/* STK prompt details — mirrors the real M-Pesa confirmation request */}
-        <div className="bg-surface-secondary border border-zinc-800/50 rounded-[4px]">
+        <div className="bg-surface-raised border border-zinc-800/50 rounded-[4px]">
           {(
             [
               { label: 'Pay to', value: 'UmojaHub' },
@@ -207,8 +207,8 @@ export function CheckoutForm({
               key={label}
               className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800/50 last:border-0"
             >
-              <span className="text-t5 font-body text-text-secondary">{label}</span>
-              <span className="text-t5 font-mono text-text-primary tabular-nums">{value}</span>
+              <span className="text-t5 font-body text-fg-muted">{label}</span>
+              <span className="text-t5 font-mono text-fg tabular-nums">{value}</span>
             </div>
           ))}
         </div>
@@ -216,18 +216,18 @@ export function CheckoutForm({
         {/* 90-second poll ticker — bounded, with an explicit countdown */}
         <div className="space-y-2" role="timer" aria-live="polite">
           <div className="flex items-center justify-between">
-            <p className="text-t5 font-body text-text-secondary">Waiting for confirmation</p>
-            <p className="text-t5 font-mono text-text-primary tabular-nums">{remainingSeconds}s</p>
+            <p className="text-t5 font-body text-fg-muted">Waiting for confirmation</p>
+            <p className="text-t5 font-mono text-fg tabular-nums">{remainingSeconds}s</p>
           </div>
-          <div className="h-1 bg-surface-secondary rounded-full overflow-hidden">
+          <div className="h-1 bg-surface-raised rounded-full overflow-hidden">
             <div
-              className="h-full bg-accent-green transition-all duration-1000 ease-linear"
+              className="h-full bg-brand transition-all duration-1000 ease-linear"
               style={{ width: `${(remainingSeconds / POLL_WINDOW_SECONDS) * 100}%` }}
             />
           </div>
         </div>
 
-        <p className="text-t6 font-body text-text-disabled">
+        <p className="text-t6 font-body text-fg-disabled">
           Enter your PIN on your phone. We&apos;ll stop checking after{' '}
           {POLL_WINDOW_SECONDS} seconds and let you retry.
         </p>
@@ -240,11 +240,11 @@ export function CheckoutForm({
     return (
       <div className="space-y-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-accent-green flex-shrink-0" aria-hidden="true" />
-          <p className="text-t4 font-body font-medium text-text-primary">Payment confirmed</p>
+          <div className="w-2 h-2 rounded-full bg-brand flex-shrink-0" aria-hidden="true" />
+          <p className="text-t4 font-body font-medium text-fg">Payment confirmed</p>
         </div>
 
-        <div className="bg-surface-secondary border border-zinc-800/50 rounded-[4px]">
+        <div className="bg-surface-raised border border-zinc-800/50 rounded-[4px]">
           {(
             [
               { label: 'Reference', value: orderResult.orderReferenceId, mono: true },
@@ -263,21 +263,21 @@ export function CheckoutForm({
               key={label}
               className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800/50 last:border-0"
             >
-              <span className="text-t5 font-body text-text-secondary">{label}</span>
-              <span className={['text-t5 text-text-primary', mono ? 'font-mono tabular-nums' : 'font-body'].join(' ')}>
+              <span className="text-t5 font-body text-fg-muted">{label}</span>
+              <span className={['text-t5 text-fg', mono ? 'font-mono tabular-nums' : 'font-body'].join(' ')}>
                 {value}
               </span>
             </div>
           ))}
         </div>
 
-        <p className="text-t6 font-body text-text-disabled">
+        <p className="text-t6 font-body text-fg-disabled">
           You will receive an M-Pesa SMS confirmation shortly.
         </p>
 
         <Link
           href="/dashboard/buyer/orders"
-          className="flex items-center gap-1.5 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+          className="flex items-center gap-1.5 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
         >
           View my orders
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -304,10 +304,10 @@ export function CheckoutForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
           Checkout
         </p>
-        <h2 className="text-t3 font-heading font-semibold text-text-primary tracking-tight">
+        <h2 className="text-t3 font-heading font-semibold text-fg tracking-tight">
           Pay with M-Pesa
         </h2>
       </div>
@@ -350,7 +350,7 @@ export function CheckoutForm({
 
       {/* Quantity stepper */}
       <div className="space-y-1.5">
-        <p className="text-t5 font-body text-text-secondary">
+        <p className="text-t5 font-body text-fg-muted">
           Quantity ({unit.toLowerCase()})
         </p>
         <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ export function CheckoutForm({
             type="button"
             onClick={() => adjustQuantity(-1)}
             disabled={quantity <= 1}
-            className="w-8 h-8 bg-surface-secondary border border-zinc-800/50 rounded-[4px] text-text-primary flex items-center justify-center hover:border-white/20 disabled:opacity-40 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green"
+            className="w-8 h-8 bg-surface-raised border border-zinc-800/50 rounded-[4px] text-fg flex items-center justify-center hover:border-white/20 disabled:opacity-40 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand"
             aria-label="Decrease quantity"
           >
             <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
@@ -375,14 +375,14 @@ export function CheckoutForm({
               setQuantity(Math.min(maxQuantity, Math.max(1, parseInt(e.target.value, 10) || 1)))
             }
             aria-label="Quantity"
-            className="w-14 h-8 bg-surface-secondary border border-zinc-800/50 rounded-[4px] text-t5 font-mono text-text-primary text-center tabular-nums focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+            className="w-14 h-8 bg-surface-raised border border-zinc-800/50 rounded-[4px] text-t5 font-mono text-fg text-center tabular-nums focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
           />
 
           <button
             type="button"
             onClick={() => adjustQuantity(1)}
             disabled={quantity >= maxQuantity}
-            className="w-8 h-8 bg-surface-secondary border border-zinc-800/50 rounded-[4px] text-text-primary flex items-center justify-center hover:border-white/20 disabled:opacity-40 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green"
+            className="w-8 h-8 bg-surface-raised border border-zinc-800/50 rounded-[4px] text-fg flex items-center justify-center hover:border-white/20 disabled:opacity-40 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand"
             aria-label="Increase quantity"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
@@ -391,7 +391,7 @@ export function CheckoutForm({
             </svg>
           </button>
 
-          <span className="text-t6 font-body text-text-disabled">
+          <span className="text-t6 font-body text-fg-disabled">
             of {maxQuantity.toLocaleString()} avail.
           </span>
         </div>
@@ -399,7 +399,7 @@ export function CheckoutForm({
 
       {/* Fulfillment type */}
       <div className="space-y-1.5">
-        <p className="text-t5 font-body text-text-secondary">Collection method</p>
+        <p className="text-t5 font-body text-fg-muted">Collection method</p>
         <div className="flex gap-2" role="group" aria-label="Collection method">
           {(Object.values(FulfillmentType) as FulfillmentType[]).map((type) => (
             <button
@@ -408,10 +408,10 @@ export function CheckoutForm({
               onClick={() => setFulfillmentType(type)}
               aria-pressed={fulfillmentType === type}
               className={[
-                'flex-1 h-9 rounded-[4px] text-t5 font-body border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green',
+                'flex-1 h-9 rounded-[4px] text-t5 font-body border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
                 fulfillmentType === type
-                  ? 'bg-accent-green text-surface-primary border-accent-green'
-                  : 'bg-surface-secondary text-text-secondary border-zinc-800/50 hover:border-white/20',
+                  ? 'bg-brand text-background border-brand'
+                  : 'bg-surface-raised text-fg-muted border-zinc-800/50 hover:border-white/20',
               ].join(' ')}
             >
               {type === FulfillmentType.PICKUP ? `Pickup · ${pickupCounty}` : 'Delivery'}
@@ -422,16 +422,16 @@ export function CheckoutForm({
 
       {/* +254 compound phone input */}
       <div className="space-y-1.5">
-        <p className="text-t5 font-body text-text-secondary">M-Pesa number</p>
+        <p className="text-t5 font-body text-fg-muted">M-Pesa number</p>
         <div
           className={[
-            'flex items-stretch bg-surface-secondary border rounded-[4px] transition-all duration-150',
+            'flex items-stretch bg-surface-raised border rounded-[4px] transition-all duration-150',
             phoneFocused
-              ? 'border-accent-green ring-1 ring-accent-green'
+              ? 'border-brand ring-1 ring-brand'
               : 'border-zinc-800/50',
           ].join(' ')}
         >
-          <span className="flex items-center px-3 text-t5 font-mono text-text-secondary border-r border-zinc-800/50 select-none flex-shrink-0">
+          <span className="flex items-center px-3 text-t5 font-mono text-fg-muted border-r border-zinc-800/50 select-none flex-shrink-0">
             +254
           </span>
           <input
@@ -443,20 +443,20 @@ export function CheckoutForm({
             onChange={(e) => setPhoneSuffix(e.target.value.replace(/\D/g, '').slice(0, 9))}
             onFocus={() => setPhoneFocused(true)}
             onBlur={() => setPhoneFocused(false)}
-            className="flex-1 bg-transparent px-3 py-2.5 text-t4 font-mono text-text-primary focus:outline-none tabular-nums"
+            className="flex-1 bg-transparent px-3 py-2.5 text-t4 font-mono text-fg focus:outline-none tabular-nums"
             aria-label="M-Pesa phone number (9 digits after country code)"
             required
           />
         </div>
-        <p className="text-t6 font-body text-text-disabled">
+        <p className="text-t6 font-body text-fg-disabled">
           Number registered with your M-Pesa account
         </p>
       </div>
 
       {/* Running total */}
-      <div className="flex items-center justify-between px-3 py-2.5 bg-surface-secondary border border-zinc-800/50 rounded-[4px]">
-        <span className="text-t5 font-body text-text-secondary">Total</span>
-        <span className="text-t2 font-mono font-semibold text-text-primary tabular-nums">
+      <div className="flex items-center justify-between px-3 py-2.5 bg-surface-raised border border-zinc-800/50 rounded-[4px]">
+        <span className="text-t5 font-body text-fg-muted">Total</span>
+        <span className="text-t2 font-mono font-semibold text-fg tabular-nums">
           KES {totalKES.toLocaleString()}
         </span>
       </div>
@@ -464,7 +464,7 @@ export function CheckoutForm({
       <button
         type="submit"
         disabled={state === 'submitting' || phoneSuffix.length !== 9 || quantity < 1}
-        className="w-full h-11 bg-accent-green text-surface-primary text-t4 font-body font-medium rounded-[4px] disabled:opacity-50 hover:bg-accent-green/90 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary"
+        className="w-full h-11 bg-brand text-background text-t4 font-body font-medium rounded-[4px] disabled:opacity-50 hover:bg-brand/90 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-background"
       >
         {state === 'submitting'
           ? 'Placing order...'

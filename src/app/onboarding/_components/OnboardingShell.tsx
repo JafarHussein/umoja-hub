@@ -20,11 +20,11 @@ export function OnboardingShell({
   children,
 }: IOnboardingShellProps): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2 mb-8">
-          <span className="font-heading font-semibold text-t2 text-text-primary">Umoja</span>
-          <span className="font-heading font-semibold text-t2 text-accent-green">Hub</span>
+          <span className="font-heading font-semibold text-t2 text-fg">Umoja</span>
+          <span className="font-heading font-semibold text-t2 text-brand">Hub</span>
         </div>
 
         <ol className="flex items-center gap-2 mb-6" aria-label="Onboarding progress">
@@ -39,10 +39,10 @@ export function OnboardingShell({
                   className={[
                     'flex h-6 w-6 items-center justify-center rounded-full font-body text-t6 border',
                     done
-                      ? 'bg-accent-green/20 border-accent-green text-accent-green'
+                      ? 'bg-brand/20 border-brand text-brand'
                       : active
-                        ? 'border-accent-green text-accent-green'
-                        : 'border-white/10 text-text-disabled',
+                        ? 'border-brand text-brand'
+                        : 'border-white/10 text-fg-disabled',
                   ].join(' ')}
                 >
                   {n}
@@ -50,20 +50,20 @@ export function OnboardingShell({
                 <span
                   className={[
                     'font-body text-t6',
-                    active ? 'text-text-primary' : 'text-text-disabled',
+                    active ? 'text-fg' : 'text-fg-disabled',
                   ].join(' ')}
                 >
                   {label}
                 </span>
-                {n < STEPS.length && <span className="text-text-disabled">›</span>}
+                {n < STEPS.length && <span className="text-fg-disabled">›</span>}
               </li>
             );
           })}
         </ol>
 
-        <div className="bg-surface-elevated border border-white/5 rounded p-6">
-          <h1 className="font-heading font-semibold text-t2 text-text-primary mb-1">{title}</h1>
-          {subtitle && <p className="font-body text-t5 text-text-secondary mb-6">{subtitle}</p>}
+        <div className="bg-surface border border-white/5 rounded p-6">
+          <h1 className="font-heading font-semibold text-t2 text-fg mb-1">{title}</h1>
+          {subtitle && <p className="font-body text-t5 text-fg-muted mb-6">{subtitle}</p>}
           {children}
         </div>
       </div>
@@ -85,9 +85,9 @@ export function OnboardingError({ message }: { message: string }): React.ReactEl
 
 export const onboardingSelectClasses = [
   'w-full min-h-[44px] px-3 py-2 rounded-sm font-body text-t5',
-  'bg-surface-secondary text-text-primary',
+  'bg-surface-raised text-fg',
   'border border-white/10',
   'transition-all duration-150',
-  'focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green',
+  'focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand',
   'disabled:opacity-40 disabled:cursor-not-allowed',
 ].join(' ');

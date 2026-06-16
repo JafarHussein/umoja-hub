@@ -105,29 +105,29 @@ const DOC_ITEMS: { type: DocumentType; label: string }[] = [
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="h-4 w-24 bg-surface-secondary rounded-sm animate-pulse" />
+        <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
         <div className="space-y-1.5">
-          <div className="h-3 w-32 bg-surface-secondary rounded-sm animate-pulse" />
-          <div className="h-7 w-56 bg-surface-secondary rounded-sm animate-pulse" />
+          <div className="h-3 w-32 bg-surface-raised rounded-sm animate-pulse" />
+          <div className="h-7 w-56 bg-surface-raised rounded-sm animate-pulse" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-8 space-y-4">
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-              <div className="h-5 w-48 bg-surface-secondary rounded-sm animate-pulse" />
-              <div className="h-4 w-full bg-surface-secondary rounded-sm animate-pulse" />
-              <div className="h-4 w-3/4 bg-surface-secondary rounded-sm animate-pulse" />
-              <div className="h-4 w-5/6 bg-surface-secondary rounded-sm animate-pulse" />
-              <div className="h-4 w-2/3 bg-surface-secondary rounded-sm animate-pulse" />
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+              <div className="h-5 w-48 bg-surface-raised rounded-sm animate-pulse" />
+              <div className="h-4 w-full bg-surface-raised rounded-sm animate-pulse" />
+              <div className="h-4 w-3/4 bg-surface-raised rounded-sm animate-pulse" />
+              <div className="h-4 w-5/6 bg-surface-raised rounded-sm animate-pulse" />
+              <div className="h-4 w-2/3 bg-surface-raised rounded-sm animate-pulse" />
             </div>
           </div>
           <div className="md:col-span-4 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i}>
                 <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-surface-secondary animate-pulse flex-shrink-0" />
-                  <div className="h-4 w-28 bg-surface-secondary rounded-sm animate-pulse" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-surface-raised animate-pulse flex-shrink-0" />
+                  <div className="h-4 w-28 bg-surface-raised rounded-sm animate-pulse" />
                 </div>
                 {i < 4 && <div className="ml-[4px] w-px h-4 bg-zinc-800/50" />}
               </div>
@@ -143,27 +143,27 @@ function PageSkeleton(): React.ReactElement {
 
 function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
   return (
-    <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+    <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
           Brief
         </p>
-        <h2 className="text-t3 font-heading font-semibold text-text-primary tracking-tight">
+        <h2 className="text-t3 font-heading font-semibold text-fg tracking-tight">
           {brief.title}
         </h2>
       </div>
 
       <div className="space-y-0">
         <div className="flex items-start justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary flex-shrink-0 mr-4">
+          <span className="text-t5 font-body text-fg-muted flex-shrink-0 mr-4">
             Client
           </span>
-          <span className="text-t5 font-body text-text-primary text-right">
+          <span className="text-t5 font-body text-fg text-right">
             {brief.clientPersona.businessType} · {brief.clientPersona.county}
           </span>
         </div>
         <div className="flex items-start justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-text-secondary flex-shrink-0 mr-4">
+          <span className="text-t5 font-body text-fg-muted flex-shrink-0 mr-4">
             Complexity
           </span>
           <Badge
@@ -174,24 +174,24 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
       </div>
 
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1.5">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
           Problem statement
         </p>
-        <p className="text-t5 font-body text-text-secondary leading-relaxed">
+        <p className="text-t5 font-body text-fg-muted leading-relaxed">
           {brief.problemStatement}
         </p>
       </div>
 
       {brief.coreRequirements.length > 0 && (
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1.5">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
             Core requirements
           </p>
           <ul className="space-y-1">
             {brief.coreRequirements.map((req, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="text-text-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
-                <span className="text-t5 font-body text-text-secondary">{req}</span>
+                <span className="text-fg-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
+                <span className="text-t5 font-body text-fg-muted">{req}</span>
               </li>
             ))}
           </ul>
@@ -200,14 +200,14 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
 
       {brief.deliverables.length > 0 && (
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1.5">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
             Deliverables
           </p>
           <ul className="space-y-1">
             {brief.deliverables.map((d, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="text-text-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
-                <span className="text-t5 font-body text-text-secondary">{d}</span>
+                <span className="text-fg-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
+                <span className="text-t5 font-body text-fg-muted">{d}</span>
               </li>
             ))}
           </ul>
@@ -216,14 +216,14 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
 
       {brief.suggestedTechStack.length > 0 && (
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1.5">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
             Suggested stack
           </p>
           <div className="flex flex-wrap gap-1.5">
             {brief.suggestedTechStack.map((tech) => (
               <span
                 key={tech}
-                className="text-t6 font-mono text-text-secondary bg-surface-secondary border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
+                className="text-t6 font-mono text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
               >
                 {tech}
               </span>
@@ -239,42 +239,42 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
 
 function OpenSourceBriefCard({ brief }: { brief: IOpenSourceBrief }): React.ReactElement {
   return (
-    <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+    <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
           Open Source Brief
         </p>
-        <h2 className="text-t3 font-heading font-semibold text-text-primary tracking-tight">
+        <h2 className="text-t3 font-heading font-semibold text-fg tracking-tight">
           {brief.repoName}
         </h2>
       </div>
 
       <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-        <span className="text-t5 font-body text-text-secondary">Repository</span>
+        <span className="text-t5 font-body text-fg-muted">Repository</span>
         <a
           href={brief.repoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-t5 font-mono text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+          className="text-t5 font-mono text-brand hover:text-brand/80 transition-colors duration-150"
         >
           {brief.repoUrl.replace('https://github.com/', '')}
         </a>
       </div>
 
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1.5">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
           Contribution goal
         </p>
-        <p className="text-t5 font-body text-text-secondary leading-relaxed">
+        <p className="text-t5 font-body text-fg-muted leading-relaxed">
           {brief.contributionGoal}
         </p>
       </div>
 
       <div>
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1.5">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
           Proposed approach
         </p>
-        <p className="text-t5 font-body text-text-secondary leading-relaxed">
+        <p className="text-t5 font-body text-fg-muted leading-relaxed">
           {brief.proposedApproach}
         </p>
       </div>
@@ -288,8 +288,8 @@ function OverviewContent({ status }: { status: ProjectStatus }): React.ReactElem
   if (status === ProjectStatus.BRIEF_GENERATED) {
     return (
       <div className="p-6 text-center">
-        <p className="text-t4 font-body text-text-secondary">Workspace locked</p>
-        <p className="text-t5 font-body text-text-disabled mt-1">
+        <p className="text-t4 font-body text-fg-muted">Workspace locked</p>
+        <p className="text-t5 font-body text-fg-disabled mt-1">
           Click &quot;Begin project&quot; to start working on your brief.
         </p>
       </div>
@@ -297,8 +297,8 @@ function OverviewContent({ status }: { status: ProjectStatus }): React.ReactElem
   }
   return (
     <div className="p-6 text-center">
-      <p className="text-t4 font-body text-text-secondary">Project is active</p>
-      <p className="text-t5 font-body text-text-disabled mt-1">
+      <p className="text-t4 font-body text-fg-muted">Project is active</p>
+      <p className="text-t5 font-body text-fg-disabled mt-1">
         Use the Documents, Blockers, and AI Usage tabs to track your work.
       </p>
     </div>
@@ -471,13 +471,13 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load project.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load project.</p>
             <Link
               href="/dashboard/student"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← My projects
             </Link>
@@ -489,13 +489,13 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   if (pageState === 'not_found' || !engagement) {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Project not found.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Project not found.</p>
             <Link
               href="/dashboard/student"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               ← My projects
             </Link>
@@ -518,23 +518,23 @@ export default function ProjectWorkspacePage(): React.ReactElement {
   const allDocsPresent = completedCount === DOC_ITEMS.length;
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         {/* Back link */}
         <Link
           href="/dashboard/student"
-          className="inline-flex text-t5 font-body text-text-secondary hover:text-text-primary transition-colors duration-150"
+          className="inline-flex text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
         >
           ← My projects
         </Link>
 
         {/* Page header */}
         <div>
-          <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
             {engagement._id}
           </p>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
             {briefTitle}
           </h1>
         </div>
@@ -553,7 +553,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
             )}
 
             {/* Workspace tabs */}
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
 
               {/* Tab bar */}
               <div className="flex border-b border-zinc-800/50">
@@ -569,12 +569,12 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                       onClick={() => !isLocked && setActiveTab(id)}
                       className={[
                         'px-4 py-2.5 text-t5 font-body border-b-2 transition-colors duration-150',
-                        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green focus-visible:ring-inset',
+                        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset',
                         isActive
-                          ? 'border-accent-green text-text-primary'
+                          ? 'border-brand text-fg'
                           : isLocked
-                          ? 'border-transparent text-text-disabled cursor-not-allowed'
-                          : 'border-transparent text-text-secondary hover:text-text-primary cursor-pointer',
+                          ? 'border-transparent text-fg-disabled cursor-not-allowed'
+                          : 'border-transparent text-fg-muted hover:text-fg cursor-pointer',
                       ].join(' ')}
                       aria-current={isActive ? 'true' : undefined}
                     >
@@ -616,16 +616,16 @@ export default function ProjectWorkspacePage(): React.ReactElement {
           <div className="md:col-span-4 space-y-4">
 
             {/* Status stepper */}
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-3">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-3">
                 Progress
               </p>
               <ProjectStatusStepper status={engagement.status} />
             </div>
 
             {/* Action zone */}
-            <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 Actions
               </p>
 
@@ -652,7 +652,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                 <div className="space-y-4">
                   {/* Submission checklist */}
                   <div className="space-y-2">
-                    <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                       Submission checklist
                     </p>
                     <ul className="space-y-1.5">
@@ -664,8 +664,8 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                               className={[
                                 'flex h-4 w-4 items-center justify-center rounded-full border text-[10px]',
                                 done
-                                  ? 'border-accent-green bg-accent-green/15 text-accent-green'
-                                  : 'border-zinc-700 text-text-disabled',
+                                  ? 'border-brand bg-brand/15 text-brand'
+                                  : 'border-zinc-700 text-fg-disabled',
                               ].join(' ')}
                               aria-hidden="true"
                             >
@@ -674,7 +674,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                             <span
                               className={[
                                 'text-t5 font-body',
-                                done ? 'text-text-primary' : 'text-text-secondary',
+                                done ? 'text-fg' : 'text-fg-muted',
                               ].join(' ')}
                             >
                               {item.label}
@@ -683,7 +683,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                         );
                       })}
                     </ul>
-                    <p className="text-t6 font-mono text-text-secondary">
+                    <p className="text-t6 font-mono text-fg-muted">
                       {completedCount} of {DOC_ITEMS.length} documents
                     </p>
                   </div>
@@ -700,7 +700,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                         Finalize &amp; Hash for Review
                       </Button>
                       {!allDocsPresent && (
-                        <p className="text-t6 font-body text-text-disabled">
+                        <p className="text-t6 font-body text-fg-disabled">
                           Complete all 3 documents to finalize.
                         </p>
                       )}
@@ -708,14 +708,14 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                   ) : (
                     <div className="space-y-3">
                       {/* Three per-document hash strings (no compiled hash) */}
-                      <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                      <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                         Document hashes
                       </p>
                       <div className="space-y-2.5">
                         {DOC_ITEMS.map((item) => (
                           <div key={item.type}>
-                            <p className="text-t6 font-body text-text-secondary">{item.label}</p>
-                            <p className="text-t6 font-mono text-text-disabled break-all">
+                            <p className="text-t6 font-body text-fg-muted">{item.label}</p>
+                            <p className="text-t6 font-mono text-fg-disabled break-all">
                               {engagement.documents[item.type]?.hash ?? '—'}
                             </p>
                           </div>
@@ -733,7 +733,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
                       <button
                         type="button"
                         onClick={() => setFinalized(false)}
-                        className="text-t6 font-body text-text-secondary hover:text-text-primary transition-colors duration-150"
+                        className="text-t6 font-body text-fg-muted hover:text-fg transition-colors duration-150"
                       >
                         ← Back to editing
                       </button>
@@ -749,7 +749,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
               {(engagement.status === ProjectStatus.SUBMITTED ||
                 engagement.status === ProjectStatus.UNDER_PEER_REVIEW ||
                 engagement.status === ProjectStatus.UNDER_LECTURER_REVIEW) && (
-                <p className="text-t5 font-body text-text-secondary">Awaiting review</p>
+                <p className="text-t5 font-body text-fg-muted">Awaiting review</p>
               )}
 
               {/* REVISION_REQUIRED */}
@@ -763,7 +763,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
               {/* VERIFIED */}
               {engagement.status === ProjectStatus.VERIFIED && (
-                <p className="text-t5 font-body text-accent-green">Project verified</p>
+                <p className="text-t5 font-body text-brand">Project verified</p>
               )}
 
               {/* DENIED */}

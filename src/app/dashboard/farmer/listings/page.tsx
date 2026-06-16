@@ -160,10 +160,10 @@ export default function FarmerListingsPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load listings
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchData()}>
@@ -179,7 +179,7 @@ export default function FarmerListingsPage(): React.ReactElement {
   if (verification !== VerificationStatus.APPROVED) {
     return (
       <div className="space-y-6">
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">My Listings</h1>
+        <h1 className="text-t2 font-heading font-semibold text-fg">My Listings</h1>
         <VerificationLockout {...lockoutForStatus(verification)} />
       </div>
     );
@@ -190,8 +190,8 @@ export default function FarmerListingsPage(): React.ReactElement {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-t2 font-heading font-semibold text-text-primary">My Listings</h1>
-          <p className="text-t5 font-body text-text-secondary mt-0.5">
+          <h1 className="text-t2 font-heading font-semibold text-fg">My Listings</h1>
+          <p className="text-t5 font-body text-fg-muted mt-0.5">
             {listings.length} listing{listings.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -212,8 +212,8 @@ export default function FarmerListingsPage(): React.ReactElement {
 
       {/* Empty state */}
       {listings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface-elevated">
-          <div className="w-12 h-12 rounded bg-surface-secondary border border-white/5 flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface">
+          <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
             <svg
               width="20"
               height="20"
@@ -226,14 +226,14 @@ export default function FarmerListingsPage(): React.ReactElement {
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinejoin="round"
-                className="text-text-disabled"
+                className="text-fg-disabled"
               />
             </svg>
           </div>
-          <p className="text-t4 font-body font-medium text-text-primary mb-1">
+          <p className="text-t4 font-body font-medium text-fg mb-1">
             No listings yet
           </p>
-          <p className="text-t5 font-body text-text-secondary mb-4">
+          <p className="text-t5 font-body text-fg-muted mb-4">
             Create your first listing to start receiving orders from buyers across Kenya.
           </p>
           <Button variant="primary" onClick={() => setIsCreateOpen(true)}>
@@ -242,22 +242,22 @@ export default function FarmerListingsPage(): React.ReactElement {
         </div>
       ) : (
         /* Listings table */
-        <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+        <div className="bg-surface border border-white/5 rounded overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Listing
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest text-right">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
               Price
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest text-right">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
               Stock
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Status
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Actions
             </span>
           </div>
@@ -269,30 +269,30 @@ export default function FarmerListingsPage(): React.ReactElement {
             >
               {/* Title + meta */}
               <div className="min-w-0">
-                <p className="text-t5 font-body font-medium text-text-primary truncate">
+                <p className="text-t5 font-body font-medium text-fg truncate">
                   {listing.title}
                 </p>
-                <p className="text-t6 font-body text-text-disabled">
+                <p className="text-t6 font-body text-fg-disabled">
                   {listing.cropName} · {listing.pickupCounty} · {formatDate(listing.createdAt)}
                 </p>
               </div>
 
               {/* Price */}
               <div className="text-right">
-                <span className="text-t5 font-mono text-text-primary">
+                <span className="text-t5 font-mono text-fg">
                   KES {listing.currentPricePerUnit.toLocaleString()}
                 </span>
-                <span className="text-t6 text-text-disabled ml-1">
+                <span className="text-t6 text-fg-disabled ml-1">
                   /{listing.unit.toLowerCase()}
                 </span>
               </div>
 
               {/* Stock */}
               <div className="text-right">
-                <span className="text-t5 font-mono text-text-secondary">
+                <span className="text-t5 font-mono text-fg-muted">
                   {listing.quantityAvailable.toLocaleString()}
                 </span>
-                <span className="text-t6 text-text-disabled ml-1">
+                <span className="text-t6 text-fg-disabled ml-1">
                   {listing.unit.toLowerCase()}
                 </span>
               </div>

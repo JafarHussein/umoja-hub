@@ -35,10 +35,10 @@ export default function KnowledgeArticleCard({
   return (
     <a
       href={`/knowledge/${slug}`}
-      className="block bg-surface-elevated border border-white/5 rounded p-6 transition-all duration-150 hover:border-white/10 hover:bg-surface-secondary"
+      className="block bg-surface border border-white/5 rounded p-6 transition-all duration-150 hover:border-white/10 hover:bg-surface-raised"
     >
       {imageUrl && (
-        <div className="mb-4 rounded overflow-hidden bg-surface-secondary h-40 w-full">
+        <div className="mb-4 rounded overflow-hidden bg-surface-raised h-40 w-full">
           <img
             src={imageUrl}
             alt={title}
@@ -55,11 +55,11 @@ export default function KnowledgeArticleCard({
         />
       </div>
 
-      <h3 className="font-heading text-t3 text-text-primary mb-2 line-clamp-2 leading-snug">
+      <h3 className="font-heading text-t3 text-fg mb-2 line-clamp-2 leading-snug">
         {title}
       </h3>
 
-      <p className="font-body text-t5 text-text-secondary mb-4 line-clamp-3">
+      <p className="font-body text-t5 text-fg-muted mb-4 line-clamp-3">
         {summary}
       </p>
 
@@ -68,7 +68,7 @@ export default function KnowledgeArticleCard({
           {cropTags.slice(0, 4).map((tag) => (
             <span
               key={tag}
-              className="font-body text-t6 text-text-disabled bg-surface-secondary border border-white/5 px-2 py-1 rounded-[2px]"
+              className="font-body text-t6 text-fg-disabled bg-surface-raised border border-white/5 px-2 py-1 rounded-[2px]"
             >
               {tag}
             </span>
@@ -77,7 +77,7 @@ export default function KnowledgeArticleCard({
       )}
 
       {publishedAt && (
-        <p className="font-body text-t6 text-text-disabled">
+        <p className="font-body text-t6 text-fg-disabled">
           {formatDate(publishedAt)}
         </p>
       )}

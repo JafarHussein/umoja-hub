@@ -47,11 +47,11 @@ export function MarketplaceFilters(): React.ReactElement {
       aria-label="Filter listings"
     >
       <div className="flex items-center justify-between">
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">Filters</p>
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">Filters</p>
         {hasActiveFilters && (
           <button
             onClick={clearAll}
-            className="text-t6 text-text-secondary hover:text-text-primary transition-colors duration-150 underline underline-offset-2"
+            className="text-t6 text-fg-muted hover:text-fg transition-colors duration-150 underline underline-offset-2"
           >
             Clear all
           </button>
@@ -60,7 +60,7 @@ export function MarketplaceFilters(): React.ReactElement {
 
       {/* Full-text search — matches crop, title, and description */}
       <div className="space-y-1.5">
-        <label htmlFor="filter-search" className="text-t5 font-body text-text-secondary block">
+        <label htmlFor="filter-search" className="text-t5 font-body text-fg-muted block">
           Search
         </label>
         <Input
@@ -74,14 +74,14 @@ export function MarketplaceFilters(): React.ReactElement {
 
       {/* County */}
       <div className="space-y-1.5">
-        <label htmlFor="filter-county" className="text-t5 font-body text-text-secondary block">
+        <label htmlFor="filter-county" className="text-t5 font-body text-fg-muted block">
           County
         </label>
         <select
           id="filter-county"
           value={county}
           onChange={(e) => updateParam('county', e.target.value)}
-          className="w-full min-h-[44px] bg-surface-secondary border border-white/10 rounded-sm text-t5 font-body text-text-primary px-3 focus:outline-none focus:border-accent-green focus:ring-1 focus:ring-accent-green transition-all duration-150"
+          className="w-full min-h-[44px] bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
         >
           <option value="">All counties</option>
           {KENYAN_COUNTIES.map((c) => (
@@ -94,7 +94,7 @@ export function MarketplaceFilters(): React.ReactElement {
 
       {/* Price range */}
       <div className="space-y-1.5">
-        <p className="text-t5 font-body text-text-secondary">Price range (KES)</p>
+        <p className="text-t5 font-body text-fg-muted">Price range (KES)</p>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -103,7 +103,7 @@ export function MarketplaceFilters(): React.ReactElement {
             onChange={(e) => updateParam('minPrice', e.target.value)}
             aria-label="Minimum price"
           />
-          <span className="text-text-disabled flex-shrink-0" aria-hidden="true">
+          <span className="text-fg-disabled flex-shrink-0" aria-hidden="true">
             –
           </span>
           <Input
@@ -126,10 +126,10 @@ export function MarketplaceFilters(): React.ReactElement {
             onChange={(e) => updateParam('verifiedOnly', e.target.checked ? 'true' : '')}
             aria-label="Show verified listings only"
           />
-          <div className="w-9 h-5 bg-surface-secondary rounded-full border border-white/10 peer-checked:bg-accent-green peer-focus-visible:ring-2 peer-focus-visible:ring-accent-green peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-primary transition-colors duration-150" />
-          <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-text-primary rounded-full shadow transition-transform duration-150 peer-checked:translate-x-4" />
+          <div className="w-9 h-5 bg-surface-raised rounded-full border border-white/10 peer-checked:bg-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background transition-colors duration-150" />
+          <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-fg rounded-full shadow transition-transform duration-150 peer-checked:translate-x-4" />
         </div>
-        <span className="text-t5 font-body text-text-secondary group-hover:text-text-primary transition-colors duration-150">
+        <span className="text-t5 font-body text-fg-muted group-hover:text-fg transition-colors duration-150">
           Verified listings only
         </span>
       </label>

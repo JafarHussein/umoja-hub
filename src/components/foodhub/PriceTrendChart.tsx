@@ -25,7 +25,7 @@ interface IPriceTrendChartProps {
 
 function ChartSkeleton() {
   return (
-    <div className="w-full h-64 bg-surface-secondary border border-white/5 rounded animate-shimmer"
+    <div className="w-full h-64 bg-surface-raised border border-white/5 rounded animate-shimmer"
       style={{
         backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
         backgroundSize: '200% 100%',
@@ -54,12 +54,12 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-surface-elevated border border-white/10 rounded px-3 py-2">
-      <p className="font-body text-t6 text-text-secondary mb-1">{label}</p>
-      <p className="font-mono text-t5 text-accent-green">
+    <div className="bg-surface border border-white/10 rounded px-3 py-2">
+      <p className="font-body text-t6 text-fg-muted mb-1">{label}</p>
+      <p className="font-mono text-t5 text-brand">
         KES {payload[0]?.value?.toFixed(2)}
       </p>
-      <p className="font-body text-t6 text-text-disabled capitalize">
+      <p className="font-body text-t6 text-fg-disabled capitalize">
         {payload[0]?.payload?.source?.replace('_', ' ').toLowerCase()}
       </p>
     </div>
@@ -78,9 +78,9 @@ export default function PriceTrendChart({
 
   if (!data.length) {
     return (
-      <div className="w-full h-64 flex flex-col items-center justify-center bg-surface-secondary border border-white/5 rounded">
-        <p className="font-body text-t5 text-text-secondary">No price data available</p>
-        <p className="font-body text-t6 text-text-disabled mt-1">
+      <div className="w-full h-64 flex flex-col items-center justify-center bg-surface-raised border border-white/5 rounded">
+        <p className="font-body text-t5 text-fg-muted">No price data available</p>
+        <p className="font-body text-t6 text-fg-disabled mt-1">
           Price history for {cropName} will appear here once trading begins
         </p>
       </div>
@@ -95,7 +95,7 @@ export default function PriceTrendChart({
 
   return (
     <div className="w-full">
-      <p className="font-body text-t6 text-text-secondary mb-3">
+      <p className="font-body text-t6 text-fg-muted mb-3">
         KES per {unit} · {data.length} data point{data.length !== 1 ? 's' : ''}
       </p>
       <ResponsiveContainer width="100%" height={240}>

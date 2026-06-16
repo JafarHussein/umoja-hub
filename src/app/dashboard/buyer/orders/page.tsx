@@ -84,7 +84,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           <ListSkeleton rows={5} />
         </div>
@@ -95,10 +95,10 @@ export default function BuyerOrdersPage(): React.ReactElement {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-text-secondary">Failed to load orders.</p>
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
+            <p className="text-t4 font-body text-fg-muted">Failed to load orders.</p>
             <div className="mt-3">
               <Button variant="ghost" size="sm" onClick={() => void fetchOrders()}>
                 Retry
@@ -112,22 +112,22 @@ export default function BuyerOrdersPage(): React.ReactElement {
 
   // ── Ready ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         {/* Page header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               Buyer · Dashboard
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
               My Orders
             </h1>
           </div>
           <Link
             href="/marketplace"
-            className="text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+            className="text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
           >
             Browse marketplace →
           </Link>
@@ -135,33 +135,33 @@ export default function BuyerOrdersPage(): React.ReactElement {
 
         {/* Orders list */}
         {orders.length === 0 ? (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-10 text-center">
-            <p className="text-t4 font-body text-text-secondary">No orders yet.</p>
-            <p className="text-t5 font-body text-text-disabled mt-1">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-10 text-center">
+            <p className="text-t4 font-body text-fg-muted">No orders yet.</p>
+            <p className="text-t5 font-body text-fg-disabled mt-1">
               Find produce from verified farmers in the marketplace.
             </p>
             <Link
               href="/marketplace"
-              className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
             >
               Go to marketplace →
             </Link>
           </div>
         ) : (
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
             {orders.map((order) => (
               <Link
                 key={order._id}
                 href={`/dashboard/buyer/orders/${order._id}`}
-                className="block hover:bg-surface-secondary transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-green focus-visible:ring-inset"
+                className="block hover:bg-surface-raised transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset"
               >
                 <div className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-800/50 last:border-0">
                   {/* Left: crop name + reference + farmer */}
                   <div className="space-y-0.5 min-w-0 mr-4">
-                    <p className="text-t4 font-body font-medium text-text-primary truncate capitalize">
+                    <p className="text-t4 font-body font-medium text-fg truncate capitalize">
                       {order.cropName}
                     </p>
-                    <p className="text-t6 font-mono text-text-disabled">
+                    <p className="text-t6 font-mono text-fg-disabled">
                       {order.orderReferenceId}
                       {' · '}
                       {order.farmer.firstName} {order.farmer.lastName}
@@ -170,7 +170,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
 
                   {/* Right: amount + status */}
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-t4 font-mono font-semibold text-text-primary tabular-nums">
+                    <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
                       KES {order.totalAmountKES.toLocaleString()}
                     </span>
                     <Badge

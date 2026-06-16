@@ -131,7 +131,7 @@ async function ListingsGrid({ searchParams }: IListingsGridProps): Promise<React
   if (listings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-12 h-12 rounded bg-surface-secondary border border-white/5 flex items-center justify-center mb-4">
+        <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
           <svg
             width="20"
             height="20"
@@ -144,17 +144,17 @@ async function ListingsGrid({ searchParams }: IListingsGridProps): Promise<React
               stroke="currentColor"
               strokeWidth="1.5"
               strokeLinejoin="round"
-              className="text-text-disabled"
+              className="text-fg-disabled"
             />
           </svg>
         </div>
-        <p className="text-t4 font-body font-medium text-text-primary mb-1">No listings found</p>
-        <p className="text-t5 font-body text-text-secondary">
+        <p className="text-t4 font-body font-medium text-fg mb-1">No listings found</p>
+        <p className="text-t5 font-body text-fg-muted">
           Try adjusting your filters or check back soon for new produce.
         </p>
         <Link
           href="/marketplace"
-          className="mt-4 text-t5 font-body text-accent-green hover:underline underline-offset-2"
+          className="mt-4 text-t5 font-body text-brand hover:underline underline-offset-2"
         >
           Clear filters
         </Link>
@@ -164,7 +164,7 @@ async function ListingsGrid({ searchParams }: IListingsGridProps): Promise<React
 
   return (
     <div className="space-y-4">
-      <p className="text-t6 font-body text-text-disabled">
+      <p className="text-t6 font-body text-fg-disabled">
         {total.toLocaleString()} listing{total !== 1 ? 's' : ''} available
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,17 +184,17 @@ export default async function MarketplacePage({ searchParams }: IPageProps): Pro
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-white/5 bg-surface-primary sticky top-0 z-10">
+      <div className="border-b border-white/5 bg-background sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-t5 font-body text-text-secondary hover:text-text-primary transition-colors duration-150">
+          <Link href="/" className="text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150">
             ← Back
           </Link>
-          <h1 className="text-t3 font-heading font-semibold text-text-primary">Marketplace</h1>
+          <h1 className="text-t3 font-heading font-semibold text-fg">Marketplace</h1>
           <Link
             href="/auth/login"
-            className="text-t5 font-body text-accent-green hover:underline underline-offset-2"
+            className="text-t5 font-body text-brand hover:underline underline-offset-2"
           >
             Sell produce
           </Link>

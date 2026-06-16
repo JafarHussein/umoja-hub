@@ -19,8 +19,8 @@ interface ISupplierCardProps {
 function RegistrationBadge({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-t6 text-text-disabled uppercase">{label}</span>
-      <span className="font-mono text-t6 text-accent-green">{value}</span>
+      <span className="font-mono text-t6 text-fg-disabled uppercase">{label}</span>
+      <span className="font-mono text-t6 text-brand">{value}</span>
     </div>
   );
 }
@@ -38,12 +38,12 @@ export default function SupplierCard({
     registrations.kebsNumber || registrations.pcpbNumber || registrations.kephisNumber;
 
   return (
-    <div className="bg-surface-elevated border border-white/5 rounded p-6">
+    <div className="bg-surface border border-white/5 rounded p-6">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="font-heading text-t3 text-text-primary truncate">{businessName}</h4>
+            <h4 className="font-heading text-t3 text-fg truncate">{businessName}</h4>
             {/* Verified badge */}
             <svg
               width="16"
@@ -63,7 +63,7 @@ export default function SupplierCard({
               />
             </svg>
           </div>
-          <p className="font-body text-t5 text-text-secondary mt-1">{county}</p>
+          <p className="font-body text-t5 text-fg-muted mt-1">{county}</p>
         </div>
       </div>
 
@@ -73,7 +73,7 @@ export default function SupplierCard({
           {inputCategories.map((cat) => (
             <span
               key={cat}
-              className="font-body text-t6 text-text-secondary bg-surface-secondary border border-white/5 px-2 py-1 rounded-[2px]"
+              className="font-body text-t6 text-fg-muted bg-surface-raised border border-white/5 px-2 py-1 rounded-[2px]"
             >
               {cat.replace('_', ' ')}
             </span>
@@ -83,7 +83,7 @@ export default function SupplierCard({
 
       {/* Registration numbers */}
       {hasRegistrations && (
-        <div className="mb-4 p-3 bg-surface-secondary border border-white/5 rounded space-y-1">
+        <div className="mb-4 p-3 bg-surface-raised border border-white/5 rounded space-y-1">
           {registrations.kebsNumber && (
             <RegistrationBadge label="KEBS" value={registrations.kebsNumber} />
           )}
@@ -99,24 +99,24 @@ export default function SupplierCard({
       {/* Contact details */}
       <div className="space-y-1">
         {contactPhone && (
-          <p className="font-body text-t5 text-text-secondary">
-            <span className="text-text-disabled">Tel: </span>
+          <p className="font-body text-t5 text-fg-muted">
+            <span className="text-fg-disabled">Tel: </span>
             <a
               href={`tel:${contactPhone}`}
-              className="hover:text-text-primary transition-all duration-150"
+              className="hover:text-fg transition-all duration-150"
             >
               {contactPhone}
             </a>
           </p>
         )}
         {physicalAddress && (
-          <p className="font-body text-t5 text-text-secondary">
-            <span className="text-text-disabled">Location: </span>
+          <p className="font-body text-t5 text-fg-muted">
+            <span className="text-fg-disabled">Location: </span>
             {physicalAddress}
           </p>
         )}
         {verifiedAt && (
-          <p className="font-body text-t6 text-text-disabled">
+          <p className="font-body text-t6 text-fg-disabled">
             Verified{' '}
             {new Date(verifiedAt).toLocaleDateString('en-KE', {
               month: 'short',

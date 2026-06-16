@@ -21,7 +21,7 @@ export interface IVerificationLockoutProps {
 
 const TONE: Record<LockoutTone, { border: string; icon: string }> = {
   pending: { border: 'border-yellow-800/40', icon: 'text-yellow-400' },
-  action: { border: 'border-white/10', icon: 'text-text-secondary' },
+  action: { border: 'border-white/10', icon: 'text-fg-muted' },
   rejected: { border: 'border-red-800/40', icon: 'text-red-400' },
 };
 
@@ -37,12 +37,12 @@ export function VerificationLockout({
     <div className="flex flex-col items-center justify-center py-16">
       <div
         className={[
-          'w-full max-w-md mx-auto rounded bg-surface-elevated border p-8 text-center',
+          'w-full max-w-md mx-auto rounded bg-surface border p-8 text-center',
           toneClasses.border,
         ].join(' ')}
         role="status"
       >
-        <div className="w-12 h-12 rounded bg-surface-secondary border border-white/5 flex items-center justify-center mx-auto mb-5">
+        <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mx-auto mb-5">
           <svg
             width="20"
             height="20"
@@ -56,16 +56,16 @@ export function VerificationLockout({
           </svg>
         </div>
 
-        <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
           Verification
         </p>
-        <h2 className="text-t3 font-heading font-medium text-text-primary mb-2">{title}</h2>
-        <p className="text-t5 font-body text-text-secondary">{message}</p>
+        <h2 className="text-t3 font-heading font-medium text-fg mb-2">{title}</h2>
+        <p className="text-t5 font-body text-fg-muted">{message}</p>
 
         {cta && (
           <Link
             href={cta.href}
-            className="inline-flex items-center justify-center min-h-[44px] mt-6 px-5 rounded-sm bg-accent-green text-white text-t5 font-body font-medium transition-colors duration-150 hover:bg-accent-green/90"
+            className="inline-flex items-center justify-center min-h-[44px] mt-6 px-5 rounded-sm bg-brand text-white text-t5 font-body font-medium transition-colors duration-150 hover:bg-brand/90"
           >
             {cta.label}
           </Link>

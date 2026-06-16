@@ -152,10 +152,10 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load verification queue
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchQueue()}>
@@ -174,18 +174,18 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">
+        <h1 className="text-t2 font-heading font-semibold text-fg">
           Verification queue
         </h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5">
+        <p className="text-t5 font-body text-fg-muted mt-0.5">
           {total} pending verification{total !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Empty state */}
       {farmers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface-elevated">
-          <div className="w-12 h-12 rounded bg-surface-secondary border border-white/5 flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface">
+          <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
             <svg
               width="20"
               height="20"
@@ -199,35 +199,35 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-accent-green"
+                className="text-brand"
               />
             </svg>
           </div>
-          <p className="text-t4 font-body font-medium text-text-primary mb-1">
+          <p className="text-t4 font-body font-medium text-fg mb-1">
             Queue is clear
           </p>
-          <p className="text-t5 font-body text-text-secondary">
+          <p className="text-t5 font-body text-fg-muted">
             All farmer verification requests have been reviewed.
           </p>
         </div>
       ) : (
         /* Queue table */
-        <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+        <div className="bg-surface border border-white/5 rounded overflow-hidden">
           {/* Header */}
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Farmer
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               County
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Document
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Submitted
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Actions
             </span>
           </div>
@@ -239,26 +239,26 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
             >
               {/* Farmer name + crops */}
               <div className="min-w-0">
-                <p className="text-t5 font-body font-medium text-text-primary">
+                <p className="text-t5 font-body font-medium text-fg">
                   {farmer.firstName} {farmer.lastName}
                 </p>
-                <p className="text-t6 font-body text-text-disabled truncate">
+                <p className="text-t6 font-body text-fg-disabled truncate">
                   {farmer.farmerData.cropsGrown.join(', ')}
                 </p>
               </div>
 
               {/* County */}
-              <span className="text-t5 font-body text-text-secondary">{farmer.county}</span>
+              <span className="text-t5 font-body text-fg-muted">{farmer.county}</span>
 
               {/* Document type */}
-              <span className="text-t6 font-mono text-text-secondary">
+              <span className="text-t6 font-mono text-fg-muted">
                 {farmer.farmerData.verificationDocument
                   ? docTypeLabel(farmer.farmerData.verificationDocument.documentType)
                   : '—'}
               </span>
 
               {/* Submission date */}
-              <span className="text-t6 font-body text-text-disabled">
+              <span className="text-t6 font-body text-fg-disabled">
                 {farmer.farmerData.verificationDocument
                   ? formatDate(farmer.farmerData.verificationDocument.submittedAt)
                   : formatDate(farmer.createdAt)}
@@ -373,37 +373,37 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
           <div className="space-y-5">
             {/* Personal info */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   Phone
                 </p>
-                <p className="text-t5 font-mono text-text-primary">
+                <p className="text-t5 font-mono text-fg">
                   {selectedFarmer.phoneNumber}
                 </p>
               </div>
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   County
                 </p>
-                <p className="text-t5 font-body text-text-primary">
+                <p className="text-t5 font-body text-fg">
                   {selectedFarmer.county}
                 </p>
               </div>
               {selectedFarmer.farmerData.farmSizeAcres && (
-                <div className="bg-surface-secondary rounded p-3">
-                  <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+                <div className="bg-surface-raised rounded p-3">
+                  <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                     Farm size
                   </p>
-                  <p className="text-t5 font-body text-text-primary">
+                  <p className="text-t5 font-body text-fg">
                     {selectedFarmer.farmerData.farmSizeAcres} acres
                   </p>
                 </div>
               )}
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   Registered
                 </p>
-                <p className="text-t5 font-body text-text-primary">
+                <p className="text-t5 font-body text-fg">
                   {formatDate(selectedFarmer.createdAt)}
                 </p>
               </div>
@@ -411,14 +411,14 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
 
             {/* Crops */}
             <div>
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
                 Crops grown
               </p>
               <div className="flex flex-wrap gap-2">
                 {selectedFarmer.farmerData.cropsGrown.map((crop) => (
                   <span
                     key={crop}
-                    className="text-t6 font-body text-text-secondary bg-surface-secondary border border-white/5 rounded-[2px] px-2 py-1"
+                    className="text-t6 font-body text-fg-muted bg-surface-raised border border-white/5 rounded-[2px] px-2 py-1"
                   >
                     {crop}
                   </span>
@@ -429,23 +429,23 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
             {/* Verification document */}
             {selectedFarmer.farmerData.verificationDocument ? (
               <div className="space-y-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                   Verification document
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-surface-secondary rounded p-3">
-                    <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+                  <div className="bg-surface-raised rounded p-3">
+                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                       Type
                     </p>
-                    <p className="text-t5 font-body text-text-primary">
+                    <p className="text-t5 font-body text-fg">
                       {docTypeLabel(selectedFarmer.farmerData.verificationDocument.documentType)}
                     </p>
                   </div>
-                  <div className="bg-surface-secondary rounded p-3">
-                    <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+                  <div className="bg-surface-raised rounded p-3">
+                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                       Number
                     </p>
-                    <p className="text-t5 font-mono text-text-primary">
+                    <p className="text-t5 font-mono text-fg">
                       {selectedFarmer.farmerData.verificationDocument.documentNumber}
                     </p>
                   </div>
@@ -454,7 +454,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                   href={selectedFarmer.farmerData.verificationDocument.documentImageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-t5 font-body text-accent-green hover:underline underline-offset-2"
+                  className="inline-flex items-center gap-2 text-t5 font-body text-brand hover:underline underline-offset-2"
                 >
                   View document image
                   <svg
@@ -475,9 +475,9 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                 </a>
               </div>
             ) : (
-              <div className="bg-surface-secondary rounded p-3">
+              <div className="bg-surface-raised rounded p-3">
                 <Badge label="PENDING" />
-                <p className="text-t5 font-body text-text-disabled mt-1">
+                <p className="text-t5 font-body text-fg-disabled mt-1">
                   No verification document submitted yet
                 </p>
               </div>

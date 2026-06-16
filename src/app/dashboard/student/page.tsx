@@ -51,16 +51,16 @@ export default function StudentDashboardPage(): React.ReactElement {
 
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-surface-primary">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           <div className="space-y-1.5">
-            <div className="h-3 w-20 bg-surface-secondary rounded-sm animate-pulse" />
-            <div className="h-7 w-36 bg-surface-secondary rounded-sm animate-pulse" />
+            <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
+            <div className="h-7 w-36 bg-surface-raised rounded-sm animate-pulse" />
           </div>
-          <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-10 space-y-3 flex flex-col items-center">
-            <div className="h-4 w-40 bg-surface-secondary rounded-sm animate-pulse" />
-            <div className="h-4 w-64 bg-surface-secondary rounded-sm animate-pulse" />
-            <div className="h-9 w-32 bg-surface-secondary rounded-sm animate-pulse mt-2" />
+          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-10 space-y-3 flex flex-col items-center">
+            <div className="h-4 w-40 bg-surface-raised rounded-sm animate-pulse" />
+            <div className="h-4 w-64 bg-surface-raised rounded-sm animate-pulse" />
+            <div className="h-9 w-32 bg-surface-raised rounded-sm animate-pulse mt-2" />
           </div>
         </div>
       </div>
@@ -68,27 +68,27 @@ export default function StudentDashboardPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
               Student · Dashboard
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-text-primary tracking-tight">
+            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
               My Projects
             </h1>
           </div>
         </div>
 
-        <div className="bg-surface-elevated border border-zinc-800/50 rounded-[4px] p-10 text-center">
-          <p className="text-t4 font-body text-text-secondary">No active project</p>
-          <p className="text-t5 font-body text-text-disabled mt-1">
+        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-10 text-center">
+          <p className="text-t4 font-body text-fg-muted">No active project</p>
+          <p className="text-t5 font-body text-fg-disabled mt-1">
             Create a project to begin your verified portfolio.
           </p>
           <Link
             href="/dashboard/student/projects/new"
-            className="inline-flex mt-4 text-t5 font-body text-accent-green hover:text-accent-green/80 transition-colors duration-150"
+            className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
           >
             Start new project →
           </Link>

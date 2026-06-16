@@ -58,15 +58,15 @@ export default async function KnowledgeArticlePage({
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8 md:px-8">
         {/* Breadcrumb */}
         <nav className="mb-6">
-          <Link href="/knowledge" className="font-body text-t5 text-text-secondary hover:text-text-primary transition-all duration-150">
+          <Link href="/knowledge" className="font-body text-t5 text-fg-muted hover:text-fg transition-all duration-150">
             Knowledge Hub
           </Link>
-          <span className="font-body text-t5 text-text-disabled mx-2">/</span>
-          <span className="font-body text-t5 text-text-disabled capitalize">
+          <span className="font-body text-t5 text-fg-disabled mx-2">/</span>
+          <span className="font-body text-t5 text-fg-disabled capitalize">
             {article.category.replace('_', ' ').toLowerCase()}
           </span>
         </nav>
@@ -80,15 +80,15 @@ export default async function KnowledgeArticlePage({
             />
           </div>
 
-          <h1 className="font-heading text-t1 text-text-primary mb-4 leading-tight">
+          <h1 className="font-heading text-t1 text-fg mb-4 leading-tight">
             {article.title}
           </h1>
 
-          <p className="font-body text-t4 text-text-secondary mb-4">
+          <p className="font-body text-t4 text-fg-muted mb-4">
             {article.summary}
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 font-body text-t6 text-text-disabled">
+          <div className="flex flex-wrap items-center gap-4 font-body text-t6 text-fg-disabled">
             {article.author && <span>By {article.author}</span>}
             {article.publishedAt && (
               <span>
@@ -102,13 +102,13 @@ export default async function KnowledgeArticlePage({
           </div>
 
           {article.sourceUrl && (
-            <div className="mt-4 p-4 bg-surface-secondary border border-white/5 rounded">
-              <p className="font-body text-t6 text-text-secondary mb-1">Primary source</p>
+            <div className="mt-4 p-4 bg-surface-raised border border-white/5 rounded">
+              <p className="font-body text-t6 text-fg-muted mb-1">Primary source</p>
               <a
                 href={article.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-body text-t5 text-accent-green hover:opacity-80 transition-all duration-150 break-all"
+                className="font-body text-t5 text-brand hover:opacity-80 transition-all duration-150 break-all"
               >
                 {article.sourceUrl}
               </a>
@@ -118,7 +118,7 @@ export default async function KnowledgeArticlePage({
 
         {/* Article image */}
         {article.imageUrl && (
-          <div className="mb-8 rounded overflow-hidden bg-surface-secondary">
+          <div className="mb-8 rounded overflow-hidden bg-surface-raised">
             <img
               src={article.imageUrl}
               alt={article.title}
@@ -134,7 +134,7 @@ export default async function KnowledgeArticlePage({
             {article.cropTags.map((tag) => (
               <span
                 key={tag}
-                className="font-body text-t6 text-text-disabled bg-surface-secondary border border-white/5 px-2 py-1 rounded-[2px]"
+                className="font-body text-t6 text-fg-disabled bg-surface-raised border border-white/5 px-2 py-1 rounded-[2px]"
               >
                 {tag}
               </span>
@@ -144,7 +144,7 @@ export default async function KnowledgeArticlePage({
 
         {/* Content — Markdown rendered */}
         <article className="prose prose-invert max-w-none">
-          <div className="font-body text-t4 text-text-primary leading-relaxed [&_h2]:font-heading [&_h2]:text-t2 [&_h2]:text-text-primary [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:font-heading [&_h3]:text-t3 [&_h3]:text-text-primary [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:pl-6 [&_li]:mb-2 [&_li]:text-text-primary [&_strong]:text-text-primary [&_a]:text-accent-green [&_a:hover]:opacity-80">
+          <div className="font-body text-t4 text-fg leading-relaxed [&_h2]:font-heading [&_h2]:text-t2 [&_h2]:text-fg [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:font-heading [&_h3]:text-t3 [&_h3]:text-fg [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:pl-6 [&_li]:mb-2 [&_li]:text-fg [&_strong]:text-fg [&_a]:text-brand [&_a:hover]:opacity-80">
             <ReactMarkdown>{article.content}</ReactMarkdown>
           </div>
         </article>
@@ -156,7 +156,7 @@ export default async function KnowledgeArticlePage({
               sourceInstitution={article.sourceInstitution}
               {...(article.sourceUrl !== undefined && { sourceUrl: article.sourceUrl })}
             />
-            <p className="font-body text-t6 text-text-disabled">
+            <p className="font-body text-t6 text-fg-disabled">
               Content verified against {article.sourceInstitution} standards
             </p>
           </div>

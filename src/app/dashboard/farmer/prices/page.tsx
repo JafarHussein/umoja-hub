@@ -12,12 +12,12 @@ export default async function FarmerPricesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8 md:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading text-t1 text-text-primary mb-2">Price Intelligence</h1>
-          <p className="font-body text-t4 text-text-secondary">
+          <h1 className="font-heading text-t1 text-fg mb-2">Price Intelligence</h1>
+          <p className="font-body text-t4 text-fg-muted">
             Track crop price trends in your county and get notified when prices reach your target.
           </p>
         </div>

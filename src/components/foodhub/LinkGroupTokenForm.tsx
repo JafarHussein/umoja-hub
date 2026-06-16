@@ -57,11 +57,11 @@ export function LinkGroupTokenForm(): React.ReactElement {
   }
 
   return (
-    <div className="bg-surface-elevated border border-white/5 rounded p-5 max-w-md">
-      <h2 className="text-t3 font-heading font-medium text-text-primary">
+    <div className="bg-surface border border-white/5 rounded p-5 max-w-md">
+      <h2 className="text-t3 font-heading font-medium text-fg">
         Link Institutional Group Token
       </h2>
-      <p className="text-t6 font-body text-text-secondary mt-1 mb-4">
+      <p className="text-t6 font-body text-fg-muted mt-1 mb-4">
         Received a join code from a cooperative administrator? Enter it to join the group. Codes
         are single-use and only verified farmers can redeem them.
       </p>
@@ -79,7 +79,7 @@ export function LinkGroupTokenForm(): React.ReactElement {
           aria-label="Group join token"
         />
         {success && (
-          <p className="text-t6 font-body text-accent-green" role="status">
+          <p className="text-t6 font-body text-brand" role="status">
             {success}
           </p>
         )}

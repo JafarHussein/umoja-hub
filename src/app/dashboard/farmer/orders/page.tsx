@@ -79,14 +79,14 @@ function HandoverCountdown({ paidAt }: { paidAt: string }): React.ReactElement {
       ? 'text-red-400 border-red-800/40 bg-red-950/40'
       : urgency === 'warning'
         ? 'text-yellow-400 border-yellow-800/40 bg-yellow-950/40'
-        : 'text-accent-green border-accent-green/30 bg-accent-green/10';
+        : 'text-brand border-brand/30 bg-brand/10';
 
   const dot =
     urgency === 'elapsed'
       ? 'bg-red-500'
       : urgency === 'warning'
         ? 'bg-yellow-400'
-        : 'bg-accent-green';
+        : 'bg-brand';
 
   return (
     <span
@@ -206,10 +206,10 @@ export default function FarmerOrdersPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-text-primary mb-2">
+        <p className="text-t4 font-body font-medium text-fg mb-2">
           Could not load orders
         </p>
-        <p className="text-t5 font-body text-text-secondary mb-4">
+        <p className="text-t5 font-body text-fg-muted mb-4">
           Check your connection and try again.
         </p>
         <Button variant="secondary" onClick={() => void fetchOrders()}>
@@ -223,16 +223,16 @@ export default function FarmerOrdersPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-text-primary">Orders</h1>
-        <p className="text-t5 font-body text-text-secondary mt-0.5">
+        <h1 className="text-t2 font-heading font-semibold text-fg">Orders</h1>
+        <p className="text-t5 font-body text-fg-muted mt-0.5">
           {orders.length} order{orders.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Empty state */}
       {orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface-elevated">
-          <div className="w-12 h-12 rounded bg-surface-secondary border border-white/5 flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface">
+          <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
             <svg
               width="20"
               height="20"
@@ -248,39 +248,39 @@ export default function FarmerOrdersPage(): React.ReactElement {
                 rx="1"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="text-text-disabled"
+                className="text-fg-disabled"
               />
               <path
                 d="M7 5V4a3 3 0 016 0v1"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="text-text-disabled"
+                className="text-fg-disabled"
               />
             </svg>
           </div>
-          <p className="text-t4 font-body font-medium text-text-primary mb-1">No orders yet</p>
-          <p className="text-t5 font-body text-text-secondary">
+          <p className="text-t4 font-body font-medium text-fg mb-1">No orders yet</p>
+          <p className="text-t5 font-body text-fg-muted">
             Orders will appear here once buyers purchase from your listings.
           </p>
         </div>
       ) : (
         /* Orders list */
-        <div className="bg-surface-elevated border border-white/5 rounded overflow-hidden">
+        <div className="bg-surface border border-white/5 rounded overflow-hidden">
           {/* Header */}
           <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Ref
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Order
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest text-right">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
               Amount
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Progress
             </span>
-            <span className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
               Actions
             </span>
           </div>
@@ -291,26 +291,26 @@ export default function FarmerOrdersPage(): React.ReactElement {
               className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
             >
               {/* Reference */}
-              <span className="text-t6 font-mono text-text-disabled whitespace-nowrap">
+              <span className="text-t6 font-mono text-fg-disabled whitespace-nowrap">
                 {order.orderReferenceId}
               </span>
 
               {/* Crop + buyer */}
               <div className="min-w-0">
-                <p className="text-t5 font-body font-medium text-text-primary capitalize">
+                <p className="text-t5 font-body font-medium text-fg capitalize">
                   {order.cropName} ·{' '}
-                  <span className="font-normal text-text-secondary">
+                  <span className="font-normal text-fg-muted">
                     {order.quantityOrdered} {order.unit.toLowerCase()}
                   </span>
                 </p>
-                <p className="text-t6 font-body text-text-disabled">
+                <p className="text-t6 font-body text-fg-disabled">
                   {order.buyer.firstName} {order.buyer.lastName} · {formatDate(order.createdAt)}
                 </p>
               </div>
 
               {/* Amount */}
               <div className="text-right">
-                <span className="text-t5 font-mono text-text-primary">
+                <span className="text-t5 font-mono text-fg">
                   KES {order.totalAmountKES.toLocaleString()}
                 </span>
                 <p className="text-t6">
@@ -370,35 +370,35 @@ export default function FarmerOrdersPage(): React.ReactElement {
           <div className="space-y-5">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   Crop
                 </p>
-                <p className="text-t5 font-body text-text-primary capitalize">
+                <p className="text-t5 font-body text-fg capitalize">
                   {selectedOrder.cropName}
                 </p>
               </div>
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   Quantity
                 </p>
-                <p className="text-t5 font-mono text-text-primary">
+                <p className="text-t5 font-mono text-fg">
                   {selectedOrder.quantityOrdered} {selectedOrder.unit.toLowerCase()}
                 </p>
               </div>
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   Total
                 </p>
-                <p className="text-t5 font-mono text-text-primary">
+                <p className="text-t5 font-mono text-fg">
                   KES {selectedOrder.totalAmountKES.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-surface-secondary rounded p-3">
-                <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-1">
+              <div className="bg-surface-raised rounded p-3">
+                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
                   Collection
                 </p>
-                <p className="text-t5 font-body text-text-primary capitalize">
+                <p className="text-t5 font-body text-fg capitalize">
                   {selectedOrder.fulfillmentType.toLowerCase()}
                 </p>
               </div>
@@ -406,18 +406,18 @@ export default function FarmerOrdersPage(): React.ReactElement {
 
             {/* Buyer */}
             <div>
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-2">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
                 Buyer
               </p>
-              <p className="text-t5 font-body text-text-primary">
+              <p className="text-t5 font-body text-fg">
                 {selectedOrder.buyer.firstName} {selectedOrder.buyer.lastName}
               </p>
-              <p className="text-t5 font-body text-text-secondary">{selectedOrder.buyerPhone}</p>
+              <p className="text-t5 font-body text-fg-muted">{selectedOrder.buyerPhone}</p>
             </div>
 
             {/* Timeline */}
             <div>
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest mb-3">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-3">
                 Order progress
               </p>
               <OrderTimelineDetailed
@@ -433,8 +433,8 @@ export default function FarmerOrdersPage(): React.ReactElement {
             {selectedOrder.canConfirmDispatch && (
               <div className="space-y-3">
                 {selectedOrder.paidAt && (
-                  <div className="flex items-center justify-between gap-3 rounded bg-surface-secondary border border-white/5 p-3">
-                    <p className="text-t6 font-body text-text-secondary">
+                  <div className="flex items-center justify-between gap-3 rounded bg-surface-raised border border-white/5 p-3">
+                    <p className="text-t6 font-body text-fg-muted">
                       Confirm within 24 h of payment to keep your reliability score on-time.
                     </p>
                     <HandoverCountdown paidAt={selectedOrder.paidAt} />

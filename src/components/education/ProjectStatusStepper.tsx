@@ -50,11 +50,11 @@ export function ProjectStatusStepper({
 
         const dotClass = [
           'w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5',
-          state === 'complete' ? 'bg-accent-green' : '',
+          state === 'complete' ? 'bg-brand' : '',
           state === 'current' && !isDenied && !isRevision
-            ? 'bg-accent-green animate-pulse'
+            ? 'bg-brand animate-pulse'
             : '',
-          state === 'future' ? 'bg-surface-secondary border border-zinc-800/50' : '',
+          state === 'future' ? 'bg-surface-raised border border-zinc-800/50' : '',
           isDenied ? 'bg-red-600' : '',
           isRevision ? 'bg-amber-500' : '',
         ]
@@ -63,11 +63,11 @@ export function ProjectStatusStepper({
 
         const labelClass = [
           'text-t5 font-body',
-          state === 'complete' ? 'text-text-secondary' : '',
+          state === 'complete' ? 'text-fg-muted' : '',
           state === 'current' && !isDenied && !isRevision
-            ? 'text-text-primary font-medium'
+            ? 'text-fg font-medium'
             : '',
-          state === 'future' ? 'text-text-disabled' : '',
+          state === 'future' ? 'text-fg-disabled' : '',
           isDenied ? 'text-red-400' : '',
           isRevision ? 'text-amber-400' : '',
         ]

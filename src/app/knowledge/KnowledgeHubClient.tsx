@@ -41,7 +41,7 @@ export default function KnowledgeHubClient({ currentCategory }: IKnowledgeHubCli
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search articles — fertilizer verification, pest control, market prices..."
-        className="w-full bg-surface-secondary border border-white/5 rounded-sm px-4 py-3 font-body text-t5 text-text-primary placeholder-text-disabled focus:outline-none focus:border-accent-green/50 transition-all duration-150 min-h-[44px]"
+        className="w-full bg-surface-raised border border-white/5 rounded-sm px-4 py-3 font-body text-t5 text-fg placeholder-fg-disabled focus:outline-none focus:border-brand/50 transition-all duration-150 min-h-[44px]"
         aria-label="Search knowledge articles"
       />
     </div>

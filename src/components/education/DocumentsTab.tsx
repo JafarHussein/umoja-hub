@@ -192,7 +192,7 @@ export function DocumentsTab({
             {idx > 0 && <div className="border-t border-zinc-800/50 my-5" />}
 
             <div className="space-y-2">
-              <p className="text-t6 font-mono text-text-disabled uppercase tracking-widest">
+              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
                 {cfg.label}
               </p>
 
@@ -209,7 +209,7 @@ export function DocumentsTab({
                   <p
                     className={[
                       'text-t6 font-mono',
-                      isSaved ? 'text-accent-green' : 'text-text-disabled',
+                      isSaved ? 'text-brand' : 'text-fg-disabled',
                     ].join(' ')}
                   >
                     {statusLabel(editor)}
@@ -230,8 +230,8 @@ export function DocumentsTab({
 
               {/* Per-document hash string (corrected VIEW-DET-01) */}
               {editor.hash && (
-                <p className="text-t6 font-mono text-text-disabled break-all">
-                  <span className="uppercase tracking-widest text-text-secondary">SHA-256</span>{' '}
+                <p className="text-t6 font-mono text-fg-disabled break-all">
+                  <span className="uppercase tracking-widest text-fg-muted">SHA-256</span>{' '}
                   {editor.hash}
                 </p>
               )}

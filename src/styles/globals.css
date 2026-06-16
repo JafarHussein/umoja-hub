@@ -33,6 +33,7 @@
     --c-neutral-25: 230 237 243; /* #e6edf3 */
     --c-neutral-400: 139 148 158; /* #8b949e */
     --c-neutral-500: 110 118 129; /* #6e7681 */
+    --c-neutral-700: 72 79 88; /* #484f58 — disabled text (dark) */
     --c-neutral-800: 31 41 55; /* #1f2937 */
     --c-neutral-900: 22 27 34; /* #161b22 */
     --c-neutral-950: 13 17 23; /* #0d1117 */
@@ -55,6 +56,7 @@
     /* Warm-neutral ramp — restrained warmth; higher number = darker */
     --c-warm-100: 250 250 248; /* #fafaf8 — page bg */
     --c-warm-200: 240 239 235; /* #f0efeb — sunken */
+    --c-warm-450: 174 178 184; /* #aeb2b8 — disabled text (light) */
     --c-warm-600: 107 111 118; /* #6b6f76 — subtle text */
     --c-warm-700: 86 90 97; /* #565a61 — muted text */
     --c-warm-950: 28 30 33; /* #1c1e21 — primary text */
@@ -84,6 +86,7 @@
     --fg: var(--c-neutral-25);
     --fg-muted: var(--c-neutral-400);
     --fg-subtle: var(--c-neutral-500);
+    --fg-disabled: var(--c-neutral-700);
 
     /* Borders (carry their own alpha) */
     --border: rgb(var(--c-white) / 0.08);
@@ -125,6 +128,7 @@
     --fg: var(--c-warm-950);
     --fg-muted: var(--c-warm-700);
     --fg-subtle: var(--c-warm-600);
+    --fg-disabled: var(--c-warm-450);
 
     /* Borders (dark-on-light, carry their own alpha) */
     --border: rgb(var(--c-black) / 0.10);
@@ -146,52 +150,9 @@
     --info: var(--c-info-700);
   }
 
-  /* ── LEGACY compatibility layer ─────────────────────────────────────────
-   * Retained verbatim from the retired theme.css so surfaces not yet
-   * migrated to the unified tokens keep working. Each block is deleted as
-   * its last consumer is migrated (Phase 3.4 → 3.5). Do NOT author new code
-   * against these — use the semantic tokens above. */
-  :root {
-    /* Dashboard surfaces / text (consumed by src/styles/globals.css body,
-       skeletons, scrollbar, and not-yet-migrated dashboard components) */
-    --color-surface-primary: #0d1117;
-    --color-surface-elevated: #161b22;
-    --color-surface-secondary: #1f2937;
-    --color-accent-green: #007f4e;
-    --color-text-primary: #e6edf3;
-    --color-text-secondary: #8b949e;
-    --color-text-disabled: #484f58;
-
-    /* Typography aliases (font vars themselves are injected by next/font) */
-    --font-heading: var(--font-sora), sans-serif;
-    --font-body: var(--font-ibm-plex-sans), sans-serif;
-    --font-mono: var(--font-jetbrains-mono), monospace;
-    --text-t1: 32px;
-    --text-t2: 24px;
-    --text-t3: 20px;
-    --text-t4: 16px;
-    --text-t5: 14px;
-    --text-t6: 12px;
-
-    /* Spacing (8pt grid) */
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-6: 24px;
-    --space-8: 32px;
-
-    /* Radius + elevation */
-    --radius-base: 6px;
-    --radius-sm: 4px;
-    --radius-xs: 2px;
-    --border-elevation: 1px solid rgba(255, 255, 255, 0.05);
-
-    /* Motion */
-    --duration-micro: 150ms;
-    --duration-panel: 250ms;
-    --easing-standard: ease-in-out;
-  }
+  /* Legacy compatibility layer removed in Visual System V1 P5 — all dashboard
+   * surfaces were migrated from the --color-* / --text-t* / --space-* /
+   * --radius-* / motion aliases to the TIER 2 semantic tokens above. */
 }
 
 /* Base resets */
@@ -210,8 +171,8 @@ html {
 body {
   background-color: rgb(var(--bg));
   color: rgb(var(--fg));
-  font-family: var(--font-body);
-  font-size: var(--text-t4);
+  font-family: var(--font-ibm-plex-sans), sans-serif;
+  font-size: 16px;
   line-height: 1.5;
   min-height: 100vh;
 }

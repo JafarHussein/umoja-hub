@@ -40,11 +40,11 @@ export function FarmerListingCard({ listing }: IFarmerListingCardProps): React.R
   return (
     <Link
       href={`/marketplace/${listing._id}`}
-      className="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-green focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded"
+      className="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded"
     >
-      <article className="bg-surface-elevated border border-white/5 rounded overflow-hidden transition-all duration-150 group-hover:border-white/10">
+      <article className="bg-surface border border-white/5 rounded overflow-hidden transition-all duration-150 group-hover:border-white/10">
         {/* Crop image */}
-        <div className="aspect-[4/3] bg-surface-secondary relative overflow-hidden">
+        <div className="aspect-[4/3] bg-surface-raised relative overflow-hidden">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -65,16 +65,16 @@ export function FarmerListingCard({ listing }: IFarmerListingCardProps): React.R
                 <path
                   d="M8 32L20 14L32 32H8Z"
                   fill="currentColor"
-                  className="text-text-disabled"
+                  className="text-fg-disabled"
                 />
-                <circle cx="27" cy="12" r="4" fill="currentColor" className="text-text-disabled" />
+                <circle cx="27" cy="12" r="4" fill="currentColor" className="text-fg-disabled" />
               </svg>
             </div>
           )}
 
           {listing.isVerifiedListing && (
             <div className="absolute top-2 right-2">
-              <span className="inline-flex items-center gap-1 bg-surface-primary/80 border border-white/10 rounded-[2px] px-1.5 py-0.5 text-t6 font-mono text-accent-green uppercase tracking-wide backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1 bg-background/80 border border-white/10 rounded-[2px] px-1.5 py-0.5 text-t6 font-mono text-brand uppercase tracking-wide backdrop-blur-sm">
                 <VerifiedBadge label="Verified listing" />
                 Verified
               </span>
@@ -85,21 +85,21 @@ export function FarmerListingCard({ listing }: IFarmerListingCardProps): React.R
         {/* Card body */}
         <div className="p-4">
           {/* Crop label */}
-          <p className="text-t6 font-mono text-text-secondary uppercase tracking-widest mb-1">
+          <p className="text-t6 font-mono text-fg-muted uppercase tracking-widest mb-1">
             {listing.cropName}
           </p>
 
           {/* Title */}
-          <h3 className="text-t4 font-body font-medium text-text-primary mb-3 line-clamp-1">
+          <h3 className="text-t4 font-body font-medium text-fg mb-3 line-clamp-1">
             {listing.title}
           </h3>
 
           {/* Price */}
           <div className="mb-3">
-            <span className="text-t2 font-heading font-semibold text-text-primary">
+            <span className="text-t2 font-heading font-semibold text-fg">
               KES {listing.currentPricePerUnit.toLocaleString()}
             </span>
-            <span className="text-t5 text-text-secondary ml-1">
+            <span className="text-t5 text-fg-muted ml-1">
               / {listing.unit.toLowerCase()}
             </span>
           </div>
@@ -107,7 +107,7 @@ export function FarmerListingCard({ listing }: IFarmerListingCardProps): React.R
           {/* Farmer row + trust score */}
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-t5 text-text-secondary truncate">{farmerName}</span>
+              <span className="text-t5 text-fg-muted truncate">{farmerName}</span>
               {listing.isVerifiedListing && <VerifiedBadge label={`${farmerName} is verified`} />}
             </div>
             {listing.trustScore && (
@@ -121,8 +121,8 @@ export function FarmerListingCard({ listing }: IFarmerListingCardProps): React.R
 
           {/* Meta: county + stock */}
           <div className="flex items-center justify-between pt-3 border-t border-white/5">
-            <span className="text-t6 text-text-disabled">{listing.pickupCounty}</span>
-            <span className="text-t6 text-text-disabled">
+            <span className="text-t6 text-fg-disabled">{listing.pickupCounty}</span>
+            <span className="text-t6 text-fg-disabled">
               {listing.quantityAvailable.toLocaleString()}&nbsp;{listing.unit.toLowerCase()} left
             </span>
           </div>
