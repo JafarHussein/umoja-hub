@@ -141,12 +141,13 @@
 
 **~80 screens** across 6 areas (cross-cutting 18 · farmer 18 · buyer 17 · student 13 · lecturer 6 · admin 15), each with its states. Marked **(NEW)** surfaces (Post-a-Need, Opportunity Review, procurement, audit viewer, delivery-confidence signals) carry **backend-verify flags** — design proceeds, logic untouched, dependencies confirmed before/at build.
 
-**Suggested wireframing order** (one coherent journey at a time, you reviewing each):
-1. **Entry** — Sign in + the reframed Onboarding (X-01–X-10) — the front door everyone shares.
-2. **Farmer end-to-end** — signup→onboard→**list produce**→orders→**payment** (F-01–F-13).
-3. **Buyer end-to-end** — the marketplace (Search/Discovery/Post-a-Need) → **Opportunity Review** → checkout → track → review (B-01–B-13), then procurement (B-14–16).
-4. **Student end-to-end** — workspace → submit → outcome → portfolio (S-01–S-11).
-5. **Lecturer + Admin** — review/queue/decision surfaces (L, A).
-6. **Cross-cutting craft** — AI chat, knowledge, notifications, settings, system states (X-11–X-18).
+**Wireframing order — EVERY role is built as a complete end-to-end journey *from signup*** (owner: the end-to-end treatment applies to all roles, not just farmer). The shared onboarding spine (X-01–X-07) is built once in the first track and reused; each role threads its own role-specific onboarding tail (X-08/09) + first-run + full task journey.
+
+1. **Farmer end-to-end** — sign in → onboarding (+ farmer setup + ID verification) → **list produce** → orders → fulfill → **payment/ledger** → reviews → prices (X-01–X-10 + F-01–F-18). *Builds the shared onboarding spine.*
+2. **Buyer end-to-end** — sign in → onboarding (+ buyer setup) → Search / Discovery / Post-a-Need → **Opportunity Review** → checkout/M-Pesa → track → review → procurement (X-08/09 reused + B-01–B-17).
+3. **Student end-to-end** — sign in → onboarding (+ institution) → workspace → submit → peer review → outcome → portfolio → mentor (S-01–S-13).
+4. **Lecturer end-to-end** — sign in → onboarding (+ credentials) → queue → review workspace → decision (L-01–L-06).
+5. **Admin end-to-end** — overview → verification queues → case review → mediation → payouts → audit trail (A-01–A-15).
+6. **Cross-cutting craft woven through each track** — AI chat, knowledge, notifications, settings, system states (X-11–X-18) are designed as each role first needs them, not bolted on at the end.
 
 **Open items to confirm** (won't assume): marketplace comments-vs-reviews, Delivery-Confidence data reality, onboarding format (chat vs step), language support — plus all Foundation §16 user-validation unknowns. Re-order freely; tell me what's missing.
