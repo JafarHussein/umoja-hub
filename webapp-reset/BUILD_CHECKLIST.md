@@ -32,9 +32,9 @@ Grayscale, structure-only, **named illustration slots**.
 - [x] Opportunity Review · [x] Commit + [x] checkout (M-Pesa) · [x] Track + [x] confirm + [x] review
 - [x] Procurement ([x] basket, [x] compare) · [x] Suppliers · [x] Profile · [x] Orders history
 
-**Student end-to-end**
-- [ ] Home · [ ] Create project · [ ] Workspace (docs/AI-log/blockers) · [ ] Submit
-- [ ] Peer review (queue + workspace) · [ ] Outcome · [ ] Portfolio · [ ] Mentor chat
+**Student end-to-end** ✅ COMPLETE (S-01–S-13)
+- [x] Home · [x] Create project · [x] Workspace ([x] Overview/[x] docs/[x] AI-log/[x] blockers) · [x] Submit
+- [x] Peer review ([x] queue + [x] workspace) · [x] Outcome · [x] Portfolio · [x] Mentor chat
 
 **Lecturer end-to-end**
 - [ ] Home · [ ] Credential verification · [ ] Review queue · [ ] Review workspace · [ ] Decision
