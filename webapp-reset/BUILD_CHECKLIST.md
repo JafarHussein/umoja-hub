@@ -10,8 +10,8 @@
 - [x] Journey & Screen Map (all roles) · Experience Journeys (all roles)
 - [x] Lo-fi proof set (role-adaptive shell; density contrast)
 
-## Phase 1 — Lo-fi wireframes, every role end-to-end  ⏳ IN PROGRESS
-Grayscale, structure-only, **named illustration slots**.
+## Phase 1 — Lo-fi wireframes, every role end-to-end  ✅ COMPLETE
+Grayscale, structure-only, **named illustration slots**. All five roles + shared spine + cross-cutting craft built (~80 screens). **Next gate: owner review of the full lo-fi set → mid-fi (Phase 1→2).**
 
 **Shared entry (front door)** ✅ COMPLETE
 - [x] Welcome · [x] Intent · [x] Education · [x] Role confirmation (last)
@@ -43,9 +43,9 @@ Grayscale, structure-only, **named illustration slots**.
 - [x] Overview/triage · [x] Verification queues (farmer/supplier/lecturer) · [x] Case review (farmer/supplier/lecturer)
 - [x] Mediation · [x] Payouts · [x] Content (knowledge + AI briefs) + ops (group tokens + payment lab) · [x] Impact · [x] Audit-trail viewer
 
-**Cross-cutting craft**
-- [ ] AI chat (assistant + mentor) · [ ] Knowledge hub (browse + article)
-- [ ] Notifications · [ ] Settings (theme + a11y prefs) · [ ] System states (empty/loading/error/offline/404)
+**Cross-cutting craft** ✅ COMPLETE
+- [x] AI chat (assistant + mentor — built in F-17 / S-12) · [x] Knowledge hub (browse + article)
+- [x] Notifications · [x] Settings (theme + a11y prefs) · [x] System states (empty/loading/error/offline/404) · [x] Unauthorized
 
 ## Phase 2 — Illustration integration
 - [ ] Named slots placed across auth/onboarding (done as screens are built)
