@@ -27,10 +27,10 @@ Grayscale, structure-only, **named illustration slots**.
 - [x] My listings + [x] edit · [x] Orders + [x] fulfill · [x] Money/ledger + [x] payout
 - [x] Reviews + [x] Trust Score detail · [x] Prices · [x] Group orders · [x] Assistant (chat) · [x] Profile
 
-**Buyer end-to-end**
-- [ ] Home · [ ] Search + results · [ ] Discovery feed (desktop + mobile) · [ ] Post a Need + responses
-- [ ] Opportunity Review · [ ] Commit + checkout (M-Pesa) · [ ] Track + confirm + review
-- [ ] Procurement (basket, compare) · [ ] Suppliers · [ ] Profile
+**Buyer end-to-end** ✅ COMPLETE (B-01–B-17 + B-04 mobile)
+- [x] Home · [x] Search + [x] results · [x] Discovery feed ([x] desktop + [x] mobile) · [x] Post a Need + [x] responses
+- [x] Opportunity Review · [x] Commit + [x] checkout (M-Pesa) · [x] Track + [x] confirm + [x] review
+- [x] Procurement ([x] basket, [x] compare) · [x] Suppliers · [x] Profile · [x] Orders history
 
 **Student end-to-end**
 - [ ] Home · [ ] Create project · [ ] Workspace (docs/AI-log/blockers) · [ ] Submit
