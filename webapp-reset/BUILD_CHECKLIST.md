@@ -36,8 +36,8 @@ Grayscale, structure-only, **named illustration slots**.
 - [x] Home · [x] Create project · [x] Workspace ([x] Overview/[x] docs/[x] AI-log/[x] blockers) · [x] Submit
 - [x] Peer review ([x] queue + [x] workspace) · [x] Outcome · [x] Portfolio · [x] Mentor chat
 
-**Lecturer end-to-end**
-- [ ] Home · [ ] Credential verification · [ ] Review queue · [ ] Review workspace · [ ] Decision
+**Lecturer end-to-end** ✅ COMPLETE (L-01–L-06)
+- [x] Home · [x] Credential verification · [x] Review queue (dense table) · [x] Review workspace (evidence-first) · [x] Decision · [x] Profile
 
 **Admin end-to-end**
 - [ ] Overview/triage · [ ] Verification queues (farmer/supplier/lecturer) · [ ] Case review
