@@ -90,3 +90,14 @@ The experience reads like **making a well-informed sourcing decision**, not soci
 - Rewrites deliverable 05; updates the **IA marketplace section** (Search / Discovery / Post-a-Need, Opportunity Review layer).
 - Adds to the **trust vocabulary**: `OpportunityCard`, `DeliveryConfidence`, `MarketContext`, `OpportunityReview`.
 - The buyer journey in the forthcoming end-to-end map follows the confidence spine above.
+
+## Amendment — Opportunity card refinement (owner-directed 2026-06-18)
+
+The Opportunity card moves further toward an **operational-trust** (not retail) aesthetic. Changes, applied across Search results (B-03), Discovery desktop + mobile (B-04), Need responses (B-06), and the Opportunity Review hero (B-07):
+
+- **Primary CTA: `View details`** (replaces `Inspect Opportunity`) — a soft gateway into the Opportunity Review *before* any transactional surface; lowers the psychological barrier to entry. (Intent unchanged: still evaluation-before-commitment, no inline quick-buy.)
+- **Action micro-copy** under the CTA — operational context in produce terms: *"See farmer, delivery history & recourse."*
+- **Requirement label** (`Requires: Verified buyer`) — a subtle metadata chip shown **only on high-value lots (≥ 1 ton)**, surfacing system requirements before interaction. Built to render **conditionally** (component variant), not on every card.
+- **Clean-room layout** — minimal borders (single hairline above the CTA), disciplined label/value spec rows, visual weight on **utility signals** (market avg vs seller price, **Delivery Confidence** emphasized) rather than the photo.
+- **Deferred to the Design System gate:** the high-contrast / dark "operational console" treatment — to be achieved **without** inheriting the visual language of Stripe / AWS / etc. (Foundation forbidden-influences rule still holds). Lo-fi stays grayscale.
+- **Translation note:** the originating brief used software-catalog terms (modules, configuration specs, "Level: Standard", system requirements); these were mapped to the produce domain — UmojaHub trades agricultural produce, not software modules. No literal software framing was introduced.
