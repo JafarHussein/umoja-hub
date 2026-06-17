@@ -39,9 +39,9 @@ Grayscale, structure-only, **named illustration slots**.
 **Lecturer end-to-end** ✅ COMPLETE (L-01–L-06)
 - [x] Home · [x] Credential verification · [x] Review queue (dense table) · [x] Review workspace (evidence-first) · [x] Decision · [x] Profile
 
-**Admin end-to-end**
-- [ ] Overview/triage · [ ] Verification queues (farmer/supplier/lecturer) · [ ] Case review
-- [ ] Mediation · [ ] Payouts · [ ] Content + ops · [ ] Audit-trail viewer
+**Admin end-to-end** ✅ COMPLETE (A-01–A-15)
+- [x] Overview/triage · [x] Verification queues (farmer/supplier/lecturer) · [x] Case review (farmer/supplier/lecturer)
+- [x] Mediation · [x] Payouts · [x] Content (knowledge + AI briefs) + ops (group tokens + payment lab) · [x] Impact · [x] Audit-trail viewer
 
 **Cross-cutting craft**
 - [ ] AI chat (assistant + mentor) · [ ] Knowledge hub (browse + article)
