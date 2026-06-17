@@ -47,11 +47,11 @@ Grayscale, structure-only, **named illustration slots**. All five roles + shared
 - [x] AI chat (assistant + mentor — built in F-17 / S-12) · [x] Knowledge hub (browse + article)
 - [x] Notifications · [x] Settings (theme + a11y prefs) · [x] System states (empty/loading/error/offline/404) · [x] Unauthorized
 
-## Phase 2 — Illustration integration
-- [ ] Named slots placed across auth/onboarding (done as screens are built)
-- [ ] Swap in character SVGs (farmer/buyer/student/lecturer) — owner export (path A)
-- [ ] Concept illustrations (verification, trust, payment, success) — unDraw/Storyset
-- [ ] Empty/loading/error/success illustrations
+## Phase 2 — Illustration integration  ⏳ CONCEPTS DONE · CHARACTERS AWAIT OWNER EXPORT
+- [x] Named slots placed across auth/onboarding
+- [ ] **Swap in character SVGs (farmer/buyer/student/lecturer) — OWNER EXPORT, path A.** BLOCKED on owner: Welcome, Intent, Role-confirm, Done-character slots refined into explicit export specs (Humaaans/Blush, Kenyan authenticity). Drop SVGs straight in.
+- [x] Concept illustrations placed as original grayscale lo-fi stand-ins (recoloured/finalised at DS gate): secure sign-in (shield), trust chain (ID→check→badge→reputation), harvest/listing, **data-security at verification handoff** (doc+fingerprint+lock — the #1 anxiety reducer), success, restricted/lock (unauthorized)
+- [x] State illustrations: empty (box) · error (alert) · offline (cloud) · 404 (search) · loading (skeleton)
 
 ## Phase 3 — Mid-fidelity  (after lo-fi approved)
 - [ ] Tighten layout + real content structure + interaction states, per role
