@@ -22,10 +22,10 @@ Grayscale, structure-only, **named illustration slots**.
 - [x] Verification handoff (the anxiety-reducing screen)
 - [x] Done / first-run
 
-**Farmer end-to-end**
-- [ ] Home · [ ] Verification status · [ ] List produce (capture → preview → publish)
-- [ ] My listings + edit · [ ] Orders + fulfill · [ ] Money/ledger + payout
-- [ ] Reviews + Trust Score detail · [ ] Prices · [ ] Group orders · [ ] Assistant · [ ] Profile
+**Farmer end-to-end** ✅ COMPLETE (F-01–F-18)
+- [x] Home (shell) · [x] Verification status · [x] List produce (capture → preview → publish)
+- [x] My listings + [x] edit · [x] Orders + [x] fulfill · [x] Money/ledger + [x] payout
+- [x] Reviews + [x] Trust Score detail · [x] Prices · [x] Group orders · [x] Assistant (chat) · [x] Profile
 
 **Buyer end-to-end**
 - [ ] Home · [ ] Search + results · [ ] Discovery feed (desktop + mobile) · [ ] Post a Need + responses
