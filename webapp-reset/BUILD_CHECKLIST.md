@@ -75,8 +75,13 @@ Order (mirrors lo-fi): Shared front door / onboarding spine → Farmer → Buyer
 - [x] **Farmer** (11 screens: Home, Verification status, List produce, Orders+fulfil, Reviews & Trust, My listings, Money/ledger, Market prices, Group orders, Farm assistant, Profile) · [x] **Buyer** (12 screens: Home, Opportunity Review, Search, Discovery, Post a Need, Commit/checkout, Track+confirm+review, Procurement, Suppliers, Orders, Profile — Discovery-mobile deferred to a mobile pass) · [x] **Student** (8 screens: Home, Workspace [AI-log transparency], Peer review, Create project, Portfolio [verified], AI mentor [Socratic/logged], Submit [integrity declaration], Outcome [verifiable credential]) · [x] **Lecturer** (6 screens: Home, Review queue, Review workspace [evidence-first + decision], Credential verification, Profile) · [x] **Admin** (8 screens: Overview/triage, Verification queue, Case review, Mediation [escrow split], Payouts, Content+ops, Impact, Audit trail [append-only])
 - [x] **Cross-cutting** (6 screens: Knowledge hub browse, Knowledge article, Notifications, Settings [theme + a11y + **language toggle stub**], System states [empty/loading/error/offline/404], Unauthorized). AI chat covered in Farmer (Farm assistant) + Student (AI mentor).
 
-## Phase 4 — Hi-fidelity + interactive prototype
-- [ ] Visual-complete screens + clickable prototype, per role
+## Phase 4 — Hi-fidelity + interactive prototype  🔄 IN PROGRESS (owner gave go 2026-06-18)
+Visual-complete screens + clickable prototype, per role. Visual language is a **proposal applied via styles/constants** (ratified + tokenized at Phase 5 DS gate), per `HIFI_VISUAL_LANGUAGE_V1.md`.
+- [x] **Hi-fi visual language proposed** — `webapp-reset/HIFI_VISUAL_LANGUAGE_V1.md`: type = **Hanken Grotesk** (UI) + **Spline Sans Mono** (data/figures); color = "Cultivated trust" (deep shamba green = brand + verified + proceed, one honest meaning-model; murram/clay accent; warm neutrals; functional amber/red/restrained-blue); locked radius scale; restraint elevation (warm-tinted shadow on floating layers only); designed trust components; light + dark value-maps. Every choice traced to a Foundation law; anti-tells honored.
+- [x] **New page "App — Hi-Fi"** (id `203:2`) + 12 `HiFi/*` text styles created.
+- [x] **Flagship proven: Buyer Opportunity Review** (B-02, node `204:2`) rebuilt at hi-fi against the language — the highest-stakes trust screen ("the confidence layer"). **← DIRECTION CHECKPOINT: owner reaction before propagating to the remaining ~60 screens.**
+- [ ] Propagate language across all roles (Farmer → Buyer → Student → Lecturer → Admin → cross-cutting + onboarding spine), checking in at each role boundary.
+- [ ] Clickable prototype (smart-animate, functional motion only).
 
 ## Phase 5 — Design System  (the gate where colour & type are decided)
 - [ ] Palette · typography · tokens (Figma variables ↔ code) · component library · multi-theme
