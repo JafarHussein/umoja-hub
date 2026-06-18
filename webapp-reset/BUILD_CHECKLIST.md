@@ -53,8 +53,26 @@ Grayscale, structure-only, **named illustration slots**. All five roles + shared
 - [x] Concept illustrations placed as original grayscale lo-fi stand-ins (recoloured/finalised at DS gate): secure sign-in (shield), trust chain (ID→check→badge→reputation), harvest/listing, **data-security at verification handoff** (doc+fingerprint+lock — the #1 anxiety reducer), success, restricted/lock (unauthorized)
 - [x] State illustrations: empty (box) · error (alert) · offline (cloud) · 404 (search) · loading (skeleton)
 
-## Phase 3 — Mid-fidelity  (after lo-fi approved)
-- [ ] Tighten layout + real content structure + interaction states, per role
+## Phase 3 — Mid-fidelity  🚧 IN PROGRESS (owner gave go 2026-06-18; lo-fi approved)
+Tighten layout + **real content structure + interaction states**, per role. Built on a **new "App — Mid-Fi" page** (lo-fi page preserved untouched for diffing).
+
+**Mid-fi conventions** (still pre–Design-System; colour & type stay provisional, decided at Phase 5):
+- **Restrained neutral palette + ONE provisional accent** (not the final brand colour) used only to mark primary action / active / focus. Real type *scale* and real spacing/hierarchy; real copy (English — see decision below).
+- **Real content structure:** actual field labels, realistic data, real table columns, real card spec rows. No lorem.
+- **Interaction states made explicit** as side-by-side variants per key surface: default · hover · active/selected · focus · disabled · loading (skeleton) · empty · error. (We don't have a prototype yet — states are *shown*, Phase 4 wires them.)
+- **i18n-tolerant layout:** ~30% text-expansion headroom, no text baked into fixed-width chips/buttons, no text-in-images.
+- Illustration slots keep the Phase-2 grayscale stand-ins; recolour at DS gate.
+
+**Senior-engineer decisions resolving the flagged opens (owner-delegated 2026-06-18):**
+- **Reviews, not comments** — structured, transaction-gated reviews (overall + Quality / Delivery reliability / Communication + optional note) → farmer Trust Score; **no public comment threads**; logistics Qs go 1:1 via inquiry channel. *(see MARKETPLACE_DESIGN_DIRECTION_V1 amendment)*
+- **Delivery Confidence = honest & progressive** — default "Building track record — N completed" (no %); % only in established state (n ≥ ~5) and always with its denominator. Component variant new ↔ established. *(same amendment)*
+- **English-first, i18n-tolerant, language toggle stubbed in Settings**, Swahili deferred post-pilot. *(see Foundation open-Q2 resolution)*
+
+Order (mirrors lo-fi): Shared front door / onboarding spine → Farmer → Buyer → Student → Lecturer → Admin → cross-cutting. Check in at the end of each role.
+- [ ] Mid-fi page + provisional palette/type/spacing primitives established
+- [ ] Shared front door / onboarding spine
+- [ ] Farmer · [ ] Buyer · [ ] Student · [ ] Lecturer · [ ] Admin
+- [ ] Cross-cutting (AI chat, knowledge, notifications, settings, system states)
 
 ## Phase 4 — Hi-fidelity + interactive prototype
 - [ ] Visual-complete screens + clickable prototype, per role

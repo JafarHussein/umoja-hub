@@ -101,3 +101,20 @@ The Opportunity card moves further toward an **operational-trust** (not retail) 
 - **Clean-room layout** — minimal borders (single hairline above the CTA), disciplined label/value spec rows, visual weight on **utility signals** (market avg vs seller price, **Delivery Confidence** emphasized) rather than the photo.
 - **Deferred to the Design System gate:** the high-contrast / dark "operational console" treatment — to be achieved **without** inheriting the visual language of Stripe / AWS / etc. (Foundation forbidden-influences rule still holds). Lo-fi stays grayscale.
 - **Translation note:** the originating brief used software-catalog terms (modules, configuration specs, "Level: Standard", system requirements); these were mapped to the produce domain — UmojaHub trades agricultural produce, not software modules. No literal software framing was introduced.
+
+## Amendment — Phase 3 mid-fi decisions (senior-engineer call, owner-delegated 2026-06-18)
+
+Resolves the two open marketplace flags above ("Social signals" line and the Delivery Confidence flag) so mid-fi can carry real content structure.
+
+### Trust surface = structured, transaction-gated reviews. NO free-form comments. *(resolves the comments-vs-reviews and review-scope opens)*
+- **Reviews are structured and transaction-gated.** A review can only be left by a buyer with a **completed, paid order** for that farmer; only a farmer who fulfilled is reviewable. This is the one social signal, and it feeds the **farmer's reputation / Trust Score**.
+- **Shape:** overall rating + a small fixed criteria set tuned to produce sourcing — **Quality as described**, **Delivery reliability** (on time / as agreed), **Communication** — each 1–5, plus an **optional short note (≤ ~280 chars)** that rides *on* the review. The note is part of the review record, not a standalone post.
+- **No public comment / Q&A threads on an Opportunity.** Rationale: gameable, unstaffable moderation at pilot, and social noise that contradicts "sourcing, not social." Time-sensitive logistics (pickup window, freshness, terms) are handled **1:1 through the existing inquiry/message channel** during Opportunity Review / Commit — never a public thread.
+- **Trust vocabulary update:** `ReviewSummary` (aggregate criteria + count on the farmer/Opportunity Review), `ReviewCard` (one structured review). Drop any `CommentThread` / `QandA` from the marketplace component set.
+
+### Delivery Confidence = honest, count-based, progressive — no fabricated % at pilot *(resolves the Delivery Confidence data-reality flag)*
+- At pilot (free-tier, first ~100 users, **simulation payments**) there is **not enough completed-delivery volume** to compute a credible reliability %. A high "Delivery Confidence 96%" on n≈1–3 is inauthentic UI and a trust violation on a trust platform — forbidden.
+- The **component exists** but is **honest and maturity-staged**:
+  - **New / default state (n < ~5 completed orders):** `Building track record — N completed`, plus verification status and member-since. **No percentage.** This is the *default* I design in mid-fi.
+  - **Established state (n ≥ ~5):** a confidence summary may appear, **always with its denominator visible** — e.g. `96% on-time · 41 deliveries`. Never a bare number.
+- On the Opportunity card the owner's `Delivery Confidence` label is kept, but its **value is count-based by default** and only resolves to a % in the established state. Built as a component variant (new ↔ established).

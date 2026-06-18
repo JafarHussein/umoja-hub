@@ -117,7 +117,7 @@ The feeling is produced by **clarity, honesty, reliability, and restraint** — 
 These are **named risks, not settled facts.** High-fidelity design must not proceed on them unvalidated:
 
 1. **Does the target user actually comprehend the Trust Score?** (Highest leverage — test the real artifact.)
-2. **Language:** is English-only acceptable, or is Swahili/local-language support required for farmer adoption?
+2. **Language:** is English-only acceptable, or is Swahili/local-language support required for farmer adoption? *(Design-scope resolved for pilot, 2026-06-18, senior-engineer call: **English-first content**; mid-fi layouts are **i18n-tolerant** — budget ~30% text expansion, short microcopy, no text-in-images, no text baked into fixed-width chips; a **language toggle is stubbed in Settings**. Full Swahili translation is a platform-logic lift deferred post-pilot. The **adoption question itself stays an open risk** — validate with farmers before funding translation.)*
 3. **What must "Verified" convey to a real Kenyan employer** to be believed?
 4. **Lecturer rubric friction** — where do rigor and speed trade off?
 5. **Onboarding drop-off points** per role — instrument and observe.
