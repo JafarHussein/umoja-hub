@@ -69,8 +69,9 @@ Tighten layout + **real content structure + interaction states**, per role. Buil
 - **English-first, i18n-tolerant, language toggle stubbed in Settings**, Swahili deferred post-pilot. *(see Foundation open-Q2 resolution)*
 
 Order (mirrors lo-fi): Shared front door / onboarding spine → Farmer → Buyer → Student → Lecturer → Admin → cross-cutting. Check in at the end of each role.
-- [ ] Mid-fi page + provisional palette/type/spacing primitives established
-- [ ] Shared front door / onboarding spine
+- [x] Mid-fi page + provisional palette/type/spacing primitives established — page **"App — Mid-Fi"** (id `139:2`); 10 provisional Inter text styles `MidFi/*` (Display 28 / H1 22 / H2 18 / Title 15 / Body 14 / Body Strong 14 / Label 12 / Meta 12 / Number 24 / Nav 13). Palette applied via a JS constant (light-neutral: canvas #F4F5F7, card #FFF, hairline #E2E5EA, ink/text #1C2024, body #3A4048, muted #6B7280, **one provisional accent #2F6F5E**, states success/warn/danger/info) — deliberately NOT bound to variables (provisional, re-tokenized at Phase 5). Spacing 4/8/12/16/24/32; radius 4/6/8.
+  - **⚠ FLAG for owner @ Phase 5:** the Figma file already holds a finished-looking token system on the **"Foundations" page** — a green **dark "Product" theme** + typefaces **Sora / IBM Plex Sans / JetBrains Mono** (Color collection has Product+Website modes; Product/* + Website/* text styles). This looks like a **pre-reset remnant** (lo-fi ignored it; Foundation defers palette/type to Phase 5). Mid-fi does NOT adopt it. **Owner to rule at the DS gate: revive / revise / discard.** Website mode = the live website tokens → preserve.
+- [x] Shared front door / onboarding spine — **10 screens** (ON-01…ON-10): Welcome, Sign in (OAuth-only), Language (English-selected / Kiswahili "Coming soon"), Location, Intent (role surfaced not asked), Education interlude (trust + honest-limits "OUR PROMISE" callout), Role confirmation (last), Farm setup (fields + produce chips), Verification handoff (What we check / What we never do — the #1 anxiety reducer), Done/first-run. Laid out L→R on page `139:2`, x = 0…12240.
 - [ ] Farmer · [ ] Buyer · [ ] Student · [ ] Lecturer · [ ] Admin
 - [ ] Cross-cutting (AI chat, knowledge, notifications, settings, system states)
 
