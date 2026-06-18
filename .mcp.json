@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "undraw": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "undraw-mcp"],
+      "env": {
+        "UNDRAW_DEFAULT_COLOR": "#2F6F5E"
+      }
+    }
+  }
+}

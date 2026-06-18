@@ -5,17 +5,17 @@
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════════════════════════
- * UmojaHub Design Tokens — single source of truth.
- * Authority: UMOJAHUB_DESIGN_FOUNDATION_V1.md. Spec: design-system/VISUAL_SYSTEM_V1.md.
+ * UmojaHub Design Tokens.
  *
- * ONE token system, themed by MODE (never parallel systems):
- *   :root / .theme-product   PRODUCT mode (dark dashboard) — the default, below.
- *   website (light) mode     authored in Visual System V1 phase P2 (not yet present).
+ * WEB-APP DESIGN LAYER DEMOLISHED 2026-06-16 (UI/UX nuclear reset). The app's
+ * PRODUCT (dark) token mode was removed; what remains here is the preserved
+ * WEBSITE slice (`.theme-website`, light) + tier-1 primitives + a neutral
+ * :root fallback. The app's new token system is authored from research through
+ * approval gates — see webapp-reset/. Do not reintroduce an app palette here
+ * until the new foundation is approved.
  *
- * Rules (foundation): one accent (brand green) does the work; colour carries
- * meaning, never decoration; contrast is decisive (WCAG 2.2 AA). Author UI
- * against the TIER 2 semantic tokens via the Tailwind utilities in
- * tailwind.config.ts (bg-background, bg-surface, text-fg, bg-brand, border-border).
+ * The WEBSITE (Documentation Stream, light) is out of scope and live — it
+ * renders from `.theme-website` below and must keep working.
  * ════════════════════════════════════════════════════════════════════════ */
 @layer base {
   /* Three tiers (design-system/VISUAL_SYSTEM_V1.md §3):
@@ -70,42 +70,38 @@
     --c-info-700: 47 95 194; /* #2f5fc2 */
   }
 
-  /* TIER 2 · SEMANTIC — PRODUCT mode (dark, the default).
-   * `.theme-product` shares :root so a dark band can be nested inside a future
-   * light surface and flip its subtree back to product. Each token re-maps a
-   * TIER 1 primitive; computed values are identical to pre-tiering. */
-  :root,
-  .theme-product {
-    /* Surfaces */
-    --bg: var(--c-neutral-950);
-    --surface: var(--c-neutral-900);
-    --surface-raised: var(--c-neutral-800);
-    --surface-sunken: var(--c-neutral-975);
-
-    /* Foreground / text */
-    --fg: var(--c-neutral-25);
-    --fg-muted: var(--c-neutral-400);
-    --fg-subtle: var(--c-neutral-500);
-    --fg-disabled: var(--c-neutral-700);
-
-    /* Borders (carry their own alpha) */
-    --border: rgb(var(--c-white) / 0.08);
-    --border-strong: rgb(var(--c-white) / 0.16);
-
-    /* Brand accent (the one accent) */
+  /* ════════════════════════════════════════════════════════════════════
+   * TIER 2 · SEMANTIC — PRODUCT mode (dark app): DEMOLISHED 2026-06-16.
+   * The web-app design layer was nuked in the UI/UX nuclear reset. The app's
+   * dark palette is intentionally gone; the dashboard/auth/onboarding render
+   * un-themed until the new research-driven system (webapp-reset/
+   * UMOJAHUB_WEBAPP_FOUNDATION_V1.md) replaces this block. The WEBSITE slice
+   * (.theme-website below) + tier-1 primitives + fonts are preserved so the
+   * live website keeps building and rendering — it is out of scope.
+   *
+   * Minimal neutral fallback so non-themed surfaces don't render with
+   * undefined vars (no app identity here — just keeps var() valid):
+   * ════════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg: var(--c-warm-100);
+    --surface: var(--c-white);
+    --surface-raised: var(--c-white);
+    --surface-sunken: var(--c-warm-200);
+    --fg: var(--c-warm-950);
+    --fg-muted: var(--c-warm-700);
+    --fg-subtle: var(--c-warm-600);
+    --fg-disabled: var(--c-warm-450);
+    --border: rgb(var(--c-black) / 0.12);
+    --border-strong: rgb(var(--c-black) / 0.16);
     --brand: var(--c-green-600);
-    --brand-hover: var(--c-green-500);
+    --brand-hover: var(--c-green-700);
     --brand-fg: var(--c-white);
-    --brand-text: var(--c-green-300); /* accent text on dark, AA on --bg */
-
-    /* Focus ring */
-    --ring: var(--c-green-400);
-
-    /* State (meaning, not decoration) */
-    --success: var(--c-success);
-    --warning: var(--c-warning);
-    --danger: var(--c-danger);
-    --info: var(--c-info);
+    --brand-text: var(--c-green-800);
+    --ring: var(--c-green-600);
+    --success: var(--c-success-700);
+    --warning: var(--c-warning-700);
+    --danger: var(--c-danger-700);
+    --info: var(--c-info-700);
   }
 
   /* TIER 2 · SEMANTIC — WEBSITE mode (light).
