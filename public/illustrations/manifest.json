@@ -1,0 +1,90 @@
+[
+  {
+    "name": "char-buyer",
+    "category": "characters",
+    "job": "Self-identify as a buyer/trader: considered sourcing, not impulse.",
+    "source": "Humaaans (manual export — evaluating, holding a phone/basket)",
+    "status": "pending",
+    "note": "Export from builder and drop at public/illustrations/_raw/char-buyer.svg, then re-run."
+  },
+  {
+    "name": "char-farmer",
+    "category": "characters",
+    "job": "Belonging + self-identify: a confident Kenyan smallholder with produce to sell.",
+    "source": "Humaaans (manual export — Kenyan skin tone/dress, holding a crate of produce)",
+    "status": "pending",
+    "note": "Export from builder and drop at public/illustrations/_raw/char-farmer.svg, then re-run."
+  },
+  {
+    "name": "char-lecturer",
+    "category": "characters",
+    "job": "Self-identify as an academic reviewing student work.",
+    "source": "Humaaans (manual export — professional, reviewing a document/tablet)",
+    "status": "pending",
+    "note": "Export from builder and drop at public/illustrations/_raw/char-lecturer.svg, then re-run."
+  },
+  {
+    "name": "char-student",
+    "category": "characters",
+    "job": "Self-identify as a CS student building real portfolio work.",
+    "source": "Humaaans (manual export — younger, focused at a laptop)",
+    "status": "pending",
+    "note": "Export from builder and drop at public/illustrations/_raw/char-student.svg, then re-run."
+  },
+  {
+    "name": "concept-data-security",
+    "category": "concepts",
+    "job": "ON-09: reduce the #1 farmer anxiety — show that handing over an ID is safe & protected. The single most important illustration in the flow.",
+    "source": "unDraw \"personal data\"",
+    "status": "written",
+    "path": "illustrations/concepts/concept-data-security.svg"
+  },
+  {
+    "name": "concept-farming",
+    "category": "concepts",
+    "job": "ON-08 farmer role setup: guide the farm/produce details task.",
+    "source": "unDraw \"farm\"",
+    "status": "written",
+    "path": "illustrations/concepts/concept-farming.svg"
+  },
+  {
+    "name": "concept-secure-login",
+    "category": "concepts",
+    "job": "X-01 Sign in: lower the stakes, signal legitimacy & safety — not a cold lock.",
+    "source": "unDraw \"secure login\"",
+    "status": "written",
+    "path": "illustrations/concepts/concept-secure-login.svg"
+  },
+  {
+    "name": "concept-verification",
+    "category": "concepts",
+    "job": "ON-03: explain the trust chain visually (ID → check → badge → reputation).",
+    "source": "unDraw \"verified\"",
+    "status": "written",
+    "path": "illustrations/concepts/concept-verification.svg"
+  },
+  {
+    "name": "state-empty",
+    "category": "states",
+    "job": "Shared empty state: soften a dead-end, guide the user to populate it.",
+    "source": "unDraw \"empty\"",
+    "status": "written",
+    "path": "illustrations/states/state-empty.svg"
+  },
+  {
+    "name": "state-error",
+    "category": "states",
+    "job": "Shared error state: recover with clarity and warmth, not a cold failure.",
+    "source": "unDraw \"warning\"",
+    "status": "written",
+    "path": "illustrations/states/state-error.svg"
+  },
+  {
+    "name": "state-success",
+    "category": "states",
+    "job": "ON-10 done / first-run: success + momentum into the app (Lottie in code; this is the still fallback).",
+    "source": "unDraw \"completed\"",
+    "status": "written",
+    "path": "illustrations/states/state-success.svg"
+  }
+]
