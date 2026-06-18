@@ -59,8 +59,21 @@ Canonical ramp = the applied **`HiFi/*`** text styles (kept as-is to avoid churn
 
 Mirror App Color → CSS custom properties under a `.theme-app` scope with a `[data-theme="dark"]` (or `.dark`) override, names matching the token paths (`--bg-canvas`, `--text-ink`, `--brand`, `--state-warning`…); radius → `--radius-card` etc.; map to Tailwind via `theme.extend`. Website tokens/fonts stay untouched; build stays green.
 
+## Components
+
+Page **"Components"** (`250:2`). All bound to App Color/Radius variables; validated Light + Dark.
+
+| Component | Node | Variants / properties |
+|---|---|---|
+| **StatusPill** | `250:18` | `State` = Verified · Pending · In transit · Completed · Denied (tinted pill, icon+shape+text) |
+| **VerificationBadge** | `251:11` | `State` = Verified · Pending · Denied (bordered pill — identity verification) |
+| **TrustScore** | `251:12` | glance pill `◆ Verified · Trust NN`; `Score` TEXT property (mono number) |
+| **DeliveryConfidence** | `252:12` | `State` = Building (no %) · Established (`NN%` mono + denominator + "not an estimate") |
+| **DecisionAttribution** | `254:2` | named human + evidence; `Reviewer` · `Date` · `Basis` TEXT properties |
+
 ## Status / next
 
-- [x] Token foundation: App Color (Light/Dark, 24) + App Radius (4) variables; typography ratified; Foundations board built + validated in both themes.
-- [ ] **Component library** — trust components first (TrustScore, VerificationBadge, StatusPill, DeliveryConfidence, DecisionAttribution), then base (Button, Input, Card, Nav item, Table row, Tab, Modal/Sheet) — Figma components with variants + bound variables, themeable.
+- [x] Token foundation: App Color (Light/Dark, 24) + App Radius (4) variables; typography ratified; Foundations board built + validated both themes.
+- [x] **Trust components** (the heart): StatusPill, VerificationBadge, TrustScore, DeliveryConfidence, DecisionAttribution — built with variants/properties + bound variables, validated Light + Dark.
+- [ ] **Base components** — Button, Input, Card, Nav item, Table row, Tab, Modal/Sheet.
 - [ ] Code mirror (Phase 6).

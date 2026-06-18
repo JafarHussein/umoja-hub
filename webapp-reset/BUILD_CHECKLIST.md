@@ -92,8 +92,9 @@ Visual-complete screens + clickable prototype, per role. Visual language is a **
 Ratifies `HIFI_VISUAL_LANGUAGE_V1.md` → tokens. Canonical spec: **`webapp-reset/DESIGN_SYSTEM_V1.md`**. Owner ruling: **Figma-only this gate; code token mirror lands at Phase 6.**
 - [x] **Token foundation (Figma variables)** — new **App Color** collection (`245:2`) with **Light/Dark** modes (24 semantic color tokens, scoped); **App Radius** collection (`245:27`, 10/8/full/6); Spacing reused. Typography ratified on the applied `HiFi/*` ramp (Hanken Grotesk + Spline Sans Mono); `MidFi/*` kept only for the preserved mid-fi page.
 - [x] **Foundations board** on new **"Design System"** page (`247:2`, board `247:3`) — color swatches + type ramp + radius, all bound to variables. **Multi-theme proven** (board flips Light↔Dark via one mode switch).
-- [ ] **Component library** — trust components first (TrustScore · VerificationBadge · StatusPill · DeliveryConfidence · DecisionAttribution), then base (Button · Input · Card · Nav item · Table row · Tab · Modal/Sheet): Figma components w/ variants + bound variables, themeable.
-- [ ] Light + dark proofed across the component set.
+- [x] **Trust components (the heart)** on new **"Components"** page (`250:2`), variants/properties + bound variables, validated Light + Dark: **StatusPill** (`250:18`, 5 states) · **VerificationBadge** (`251:11`, 3 states, bordered) · **TrustScore** (`251:12`, `Score` text prop, mono number) · **DeliveryConfidence** (`252:12`, Building/Established — honest/progressive) · **DecisionAttribution** (`254:2`, Reviewer/Date/Basis text props).
+- [ ] **Base components** — Button · Input · Card · Nav item · Table row · Tab · Modal/Sheet.
+- [ ] Light + dark proofed across the full component set.
 
 ## Phase 6 — Implementation
 - [ ] Implementation plan → code (replacing the gutted app surfaces, build stays green)
