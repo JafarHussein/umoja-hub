@@ -3,33 +3,41 @@
     "name": "char-buyer",
     "category": "characters",
     "job": "Self-identify as a buyer/trader: considered sourcing, not impulse.",
-    "source": "Humaaans (manual export — evaluating, holding a phone/basket)",
-    "status": "pending",
-    "note": "Export from builder and drop at public/illustrations/_raw/char-buyer.svg, then re-run."
+    "source": "unDraw \"trader\"",
+    "status": "written",
+    "path": "illustrations/characters/char-buyer.svg"
   },
   {
     "name": "char-farmer",
     "category": "characters",
-    "job": "Belonging + self-identify: a confident Kenyan smallholder with produce to sell.",
-    "source": "Humaaans (manual export — Kenyan skin tone/dress, holding a crate of produce)",
-    "status": "pending",
-    "note": "Export from builder and drop at public/illustrations/_raw/char-farmer.svg, then re-run."
+    "job": "Self-identify as a producer with something to grow & sell.",
+    "source": "unDraw \"gardening\"",
+    "status": "written",
+    "path": "illustrations/characters/char-farmer.svg"
   },
   {
     "name": "char-lecturer",
     "category": "characters",
     "job": "Self-identify as an academic reviewing student work.",
-    "source": "Humaaans (manual export — professional, reviewing a document/tablet)",
-    "status": "pending",
-    "note": "Export from builder and drop at public/illustrations/_raw/char-lecturer.svg, then re-run."
+    "source": "unDraw \"professor\"",
+    "status": "written",
+    "path": "illustrations/characters/char-lecturer.svg"
   },
   {
     "name": "char-student",
     "category": "characters",
     "job": "Self-identify as a CS student building real portfolio work.",
-    "source": "Humaaans (manual export — younger, focused at a laptop)",
-    "status": "pending",
-    "note": "Export from builder and drop at public/illustrations/_raw/char-student.svg, then re-run."
+    "source": "unDraw \"coding\"",
+    "status": "written",
+    "path": "illustrations/characters/char-student.svg"
+  },
+  {
+    "name": "concept-community",
+    "category": "concepts",
+    "job": "ON-01 Welcome: warmth + belonging — \"this platform is for people like me.\"",
+    "source": "unDraw \"welcoming\"",
+    "status": "written",
+    "path": "illustrations/concepts/concept-community.svg"
   },
   {
     "name": "concept-data-security",
@@ -46,6 +54,14 @@
     "source": "unDraw \"farm\"",
     "status": "written",
     "path": "illustrations/concepts/concept-farming.svg"
+  },
+  {
+    "name": "concept-language",
+    "category": "concepts",
+    "job": "ON-03 Language: signal access/region — choose the language that fits you.",
+    "source": "unDraw \"world\"",
+    "status": "written",
+    "path": "illustrations/concepts/concept-language.svg"
   },
   {
     "name": "concept-secure-login",

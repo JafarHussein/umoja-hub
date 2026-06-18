@@ -10,14 +10,13 @@
  *   - webapp-reset/08_ILLUSTRATION_STRATEGY.md              (every illustration has a job)
  *
  * What it does:
- *   1. CONCEPT / STATE scenes  → resolved from unDraw (search API or a pinned URL),
- *      recoloured from unDraw's accent to the brand green, then optimized.
- *   2. CHARACTER figures (Humaaans / Blush) → those libraries are *builders*, not
- *      fetchable by URL. Export the SVG by hand into public/illustrations/_raw/
- *      under the expected filename; this script optimizes it into place. If it is
- *      missing, the entry is reported as "pending" with the export instructions.
- *   3. Writes public/illustrations/manifest.json so the app can consume assets by
+ *   1. CHARACTER / CONCEPT / STATE scenes → resolved from unDraw (search API or a
+ *      pinned URL), recoloured from unDraw's accent to the brand green, optimized.
+ *   2. Writes public/illustrations/manifest.json so the app can consume assets by
  *      role/job rather than hard-coding file paths.
+ *
+ * Any entry without a pinned `url`/`query` falls back to a hand-exported SVG dropped
+ * at public/illustrations/_raw/<name>.svg (optimized in place); missing → "pending".
  *
  * Performance (Illustration Strategy, Gate 1 low-bandwidth): SVG only, optimized,
  * viewBox preserved so they scale, 2G-safe.
@@ -76,37 +75,51 @@ interface Entry {
 }
 
 const ENTRIES: readonly Entry[] = [
-  // --- Role characters (manual export, Humaaans — cultural authenticity gate) ---
+  // --- Role characters (unDraw — recoloured to brand) ---
   {
     name: 'char-farmer',
     category: 'characters',
-    job: 'Belonging + self-identify: a confident Kenyan smallholder with produce to sell.',
-    source: 'Humaaans (manual export — Kenyan skin tone/dress, holding a crate of produce)',
-    manual: true,
+    job: 'Self-identify as a producer with something to grow & sell.',
+    source: 'unDraw "gardening"',
+    query: 'gardening',
   },
   {
     name: 'char-buyer',
     category: 'characters',
     job: 'Self-identify as a buyer/trader: considered sourcing, not impulse.',
-    source: 'Humaaans (manual export — evaluating, holding a phone/basket)',
-    manual: true,
+    source: 'unDraw "trader"',
+    query: 'trader',
   },
   {
     name: 'char-student',
     category: 'characters',
     job: 'Self-identify as a CS student building real portfolio work.',
-    source: 'Humaaans (manual export — younger, focused at a laptop)',
-    manual: true,
+    source: 'unDraw "coding"',
+    query: 'coding',
   },
   {
     name: 'char-lecturer',
     category: 'characters',
     job: 'Self-identify as an academic reviewing student work.',
-    source: 'Humaaans (manual export — professional, reviewing a document/tablet)',
-    manual: true,
+    source: 'unDraw "professor"',
+    query: 'professor',
   },
 
   // --- Concept scenes (unDraw — recoloured to brand) ---
+  {
+    name: 'concept-community',
+    category: 'concepts',
+    job: 'ON-01 Welcome: warmth + belonging — "this platform is for people like me."',
+    source: 'unDraw "welcoming"',
+    query: 'welcoming',
+  },
+  {
+    name: 'concept-language',
+    category: 'concepts',
+    job: 'ON-03 Language: signal access/region — choose the language that fits you.',
+    source: 'unDraw "world"',
+    query: 'world',
+  },
   {
     name: 'concept-secure-login',
     category: 'concepts',
