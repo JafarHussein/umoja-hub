@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
-import { Sora, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
+import {
+  Sora,
+  IBM_Plex_Sans,
+  JetBrains_Mono,
+  Hanken_Grotesk,
+  Spline_Sans_Mono,
+} from 'next/font/google';
 import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
 import { cn } from "@/lib/utils";
@@ -26,6 +32,23 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
+
+// App design system typefaces (Phase 6, webapp-reset/DESIGN_SYSTEM_V1.md):
+// Hanken Grotesk (UI) + Spline Sans Mono (data/figures, tabular numerals).
+// Additive — the website's three typefaces above are unchanged.
+const hankenGrotesk = Hanken_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-hanken',
+  display: 'swap',
+});
+
+const splineSansMono = Spline_Sans_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-spline-mono',
   display: 'swap',
 });
 
@@ -58,6 +81,8 @@ export default function RootLayout({
         sora.variable,
         ibmPlexSans.variable,
         jetbrainsMono.variable,
+        hankenGrotesk.variable,
+        splineSansMono.variable,
         'font-sans'
       )}
     >

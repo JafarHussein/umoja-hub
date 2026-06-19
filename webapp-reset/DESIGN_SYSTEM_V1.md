@@ -64,9 +64,15 @@ Re-validate live with axe/Lighthouse against rendered components when the code m
 
 Canonical ramp = the applied **`HiFi/*`** text styles (kept as-is to avoid churning 60 hi-fi screens; `MidFi/*` retained only for the preserved mid-fi page). **Hanken Grotesk** (UI) + **Spline Sans Mono** (data/figures only), tabular numerals on all data. Styles: `Display · H1 · H2 · Title · Body · Body Strong · Label · Meta · Nav · Data XL · Data L · Data M` (sizes/weights in the hi-fi doc §1).
 
-## Code mirror (Phase 6)
+## Code mirror (Phase 6) — ✅ LANDED 2026-06-19
 
-Mirror App Color → CSS custom properties under a `.theme-app` scope with a `[data-theme="dark"]` (or `.dark`) override, names matching the token paths (`--bg-canvas`, `--text-ink`, `--brand`, `--state-warning`…); radius → `--radius-card` etc.; map to Tailwind via `theme.extend`. Website tokens/fonts stay untouched; build stays green.
+App Color + App Radius mirrored to CSS custom properties under a **`.theme-app`** scope in `src/styles/globals.css`, with a **`.theme-app.dark` / `.theme-app[data-theme="dark"]`** override carrying the dark value-map. Values are space-separated RGB triplets (Tailwind `<alpha-value>`).
+
+- **Namespace decision:** vars are `--app-*` and exposed via an **isolated Tailwind `app` color group** (`bg-app-canvas`, `text-app-ink`, `text-app-warning`, `bg-app-warning-surface`, `border-app-hairline`, `text-app-on-brand`, `bg-app-brand-surface`…). Chosen over reusing the website's bare `--brand`/`--border` names to honor the ratified "app and website stay separate" principle and guarantee zero collision with the live (untouched) website tokens. Radius → `rounded-app-card|control|pill|cell`.
+- **Type:** Hanken Grotesk + Spline Sans Mono registered via `next/font` (additive; website's Sora/IBM Plex/JetBrains untouched) → `font-app-sans` / `font-app-mono`.
+- **Not yet applied to routes:** `.theme-app` is available but not attached to dashboard/auth/onboarding layouts — that happens when components are rebuilt (next phase). This step only makes tokens consumable in code.
+- **Verified green:** type-check ✓ · lint 0 errors ✓ · `next build` compiled ✓ · 659/659 tests ✓.
+- **Carry-over:** `border/strong` 3:1 decision (DS contrast audit) + axe/Lighthouse validation against rendered components — settle when the first app components are coded.
 
 ## Components
 
@@ -94,5 +100,5 @@ Extra token added with Button: `text/on-brand` (Light `#FFFFFF` / Dark `#15140F`
 - [x] Token foundation: App Color (Light/Dark, 24) + App Radius (4) variables; typography ratified; Foundations board built + validated both themes.
 - [x] **Trust components** (the heart): StatusPill, VerificationBadge, TrustScore, DeliveryConfidence, DecisionAttribution — built with variants/properties + bound variables, validated Light + Dark.
 - [x] **Base components** — Button, Input, Card, Nav item, Table row, Tab, Modal/Sheet — built with variants + bound App Color/Radius variables, validated Light + Dark (Button `text/on-brand` ink + Modal `Elevation/Float` confirmed on dark canvas).
-- [ ] **Phase 5 gate** — design system complete; awaiting owner sign-off to advance to Phase 6 (code mirror).
-- [ ] Code mirror (Phase 6).
+- [x] **Phase 5 gate** — design system complete + WCAG contrast audit (core AA-clean); **owner signed off 2026-06-19**.
+- [x] **Code mirror (Phase 6)** — `.theme-app` tokens (light/dark) + radius + app fonts in `globals.css`/Tailwind/layout; build green (type-check, lint, 659 tests, `next build`). See "Code mirror" section above. NEXT: component implementation (apply `.theme-app` + build app components against the `app` token group).
