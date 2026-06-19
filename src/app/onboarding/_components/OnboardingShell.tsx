@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Alert } from '@/components/app';
 
 const STEPS = ['Role', 'Identity', 'Verification'];
 
@@ -11,8 +12,9 @@ export interface IOnboardingShellProps {
   children: React.ReactNode;
 }
 
-// Shared chrome for the onboarding funnel (SCR-ONB-001…005). Mirrors the
-// auth-page card styling so the funnel reads as one continuous flow.
+// Shared chrome for the onboarding funnel (SCR-ONB-001…005). Carries the
+// `.theme-app` scope for the whole surface (Phase 6 migration) and renders
+// against the app token group + type ramp. Light mode (warm canvas).
 export function OnboardingShell({
   step,
   title,
@@ -20,14 +22,14 @@ export function OnboardingShell({
   children,
 }: IOnboardingShellProps): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
+    <div className="theme-app flex min-h-screen items-center justify-center bg-app-canvas px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 mb-8">
-          <span className="font-heading font-semibold text-t2 text-fg">Umoja</span>
-          <span className="font-heading font-semibold text-t2 text-brand">Hub</span>
+        <div className="mb-8 flex items-center gap-1">
+          <span className="app-h2 text-app-ink">Umoja</span>
+          <span className="app-h2 text-app-brand">Hub</span>
         </div>
 
-        <ol className="flex items-center gap-2 mb-6" aria-label="Onboarding progress">
+        <ol className="mb-6 flex items-center gap-2" aria-label="Onboarding progress">
           {STEPS.map((label, i) => {
             const n = (i + 1) as 1 | 2 | 3;
             const active = n === step;
@@ -37,33 +39,28 @@ export function OnboardingShell({
                 <span
                   aria-current={active ? 'step' : undefined}
                   className={[
-                    'flex h-6 w-6 items-center justify-center rounded-full font-body text-t6 border',
+                    'app-meta flex h-6 w-6 items-center justify-center rounded-app-pill border',
                     done
-                      ? 'bg-brand/20 border-brand text-brand'
+                      ? 'border-app-brand bg-app-brand-surface text-app-brand'
                       : active
-                        ? 'border-brand text-brand'
-                        : 'border-white/10 text-fg-disabled',
+                        ? 'border-app-brand text-app-brand'
+                        : 'border-app-hairline text-app-faint',
                   ].join(' ')}
                 >
-                  {n}
+                  {done ? '✓' : n}
                 </span>
-                <span
-                  className={[
-                    'font-body text-t6',
-                    active ? 'text-fg' : 'text-fg-disabled',
-                  ].join(' ')}
-                >
+                <span className={['app-meta', active ? 'text-app-ink' : 'text-app-faint'].join(' ')}>
                   {label}
                 </span>
-                {n < STEPS.length && <span className="text-fg-disabled">›</span>}
+                {n < STEPS.length && <span className="text-app-faint">›</span>}
               </li>
             );
           })}
         </ol>
 
-        <div className="bg-surface border border-white/5 rounded p-6">
-          <h1 className="font-heading font-semibold text-t2 text-fg mb-1">{title}</h1>
-          {subtitle && <p className="font-body text-t5 text-fg-muted mb-6">{subtitle}</p>}
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+          <h1 className="app-h1 mb-1 text-app-ink">{title}</h1>
+          {subtitle && <p className="app-body mb-6 text-app-muted">{subtitle}</p>}
           {children}
         </div>
       </div>
@@ -71,23 +68,11 @@ export function OnboardingShell({
   );
 }
 
-// Shared inline alert — matches the auth pages.
+// Shared inline error — a danger Alert from the app library.
 export function OnboardingError({ message }: { message: string }): React.ReactElement {
   return (
-    <div
-      role="alert"
-      className="mb-4 px-4 py-3 rounded-sm bg-red-950/40 border border-red-800/50 font-body text-t5 text-red-400"
-    >
-      {message}
+    <div className="mb-4">
+      <Alert tone="danger">{message}</Alert>
     </div>
   );
 }
-
-export const onboardingSelectClasses = [
-  'w-full min-h-[44px] px-3 py-2 rounded-sm font-body text-t5',
-  'bg-surface-raised text-fg',
-  'border border-white/10',
-  'transition-all duration-150',
-  'focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand',
-  'disabled:opacity-40 disabled:cursor-not-allowed',
-].join(' ');

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
+import { Button, ChoiceCard } from '@/components/app';
 import { Role } from '@/types';
 import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
@@ -74,29 +74,18 @@ export default function RoleSelectionPage(): React.ReactElement {
           <legend className="sr-only">Select your role</legend>
           <div className="grid grid-cols-1 gap-2">
             {ROLE_OPTIONS.map(({ value, label, description }) => (
-              <button
+              <ChoiceCard
                 key={value}
-                type="button"
-                onClick={() => setRole(value)}
-                aria-pressed={role === value}
-                className={[
-                  'min-h-[56px] px-3 py-2 rounded-sm text-left border transition-all duration-150',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                  role === value
-                    ? 'border-brand bg-brand/10 text-fg'
-                    : 'border-white/10 bg-surface-raised text-fg-muted hover:border-white/20 hover:text-fg',
-                ].join(' ')}
-              >
-                <span className="block font-body font-medium text-t5">{label}</span>
-                <span className="block font-body text-t6 text-fg-disabled mt-0.5 leading-tight">
-                  {description}
-                </span>
-              </button>
+                title={label}
+                description={description}
+                selected={role === value}
+                onSelect={() => setRole(value)}
+              />
             ))}
           </div>
         </fieldset>
 
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} disabled={!role} className="w-full mt-2">
+        <Button type="submit" size="lg" isLoading={isLoading} disabled={!role} className="mt-2 w-full">
           Continue
         </Button>
       </form>

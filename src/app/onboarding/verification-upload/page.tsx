@@ -3,10 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/button';
+import { Input, Select, Button } from '@/components/app';
 import { Role, DocumentType } from '@/types';
-import { OnboardingShell, OnboardingError, onboardingSelectClasses } from '../_components/OnboardingShell';
+import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
 const DASHBOARD_BY_ROLE: Record<string, string> = {
   FARMER: '/dashboard/farmer/listings',
@@ -46,7 +45,7 @@ export default function VerificationUploadPage(): React.ReactElement {
 
   return (
     <OnboardingShell step={3} title="Verify your account">
-      <p className="font-body text-t5 text-fg-muted">Loading your details…</p>
+      <p className="app-body text-app-muted">Loading your details…</p>
     </OnboardingShell>
   );
 }
@@ -144,7 +143,7 @@ function StudentVerification(): React.ReactElement {
             autoComplete="email"
             required
           />
-          <Button type="submit" variant="primary" size="lg" isLoading={isLoading} disabled={!email.trim()} className="w-full mt-2">
+          <Button type="submit" size="lg" isLoading={isLoading} disabled={!email.trim()} className="mt-2 w-full">
             Send code
           </Button>
         </form>
@@ -160,12 +159,12 @@ function StudentVerification(): React.ReactElement {
             maxLength={6}
             required
           />
-          <p className="font-body text-t6 text-fg-disabled">
+          <p className="app-meta text-app-faint">
             {expired
               ? 'Your code has expired. Request a new one.'
               : `Code expires in ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}
           </p>
-          <Button type="submit" variant="primary" size="lg" isLoading={isLoading} disabled={pin.length !== 6 || expired} className="w-full">
+          <Button type="submit" size="lg" isLoading={isLoading} disabled={pin.length !== 6 || expired} className="w-full">
             Verify and finish
           </Button>
           <button
@@ -176,7 +175,7 @@ function StudentVerification(): React.ReactElement {
               setExpiresAt(null);
               setError('');
             }}
-            className="font-body text-t6 text-brand hover:opacity-80"
+            className="app-meta text-app-brand hover:opacity-80"
           >
             Use a different email / resend code
           </button>
@@ -260,23 +259,18 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {role === Role.FARMER && (
           <>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="documentType" className="font-body text-t6 text-fg-muted">
-                Document type
-              </label>
-              <select
-                id="documentType"
-                className={onboardingSelectClasses}
-                value={documentType}
-                onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-                required
-              >
-                <option value="">Select a document</option>
-                <option value={DocumentType.NATIONAL_ID}>National ID</option>
-                <option value={DocumentType.COOPERATIVE_CARD}>Cooperative card</option>
-                <option value={DocumentType.PASSPORT}>Passport</option>
-              </select>
-            </div>
+            <Select
+              id="documentType"
+              label="Document type"
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value as DocumentType)}
+              required
+            >
+              <option value="">Select a document</option>
+              <option value={DocumentType.NATIONAL_ID}>National ID</option>
+              <option value={DocumentType.COOPERATIVE_CARD}>Cooperative card</option>
+              <option value={DocumentType.PASSPORT}>Passport</option>
+            </Select>
             <Input
               label="Document number"
               placeholder="e.g. 12345678"
@@ -288,7 +282,7 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="document" className="font-body text-t6 text-fg-muted">
+          <label htmlFor="document" className="app-label text-app-body">
             {copy.fileLabel}
           </label>
           <input
@@ -297,21 +291,21 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
             accept="image/*,application/pdf"
             onChange={(e) => void handleFile(e)}
             disabled={uploadState === 'uploading'}
-            className="font-body text-t6 text-fg-muted file:mr-3 file:rounded-sm file:border-0 file:bg-surface-raised file:px-3 file:py-1.5 file:text-fg"
+            className="app-meta text-app-muted file:mr-3 file:rounded-app-control file:border file:border-app-border-strong file:bg-app-card file:px-3 file:py-1.5 file:text-app-ink"
           />
           {uploadState === 'uploading' && (
-            <p className="font-body text-t6 text-fg-disabled">Uploading…</p>
+            <p className="app-meta text-app-faint">Uploading…</p>
           )}
           {uploadState === 'done' && (
-            <p className="font-body text-t6 text-brand">Upload complete.</p>
+            <p className="app-meta text-app-brand">Upload complete.</p>
           )}
         </div>
 
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} disabled={!canSubmit} className="w-full mt-2">
+        <Button type="submit" size="lg" isLoading={isLoading} disabled={!canSubmit} className="mt-2 w-full">
           Submit and finish
         </Button>
-        <p className="font-body text-t6 text-fg-disabled">
-          You can start using UmojaHub right away — an administrator reviews your documents separately.
+        <p className="app-meta text-app-faint">
+          You can start using UmojaHub right away, and an administrator reviews your documents separately.
         </p>
       </form>
     </OnboardingShell>
