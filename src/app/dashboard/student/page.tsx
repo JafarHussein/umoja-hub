@@ -51,48 +51,30 @@ export default function StudentDashboardPage(): React.ReactElement {
 
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-          <div className="space-y-1.5">
-            <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
-            <div className="h-7 w-36 bg-surface-raised rounded-sm animate-pulse" />
-          </div>
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-10 space-y-3 flex flex-col items-center">
-            <div className="h-4 w-40 bg-surface-raised rounded-sm animate-pulse" />
-            <div className="h-4 w-64 bg-surface-raised rounded-sm animate-pulse" />
-            <div className="h-9 w-32 bg-surface-raised rounded-sm animate-pulse mt-2" />
-          </div>
+      <div className="max-w-3xl space-y-6">
+        <div className="space-y-1.5">
+          <div className="skeleton h-7 w-36 rounded" />
         </div>
+        <div className="skeleton h-44 rounded-app-card" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Student · Dashboard
-            </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              My Projects
-            </h1>
-          </div>
-        </div>
+    <div className="max-w-3xl space-y-6">
+      <h1 className="app-h1 text-app-ink">My Projects</h1>
 
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-10 text-center">
-          <p className="text-t4 font-body text-fg-muted">No active project</p>
-          <p className="text-t5 font-body text-fg-disabled mt-1">
-            Create a project to begin your verified portfolio.
-          </p>
-          <Link
-            href="/dashboard/student/projects/new"
-            className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-          >
-            Start new project →
-          </Link>
-        </div>
+      <div className="rounded-app-card border border-app-hairline bg-app-card p-10 text-center">
+        <p className="app-body text-app-muted">No active project</p>
+        <p className="app-meta mt-1 text-app-faint">
+          Create a project to begin your verified portfolio.
+        </p>
+        <Link
+          href="/dashboard/student/projects/new"
+          className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+        >
+          Start new project →
+        </Link>
       </div>
     </div>
   );

@@ -10,6 +10,12 @@ export interface IAppNavSpec {
   href: string;
   label: string;
   icon?: React.ReactNode;
+  /**
+   * Active only on an exact path match (default is prefix match). Use for a nav
+   * item that lives at the dashboard root, so it doesn't stay active on every
+   * nested route.
+   */
+  exact?: boolean;
 }
 
 export interface IAppShellProps {
@@ -26,7 +32,8 @@ export interface IAppShellProps {
   children: React.ReactNode;
 }
 
-function isActive(currentPath: string, href: string): boolean {
+function isActive(currentPath: string, href: string, exact = false): boolean {
+  if (exact) return currentPath === href;
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
@@ -53,7 +60,7 @@ export function AppShell({
               href={item.href}
               label={item.label}
               icon={item.icon}
-              active={isActive(currentPath, item.href)}
+              active={isActive(currentPath, item.href, item.exact)}
             />
           ))}
         </nav>

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options';
 import { LayoutWrapper } from '@/components/shared/LayoutWrapper';
 import { FarmerShell } from './farmer/_components/FarmerShell';
 import { BuyerShell } from './buyer/_components/BuyerShell';
+import { StudentShell } from './student/_components/StudentShell';
 import { Role } from '@/types';
 
 export default async function DashboardLayout({
@@ -18,15 +19,19 @@ export default async function DashboardLayout({
     redirect('/auth/login');
   }
 
-  // Incremental Phase 7 rollout: the FARMER and BUYER roles use the new
-  // app-design-system shell; the other roles keep the legacy shell until they
-  // are migrated.
+  // Incremental Phase 7 rollout: the FARMER, BUYER, and STUDENT roles use the
+  // new app-design-system shell; the other roles keep the legacy shell until
+  // they are migrated.
   if (session.user.role === Role.FARMER) {
     return <FarmerShell>{children}</FarmerShell>;
   }
 
   if (session.user.role === Role.BUYER) {
     return <BuyerShell>{children}</BuyerShell>;
+  }
+
+  if (session.user.role === Role.STUDENT) {
+    return <StudentShell>{children}</StudentShell>;
   }
 
   return (
