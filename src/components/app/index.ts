@@ -28,3 +28,12 @@ export type {
   IDeliveryConfidenceProps,
   IDecisionAttributionProps,
 } from './Trust';
+export { NavItem } from './Nav';
+export type { INavItemProps } from './Nav';
+export { AppShell, isNavActive } from './AppShell';
+export type { IAppShellProps, IAppNavSpec } from './AppShell';
+export { Table, THead, TH, TR, TD } from './Table';
+export { Tabs, Tab } from './Tabs';
+export type { ITabProps } from './Tabs';
+export { Modal } from './Modal';
+export type { IModalProps } from './Modal';

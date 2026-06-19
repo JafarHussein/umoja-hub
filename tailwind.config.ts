@@ -133,6 +133,10 @@ const config: Config = {
         'app-pill': '999px',
         'app-cell': '6px',
       },
+      boxShadow: {
+        // APP design system — Elevation/Float (warm-tinted, floating layers only).
+        'app-float': '0 1px 2px rgba(28,27,23,.05), 0 8px 24px rgba(28,27,23,.08)',
+      },
       // Functional motion only (foundation §10): the two durations actually in
       // use (150 micro / 250 panel) + one standard easing. The StoryWorld-era
       // instant/fast/standard/enter/exit durations and decelerate/accelerate/
