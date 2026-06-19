@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/app';
+import { cn } from '@/lib/cn';
 
 interface IChatMessage {
   role: 'user' | 'assistant';
@@ -18,7 +20,7 @@ function ChatSkeleton(): React.ReactElement {
       {[1, 2, 3].map((i) => (
         <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
           <div
-            className="h-12 rounded-sm bg-surface-raised border border-zinc-800/50 animate-pulse"
+            className="skeleton h-12 rounded-app-control border border-app-hairline"
             style={{ width: `${40 + i * 15}%` }}
           />
         </div>
@@ -91,37 +93,30 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
   }
 
   if (isInitializing) {
-    return (
-      <div className="bg-surface border border-zinc-800/50 rounded-[4px]">
-        <ChatSkeleton />
-      </div>
-    );
+    return <ChatSkeleton />;
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="px-6 py-4 bg-surface border-b border-zinc-800/50 rounded-t-[4px]">
-        <h2 className="font-heading text-t3 text-fg">AI Mentor</h2>
-        <p className="font-body text-t6 text-fg-muted mt-1">
+      <div className="border-b border-app-hairline bg-app-card px-6 py-4">
+        <h2 className="app-h2 text-app-ink">AI Mentor</h2>
+        <p className="app-meta mt-1 text-app-muted">
           Powered by UmojaHub AI · Groq Llama 3 · Socratic guidance
         </p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface min-h-[400px]">
+      <div className="min-h-[400px] flex-1 space-y-4 overflow-y-auto bg-app-card p-6">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={[
-                'max-w-[75%] px-4 py-3 rounded-sm font-body text-t5',
+              className={cn(
+                'app-body max-w-[75%] rounded-app-card px-4 py-3',
                 msg.role === 'user'
-                  ? 'bg-brand text-white'
-                  : 'bg-surface-raised border border-zinc-800/50 text-fg',
-              ].join(' ')}
+                  ? 'bg-app-brand text-app-on-brand'
+                  : 'border border-app-hairline bg-app-sunken text-app-body'
+              )}
             >
               {msg.content}
             </div>
@@ -130,12 +125,12 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="px-4 py-3 bg-surface-raised border border-zinc-800/50 rounded-sm">
-              <div className="flex gap-1 items-center">
+            <div className="rounded-app-card border border-app-hairline bg-app-sunken px-4 py-3">
+              <div className="flex items-center gap-1">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-fg-muted"
+                    className="h-1.5 w-1.5 rounded-app-pill bg-app-muted"
                     style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                   />
                 ))}
@@ -146,7 +141,7 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
 
         {error && (
           <div className="flex justify-center">
-            <p className="font-body text-t5 text-red-400 bg-red-950/20 border border-red-900/30 rounded-sm px-4 py-2">
+            <p className="app-body rounded-app-control border border-app-danger/30 bg-app-danger-surface px-4 py-2 text-app-danger">
               {error}
             </p>
           </div>
@@ -156,7 +151,7 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 bg-surface border-t border-zinc-800/50 rounded-b-[4px]">
+      <div className="border-t border-app-hairline bg-app-card px-6 py-4">
         <div className="flex gap-3">
           <textarea
             value={input}
@@ -165,19 +160,17 @@ export function MentorChat({ engagementId, briefTitle }: IMentorChatProps): Reac
             placeholder="Ask about your approach, a concept, or where you're stuck..."
             maxLength={1000}
             rows={2}
-            className="flex-1 bg-surface-raised border border-zinc-800/50 rounded-sm px-4 py-3 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-brand/50 transition-colors duration-150 min-h-[44px]"
+            className="app-body min-h-[44px] flex-1 resize-none rounded-app-control border border-app-border-strong bg-app-card px-4 py-3 text-app-ink placeholder:text-app-faint transition-colors duration-150 focus:border-app-brand focus:outline-none focus:ring-2 focus:ring-app-brand/30"
           />
-          <button
+          <Button
             onClick={() => void sendMessage()}
             disabled={isLoading || !input.trim()}
-            className="px-4 py-3 bg-brand text-white rounded-sm font-body text-t5 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-150 min-h-[44px] min-w-[44px]"
+            aria-label="Send message"
           >
             Send
-          </button>
+          </Button>
         </div>
-        <p className="font-body text-t6 text-fg-disabled mt-2">
-          {input.length}/1000 · Press Enter to send
-        </p>
+        <p className="app-meta mt-2 text-app-faint">{input.length}/1000 · Press Enter to send</p>
       </div>
     </div>
   );
