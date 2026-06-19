@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Input';
-import { Button } from '@/components/ui/button';
+import { Button, Input, Textarea } from '@/components/app';
 
 export interface IAIUsageEntry {
   toolUsed: string;
@@ -90,12 +88,10 @@ export function AIUsageTab({
     <div className="p-4 space-y-6">
       {/* Add form */}
       <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-          Log AI usage
-        </p>
+        <p className="app-label text-app-muted">Log AI usage</p>
 
         {errorMsg && (
-          <p className="text-t6 font-body text-red-400" role="alert">
+          <p className="app-meta text-app-danger" role="alert">
             {errorMsg}
           </p>
         )}
@@ -132,43 +128,38 @@ export function AIUsageTab({
           type="submit"
           variant="secondary"
           size="sm"
-          disabled={!isValid || formState === 'saving'}
+          disabled={!isValid}
+          isLoading={formState === 'saving'}
         >
-          {formState === 'saving' ? 'Logging...' : 'Log usage'}
+          Log usage
         </Button>
       </form>
 
       {/* Log list */}
       <div className="space-y-2">
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-          AI usage log
-        </p>
+        <p className="app-label text-app-muted">AI usage log</p>
 
         {entries.length === 0 ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-6 text-center">
-            <p className="text-t5 font-body text-fg-muted">No AI usage logged yet.</p>
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6 text-center">
+            <p className="app-body text-app-muted">No AI usage logged yet.</p>
           </div>
         ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
             {entries.map((entry, idx) => (
               <div
                 key={idx}
-                className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-0.5"
+                className="space-y-0.5 border-b border-app-hairline px-4 py-3 last:border-0"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-t5 font-body font-medium text-fg">
-                    {entry.toolUsed}
-                  </p>
+                  <p className="app-body-strong text-app-ink">{entry.toolUsed}</p>
                   {entry.loggedAt && (
-                    <p className="text-t6 font-mono text-fg-disabled flex-shrink-0">
+                    <p className="app-meta flex-shrink-0 font-app-mono text-app-faint">
                       {formatDate(entry.loggedAt)}
                     </p>
                   )}
                 </div>
-                <p className="text-t6 font-body text-fg-muted">
-                  {entry.prompt.length > 120
-                    ? `${entry.prompt.slice(0, 120)}…`
-                    : entry.prompt}
+                <p className="app-meta text-app-muted">
+                  {entry.prompt.length > 120 ? `${entry.prompt.slice(0, 120)}…` : entry.prompt}
                 </p>
               </div>
             ))}

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/button';
+import { Button, Input } from '@/components/app';
 
 export interface IBlockerEntry {
   stuckOn: string;
@@ -86,12 +85,10 @@ export function BlockersTab({
     <div className="p-4 space-y-6">
       {/* Add form */}
       <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-          Log a blocker
-        </p>
+        <p className="app-label text-app-muted">Log a blocker</p>
 
         {errorMsg && (
-          <p className="text-t6 font-body text-red-400" role="alert">
+          <p className="app-meta text-app-danger" role="alert">
             {errorMsg}
           </p>
         )}
@@ -121,31 +118,30 @@ export function BlockersTab({
           type="submit"
           variant="secondary"
           size="sm"
-          disabled={!isValid || formState === 'saving'}
+          disabled={!isValid}
+          isLoading={formState === 'saving'}
         >
-          {formState === 'saving' ? 'Logging...' : 'Log blocker'}
+          Log blocker
         </Button>
       </form>
 
       {/* Log list */}
       <div className="space-y-2">
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-          Blocker log
-        </p>
+        <p className="app-label text-app-muted">Blocker log</p>
 
         {blockers.length === 0 ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-6 text-center">
-            <p className="text-t5 font-body text-fg-muted">No blockers logged yet.</p>
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6 text-center">
+            <p className="app-body text-app-muted">No blockers logged yet.</p>
           </div>
         ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
             {blockers.map((blocker, idx) => (
               <div
                 key={idx}
-                className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-0.5"
+                className="space-y-0.5 border-b border-app-hairline px-4 py-3 last:border-0"
               >
-                <p className="text-t5 font-body text-fg">{blocker.stuckOn}</p>
-                <p className="text-t6 font-mono text-fg-disabled">
+                <p className="app-body text-app-ink">{blocker.stuckOn}</p>
+                <p className="app-meta text-app-muted">
                   {blocker.resolution} · {blocker.durationHours}h
                   {blocker.loggedAt ? ` · ${formatDate(blocker.loggedAt)}` : ''}
                 </p>
