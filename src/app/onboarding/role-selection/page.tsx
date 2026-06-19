@@ -10,26 +10,30 @@ import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell
 // SCR-ONB-001 — role cards (Stage 1). ADMIN is never self-selectable.
 // Provider↔role is enforced server-side (GitHub = STUDENT only); a mismatch
 // returns 403 and is surfaced inline since the JWT does not carry the provider.
-const ROLE_OPTIONS: { value: Role; label: string; description: string }[] = [
+const ROLE_OPTIONS: { value: Role; label: string; description: string; illustration: string }[] = [
   {
     value: Role.FARMER,
     label: 'Farmer',
     description: 'List produce, manage orders, access price intelligence',
+    illustration: '/illustrations/characters/char-farmer.svg',
   },
   {
     value: Role.BUYER,
     label: 'Buyer',
     description: 'Browse verified listings, purchase direct from farms',
+    illustration: '/illustrations/characters/char-buyer.svg',
   },
   {
     value: Role.STUDENT,
     label: 'Student',
     description: 'Build a verified project portfolio through real work',
+    illustration: '/illustrations/characters/char-student.svg',
   },
   {
     value: Role.LECTURER,
     label: 'Lecturer',
     description: 'Review student submissions and mentor project work',
+    illustration: '/illustrations/characters/char-lecturer.svg',
   },
 ];
 
@@ -73,13 +77,24 @@ export default function RoleSelectionPage(): React.ReactElement {
         <fieldset>
           <legend className="sr-only">Select your role</legend>
           <div className="grid grid-cols-1 gap-2">
-            {ROLE_OPTIONS.map(({ value, label, description }) => (
+            {ROLE_OPTIONS.map(({ value, label, description, illustration }) => (
               <ChoiceCard
                 key={value}
                 title={label}
                 description={description}
                 selected={role === value}
                 onSelect={() => setRole(value)}
+                visual={
+                  <span className="flex h-14 w-20 items-center justify-center overflow-hidden rounded-app-control bg-app-sunken">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={illustration}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-contain p-1.5"
+                    />
+                  </span>
+                }
               />
             ))}
           </div>

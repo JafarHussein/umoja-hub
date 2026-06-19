@@ -9,6 +9,8 @@ export interface IOnboardingShellProps {
   step: 1 | 2 | 3;
   title: string;
   subtitle?: string;
+  /** Optional centered hero illustration (public path), shown above the content. */
+  illustration?: string;
   children: React.ReactNode;
 }
 
@@ -19,6 +21,7 @@ export function OnboardingShell({
   step,
   title,
   subtitle,
+  illustration,
   children,
 }: IOnboardingShellProps): React.ReactElement {
   return (
@@ -60,8 +63,19 @@ export function OnboardingShell({
 
         <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
           <h1 className="app-h1 mb-1 text-app-ink">{title}</h1>
-          {subtitle && <p className="app-body mb-6 text-app-muted">{subtitle}</p>}
-          {children}
+          {subtitle && <p className="app-body text-app-muted">{subtitle}</p>}
+          {illustration && (
+            <div className="my-5 flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={illustration}
+                alt=""
+                aria-hidden="true"
+                className="h-28 w-auto max-w-[200px] object-contain"
+              />
+            </div>
+          )}
+          <div className={subtitle && !illustration ? 'mt-6' : ''}>{children}</div>
         </div>
       </div>
     </div>

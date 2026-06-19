@@ -49,6 +49,15 @@ function LoginContent(): React.ReactElement {
         </div>
 
         <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+          <div className="mb-5 flex justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/illustrations/concepts/concept-secure-login.svg"
+              alt=""
+              aria-hidden="true"
+              className="h-24 w-auto max-w-[180px] object-contain"
+            />
+          </div>
           <h1 className="app-h1 mb-1 text-app-ink">Sign in to UmojaHub</h1>
           <p className="app-body mb-6 text-app-muted">
             Continue with Google or GitHub. New here? This creates your account.

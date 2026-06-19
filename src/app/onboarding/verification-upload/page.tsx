@@ -128,6 +128,7 @@ function StudentVerification(): React.ReactElement {
       step={3}
       title="Verify you're a student"
       subtitle="We'll email a 6-digit code to your university address."
+      illustration="/illustrations/concepts/concept-verification.svg"
     >
       {error && <OnboardingError message={error} />}
 
@@ -253,7 +254,12 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
   const canSubmit = uploadState === 'done' && fileUrl !== '' && farmerReady && !isLoading;
 
   return (
-    <OnboardingShell step={3} title={copy.title} subtitle={copy.subtitle}>
+    <OnboardingShell
+      step={3}
+      title={copy.title}
+      subtitle={copy.subtitle}
+      illustration="/illustrations/concepts/concept-data-security.svg"
+    >
       {error && <OnboardingError message={error} />}
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
