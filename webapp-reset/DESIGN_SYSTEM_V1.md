@@ -84,5 +84,6 @@ Extra token added with Button: `text/on-brand` (Light `#FFFFFF` / Dark `#15140F`
 
 - [x] Token foundation: App Color (Light/Dark, 24) + App Radius (4) variables; typography ratified; Foundations board built + validated both themes.
 - [x] **Trust components** (the heart): StatusPill, VerificationBadge, TrustScore, DeliveryConfidence, DecisionAttribution — built with variants/properties + bound variables, validated Light + Dark.
-- [ ] **Base components** — Button, Input, Card, Nav item, Table row, Tab, Modal/Sheet.
+- [x] **Base components** — Button, Input, Card, Nav item, Table row, Tab, Modal/Sheet — built with variants + bound App Color/Radius variables, validated Light + Dark (Button `text/on-brand` ink + Modal `Elevation/Float` confirmed on dark canvas).
+- [ ] **Phase 5 gate** — design system complete; awaiting owner sign-off to advance to Phase 6 (code mirror).
 - [ ] Code mirror (Phase 6).
