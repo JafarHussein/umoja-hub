@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/app';
+import { cn } from '@/lib/cn';
 
 interface IChatMessage {
   role: 'user' | 'assistant';
@@ -23,12 +25,8 @@ function ChatSkeleton() {
       {[1, 2, 3].map((i) => (
         <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
           <div
-            className="h-12 rounded bg-surface-raised border border-white/5 animate-shimmer"
-            style={{
-              width: `${40 + i * 15}%`,
-              backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
-              backgroundSize: '200% 100%',
-            }}
+            className="skeleton h-12 rounded-app-control border border-app-hairline"
+            style={{ width: `${40 + i * 15}%` }}
           />
         </div>
       ))}
@@ -109,60 +107,52 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
   }
 
   if (isInitializing) {
-    return (
-      <div className="bg-surface border border-white/5 rounded">
-        <ChatSkeleton />
-      </div>
-    );
+    return <ChatSkeleton />;
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-white/5 rounded-t">
+      <div className="flex items-center justify-between border-b border-app-hairline bg-app-card px-6 py-4">
         <div>
-          <h2 className="font-heading text-t3 text-fg">Farm Assistant</h2>
-          <p className="font-body text-t6 text-fg-muted mt-1">
-            Powered by UmojaHub AI · Groq Llama 3
-          </p>
+          <h2 className="app-h2 text-app-ink">Farm Assistant</h2>
+          <p className="app-meta mt-1 text-app-muted">Powered by UmojaHub AI · Groq Llama 3</p>
         </div>
         {weatherContext && (
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setWeatherPanelOpen((o) => !o)}
-            className="flex items-center gap-2 px-3 py-2 bg-surface-raised border border-white/5 rounded-sm text-t6 font-body text-fg-muted hover:text-fg transition-all duration-150 min-h-[44px] min-w-[44px]"
             aria-expanded={weatherPanelOpen}
           >
-            <span className="text-t6">Weather</span>
-            <span className="text-t6">{weatherPanelOpen ? '▲' : '▼'}</span>
-          </button>
+            Weather <span aria-hidden>{weatherPanelOpen ? '▲' : '▼'}</span>
+          </Button>
         )}
       </div>
 
       {/* Weather context panel */}
       {weatherContext && weatherPanelOpen && (
-        <div className="px-6 py-4 bg-surface-raised border-b border-white/5">
-          <p className="font-body text-t6 text-fg-muted mb-2">
-            7-day forecast for <span className="text-fg">{weatherContext.county}</span>
+        <div className="border-b border-app-hairline bg-app-sunken px-6 py-4">
+          <p className="app-meta mb-2 text-app-muted">
+            7-day forecast for <span className="text-app-ink">{weatherContext.county}</span>
           </p>
-          <pre className="font-mono text-t6 text-fg-muted whitespace-pre-wrap">
+          <pre className="app-meta whitespace-pre-wrap font-app-mono text-app-muted">
             {weatherContext.forecast}
           </pre>
         </div>
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface min-h-[400px]">
+      <div className="min-h-[400px] flex-1 space-y-4 overflow-y-auto bg-app-card p-6">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[75%] px-4 py-3 rounded font-body text-t5 ${
+              className={cn(
+                'app-body max-w-[75%] rounded-app-card px-4 py-3',
                 msg.role === 'user'
-                  ? 'bg-brand text-white'
-                  : 'bg-surface-raised border border-white/5 text-fg'
-              }`}
+                  ? 'bg-app-brand text-app-on-brand'
+                  : 'border border-app-hairline bg-app-sunken text-app-body'
+              )}
             >
               {msg.content}
             </div>
@@ -171,12 +161,12 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="px-4 py-3 bg-surface-raised border border-white/5 rounded">
-              <div className="flex gap-1 items-center">
+            <div className="rounded-app-card border border-app-hairline bg-app-sunken px-4 py-3">
+              <div className="flex items-center gap-1">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-fg-muted"
+                    className="h-1.5 w-1.5 rounded-app-pill bg-app-muted"
                     style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                   />
                 ))}
@@ -187,7 +177,7 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
 
         {error && (
           <div className="flex justify-center">
-            <p className="font-body text-t5 text-red-400 bg-red-950/20 border border-red-900/30 rounded px-4 py-2">
+            <p className="app-body rounded-app-control border border-app-danger/30 bg-app-danger-surface px-4 py-2 text-app-danger">
               {error}
             </p>
           </div>
@@ -197,7 +187,7 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 bg-surface border-t border-white/5 rounded-b">
+      <div className="border-t border-app-hairline bg-app-card px-6 py-4">
         <div className="flex gap-3">
           <textarea
             value={input}
@@ -206,19 +196,17 @@ export default function FarmAssistantChat({ farmerName, farmerCounty }: IFarmAss
             placeholder="Ask about your crops, soil, pests, or market prices..."
             maxLength={1000}
             rows={2}
-            className="flex-1 bg-surface-raised border border-white/5 rounded-sm px-4 py-3 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-brand/50 transition-all duration-150 min-h-[44px]"
+            className="app-body min-h-[44px] flex-1 resize-none rounded-app-control border border-app-border-strong bg-app-card px-4 py-3 text-app-ink placeholder:text-app-faint transition-colors duration-150 focus:border-app-brand focus:outline-none focus:ring-2 focus:ring-app-brand/30"
           />
-          <button
+          <Button
             onClick={() => void sendMessage()}
             disabled={isLoading || !input.trim()}
-            className="px-4 py-3 bg-brand text-white rounded-sm font-body text-t5 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-150 min-h-[44px] min-w-[44px]"
+            aria-label="Send message"
           >
             Send
-          </button>
+          </Button>
         </div>
-        <p className="font-body text-t6 text-fg-disabled mt-2">
-          {input.length}/1000 · Press Enter to send
-        </p>
+        <p className="app-meta mt-2 text-app-faint">{input.length}/1000 · Press Enter to send</p>
       </div>
     </div>
   );
