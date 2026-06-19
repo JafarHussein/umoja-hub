@@ -23,15 +23,14 @@ interface IPriceTrendChartProps {
   isLoading?: boolean;
 }
 
+// App design-system palette mirrors (Recharts takes SVG colours as values, not
+// CSS classes) — kept in lockstep with the .theme-app tokens in globals.css.
+const APP_BRAND = '#1E5C45'; // brand / proceed
+const APP_HAIRLINE = '#E4E2DA'; // grid + axis lines
+const APP_MUTED = '#6E6B61'; // axis tick labels
+
 function ChartSkeleton() {
-  return (
-    <div className="w-full h-64 bg-surface-raised border border-white/5 rounded animate-shimmer"
-      style={{
-        backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
-        backgroundSize: '200% 100%',
-      }}
-    />
-  );
+  return <div className="skeleton h-64 w-full rounded-app-card border border-app-hairline" />;
 }
 
 function formatDate(dateStr: string): string {
@@ -54,12 +53,10 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-surface border border-white/10 rounded px-3 py-2">
-      <p className="font-body text-t6 text-fg-muted mb-1">{label}</p>
-      <p className="font-mono text-t5 text-brand">
-        KES {payload[0]?.value?.toFixed(2)}
-      </p>
-      <p className="font-body text-t6 text-fg-disabled capitalize">
+    <div className="rounded-app-control border border-app-hairline bg-app-card px-3 py-2 shadow-app-float">
+      <p className="app-meta mb-1 text-app-muted">{label}</p>
+      <p className="app-data-m text-app-brand">KSh {payload[0]?.value?.toFixed(2)}</p>
+      <p className="app-meta capitalize text-app-faint">
         {payload[0]?.payload?.source?.replace('_', ' ').toLowerCase()}
       </p>
     </div>
@@ -78,9 +75,9 @@ export default function PriceTrendChart({
 
   if (!data.length) {
     return (
-      <div className="w-full h-64 flex flex-col items-center justify-center bg-surface-raised border border-white/5 rounded">
-        <p className="font-body text-t5 text-fg-muted">No price data available</p>
-        <p className="font-body text-t6 text-fg-disabled mt-1">
+      <div className="flex h-64 w-full flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-sunken">
+        <p className="app-body text-app-muted">No price data available</p>
+        <p className="app-meta mt-1 text-app-faint">
           Price history for {cropName} will appear here once trading begins
         </p>
       </div>
@@ -95,20 +92,20 @@ export default function PriceTrendChart({
 
   return (
     <div className="w-full">
-      <p className="font-body text-t6 text-fg-muted mb-3">
-        KES per {unit} · {data.length} data point{data.length !== 1 ? 's' : ''}
+      <p className="app-meta mb-3 text-app-muted">
+        KSh per {unit} · {data.length} data point{data.length !== 1 ? 's' : ''}
       </p>
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke={APP_HAIRLINE} />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#8B949E', fontSize: 11, fontFamily: 'var(--font-jetbrains-mono)' }}
-            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tick={{ fill: APP_MUTED, fontSize: 11, fontFamily: 'var(--font-spline-mono)' }}
+            axisLine={{ stroke: APP_HAIRLINE }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#8B949E', fontSize: 11, fontFamily: 'var(--font-jetbrains-mono)' }}
+            tick={{ fill: APP_MUTED, fontSize: 11, fontFamily: 'var(--font-spline-mono)' }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => `${v}`}
@@ -117,10 +114,10 @@ export default function PriceTrendChart({
           <Line
             type="monotone"
             dataKey="price"
-            stroke="#007F4E"
+            stroke={APP_BRAND}
             strokeWidth={2}
-            dot={{ fill: '#007F4E', r: 3, strokeWidth: 0 }}
-            activeDot={{ fill: '#007F4E', r: 5, strokeWidth: 0 }}
+            dot={{ fill: APP_BRAND, r: 3, strokeWidth: 0 }}
+            activeDot={{ fill: APP_BRAND, r: 5, strokeWidth: 0 }}
           />
         </LineChart>
       </ResponsiveContainer>

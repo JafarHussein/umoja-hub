@@ -12,19 +12,17 @@ export default async function FarmerPricesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-8 md:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-heading text-t1 text-fg mb-2">Price Intelligence</h1>
-          <p className="font-body text-t4 text-fg-muted">
-            Track crop price trends in your county and get notified when prices reach your target.
-          </p>
-        </div>
-
-        {/* Dashboard — client component */}
-        <PriceIntelligenceDashboard />
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="app-h1 text-app-ink">Price Intelligence</h1>
+        <p className="app-meta mt-0.5 max-w-prose text-app-muted">
+          Track crop price trends in your county and get notified when prices reach your target.
+        </p>
       </div>
+
+      {/* Dashboard — client component */}
+      <PriceIntelligenceDashboard />
     </div>
   );
 }
