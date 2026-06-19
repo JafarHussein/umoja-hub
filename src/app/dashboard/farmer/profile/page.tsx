@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, VerificationStatus, FarmerTrustTier, DocumentType } from '@/types';
+import { Button, Input, Select, Alert, VerificationBadge } from '@/components/app';
 import { LinkGroupTokenForm } from '@/components/foodhub/LinkGroupTokenForm';
 
 interface IFarmerData {
@@ -49,6 +50,35 @@ type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
 interface ICloudinaryUploadResponse {
   secure_url: string;
+}
+
+// Key/value row inside a bordered summary card.
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="flex items-start justify-between gap-4 px-4 py-3">
+      <span className="app-label text-app-muted">{label}</span>
+      <span className="app-body text-right text-app-ink">{children}</span>
+    </div>
+  );
+}
+
+// Verification status rendered as a trust badge (verified/pending/denied) or a
+// neutral "not submitted" pill — status by icon + text, never colour alone.
+function VerificationStatusValue({ status }: { status: VerificationStatus }): React.ReactElement {
+  switch (status) {
+    case VerificationStatus.APPROVED:
+      return <VerificationBadge state="verified" />;
+    case VerificationStatus.PENDING:
+      return <VerificationBadge state="pending" label="Under review" />;
+    case VerificationStatus.REJECTED:
+      return <VerificationBadge state="denied" label="Rejected" />;
+    default:
+      return (
+        <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted">
+          Not submitted
+        </span>
+      );
+  }
 }
 
 export default function FarmerProfilePage(): React.ReactElement {
@@ -189,17 +219,25 @@ export default function FarmerProfilePage(): React.ReactElement {
     }
   }
 
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
-    return <p className="p-4">Loading...</p>;
+    return (
+      <div className="space-y-6">
+        <div className="skeleton h-6 w-40 rounded" />
+        <div className="skeleton h-48 rounded-app-card" />
+      </div>
+    );
   }
 
+  // ── Error ─────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="p-4 flex flex-col gap-2">
-        <p>Failed to load profile.</p>
-        <button type="button" onClick={() => void fetchProfile()}>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load profile</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button variant="secondary" onClick={() => void fetchProfile()}>
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -220,208 +258,145 @@ export default function FarmerProfilePage(): React.ReactElement {
   ];
 
   return (
-    <div className="flex flex-col gap-8 p-4">
+    <div className="max-w-2xl space-y-8">
       {/* ── Profile summary ─────────────────────────────────────────────── */}
-      <section className="flex flex-col gap-2">
-        <h1 className="text-base font-semibold">Farmer Profile</h1>
-        <table className="border-collapse text-sm">
-          <tbody>
-            <tr className="border border-gray-300">
-              <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50 w-40">Name</th>
-              <td className="px-3 py-2 border border-gray-300">
-                {farmer.firstName ?? '—'} {farmer.lastName ?? ''}
-              </td>
-            </tr>
-            <tr className="border border-gray-300">
-              <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">County</th>
-              <td className="px-3 py-2 border border-gray-300">{farmer.county ?? '—'}</td>
-            </tr>
-            <tr className="border border-gray-300">
-              <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">Phone</th>
-              <td className="px-3 py-2 border border-gray-300">{farmer.phoneNumber ?? '—'}</td>
-            </tr>
-            <tr className="border border-gray-300">
-              <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">Trust tier</th>
-              <td className="px-3 py-2 border border-gray-300">
-                {trustScore.tier} — score: {trustScore.compositeScore}
-              </td>
-            </tr>
-            <tr className="border border-gray-300">
-              <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">
-                Verification
-              </th>
-              <td className="px-3 py-2 border border-gray-300">
-                {farmerData.verificationStatus}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <section className="space-y-3">
+        <h1 className="app-h1 text-app-ink">Farmer Profile</h1>
+        <div className="divide-y divide-app-hairline rounded-app-card border border-app-hairline bg-app-card">
+          <InfoRow label="Name">
+            {farmer.firstName ?? '—'} {farmer.lastName ?? ''}
+          </InfoRow>
+          <InfoRow label="County">{farmer.county ?? '—'}</InfoRow>
+          <InfoRow label="Phone">{farmer.phoneNumber ?? '—'}</InfoRow>
+          <InfoRow label="Trust tier">
+            <span className="capitalize">{trustScore.tier.toLowerCase()}</span> ·{' '}
+            <span className="app-data-m text-app-ink">{trustScore.compositeScore}</span>
+          </InfoRow>
+          <InfoRow label="Verification">
+            <VerificationStatusValue status={farmerData.verificationStatus} />
+          </InfoRow>
+        </div>
       </section>
 
       {/* ── Farm details / onboarding ────────────────────────────────────── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">Farm Details</h2>
+      <section className="space-y-3">
+        <h2 className="app-h2 text-app-ink">Farm Details</h2>
         {onboarded ? (
-          <table className="border-collapse text-sm">
-            <tbody>
-              <tr className="border border-gray-300">
-                <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50 w-40">
-                  Crops grown
-                </th>
-                <td className="px-3 py-2 border border-gray-300">
-                  {farmerData.cropsGrown.join(', ')}
-                </td>
-              </tr>
-              <tr className="border border-gray-300">
-                <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">
-                  Farm size
-                </th>
-                <td className="px-3 py-2 border border-gray-300">
-                  {farmerData.farmSizeAcres != null ? `${farmerData.farmSizeAcres} acres` : '—'}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="divide-y divide-app-hairline rounded-app-card border border-app-hairline bg-app-card">
+            <InfoRow label="Crops grown">{farmerData.cropsGrown.join(', ') || '—'}</InfoRow>
+            <InfoRow label="Farm size">
+              {farmerData.farmSizeAcres != null ? `${farmerData.farmSizeAcres} acres` : '—'}
+            </InfoRow>
+          </div>
         ) : (
           <form
-            className="flex flex-col gap-3 border border-gray-300 p-4"
+            className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4"
             onSubmit={(e) => void handleCropSubmit(e)}
           >
-            <p className="text-sm">Profile incomplete. Add your crops to activate your account.</p>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="cropsInput" className="text-sm font-medium">
-                Crops grown <span className="text-gray-500">(comma-separated)</span>
-              </label>
-              <input
-                id="cropsInput"
-                type="text"
-                className="border border-gray-300 px-2 py-1 text-sm"
-                value={cropsInput}
-                onChange={(e) => setCropsInput(e.target.value)}
-                placeholder="Maize, Beans, Tomatoes"
-                required
-              />
-            </div>
-            {cropError !== null && (
-              <p role="alert" className="text-sm text-red-600">
-                {cropError}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={cropState === 'submitting'}
-              className="self-start border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
-            >
-              {cropState === 'submitting' ? 'Saving...' : 'Save crops'}
-            </button>
+            <p className="app-body text-app-muted">
+              Profile incomplete. Add your crops to activate your account.
+            </p>
+            <Input
+              label="Crops grown (comma-separated)"
+              type="text"
+              value={cropsInput}
+              onChange={(e) => setCropsInput(e.target.value)}
+              placeholder="Maize, Beans, Tomatoes"
+              required
+              {...(cropError ? { error: cropError } : {})}
+            />
+            <Button type="submit" isLoading={cropState === 'submitting'} className="self-start">
+              Save crops
+            </Button>
           </form>
         )}
       </section>
 
       {/* ── Identity verification ────────────────────────────────────────── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">Identity Verification</h2>
+      <section className="space-y-3">
+        <h2 className="app-h2 text-app-ink">Identity Verification</h2>
 
         {farmerData.verificationStatus === VerificationStatus.APPROVED && (
-          <p className="text-sm">
+          <Alert tone="success">
             Verified. Document on file: {farmerData.documentType ?? '—'}
-          </p>
+          </Alert>
         )}
 
         {farmerData.verificationStatus === VerificationStatus.PENDING && (
-          <p className="text-sm">Your verification is under review.</p>
+          <Alert tone="info">Your verification is under review.</Alert>
         )}
 
         {canSubmitVerification && (
           <form
-            className="flex flex-col gap-3 border border-gray-300 p-4"
+            className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4"
             onSubmit={(e) => void handleVerifySubmit(e)}
           >
             {farmerData.verificationStatus === VerificationStatus.REJECTED && (
-              <p className="text-sm text-red-600">
+              <Alert tone="danger">
                 Previous submission was rejected. Please resubmit with a valid document.
-              </p>
+              </Alert>
             )}
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="documentType" className="text-sm font-medium">
-                Document type
-              </label>
-              <select
-                id="documentType"
-                className="border border-gray-300 px-2 py-1 text-sm"
-                value={verifyForm.documentType}
-                onChange={(e) =>
-                  setVerifyForm((prev) => ({
-                    ...prev,
-                    documentType: e.target.value as DocumentType,
-                  }))
-                }
-              >
-                <option value={DocumentType.NATIONAL_ID}>National ID</option>
-                <option value={DocumentType.COOPERATIVE_CARD}>Cooperative Card</option>
-                <option value={DocumentType.PASSPORT}>Passport</option>
-              </select>
-            </div>
+            <Select
+              label="Document type"
+              value={verifyForm.documentType}
+              onChange={(e) =>
+                setVerifyForm((prev) => ({
+                  ...prev,
+                  documentType: e.target.value as DocumentType,
+                }))
+              }
+            >
+              <option value={DocumentType.NATIONAL_ID}>National ID</option>
+              <option value={DocumentType.COOPERATIVE_CARD}>Cooperative Card</option>
+              <option value={DocumentType.PASSPORT}>Passport</option>
+            </Select>
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="documentNumber" className="text-sm font-medium">
-                Document number
-              </label>
-              <input
-                id="documentNumber"
-                type="text"
-                className="border border-gray-300 px-2 py-1 text-sm"
-                value={verifyForm.documentNumber}
-                onChange={(e) =>
-                  setVerifyForm((prev) => ({ ...prev, documentNumber: e.target.value }))
-                }
-                required
-              />
-            </div>
+            <Input
+              label="Document number"
+              type="text"
+              value={verifyForm.documentNumber}
+              onChange={(e) =>
+                setVerifyForm((prev) => ({ ...prev, documentNumber: e.target.value }))
+              }
+              required
+            />
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="documentImage" className="text-sm font-medium">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="documentImage" className="app-label text-app-body">
                 Document image
               </label>
               <input
                 id="documentImage"
                 type="file"
                 accept="image/*"
-                className="text-sm"
                 onChange={(e) => void handleFileUpload(e)}
                 disabled={uploadState === 'uploading'}
+                className="app-body text-app-body file:mr-3 file:rounded-app-control file:border file:border-app-border-strong file:bg-app-card file:px-3 file:py-2 file:text-app-ink hover:file:bg-app-sunken"
               />
               {uploadState === 'uploading' && (
-                <p className="text-xs text-gray-500">Uploading...</p>
+                <p className="app-meta text-app-muted">Uploading...</p>
               )}
               {uploadState === 'done' && (
-                <p className="text-xs text-green-700">Upload complete.</p>
+                <p className="app-meta text-app-success">Upload complete.</p>
               )}
               {uploadError !== null && (
-                <p role="alert" className="text-xs text-red-600">
+                <p role="alert" className="app-meta text-app-danger">
                   {uploadError}
                 </p>
               )}
             </div>
 
-            {verifyError !== null && (
-              <p role="alert" className="text-sm text-red-600">
-                {verifyError}
-              </p>
-            )}
+            {verifyError !== null && <Alert tone="danger">{verifyError}</Alert>}
 
-            <button
+            <Button
               type="submit"
-              disabled={
-                verifyState === 'submitting' ||
-                uploadState === 'uploading' ||
-                verifyForm.documentImageUrl === ''
-              }
-              className="self-start border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
+              isLoading={verifyState === 'submitting'}
+              disabled={uploadState === 'uploading' || verifyForm.documentImageUrl === ''}
+              className="self-start"
             >
-              {verifyState === 'submitting' ? 'Submitting...' : 'Submit for verification'}
-            </button>
+              Submit for verification
+            </Button>
           </form>
         )}
       </section>
@@ -431,40 +406,32 @@ export default function FarmerProfilePage(): React.ReactElement {
 
       {/* ── Trust score breakdown — shown only when APPROVED ─────────────── */}
       {farmerData.verificationStatus === VerificationStatus.APPROVED && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-base font-semibold">Trust Score Breakdown</h2>
-          <table className="border-collapse text-sm">
-            <tbody>
-              {scoreFactors.map(({ label, score, max }) => (
-                <tr key={label} className="border border-gray-300">
-                  <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50 w-48">
-                    {label}
-                  </th>
-                  <td className="px-3 py-2 border border-gray-300">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 bg-gray-200">
-                        <div
-                          className="h-2 bg-gray-600"
-                          style={{ width: `${Math.round((score / max) * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-600 w-14 text-right shrink-0">
-                        {score} / {max}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              <tr className="border border-gray-300">
-                <th className="px-3 py-2 text-left border border-gray-300 bg-gray-50">
-                  Composite score
-                </th>
-                <td className="px-3 py-2 border border-gray-300 font-medium">
-                  {trustScore.compositeScore} / 100 — {trustScore.tier}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <section className="space-y-3">
+          <h2 className="app-h2 text-app-ink">Trust Score Breakdown</h2>
+          <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+            {scoreFactors.map(({ label, score, max }) => (
+              <div key={label} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="app-body text-app-ink">{label}</span>
+                  <span className="app-data-m text-app-muted">
+                    {score} / {max}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-app-pill bg-app-sunken">
+                  <div
+                    className="h-full rounded-app-pill bg-app-brand"
+                    style={{ width: `${Math.round((score / max) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center justify-between gap-3 border-t border-app-hairline pt-3">
+              <span className="app-body-strong text-app-ink">Composite score</span>
+              <span className="app-data-l text-app-brand">
+                {trustScore.compositeScore} / 100
+              </span>
+            </div>
+          </div>
         </section>
       )}
     </div>

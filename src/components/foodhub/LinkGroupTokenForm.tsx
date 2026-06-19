@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/Input';
+import { Button, Input } from '@/components/app';
 
 // ---------------------------------------------------------------------------
 // LinkGroupTokenForm (UI-05) — single-input control in the farmer settings
@@ -57,11 +56,9 @@ export function LinkGroupTokenForm(): React.ReactElement {
   }
 
   return (
-    <div className="bg-surface border border-white/5 rounded p-5 max-w-md">
-      <h2 className="text-t3 font-heading font-medium text-fg">
-        Link Institutional Group Token
-      </h2>
-      <p className="text-t6 font-body text-fg-muted mt-1 mb-4">
+    <div className="max-w-md rounded-app-card border border-app-hairline bg-app-card p-5">
+      <h2 className="app-h2 text-app-ink">Link Institutional Group Token</h2>
+      <p className="app-meta mb-4 mt-1 text-app-muted">
         Received a join code from a cooperative administrator? Enter it to join the group. Codes
         are single-use and only verified farmers can redeem them.
       </p>
@@ -79,17 +76,11 @@ export function LinkGroupTokenForm(): React.ReactElement {
           aria-label="Group join token"
         />
         {success && (
-          <p className="text-t6 font-body text-brand" role="status">
+          <p className="app-body text-app-brand" role="status">
             {success}
           </p>
         )}
-        <Button
-          type="submit"
-          variant="primary"
-          size="sm"
-          isLoading={submitting}
-          className="self-start"
-        >
+        <Button type="submit" size="sm" isLoading={submitting} className="self-start">
           Link group
         </Button>
       </form>
