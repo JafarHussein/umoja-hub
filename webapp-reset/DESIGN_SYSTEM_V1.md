@@ -45,7 +45,16 @@ Website collections (`Color`/Website mode, `Primitives`) are **untouched** — a
 | `info/surface` | `#E6EDF1` | `#1B2C36` | fill |
 | `focus/ring` | `#1E5C45` | `#5FB893` | stroke |
 
-`success == brand` is intentional — one honest meaning-model (green = good/verified/proceed), always paired with icon + shape + text. Dark values are a parallel value-map (no pure `#000`/`#fff`); `text/faint`, `brand/hover`, and the `*-surface` darks were derived at this gate to hold meaning + contrast. Contrast pairings to be axe-validated when the code mirror lands.
+`success == brand` is intentional — one honest meaning-model (green = good/verified/proceed), always paired with icon + shape + text. Dark values are a parallel value-map (no pure `#000`/`#fff`); `text/faint`, `brand/hover`, and the `*-surface` darks were derived at this gate to hold meaning + contrast.
+
+### Contrast audit (WCAG 2.1, computed 2026-06-19)
+
+Ran a full ratio pass over every meaningful pairing, both modes. **Core system is AA-clean** — all heading/body/muted text, brand links, primary/danger button labels (`text/on-brand`), every status-pill semantic-on-surface pair, and focus rings pass AA (most AAA). Three edge findings, none in the trust path:
+
+- **`text/faint` as normal body text fails AA** (Light 2.8–3.1:1, Dark 3.9–4.2:1). **Resolution (usage rule, not a token change):** `text/faint` is reserved for placeholder + disabled + large decorative text only — all WCAG-exempt. Any real informational meta/timestamp must use `text/muted` (passes AA: Light 4.9–5.3, Dark 5.6–6.1). Audit code mirror for misuse.
+- **Resting borders below 3:1 non-text** — `border/strong` on card/canvas (1.5–2.0:1) and `brand/border` (1.5–2.2:1). `brand/border` is decorative (tinted-surface accent; fill already differentiates) → exempt, keep. `border/strong`: acceptable where the field/divider is *not* the sole boundary (input has label + distinct fill); if a resting input outline ever becomes the sole identifier, bump to ~`#8F8D86` (Light) / ~`#6E6856` (Dark) to clear 3:1. **Owner decision pending — held for Phase 6.**
+
+Re-validate live with axe/Lighthouse against rendered components when the code mirror lands.
 
 ## Radius — App Radius
 
