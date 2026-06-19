@@ -70,6 +70,15 @@ Page **"Components"** (`250:2`). All bound to App Color/Radius variables; valida
 | **TrustScore** | `251:12` | glance pill `◆ Verified · Trust NN`; `Score` TEXT property (mono number) |
 | **DeliveryConfidence** | `252:12` | `State` = Building (no %) · Established (`NN%` mono + denominator + "not an estimate") |
 | **DecisionAttribution** | `254:2` | named human + evidence; `Reviewer` · `Date` · `Basis` TEXT properties |
+| **Button** | `257:27` | `Variant` (Primary·Secondary·Ghost·Danger) × `State` (Default·Hover·Disabled); `Label` TEXT prop |
+| **Input** | `258:18` | `State` = Default · Focus (brand 2px) · Error (danger) · Disabled; label above field |
+| **Card** | `258:19` | surface container, mono price |
+| **Nav item** | `259:8` | `State` = Default · Active (brand-surface pill) |
+| **Tab** | `259:15` | `State` = Default · Active (brand underline) |
+| **Table row** | `260:10` | `State` = Default · Hover; mono figure cells, bottom hairline |
+| **Modal / Sheet** | `262:3` | floating panel; `Elevation/Float` effect style; composes Button instances |
+
+Extra token added with Button: `text/on-brand` (Light `#FFFFFF` / Dark `#15140F`, TEXT scope) for text on brand/danger fills → **25** color tokens. Effect style **`Elevation/Float`** = warm-tinted shadow `0 1px 2px rgba(28,27,23,.05), 0 8px 24px rgba(28,27,23,.08)` (floating layers only).
 
 ## Status / next
 
