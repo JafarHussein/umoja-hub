@@ -12,3 +12,19 @@ export { ChoiceCard } from './ChoiceCard';
 export type { IChoiceCardProps } from './ChoiceCard';
 export { Alert } from './Alert';
 export type { IAlertProps } from './Alert';
+export {
+  StatusPill,
+  VerificationBadge,
+  TrustScore,
+  DeliveryConfidence,
+  DecisionAttribution,
+} from './Trust';
+export type {
+  IStatusPillProps,
+  StatusState,
+  IVerificationBadgeProps,
+  VerificationState,
+  ITrustScoreProps,
+  IDeliveryConfidenceProps,
+  IDecisionAttributionProps,
+} from './Trust';
