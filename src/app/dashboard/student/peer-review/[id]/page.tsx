@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { Role, PeerReviewStatus, ProjectTrack } from '@/types';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import { Button, Alert } from '@/components/app';
+import { cn } from '@/lib/cn';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +74,22 @@ function serializeCriteria(preset: string[], selected: string[]): string {
   return preset.filter((c) => selected.includes(c)).join('; ');
 }
 
+// Neutral, capitalized status pill.
+function StatusChip({ label }: { label: string }): React.ReactElement {
+  const submitted = label === PeerReviewStatus.SUBMITTED;
+  return (
+    <span
+      className={cn(
+        'app-label inline-flex items-center rounded-app-pill px-2 py-0.5 capitalize',
+        submitted ? 'bg-app-success-surface text-app-success' : 'bg-app-sunken text-app-muted'
+      )}
+    >
+      {submitted && <span aria-hidden className="mr-1">✓</span>}
+      {label.replace(/_/g, ' ').toLowerCase()}
+    </span>
+  );
+}
+
 // ── Score selector ─────────────────────────────────────────────────────────
 
 function ScoreSelector({
@@ -87,20 +103,20 @@ function ScoreSelector({
 }): React.ReactElement {
   return (
     <div className="space-y-1.5">
-      <p className="text-t5 font-body text-fg-muted">{label}</p>
+      <p className="app-body text-app-muted">{label}</p>
       <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={[
-              'w-9 h-9 rounded-sm font-mono text-t5 border transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
+            className={cn(
+              'app-data-m h-9 w-9 rounded-app-control border transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring',
               value === n
-                ? 'bg-brand/10 border-brand text-brand'
-                : 'bg-surface-raised border-zinc-800/50 text-fg-muted hover:border-white/20',
-            ].join(' ')}
+                ? 'border-app-brand bg-app-brand-surface text-app-brand'
+                : 'border-app-border-strong bg-app-card text-app-muted hover:border-app-brand'
+            )}
             aria-pressed={value === n}
           >
             {n}
@@ -126,14 +142,11 @@ function CriteriaGroup({
 }): React.ReactElement {
   return (
     <fieldset className="space-y-1.5">
-      <legend className="text-t5 font-body text-fg-muted mb-1">{legend}</legend>
+      <legend className="app-body mb-1 text-app-muted">{legend}</legend>
       {options.map((option) => {
         const checked = selected.includes(option);
         return (
-          <label
-            key={option}
-            className="flex items-center gap-2.5 cursor-pointer select-none py-1"
-          >
+          <label key={option} className="flex cursor-pointer select-none items-center gap-2.5 py-1">
             <input
               type="checkbox"
               checked={checked}
@@ -141,23 +154,18 @@ function CriteriaGroup({
               className="peer sr-only"
             />
             <span
-              className={[
-                'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[3px] border text-[10px] transition-colors duration-150',
-                'peer-focus-visible:ring-1 peer-focus-visible:ring-brand',
+              className={cn(
+                'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-app-cell border text-[10px] transition-colors duration-150',
+                'peer-focus-visible:ring-2 peer-focus-visible:ring-app-ring',
                 checked
-                  ? 'border-brand bg-brand/15 text-brand'
-                  : 'border-zinc-700 text-transparent',
-              ].join(' ')}
+                  ? 'border-app-brand bg-app-brand-surface text-app-brand'
+                  : 'border-app-border-strong text-transparent'
+              )}
               aria-hidden="true"
             >
               ✓
             </span>
-            <span
-              className={[
-                'text-t5 font-body',
-                checked ? 'text-fg' : 'text-fg-muted',
-              ].join(' ')}
-            >
+            <span className={cn('app-body', checked ? 'text-app-ink' : 'text-app-muted')}>
               {option}
             </span>
           </label>
@@ -171,28 +179,15 @@ function CriteriaGroup({
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
-        <div className="space-y-1.5">
-          <div className="h-3 w-32 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-48 bg-surface-raised rounded-sm animate-pulse" />
+    <div className="max-w-5xl space-y-6">
+      <div className="skeleton h-4 w-24 rounded" />
+      <div className="skeleton h-7 w-48 rounded" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        <div className="space-y-4 md:col-span-7">
+          <div className="skeleton h-48 rounded-app-card" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-7 space-y-4">
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-4 bg-surface-raised rounded-sm animate-pulse" style={{ width: `${70 + i * 5}%` }} />
-              ))}
-            </div>
-          </div>
-          <div className="md:col-span-5">
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-10 bg-surface-raised rounded-sm animate-pulse" />
-              ))}
-            </div>
-          </div>
+        <div className="md:col-span-5">
+          <div className="skeleton h-64 rounded-app-card" />
         </div>
       </div>
     </div>
@@ -316,17 +311,15 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'not_found' || !review) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Review not found.</p>
-            <Link
-              href="/dashboard/student/peer-review"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              ← My review
-            </Link>
-          </div>
+      <div className="max-w-5xl">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">Review not found.</p>
+          <Link
+            href="/dashboard/student/peer-review"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+          >
+            ← My review
+          </Link>
         </div>
       </div>
     );
@@ -334,17 +327,15 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load review.</p>
-            <Link
-              href="/dashboard/student/peer-review"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              ← My review
-            </Link>
-          </div>
+      <div className="max-w-5xl">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">Failed to load review.</p>
+          <Link
+            href="/dashboard/student/peer-review"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+          >
+            ← My review
+          </Link>
         </div>
       </div>
     );
@@ -367,209 +358,183 @@ export default function PeerReviewDetailPage(): React.ReactElement {
   const activeDoc = engagement?.documents?.[activeDocTab];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-5xl space-y-6">
+      <Link
+        href="/dashboard/student/peer-review"
+        className="app-body inline-flex text-app-muted transition-colors duration-150 hover:text-app-ink"
+      >
+        ← My review
+      </Link>
 
-        <Link
-          href="/dashboard/student/peer-review"
-          className="inline-flex text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
-        >
-          ← My review
-        </Link>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="app-h1 text-app-ink">{briefTitle}</h1>
+        <StatusChip label={review.status} />
+      </div>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Student · Peer Review
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        {/* Left — project content (anonymized) */}
+        <div className="space-y-4 md:col-span-7">
+          {/* Anonymity notice — the author's identity is withheld from reviewers */}
+          <div className="rounded-app-control border border-app-hairline bg-app-sunken px-4 py-2.5">
+            <p className="app-meta text-app-muted">
+              Anonymous submission — the author&apos;s identity is withheld so you can review the
+              work on its merits.
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              {briefTitle}
-            </h1>
           </div>
-          <Badge label={review.status} />
+
+          {/* Brief metadata */}
+          {engagement && (
+            <div className="space-y-0 rounded-app-card border border-app-hairline bg-app-card p-4">
+              <p className="app-label mb-2 text-app-muted">Project info</p>
+              <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
+                <span className="app-body text-app-muted">Track</span>
+                <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
+                  {engagement.track.replace(/_/g, ' ').toLowerCase()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="app-body text-app-muted">Tier</span>
+                <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
+                  {engagement.tier.replace(/_/g, ' ').toLowerCase()}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Process documents */}
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+            <div className="flex border-b border-app-hairline">
+              {DOC_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveDocTab(tab)}
+                  className={cn(
+                    'app-nav border-b-2 px-4 py-2.5 transition-colors duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-ring',
+                    activeDocTab === tab
+                      ? 'border-app-brand text-app-ink'
+                      : 'border-transparent text-app-muted hover:text-app-ink'
+                  )}
+                >
+                  {DOC_TAB_LABELS[tab]}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-4">
+              {activeDoc ? (
+                <div className="space-y-2">
+                  <p className="app-meta text-app-faint">
+                    Submitted{' '}
+                    {new Date(activeDoc.submittedAt).toLocaleDateString('en-KE', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <p className="app-body whitespace-pre-wrap leading-relaxed text-app-ink">
+                    {activeDoc.content}
+                  </p>
+                </div>
+              ) : (
+                <p className="app-body py-4 text-center text-app-faint">Document not submitted.</p>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-          {/* Left — project content (anonymized) */}
-          <div className="md:col-span-7 space-y-4">
-
-            {/* Anonymity notice — the author's identity is withheld from reviewers */}
-            <div className="bg-surface-raised border border-zinc-800/50 rounded-[4px] px-4 py-2.5">
-              <p className="text-t6 font-body text-fg-muted">
-                Anonymous submission — the author&apos;s identity is withheld so you can review the
-                work on its merits.
-              </p>
-            </div>
-
-            {/* Brief metadata */}
-            {engagement && (
-              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-0">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-                  Project info
-                </p>
-                <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                  <span className="text-t5 font-body text-fg-muted">Track</span>
-                  <Badge variant="neutral" label={engagement.track} />
-                </div>
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-t5 font-body text-fg-muted">Tier</span>
-                  <Badge variant="neutral" label={engagement.tier} />
-                </div>
-              </div>
-            )}
-
-            {/* Process documents */}
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-              <div className="flex border-b border-zinc-800/50">
-                {DOC_TABS.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveDocTab(tab)}
-                    className={[
-                      'px-4 py-2.5 text-t5 font-body border-b-2 transition-colors duration-150',
-                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset',
-                      activeDocTab === tab
-                        ? 'border-brand text-fg'
-                        : 'border-transparent text-fg-muted hover:text-fg',
-                    ].join(' ')}
-                  >
-                    {DOC_TAB_LABELS[tab]}
-                  </button>
-                ))}
+        {/* Right — review form */}
+        <div className="md:col-span-5">
+          {isSubmitted ? (
+            <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-brand" />
+                <p className="app-body-strong text-app-brand">Review submitted</p>
               </div>
 
-              <div className="p-4">
-                {activeDoc ? (
-                  <div className="space-y-2">
-                    <p className="text-t6 font-mono text-fg-disabled">
-                      Submitted{' '}
-                      {new Date(activeDoc.submittedAt).toLocaleDateString('en-KE', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </p>
-                    <p className="text-t5 font-body text-fg leading-relaxed whitespace-pre-wrap">
-                      {activeDoc.content}
-                    </p>
+              {review.scores && (
+                <div className="space-y-0">
+                  <p className="app-label mb-2 text-app-muted">Scores</p>
+                  <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
+                    <span className="app-body text-app-muted">Code quality</span>
+                    <span className="app-data-m text-app-ink">
+                      {review.scores.codeQuality ?? '—'}/5
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-t5 font-body text-fg-disabled py-4 text-center">
-                    Document not submitted.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right — review form */}
-          <div className="md:col-span-5">
-
-            {isSubmitted ? (
-              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-brand flex-shrink-0" />
-                  <p className="text-t4 font-body text-brand">Review submitted</p>
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="app-body text-app-muted">Documentation</span>
+                    <span className="app-data-m text-app-ink">
+                      {review.scores.documentationClarity ?? '—'}/5
+                    </span>
+                  </div>
                 </div>
+              )}
 
-                {review.scores && (
-                  <div className="space-y-0">
-                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-                      Scores
-                    </p>
-                    <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                      <span className="text-t5 font-body text-fg-muted">Code quality</span>
-                      <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
-                        {review.scores.codeQuality ?? '—'}/5
-                      </span>
+              {review.comments && (
+                <div className="space-y-3">
+                  <p className="app-label text-app-muted">Comments</p>
+                  {review.comments.codeQuality && (
+                    <div className="space-y-1">
+                      <p className="app-meta text-app-faint">Code quality</p>
+                      <p className="app-body text-app-muted">{review.comments.codeQuality}</p>
                     </div>
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="text-t5 font-body text-fg-muted">Documentation</span>
-                      <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
-                        {review.scores.documentationClarity ?? '—'}/5
-                      </span>
+                  )}
+                  {review.comments.documentationClarity && (
+                    <div className="space-y-1">
+                      <p className="app-meta text-app-faint">Documentation</p>
+                      <p className="app-body text-app-muted">
+                        {review.comments.documentationClarity}
+                      </p>
                     </div>
-                  </div>
-                )}
-
-                {review.comments && (
-                  <div className="space-y-3">
-                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                      Comments
-                    </p>
-                    {review.comments.codeQuality && (
-                      <div className="space-y-1">
-                        <p className="text-t6 font-body text-fg-disabled">Code quality</p>
-                        <p className="text-t5 font-body text-fg-muted">
-                          {review.comments.codeQuality}
-                        </p>
-                      </div>
-                    )}
-                    {review.comments.documentationClarity && (
-                      <div className="space-y-1">
-                        <p className="text-t6 font-body text-fg-disabled">Documentation</p>
-                        <p className="text-t5 font-body text-fg-muted">
-                          {review.comments.documentationClarity}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                  Review form
-                </p>
-
-                <div className="space-y-2.5">
-                  <ScoreSelector
-                    label="Code quality"
-                    value={codeQualityScore}
-                    onChange={setCodeQualityScore}
-                  />
-                  <CriteriaGroup
-                    legend="Code quality criteria"
-                    options={CODE_QUALITY_CRITERIA}
-                    selected={codeCriteria}
-                    onToggle={(o) => toggleCriterion(setCodeCriteria, o)}
-                  />
+                  )}
                 </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+              <p className="app-label text-app-muted">Review form</p>
 
-                <div className="space-y-2.5">
-                  <ScoreSelector
-                    label="Documentation clarity"
-                    value={docClarityScore}
-                    onChange={setDocClarityScore}
-                  />
-                  <CriteriaGroup
-                    legend="Documentation clarity criteria"
-                    options={DOC_CLARITY_CRITERIA}
-                    selected={docCriteria}
-                    onToggle={(o) => toggleCriterion(setDocCriteria, o)}
-                  />
-                </div>
-
-                {submitError && (
-                  <p className="text-t5 font-body text-red-400 bg-red-950/20 border border-red-900/30 rounded-sm px-3 py-2">
-                    {submitError}
-                  </p>
-                )}
-
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="w-full"
-                  disabled={!canSubmit || submitState === 'submitting'}
-                  onClick={() => void handleSubmit()}
-                >
-                  {submitState === 'submitting' ? 'Submitting...' : 'Submit review'}
-                </Button>
+              <div className="space-y-2.5">
+                <ScoreSelector
+                  label="Code quality"
+                  value={codeQualityScore}
+                  onChange={setCodeQualityScore}
+                />
+                <CriteriaGroup
+                  legend="Code quality criteria"
+                  options={CODE_QUALITY_CRITERIA}
+                  selected={codeCriteria}
+                  onToggle={(o) => toggleCriterion(setCodeCriteria, o)}
+                />
               </div>
-            )}
-          </div>
+
+              <div className="space-y-2.5">
+                <ScoreSelector
+                  label="Documentation clarity"
+                  value={docClarityScore}
+                  onChange={setDocClarityScore}
+                />
+                <CriteriaGroup
+                  legend="Documentation clarity criteria"
+                  options={DOC_CLARITY_CRITERIA}
+                  selected={docCriteria}
+                  onToggle={(o) => toggleCriterion(setDocCriteria, o)}
+                />
+              </div>
+
+              {submitError && <Alert tone="danger">{submitError}</Alert>}
+
+              <Button
+                className="w-full"
+                disabled={!canSubmit || submitState === 'submitting'}
+                isLoading={submitState === 'submitting'}
+                onClick={() => void handleSubmit()}
+              >
+                Submit review
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
