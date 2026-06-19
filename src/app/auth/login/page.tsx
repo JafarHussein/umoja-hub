@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
+import { Button, Alert } from '@/components/app';
 
 // OAuth-only sign-in (AUTH-07 hard cutover). Sign-in and sign-up are the same
 // action. The callback lands on the onboarding entry; the middleware bounces
@@ -41,34 +41,28 @@ function LoginContent(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="theme-app flex min-h-screen items-center justify-center bg-app-canvas px-4">
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 mb-8">
-          <span className="font-heading font-semibold text-t2 text-fg">Umoja</span>
-          <span className="font-heading font-semibold text-t2 text-brand">Hub</span>
+        <div className="mb-8 flex items-center gap-1">
+          <span className="app-h2 text-app-ink">Umoja</span>
+          <span className="app-h2 text-app-brand">Hub</span>
         </div>
 
-        <div className="bg-surface border border-white/5 rounded p-6">
-          <h1 className="font-heading font-semibold text-t2 text-fg mb-1">
-            Sign in to UmojaHub
-          </h1>
-          <p className="font-body text-t5 text-fg-muted mb-6">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+          <h1 className="app-h1 mb-1 text-app-ink">Sign in to UmojaHub</h1>
+          <p className="app-body mb-6 text-app-muted">
             Continue with Google or GitHub. New here? This creates your account.
           </p>
 
           {error && (
-            <div
-              role="alert"
-              className="mb-4 px-4 py-3 rounded-sm bg-red-950/40 border border-red-800/50 font-body text-t5 text-red-400"
-            >
-              {error}
+            <div className="mb-4">
+              <Alert tone="danger">{error}</Alert>
             </div>
           )}
 
           <div className="flex flex-col gap-3">
             <Button
               type="button"
-              variant="primary"
               size="lg"
               isLoading={loading === 'google'}
               disabled={loading !== null}
@@ -79,7 +73,7 @@ function LoginContent(): React.ReactElement {
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="lg"
               isLoading={loading === 'github'}
               disabled={loading !== null}
@@ -90,7 +84,7 @@ function LoginContent(): React.ReactElement {
             </Button>
           </div>
 
-          <p className="mt-6 font-body text-t6 text-fg-disabled">
+          <p className="app-meta mt-6 text-app-faint">
             Students sign in with GitHub. Farmers, buyers and lecturers use Google.
           </p>
         </div>

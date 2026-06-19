@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/app';
 import { Role } from '@/types';
 
 const DASHBOARD_BY_ROLE: Record<Role, string> = {
@@ -43,10 +43,10 @@ export default function UnauthorizedPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="theme-app flex min-h-screen items-center justify-center bg-app-canvas px-4">
       <div className="w-full max-w-sm text-center">
         {/* Error icon */}
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded border border-white/10 bg-surface mb-6">
+        <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-card">
           <svg
             width="20"
             height="20"
@@ -56,7 +56,7 @@ export default function UnauthorizedPage(): React.ReactElement {
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-fg-muted"
+            className="text-app-muted"
             aria-hidden="true"
           >
             <circle cx="12" cy="12" r="10" />
@@ -65,22 +65,18 @@ export default function UnauthorizedPage(): React.ReactElement {
           </svg>
         </div>
 
-        <h1 className="font-heading font-semibold text-t2 text-fg mb-2">
-          Access denied
-        </h1>
+        <h1 className="app-h1 mb-2 text-app-ink">Access denied</h1>
 
         {isLoading ? (
-          <p className="font-body text-t5 text-fg-muted mb-6">
-            Checking your session&hellip;
-          </p>
+          <p className="app-body mb-6 text-app-muted">Checking your session&hellip;</p>
         ) : roleLabel ? (
-          <p className="font-body text-t5 text-fg-muted mb-6">
+          <p className="app-body mb-6 text-app-muted">
             You are signed in as a{' '}
-            <span className="font-mono text-fg">{roleLabel}</span> and do not have
+            <span className="app-body-strong text-app-ink">{roleLabel}</span> and do not have
             permission to access this section.
           </p>
         ) : (
-          <p className="font-body text-t5 text-fg-muted mb-6">
+          <p className="app-body mb-6 text-app-muted">
             You do not have permission to access this page.
           </p>
         )}
