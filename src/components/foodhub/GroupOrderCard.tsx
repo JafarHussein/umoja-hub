@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/cn';
+
 interface IGroupOrderCardProps {
   groupOrderId: string;
   supplierId: string;
@@ -14,14 +16,20 @@ interface IGroupOrderCardProps {
   proposedBy: string;
 }
 
-function getStatusColor(status: string): string {
+// Status pill tones — app design-system tints (state via text + tint, paired
+// with the status label text so colour is never the sole signal).
+function getStatusClasses(status: string): string {
   switch (status) {
-    case 'OPEN': return 'text-brand bg-brand/10 border-brand/20';
-    case 'MINIMUM_MET': return 'text-blue-400 bg-blue-900/20 border-blue-800/30';
-    case 'CLOSED': return 'text-fg-muted bg-surface-raised border-white/5';
-    case 'FULFILLED': return 'text-fg-muted bg-surface-raised border-white/5';
-    case 'CANCELLED': return 'text-red-400 bg-red-900/20 border-red-800/30';
-    default: return 'text-fg-muted bg-surface-raised border-white/5';
+    case 'OPEN':
+      return 'bg-app-success-surface text-app-success';
+    case 'MINIMUM_MET':
+      return 'bg-app-info-surface text-app-info';
+    case 'CANCELLED':
+      return 'bg-app-danger-surface text-app-danger';
+    case 'CLOSED':
+    case 'FULFILLED':
+    default:
+      return 'bg-app-sunken text-app-muted';
   }
 }
 
@@ -52,50 +60,50 @@ export default function GroupOrderCard({
 }: IGroupOrderCardProps) {
   const membersNeeded = Math.max(0, minimumMembers - currentMemberCount);
   const progressPercent = Math.min(100, Math.round((currentMemberCount / minimumMembers) * 100));
-  const statusColorClasses = getStatusColor(status);
 
   return (
-    <div className="bg-surface border border-white/5 rounded p-6">
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h4 className="font-heading text-t3 text-fg">{inputType}</h4>
-          <p className="font-body text-t5 text-fg-muted mt-1">{supplierName}</p>
+          <h4 className="app-h2 text-app-ink">{inputType}</h4>
+          <p className="app-body mt-1 text-app-muted">{supplierName}</p>
         </div>
         <span
-          className={`font-body text-t6 px-2 py-1 rounded-[2px] border ${statusColorClasses}`}
+          className={cn(
+            'app-label inline-flex items-center rounded-app-pill px-2 py-0.5',
+            getStatusClasses(status)
+          )}
         >
           {status.replace('_', ' ')}
         </span>
       </div>
 
       {/* Price and quantity */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-surface-raised border border-white/5 rounded p-3">
-          <p className="font-body text-t6 text-fg-muted mb-1">Per member</p>
-          <p className="font-mono text-t3 text-fg">KES {pricePerMember.toLocaleString()}</p>
+      <div className="mb-4 grid grid-cols-2 gap-4">
+        <div className="rounded-app-control border border-app-hairline bg-app-sunken p-3">
+          <p className="app-label mb-1 text-app-muted">Per member</p>
+          <p className="app-data-l text-app-ink">KSh {pricePerMember.toLocaleString()}</p>
         </div>
-        <div className="bg-surface-raised border border-white/5 rounded p-3">
-          <p className="font-body text-t6 text-fg-muted mb-1">Quantity</p>
-          <p className="font-mono text-t3 text-fg">{quantityPerMember} units</p>
+        <div className="rounded-app-control border border-app-hairline bg-app-sunken p-3">
+          <p className="app-label mb-1 text-app-muted">Quantity</p>
+          <p className="app-data-l text-app-ink">{quantityPerMember} units</p>
         </div>
       </div>
 
       {/* Member progress */}
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="font-body text-t5 text-fg-muted">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="app-body text-app-muted">
             {currentMemberCount} / {minimumMembers} members
           </span>
           {membersNeeded > 0 && (
-            <span className="font-body text-t6 text-fg-disabled">
-              {membersNeeded} more needed
-            </span>
+            <span className="app-meta text-app-faint">{membersNeeded} more needed</span>
           )}
         </div>
-        <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
+        <div className="h-1.5 overflow-hidden rounded-app-pill bg-app-sunken">
           <div
-            className="h-full bg-brand rounded-full transition-all duration-250"
+            className="h-full rounded-app-pill bg-app-brand transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -103,7 +111,7 @@ export default function GroupOrderCard({
 
       {/* Deadline */}
       <div className="flex items-center justify-between">
-        <p className="font-body text-t6 text-fg-disabled">
+        <p className="app-meta text-app-faint">
           Deadline:{' '}
           {new Date(joiningDeadline).toLocaleDateString('en-KE', {
             day: 'numeric',
@@ -111,9 +119,7 @@ export default function GroupOrderCard({
             year: 'numeric',
           })}
         </p>
-        <p className="font-body text-t6 text-fg-muted">
-          {getDeadlineText(joiningDeadline)}
-        </p>
+        <p className="app-meta text-app-muted">{getDeadlineText(joiningDeadline)}</p>
       </div>
     </div>
   );
