@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, OrderPaymentStatus, OrderFulfillmentStatus } from '@/types';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import { Button, StatusPill, type StatusState } from '@/components/app';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 
 interface IBuyerOrder {
@@ -29,8 +28,6 @@ interface IOrdersResponse {
 
 type PageState = 'loading' | 'ready' | 'error';
 
-type BadgeVariant = 'success' | 'warning' | 'error' | 'neutral' | 'status' | 'tier-farmer' | 'tier-student' | 'project-status';
-
 const FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
   [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
   [OrderFulfillmentStatus.IN_FULFILLMENT]: 'In fulfillment',
@@ -39,12 +36,15 @@ const FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
   [OrderFulfillmentStatus.DISPUTED]: 'Disputed',
 };
 
-function resolveBadgeVariant(order: IBuyerOrder): BadgeVariant {
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED) return 'success';
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.DISPUTED) return 'error';
-  if (order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT) return 'warning';
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT) return 'neutral';
-  return 'neutral';
+// Maps the order lifecycle to a trust StatusPill state — status is conveyed by
+// icon + shape + text, never colour alone.
+function resolvePillState(order: IBuyerOrder): StatusState {
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED) return 'completed';
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.RECEIVED) return 'completed';
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.DISPUTED) return 'denied';
+  if (order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT) return 'in-transit';
+  if (order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT) return 'pending';
+  return 'pending';
 }
 
 export default function BuyerOrdersPage(): React.ReactElement {
@@ -84,10 +84,8 @@ export default function BuyerOrdersPage(): React.ReactElement {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          <ListSkeleton rows={5} />
-        </div>
+      <div className="max-w-4xl space-y-6">
+        <ListSkeleton rows={5} />
       </div>
     );
   }
@@ -95,96 +93,80 @@ export default function BuyerOrdersPage(): React.ReactElement {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load orders.</p>
-            <div className="mt-3">
-              <Button variant="ghost" size="sm" onClick={() => void fetchOrders()}>
-                Retry
-              </Button>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load orders</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button variant="secondary" onClick={() => void fetchOrders()}>
+          Retry
+        </Button>
       </div>
     );
   }
 
   // ── Ready ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-4xl space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="app-h1 text-app-ink">My Orders</h1>
+        <Link
+          href="/marketplace"
+          className="app-body text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+        >
+          Browse marketplace →
+        </Link>
+      </div>
 
-        {/* Page header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Buyer · Dashboard
-            </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              My Orders
-            </h1>
-          </div>
+      {/* Orders list */}
+      {orders.length === 0 ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-10 text-center">
+          <p className="app-body text-app-muted">No orders yet.</p>
+          <p className="app-meta mt-1 text-app-faint">
+            Find produce from verified farmers in the marketplace.
+          </p>
           <Link
             href="/marketplace"
-            className="text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
           >
-            Browse marketplace →
+            Go to marketplace →
           </Link>
         </div>
-
-        {/* Orders list */}
-        {orders.length === 0 ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-10 text-center">
-            <p className="text-t4 font-body text-fg-muted">No orders yet.</p>
-            <p className="text-t5 font-body text-fg-disabled mt-1">
-              Find produce from verified farmers in the marketplace.
-            </p>
+      ) : (
+        <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+          {orders.map((order) => (
             <Link
-              href="/marketplace"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
+              key={order._id}
+              href={`/dashboard/buyer/orders/${order._id}`}
+              className="block transition-colors duration-150 hover:bg-app-sunken focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-app-ring"
             >
-              Go to marketplace →
-            </Link>
-          </div>
-        ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-            {orders.map((order) => (
-              <Link
-                key={order._id}
-                href={`/dashboard/buyer/orders/${order._id}`}
-                className="block hover:bg-surface-raised transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset"
-              >
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-800/50 last:border-0">
-                  {/* Left: crop name + reference + farmer */}
-                  <div className="space-y-0.5 min-w-0 mr-4">
-                    <p className="text-t4 font-body font-medium text-fg truncate capitalize">
-                      {order.cropName}
-                    </p>
-                    <p className="text-t6 font-mono text-fg-disabled">
-                      {order.orderReferenceId}
-                      {' · '}
-                      {order.farmer.firstName} {order.farmer.lastName}
-                    </p>
-                  </div>
-
-                  {/* Right: amount + status */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-t4 font-mono font-semibold text-fg tabular-nums">
-                      KES {order.totalAmountKES.toLocaleString()}
-                    </span>
-                    <Badge
-                      variant={resolveBadgeVariant(order)}
-                      label={FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus}
-                    />
-                  </div>
+              <div className="flex items-center justify-between border-b border-app-hairline px-4 py-3.5 last:border-0">
+                {/* Left: crop name + reference + farmer */}
+                <div className="mr-4 min-w-0 space-y-0.5">
+                  <p className="app-body-strong truncate capitalize text-app-ink">
+                    {order.cropName}
+                  </p>
+                  <p className="app-meta text-app-muted">
+                    <span className="app-data-m text-app-faint">{order.orderReferenceId}</span>
+                    {' · '}
+                    {order.farmer.firstName} {order.farmer.lastName}
+                  </p>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
 
-      </div>
+                {/* Right: amount + status */}
+                <div className="flex flex-shrink-0 items-center gap-3">
+                  <span className="app-data-m text-app-ink">
+                    KSh {order.totalAmountKES.toLocaleString()}
+                  </span>
+                  <StatusPill
+                    state={resolvePillState(order)}
+                    label={FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus}
+                  />
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

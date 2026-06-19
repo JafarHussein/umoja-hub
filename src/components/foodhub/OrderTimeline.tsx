@@ -54,8 +54,8 @@ export function OrderTimeline({
   if (isDisputed) {
     return (
       <div className="flex items-center gap-2" role="status" aria-label="Order disputed">
-        <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" aria-hidden="true" />
-        <span className="text-t5 text-red-400 font-body">Dispute raised</span>
+        <div className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-danger" aria-hidden="true" />
+        <span className="app-body text-app-danger">Dispute raised</span>
       </div>
     );
   }
@@ -97,22 +97,19 @@ export function OrderTimeline({
   ];
 
   return (
-    <ol
-      className="flex items-center gap-0"
-      aria-label="Order progress"
-    >
+    <ol className="flex items-center gap-0" aria-label="Order progress">
       {steps.map((step, index) => (
         <li key={step.key} className="flex items-center">
           {/* Step node */}
           <div className="flex flex-col items-center gap-1">
             <div
               className={[
-                'w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors duration-150',
+                'h-2.5 w-2.5 flex-shrink-0 rounded-app-pill transition-colors duration-150',
                 step.isComplete
-                  ? 'bg-brand'
+                  ? 'bg-app-brand'
                   : step.isActive
-                  ? 'bg-brand/40 ring-1 ring-brand/40'
-                  : 'bg-surface-raised border border-white/10',
+                    ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
+                    : 'border border-app-hairline bg-app-sunken',
               ].join(' ')}
               aria-label={step.isComplete ? `${step.label}: done` : step.label}
             />
@@ -122,8 +119,8 @@ export function OrderTimeline({
           {index < steps.length - 1 && (
             <div
               className={[
-                'h-px w-6 mx-1',
-                steps[index + 1]?.isComplete ? 'bg-brand' : 'bg-white/10',
+                'mx-1 h-px w-6',
+                steps[index + 1]?.isComplete ? 'bg-app-brand' : 'bg-app-hairline',
               ].join(' ')}
               aria-hidden="true"
             />
@@ -199,11 +196,11 @@ export function OrderTimelineDetailed({
 
   if (isDisputed) {
     return (
-      <div className="flex items-start gap-3 p-3 bg-red-950/20 border border-red-900/30 rounded">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-500 mt-1 flex-shrink-0" />
+      <div className="flex items-start gap-3 rounded-app-control border border-app-danger/30 bg-app-danger-surface p-3">
+        <div className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill bg-app-danger" />
         <div>
-          <p className="text-t4 text-red-400 font-body font-medium">Dispute raised</p>
-          <p className="text-t5 text-fg-muted mt-0.5">
+          <p className="app-body-strong text-app-danger">Dispute raised</p>
+          <p className="app-body mt-0.5 text-app-muted">
             This order has an active dispute. The UmojaHub team has been notified.
           </p>
         </div>
@@ -219,19 +216,19 @@ export function OrderTimelineDetailed({
           <div className="flex flex-col items-center">
             <div
               className={[
-                'w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 transition-colors duration-150',
+                'mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill transition-colors duration-150',
                 step.isComplete
-                  ? 'bg-brand'
+                  ? 'bg-app-brand'
                   : step.isActive
-                  ? 'bg-brand/40 ring-1 ring-brand/40'
-                  : 'bg-surface-raised border border-white/10',
+                    ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
+                    : 'border border-app-hairline bg-app-sunken',
               ].join(' ')}
             />
             {index < steps.length - 1 && (
               <div
                 className={[
-                  'w-px flex-1 mt-1 mb-1',
-                  steps[index + 1]?.isComplete ? 'bg-brand/40' : 'bg-white/5',
+                  'mb-1 mt-1 w-px flex-1',
+                  steps[index + 1]?.isComplete ? 'bg-app-brand/40' : 'bg-app-hairline',
                 ].join(' ')}
                 aria-hidden="true"
               />
@@ -239,18 +236,11 @@ export function OrderTimelineDetailed({
           </div>
 
           {/* Label */}
-          <div className="pb-4 min-w-0">
-            <p
-              className={[
-                'text-t5 font-body',
-                step.isComplete ? 'text-fg' : 'text-fg-disabled',
-              ].join(' ')}
-            >
+          <div className="min-w-0 pb-4">
+            <p className={['app-body', step.isComplete ? 'text-app-ink' : 'text-app-faint'].join(' ')}>
               {step.label}
             </p>
-            {step.detail && (
-              <p className="text-t6 text-fg-disabled mt-0.5">{step.detail}</p>
-            )}
+            {step.detail && <p className="app-meta mt-0.5 text-app-faint">{step.detail}</p>}
           </div>
         </li>
       ))}
