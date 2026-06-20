@@ -46,7 +46,7 @@ Three programs landed between the original assessment and this re-baseline:
 | 7 | Distribute rate limiter | ✅ DONE | `src/lib/rateLimit.ts` |
 | 8 | Rate-limit AI/order endpoints | ✅ DONE | assistant, mentor/chat, orders |
 | 9 | Cloudinary 4MB limit | ✅ DONE | `cloudinaryService.ts` (`MAX_FILE_SIZE_BYTES = 4MB`) |
-| 10 | Email service | ✅ DONE (deviation) | `emailService.ts` — **nodemailer/SMTP**, not Resend |
+| 10 | Email service | ✅ DONE (by design) | `emailService.ts` — **nodemailer/SMTP** (accepted owner decision; not Resend) |
 | 11 | Email verification at registration | ⊘ SUPERSEDED | Auth V2 uses OAuth provider-verified email + onboarding draft |
 | 12 | Password reset flow | ✅ DONE | `api/auth/password-reset/{request,confirm}` + UI pages |
 | 13 | Webhook IP allowlist + drop query secret | ✅ DONE | `middleware.ts` `DARAJA_ALLOWED_IPS`; signature verify |
@@ -62,7 +62,7 @@ Three programs landed between the original assessment and this re-baseline:
 | 23 | Webhook test coverage | ✅ DONE | `api/webhooks/daraja/__tests__/route.test.ts` |
 | 24 | Cloudinary signed uploads | ✅ DONE | `api/upload/sign` |
 | 25 | `Permissions-Policy` header | ✅ DONE | `next.config` |
-| 26 | Password complexity | ✅ DONE (deviation) | `passwordSchema` = min8 + letter + number (not upper/lower/digit) |
+| 26 | Password complexity | ✅ DONE | `passwordSchema` = min8 + uppercase + lowercase + number |
 | 27 | Seed production admin | ◐ CODE DONE | `scripts/seed.ts` seeds an admin; prod execution pending |
 | 28 | Production domain + HTTPS | ⏳ EXTERNAL | purchase + Vercel domain config |
 | 29 | Daraja production credentials | ⏳ EXTERNAL | Safaricom go-live (1–2 wk) — critical path |
@@ -71,7 +71,7 @@ Three programs landed between the original assessment and this re-baseline:
 
 ### Security items — current status
 
-`C1` IP allowlist ✅ · `C2` query-secret removed ✅ · `C3` email-verify ⊘ superseded (OAuth) · `C4` email service ✅ · `C5` upload payload ✅ · `H1` distributed RL ✅ · `H2` AI RL ✅ · `H3` payment RL ✅ · `H4` suspended-user writes ✅ · `H5` admin audit ✅ · `M1` password complexity ◐ (letter+number only) · `M2` request-ID ◐ partial · **`M3` CSP `unsafe-eval`/`unsafe-inline` ✗ STILL PRESENT** · `M4` signed uploads ✅ · `L1` Permissions-Policy ✅ · `L2` user data-deletion endpoint ✗ deferred (manual process).
+`C1` IP allowlist ✅ · `C2` query-secret removed ✅ · `C3` email-verify ⊘ superseded (OAuth) · `C4` email service ✅ · `C5` upload payload ✅ · `H1` distributed RL ✅ · `H2` AI RL ✅ · `H3` payment RL ✅ · `H4` suspended-user writes ✅ · `H5` admin audit ✅ · `M1` password complexity ✅ (uppercase + lowercase + number) · `M2` request-ID ◐ partial · **`M3` CSP `unsafe-eval`/`unsafe-inline` ✗ STILL PRESENT** · `M4` signed uploads ✅ · `L1` Permissions-Policy ✅ · `L2` user data-deletion endpoint ✗ deferred (manual process).
 
 ### Revised scorecard (supersedes PART 9)
 
@@ -101,7 +101,7 @@ Three programs landed between the original assessment and this re-baseline:
 **Minor code items still open (low effort, optional pre-launch):**
 - `M3` — remove CSP `unsafe-eval`; move to nonce-based `unsafe-inline`.
 - `M2`/Task 18 — make request-ID correlation universal across all routes.
-- Reconcile **doc deviations**: email is nodemailer/SMTP (not Resend); password complexity is letter+number (not upper/lower/digit). Either update this roadmap to accept them or change the code.
+- **Resolved 2026-06-20:** email provider is nodemailer/SMTP **by design** (accepted owner decision — supersedes the roadmap's Resend recommendation in Tasks 10/12); password complexity now requires **uppercase + lowercase + number** (`passwordSchema`, Task 26 / M1 satisfied).
 - `L2` — self-service data-deletion endpoint (deferred; manual admin process documented).
 
 **Known follow-up from the auth work:** the old onboarding funnel pages/routes (`onboarding/{identity-input,role-selection,verification-upload}` + their APIs) are orphaned by Auth V2 and await a cleanup decision.

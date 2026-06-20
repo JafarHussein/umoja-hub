@@ -120,7 +120,7 @@ function ResetContent(): React.ReactElement {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   error={passwordError || undefined}
-                  hint="At least 8 characters, including a letter and a number."
+                  hint="At least 8 characters, including uppercase, lowercase, and a number."
                   autoComplete="new-password"
                 />
                 <Input

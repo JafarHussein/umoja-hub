@@ -39,19 +39,29 @@ describe('usernameSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
 });
 
 describe('passwordSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
-  it('accepts a password with a letter and a number', () => {
+  it('accepts a password with uppercase, lowercase, and a number', () => {
     expect(passwordSchema.safeParse('Farmer2024').success).toBe(true);
   });
 
-  it('rejects too-short, letter-only, and number-only passwords', () => {
+  it('rejects a too-short password', () => {
     expect(passwordSchema.safeParse('Ab1').success).toBe(false);
-    expect(passwordSchema.safeParse('onlyletters').success).toBe(false);
-    expect(passwordSchema.safeParse('12345678').success).toBe(false);
+  });
+
+  it('rejects a password missing a lowercase letter', () => {
+    expect(passwordSchema.safeParse('FARMER2024').success).toBe(false);
+  });
+
+  it('rejects a password missing an uppercase letter', () => {
+    expect(passwordSchema.safeParse('farmer2024').success).toBe(false);
+  });
+
+  it('rejects a password missing a number', () => {
+    expect(passwordSchema.safeParse('FarmerPass').success).toBe(false);
   });
 
   it('rejects a password over the bcrypt 72-char input limit', () => {
-    // 73 chars, with a letter and a number — fails only on the max(72) rule.
-    expect(passwordSchema.safeParse(`${'a'.repeat(72)}1`).success).toBe(false);
+    // 73 chars with upper + lower + digit — fails only on the max(72) rule.
+    expect(passwordSchema.safeParse(`Aa1${'a'.repeat(70)}`).success).toBe(false);
   });
 });
 
