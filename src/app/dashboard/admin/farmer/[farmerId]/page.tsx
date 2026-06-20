@@ -4,10 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/Badge';
-import { ConfirmModal, Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
+import { Button, Modal, Input, VerificationBadge } from '@/components/app';
 import { Role, DocumentType, VerificationStatus } from '@/types';
 
 interface IFarmerDetail {
@@ -50,37 +47,65 @@ function formatDate(iso: string): string {
   });
 }
 
+// Bordered card section with an uppercase section label.
+function Section({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+      <p className="app-label mb-2 text-app-muted">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+// Key/value row with a bottom hairline (last row drops it).
+function InfoRow({
+  label,
+  children,
+  mono,
+}: {
+  label: string;
+  children: React.ReactNode;
+  mono?: boolean;
+}): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-app-hairline py-2.5 last:border-0">
+      <span className="app-body text-app-muted">{label}</span>
+      <span className={mono ? 'app-data-m text-app-ink' : 'app-body text-right text-app-ink'}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <span className="app-meta rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-1 text-app-muted">
+      {children}
+    </span>
+  );
+}
+
+// Verification status as a trust badge (status by icon + text, never colour
+// alone).
+function StatusBadge({ status }: { status: VerificationStatus }): React.ReactElement {
+  switch (status) {
+    case VerificationStatus.APPROVED:
+      return <VerificationBadge state="verified" />;
+    case VerificationStatus.REJECTED:
+      return <VerificationBadge state="denied" label="Rejected" />;
+    default:
+      return <VerificationBadge state="pending" />;
+  }
+}
+
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="space-y-6">
-      <div className="h-3 w-36 bg-surface-raised rounded-sm animate-pulse" />
-      <div className="space-y-2">
-        <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-52 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-5 w-16 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-      </div>
-      {[4, 3, 2].map((rows, i) => (
-        <div key={i} className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
-          <div className="h-3 w-28 bg-surface-raised rounded-sm animate-pulse" />
-          <div>
-            {Array.from({ length: rows }).map((_, j) => (
-              <div
-                key={j}
-                className="flex justify-between py-2.5 border-b border-zinc-800/50 last:border-0"
-              >
-                <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
-                <div className="h-4 w-36 bg-surface-raised rounded-sm animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="flex gap-3">
-        <div className="h-11 w-32 bg-surface-raised rounded-sm animate-pulse" />
-        <div className="h-11 w-24 bg-surface-raised rounded-sm animate-pulse" />
-      </div>
+    <div className="max-w-3xl space-y-6">
+      <div className="skeleton h-3 w-36 rounded" />
+      <div className="skeleton h-7 w-52 rounded" />
+      <div className="skeleton h-40 rounded-app-card" />
+      <div className="skeleton h-32 rounded-app-card" />
+      <div className="skeleton h-24 rounded-app-card" />
     </div>
   );
 }
@@ -167,9 +192,9 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
 
   if (pageState === 'not-found') {
     return (
-      <div className="bg-surface border border-zinc-800/50 rounded-sm p-8 text-center">
-        <p className="text-t4 font-body text-fg">Farmer not found.</p>
-        <p className="text-t5 font-body text-fg-muted mt-1">
+      <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+        <p className="app-title text-app-ink">Farmer not found.</p>
+        <p className="app-body mt-1 text-app-muted">
           This record may have been removed or the ID is invalid.
         </p>
         <div className="mt-4">
@@ -186,12 +211,8 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load farmer profile
-        </p>
-        <p className="text-t5 font-body text-fg-muted mb-4">
-          Check your connection and try again.
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load farmer profile</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchFarmer()}>
           Retry
         </Button>
@@ -204,11 +225,11 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
   const isPending = verificationStatus === VerificationStatus.PENDING;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl space-y-6">
       {/* Back link */}
       <Link
         href="/dashboard/admin/verification-queue"
-        className="inline-flex items-center gap-1.5 text-t6 font-body text-fg-disabled hover:text-fg-muted transition-colors duration-150"
+        className="app-meta inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
@@ -224,123 +245,78 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
 
       {/* Page header */}
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-          Admin · Farmer Verification
-        </p>
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
+        <p className="app-label mb-1 text-app-faint">Admin · Farmer Verification</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="app-h1 text-app-ink">
             {farmer.firstName} {farmer.lastName}
           </h1>
-          {verificationStatus && <Badge label={verificationStatus} />}
+          {verificationStatus && <StatusBadge status={verificationStatus} />}
         </div>
       </div>
 
       {/* Personal information */}
-      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4">
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-          Personal information
-        </p>
-        <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted">Phone</span>
-          <span className="text-t5 font-mono text-fg tabular-nums">{farmer.phoneNumber}</span>
-        </div>
-        <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted">Email</span>
-          <span className="text-t5 font-mono text-fg">{farmer.email}</span>
-        </div>
-        <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted">County</span>
-          <span className="text-t5 font-body text-fg">{farmer.county}</span>
-        </div>
-        <div className="flex items-center justify-between py-2.5">
-          <span className="text-t5 font-body text-fg-muted">Registered</span>
-          <span className="text-t5 font-body text-fg-disabled">{formatDate(farmer.createdAt)}</span>
-        </div>
-      </div>
+      <Section title="Personal information">
+        <InfoRow label="Phone" mono>
+          {farmer.phoneNumber}
+        </InfoRow>
+        <InfoRow label="Email" mono>
+          {farmer.email}
+        </InfoRow>
+        <InfoRow label="County">{farmer.county}</InfoRow>
+        <InfoRow label="Registered">{formatDate(farmer.createdAt)}</InfoRow>
+      </Section>
 
       {/* Farm details */}
-      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-          Farm details
-        </p>
+      <Section title="Farm details">
         {farmer.farmerData ? (
-          <>
+          <div className="space-y-3">
             {farmer.farmerData.cropsGrown.length > 0 && (
               <div>
-                <p className="text-t6 font-body text-fg-muted mb-2">Crops grown</p>
+                <p className="app-meta mb-2 text-app-muted">Crops grown</p>
                 <div className="flex flex-wrap gap-2">
                   {farmer.farmerData.cropsGrown.map((crop) => (
-                    <span
-                      key={crop}
-                      className="text-t6 font-body text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-1"
-                    >
-                      {crop}
-                    </span>
+                    <Chip key={crop}>{crop}</Chip>
                   ))}
                 </div>
               </div>
             )}
             {farmer.farmerData.livestockKept.length > 0 && (
               <div>
-                <p className="text-t6 font-body text-fg-muted mb-2">Livestock kept</p>
+                <p className="app-meta mb-2 text-app-muted">Livestock kept</p>
                 <div className="flex flex-wrap gap-2">
                   {farmer.farmerData.livestockKept.map((animal) => (
-                    <span
-                      key={animal}
-                      className="text-t6 font-body text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-1"
-                    >
-                      {animal}
-                    </span>
+                    <Chip key={animal}>{animal}</Chip>
                   ))}
                 </div>
               </div>
             )}
             {(farmer.farmerData.farmSizeAcres != null || farmer.farmerData.primaryLanguage) && (
-              <div className="border-t border-zinc-800/50 pt-1">
+              <div className="border-t border-app-hairline pt-1">
                 {farmer.farmerData.farmSizeAcres != null && (
-                  <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50 last:border-0">
-                    <span className="text-t5 font-body text-fg-muted">Farm size</span>
-                    <span className="text-t5 font-mono text-fg tabular-nums">
-                      {farmer.farmerData.farmSizeAcres} acres
-                    </span>
-                  </div>
+                  <InfoRow label="Farm size" mono>
+                    {farmer.farmerData.farmSizeAcres} acres
+                  </InfoRow>
                 )}
                 {farmer.farmerData.primaryLanguage && (
-                  <div className="flex items-center justify-between py-2.5">
-                    <span className="text-t5 font-body text-fg-muted">Primary language</span>
-                    <span className="text-t5 font-body text-fg">
-                      {farmer.farmerData.primaryLanguage}
-                    </span>
-                  </div>
+                  <InfoRow label="Primary language">{farmer.farmerData.primaryLanguage}</InfoRow>
                 )}
               </div>
             )}
-          </>
+          </div>
         ) : (
-          <p className="text-t5 font-body text-fg-disabled">No farm data on record.</p>
+          <p className="app-body text-app-faint">No farm data on record.</p>
         )}
-      </div>
+      </Section>
 
       {/* Verification document */}
-      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-1">
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-          Verification document
-        </p>
+      <Section title="Verification document">
         {farmer.farmerData?.documentType ? (
           <>
-            <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-              <span className="text-t5 font-body text-fg-muted">Type</span>
-              <span className="text-t5 font-body text-fg">
-                {DOC_TYPE_LABELS[farmer.farmerData.documentType]}
-              </span>
-            </div>
+            <InfoRow label="Type">{DOC_TYPE_LABELS[farmer.farmerData.documentType]}</InfoRow>
             {farmer.farmerData.documentNumber && (
-              <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                <span className="text-t5 font-body text-fg-muted">Number</span>
-                <span className="text-t5 font-mono text-fg tabular-nums">
-                  {farmer.farmerData.documentNumber}
-                </span>
-              </div>
+              <InfoRow label="Number" mono>
+                {farmer.farmerData.documentNumber}
+              </InfoRow>
             )}
             {farmer.farmerData.documentImageUrl && (
               <div className="py-2.5">
@@ -348,7 +324,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
                   href={farmer.farmerData.documentImageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-t5 font-body text-brand hover:underline underline-offset-2"
+                  className="app-body inline-flex items-center gap-2 text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
                 >
                   View document image
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -365,9 +341,9 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
             )}
           </>
         ) : (
-          <p className="text-t5 font-body text-fg-disabled">No verification document submitted.</p>
+          <p className="app-body text-app-faint">No verification document submitted.</p>
         )}
-      </div>
+      </Section>
 
       {/* Actions */}
       {isPending ? (
@@ -382,7 +358,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
             Approve farmer
           </Button>
           <Button
-            variant="destructive"
+            variant="danger"
             onClick={() => {
               setActiveModal('reject');
               setRejectionReason('');
@@ -393,10 +369,10 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
           </Button>
         </div>
       ) : (
-        <div className="bg-surface border border-zinc-800/50 rounded-sm px-4 py-3">
-          <p className="text-t5 font-body text-fg-muted">
+        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-3">
+          <p className="app-body text-app-muted">
             Verification is{' '}
-            <span className="text-fg font-medium">
+            <span className="app-body-strong text-app-ink">
               {verificationStatus?.toLowerCase() ?? 'not set'}
             </span>
             . No further action required.
@@ -405,26 +381,59 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
       )}
 
       {/* Approve confirm modal */}
-      <ConfirmModal
-        isOpen={activeModal === 'approve'}
+      <Modal
+        open={activeModal === 'approve'}
         onClose={() => setActiveModal(null)}
-        onConfirm={() => void handleDecision(VerificationStatus.APPROVED)}
         title="Approve verification"
-        message={`Approve ${farmer.firstName} ${farmer.lastName} as a verified farmer? This will grant them a 40-point trust score and send an SMS notification.`}
-        confirmLabel="Approve farmer"
-        isLoading={isActioning}
-      />
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              isLoading={isActioning}
+              onClick={() => void handleDecision(VerificationStatus.APPROVED)}
+            >
+              Approve farmer
+            </Button>
+          </>
+        }
+      >
+        <p className="app-body text-app-body">
+          Approve {farmer.firstName} {farmer.lastName} as a verified farmer? This will grant them a
+          40-point trust score and send an SMS notification.
+        </p>
+      </Modal>
 
       {/* Reject modal */}
       {activeModal === 'reject' && (
         <Modal
-          isOpen
+          open
           onClose={() => setActiveModal(null)}
           title="Reject verification"
-          description={`Provide a reason for rejecting ${farmer.firstName} ${farmer.lastName}. They will be notified via SMS.`}
-          size="sm"
+          className="max-w-sm"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                isLoading={isActioning}
+                disabled={!rejectionReason.trim()}
+                onClick={() => void handleDecision(VerificationStatus.REJECTED, rejectionReason)}
+              >
+                Reject farmer
+              </Button>
+            </>
+          }
         >
           <div className="space-y-4">
+            <p className="app-body text-app-muted">
+              Provide a reason for rejecting {farmer.firstName} {farmer.lastName}. They will be
+              notified via SMS.
+            </p>
             <Input
               label="Rejection reason"
               placeholder="e.g. Document number could not be verified"
@@ -432,19 +441,6 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
               onChange={(e) => setRejectionReason(e.target.value)}
               error={actionError ?? undefined}
             />
-            <div className="flex gap-3 justify-end">
-              <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                isLoading={isActioning}
-                disabled={!rejectionReason.trim()}
-                onClick={() => void handleDecision(VerificationStatus.REJECTED, rejectionReason)}
-              >
-                Reject farmer
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
