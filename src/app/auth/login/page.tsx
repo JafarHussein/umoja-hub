@@ -2,9 +2,9 @@
 
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Button, Alert } from '@/components/app';
+import { Button, Alert, Input } from '@/components/app';
 
 // Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
 // account through /onboarding/welcome; OAuth here reconciles an existing account.
@@ -33,14 +33,41 @@ export default function LoginPage(): React.ReactElement {
 }
 
 function LoginContent(): React.ReactElement {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const errorCode = searchParams.get('error');
-  const error = errorCode ? (ERROR_COPY[errorCode] ?? 'Sign-in failed. Please try again.') : '';
-  const [loading, setLoading] = useState<'google' | 'github' | null>(null);
+  const urlError = errorCode ? (ERROR_COPY[errorCode] ?? 'Sign-in failed. Please try again.') : '';
+
+  const [loading, setLoading] = useState<'google' | 'github' | 'credentials' | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [formError, setFormError] = useState('');
+  const error = formError || urlError;
 
   function handleSignIn(provider: 'google' | 'github'): void {
     setLoading(provider);
     void signIn(provider, { callbackUrl: POST_AUTH_CALLBACK });
+  }
+
+  async function handleCredentials(e: React.FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault();
+    if (!username || !password) return;
+    setFormError('');
+    setLoading('credentials');
+    try {
+      const res = await signIn('credentials', { username, password, redirect: false });
+      if (!res || res.error) {
+        setFormError('Invalid username or password.');
+        return;
+      }
+      // Onboarded account → the middleware routes /onboarding/welcome to the
+      // role's dashboard.
+      router.push(POST_AUTH_CALLBACK);
+    } catch {
+      setFormError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
@@ -84,7 +111,7 @@ function LoginContent(): React.ReactElement {
           <div className="rounded-app-card border border-app-hairline bg-app-card p-6 sm:p-8">
             <h1 className="app-h1 mb-1 text-app-ink">Sign in to UmojaHub</h1>
             <p className="app-body mb-6 text-app-muted">
-              Continue with Google or GitHub. New here? This creates your account.
+              Use your username and password, or continue with your connected provider.
             </p>
 
             {error && (
@@ -93,9 +120,43 @@ function LoginContent(): React.ReactElement {
               </div>
             )}
 
+            <form onSubmit={handleCredentials} className="flex flex-col gap-4">
+              <Input
+                label="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+              <Button
+                type="submit"
+                size="lg"
+                isLoading={loading === 'credentials'}
+                disabled={loading !== null || !username || !password}
+                className="w-full"
+              >
+                Sign in
+              </Button>
+            </form>
+
+            <div className="my-6 flex items-center gap-3" aria-hidden="true">
+              <span className="h-px flex-1 bg-app-hairline" />
+              <span className="app-meta text-app-faint">or</span>
+              <span className="h-px flex-1 bg-app-hairline" />
+            </div>
+
             <div className="flex flex-col gap-3">
               <Button
                 type="button"
+                variant="secondary"
                 size="lg"
                 isLoading={loading === 'google'}
                 disabled={loading !== null}
