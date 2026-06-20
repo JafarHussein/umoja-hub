@@ -87,6 +87,13 @@ function briefTitle(engagement: IEngagementDetail): string {
   return (engagement.brief as { repoName?: string }).repoName ?? 'Open Source Project';
 }
 
+// Track labels with correct acronym casing (CSS capitalize would render
+// "AI_BRIEF" as "Ai Brief").
+const TRACK_LABEL: Record<ProjectTrack, string> = {
+  [ProjectTrack.AI_BRIEF]: 'AI Brief',
+  [ProjectTrack.OPEN_SOURCE]: 'Open Source',
+};
+
 function MetaPill({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
     <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
@@ -237,7 +244,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
           <MetaPill>{engagement.tier.replace(/_/g, ' ').toLowerCase()}</MetaPill>
-          <MetaPill>{engagement.track.replace(/_/g, ' ').toLowerCase()}</MetaPill>
+          <MetaPill>{TRACK_LABEL[engagement.track]}</MetaPill>
         </div>
       </div>
 

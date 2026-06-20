@@ -48,6 +48,13 @@ function briefTitle(item: IQueueItem): string {
   return (item.brief as { repoName?: string }).repoName ?? 'Open Source';
 }
 
+// Track labels with correct acronym casing (CSS capitalize would render
+// "AI_BRIEF" as "Ai Brief").
+const TRACK_LABEL: Record<ProjectTrack, string> = {
+  [ProjectTrack.AI_BRIEF]: 'AI Brief',
+  [ProjectTrack.OPEN_SOURCE]: 'Open Source',
+};
+
 export default function LecturerQueuePage(): React.ReactElement {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -158,8 +165,8 @@ export default function LecturerQueuePage(): React.ReactElement {
                 <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
                   {item.tier.replace(/_/g, ' ').toLowerCase()}
                 </span>
-                <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
-                  {item.track.replace(/_/g, ' ').toLowerCase()}
+                <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted">
+                  {TRACK_LABEL[item.track]}
                 </span>
                 <span className="app-meta ml-2 font-app-mono text-app-faint">
                   {new Date(item.createdAt).toLocaleDateString('en-KE', {
