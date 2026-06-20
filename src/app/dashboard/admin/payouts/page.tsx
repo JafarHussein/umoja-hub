@@ -3,10 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { Modal } from '@/components/ui/Modal';
-import { ListSkeleton } from '@/components/ui/SkeletonLoader';
+import { Button, Modal, Textarea, StatusPill, type StatusState } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { Role, WithdrawalRequestStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -49,11 +47,11 @@ interface IPendingDecision {
   decision: Decision;
 }
 
-const STATUS_VARIANT: Record<WithdrawalRequestStatus, BadgeVariant> = {
-  [WithdrawalRequestStatus.REQUESTED]: 'warning',
-  [WithdrawalRequestStatus.APPROVED]: 'success',
-  [WithdrawalRequestStatus.PAID]: 'success',
-  [WithdrawalRequestStatus.REJECTED]: 'error',
+const STATUS_PILL: Record<WithdrawalRequestStatus, { state: StatusState; label: string }> = {
+  [WithdrawalRequestStatus.REQUESTED]: { state: 'pending', label: 'Requested' },
+  [WithdrawalRequestStatus.APPROVED]: { state: 'verified', label: 'Approved' },
+  [WithdrawalRequestStatus.PAID]: { state: 'completed', label: 'Paid' },
+  [WithdrawalRequestStatus.REJECTED]: { state: 'denied', label: 'Rejected' },
 };
 
 const STATUS_TABS: WithdrawalRequestStatus[] = [
@@ -198,8 +196,9 @@ export default function AdminPayoutsPage(): React.ReactElement {
   if (status === 'loading' || (pageState === 'loading' && requests.length === 0)) {
     return (
       <div className="space-y-6">
-        <div className="skeleton h-6 w-40 rounded" />
-        <ListSkeleton rows={5} />
+        <div className="skeleton h-7 w-40 rounded" />
+        <div className="skeleton h-9 w-72 rounded-app-control" />
+        <div className="skeleton h-64 rounded-app-card" />
       </div>
     );
   }
@@ -215,15 +214,19 @@ export default function AdminPayoutsPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-fg">Payout Requests</h1>
-        <p className="text-t5 font-body text-fg-muted mt-0.5">
+        <h1 className="app-h1 text-app-ink">Payout Requests</h1>
+        <p className="app-body mt-1 max-w-2xl text-app-muted">
           {queueSize} request{queueSize !== 1 ? 's' : ''} awaiting review. Payouts are released
-          manually — there is no automated disbursement.
+          manually; there is no automated disbursement.
         </p>
       </div>
 
       {/* Status filter */}
-      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter by status">
+      <div
+        className="inline-flex flex-wrap gap-1 rounded-app-control border border-app-hairline bg-app-card p-1"
+        role="tablist"
+        aria-label="Filter by status"
+      >
         {STATUS_TABS.map((tab) => {
           const isActive = tab === statusFilter;
           return (
@@ -233,14 +236,14 @@ export default function AdminPayoutsPage(): React.ReactElement {
               role="tab"
               aria-selected={isActive}
               onClick={() => setStatusFilter(tab)}
-              className={[
-                'min-h-[36px] px-3 rounded-sm font-mono text-t6 uppercase tracking-widest transition-all duration-150',
+              className={cn(
+                'app-label min-h-[32px] rounded-app-control px-3 capitalize transition-colors duration-150',
                 isActive
-                  ? 'bg-surface-raised text-fg'
-                  : 'text-fg-disabled hover:text-fg-muted hover:bg-surface-raised/50',
-              ].join(' ')}
+                  ? 'bg-app-brand-surface text-app-brand'
+                  : 'text-app-muted hover:bg-app-sunken hover:text-app-ink'
+              )}
             >
-              {tab}
+              {tab.toLowerCase()}
             </button>
           );
         })}
@@ -249,60 +252,46 @@ export default function AdminPayoutsPage(): React.ReactElement {
       {/* Body */}
       {pageState === 'error' ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-t4 font-body font-medium text-fg mb-2">
-            Could not load the payout queue
-          </p>
+          <p className="app-title mb-2 text-app-ink">Could not load the payout queue</p>
           <Button variant="secondary" onClick={() => void fetchQueue(statusFilter)}>
             Retry
           </Button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="border border-white/5 rounded bg-surface px-4 py-12 text-center">
-          <p className="text-t5 font-body text-fg-muted">
+        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-12 text-center">
+          <p className="app-body text-app-muted">
             No {statusFilter.toLowerCase()} payout requests.
           </p>
         </div>
       ) : (
         <>
-          <div className="bg-surface border border-white/5 rounded overflow-hidden">
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
             {requests.map((req) => (
               <div
                 key={req._id}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 border-b border-white/5 last:border-0"
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-app-hairline px-4 py-4 last:border-0"
               >
                 <div className="min-w-0 flex-1 basis-[14rem]">
-                  <p className="text-t5 font-body text-fg truncate">
-                    {farmerName(req.farmer)}
-                  </p>
-                  <p className="text-t6 font-body text-fg-disabled truncate">
+                  <p className="app-body-strong truncate text-app-ink">{farmerName(req.farmer)}</p>
+                  <p className="app-meta truncate text-app-faint">
                     {req.farmer?.county ?? '—'}
                     {req.farmer?.phoneNumber ? ` · ${req.farmer.phoneNumber}` : ''} · requested{' '}
                     {formatDate(req.createdAt)}
                   </p>
                   {req.note && (
-                    <p className="text-t6 font-body text-fg-muted mt-1 truncate">
-                      Note: {req.note}
-                    </p>
+                    <p className="app-meta mt-1 truncate text-app-muted">Note: {req.note}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-t5 font-mono text-fg whitespace-nowrap">
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="app-data-l whitespace-nowrap text-app-ink">
                     {formatKES(req.amountKES)}
                   </span>
                   {req.status === WithdrawalRequestStatus.REQUESTED ? (
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => openDecision(req, 'APPROVED')}
-                      >
+                      <Button variant="primary" size="sm" onClick={() => openDecision(req, 'APPROVED')}>
                         Approve
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openDecision(req, 'REJECTED')}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => openDecision(req, 'REJECTED')}>
                         Reject
                       </Button>
                     </div>
@@ -311,7 +300,10 @@ export default function AdminPayoutsPage(): React.ReactElement {
                       Mark paid
                     </Button>
                   ) : (
-                    <Badge variant={STATUS_VARIANT[req.status]} label={req.status} />
+                    <StatusPill
+                      state={STATUS_PILL[req.status].state}
+                      label={STATUS_PILL[req.status].label}
+                    />
                   )}
                 </div>
               </div>
@@ -330,81 +322,62 @@ export default function AdminPayoutsPage(): React.ReactElement {
 
       {/* Decision modal */}
       <Modal
-        isOpen={pending !== null}
+        open={pending !== null}
         onClose={() => setPending(null)}
         title={modalTitle}
-        description={
-          pending
-            ? `${farmerName(pending.request.farmer)} · ${formatKES(pending.request.amountKES)}`
-            : ''
+        className="max-w-sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setPending(null)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" isLoading={submitting} onClick={() => void submitDecision()}>
+              Confirm
+            </Button>
+          </>
         }
-        size="sm"
       >
         <div className="space-y-4">
+          {pending && (
+            <p className="app-meta text-app-muted">
+              {farmerName(pending.request.farmer)} ·{' '}
+              <span className="font-app-mono">{formatKES(pending.request.amountKES)}</span>
+            </p>
+          )}
           {pending?.decision === 'REJECTED' && (
-            <div className="space-y-1.5">
-              <label
-                htmlFor="payout-note"
-                className="text-t5 font-body text-fg-muted block"
-              >
-                Reason for rejection <span className="text-fg-disabled">(required)</span>
-              </label>
-              <textarea
-                id="payout-note"
-                rows={3}
-                value={noteInput}
-                onChange={(e) => setNoteInput(e.target.value)}
-                maxLength={500}
-                className="w-full bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 py-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
-                placeholder="Explain why this request is being rejected. The farmer is notified by SMS."
-              />
-            </div>
+            <Textarea
+              label="Reason for rejection"
+              hint="Required. The farmer is notified by SMS."
+              rows={3}
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              maxLength={500}
+              placeholder="Explain why this request is being rejected."
+            />
           )}
           {pending?.decision === 'PAID' && (
-            <div className="space-y-1.5">
-              <label
-                htmlFor="payout-note"
-                className="text-t5 font-body text-fg-muted block"
-              >
-                M-Pesa reference <span className="text-fg-disabled">(optional)</span>
-              </label>
-              <textarea
-                id="payout-note"
-                rows={2}
-                value={noteInput}
-                onChange={(e) => setNoteInput(e.target.value)}
-                maxLength={500}
-                className="w-full bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 py-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
-                placeholder="e.g. the manual B2C transaction code"
-              />
-            </div>
+            <Textarea
+              label="M-Pesa reference"
+              hint="Optional. e.g. the manual B2C transaction code."
+              rows={2}
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              maxLength={500}
+              placeholder="e.g. the manual B2C transaction code"
+            />
           )}
           {pending?.decision === 'APPROVED' && (
-            <p className="text-t5 font-body text-fg-muted">
+            <p className="app-body text-app-muted">
               This commits the platform to paying the farmer. You will mark it paid once the manual
               M-Pesa transfer is done.
             </p>
           )}
 
           {actionError !== null && (
-            <p role="alert" className="text-t6 font-body text-red-400">
+            <p role="alert" className="app-meta text-app-danger">
               {actionError}
             </p>
           )}
-
-          <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setPending(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              isLoading={submitting}
-              onClick={() => void submitDecision()}
-            >
-              Confirm
-            </Button>
-          </div>
         </div>
       </Modal>
     </div>
