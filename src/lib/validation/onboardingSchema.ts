@@ -45,6 +45,18 @@ export const credentialsLoginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+// Password reset (AUTH_ONBOARDING_FLOW_V2 §10). The request is keyed by the
+// account email (the reset link is delivered there); confirm carries the raw
+// token from the link plus the new password (same rules as onboarding).
+export const passwordResetRequestSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email address'),
+});
+
+export const passwordResetConfirmSchema = z.object({
+  token: z.string().trim().min(1, 'Reset token is required'),
+  password: passwordSchema,
+});
+
 // ---------------------------------------------------------------------------
 // Stage 2 — role-conditional identity. Base fields fill the now-optional
 // top-level identity columns; role extensions populate the role sub-document.
@@ -124,6 +136,8 @@ export const institutionalEmailVerifySchema = z.object({
 export type RoleSelectionInput = z.infer<typeof roleSelectionSchema>;
 export type OnboardingDraftInput = z.infer<typeof onboardingDraftSchema>;
 export type CredentialsLoginInput = z.infer<typeof credentialsLoginSchema>;
+export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
+export type PasswordResetConfirmInput = z.infer<typeof passwordResetConfirmSchema>;
 export type FarmerIdentityInput = z.infer<typeof farmerIdentitySchema>;
 export type BuyerIdentityInput = z.infer<typeof buyerIdentitySchema>;
 export type StudentIdentityInput = z.infer<typeof studentIdentitySchema>;

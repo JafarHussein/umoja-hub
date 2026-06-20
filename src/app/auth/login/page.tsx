@@ -145,6 +145,12 @@ function LoginContent(): React.ReactElement {
               >
                 Sign in
               </Button>
+              <Link
+                href="/auth/forgot-password"
+                className="app-meta self-start text-app-brand hover:underline"
+              >
+                Forgot password?
+              </Link>
             </form>
 
             <div className="my-6 flex items-center gap-3" aria-hidden="true">

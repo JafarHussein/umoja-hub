@@ -4,6 +4,8 @@ import {
   passwordSchema,
   onboardingDraftSchema,
   credentialsLoginSchema,
+  passwordResetRequestSchema,
+  passwordResetConfirmSchema,
   farmerIdentitySchema,
   buyerIdentitySchema,
   studentIdentitySchema,
@@ -84,6 +86,38 @@ describe('credentialsLoginSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
 
   it('rejects an empty password', () => {
     expect(credentialsLoginSchema.safeParse({ username: 'wanjiku', password: '' }).success).toBe(
+      false
+    );
+  });
+});
+
+describe('passwordResetRequestSchema (AUTH_ONBOARDING_FLOW_V2 §10)', () => {
+  it('accepts and lowercases a valid email', () => {
+    const r = passwordResetRequestSchema.safeParse({ email: 'Jane@Gmail.COM' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.email).toBe('jane@gmail.com');
+  });
+
+  it('rejects a malformed email', () => {
+    expect(passwordResetRequestSchema.safeParse({ email: 'nope' }).success).toBe(false);
+  });
+});
+
+describe('passwordResetConfirmSchema (AUTH_ONBOARDING_FLOW_V2 §10)', () => {
+  it('accepts a token with a valid new password', () => {
+    expect(
+      passwordResetConfirmSchema.safeParse({ token: 'abc123', password: 'Renewed2024' }).success
+    ).toBe(true);
+  });
+
+  it('rejects a missing token', () => {
+    expect(passwordResetConfirmSchema.safeParse({ token: '', password: 'Renewed2024' }).success).toBe(
+      false
+    );
+  });
+
+  it('rejects a weak new password (reuses passwordSchema)', () => {
+    expect(passwordResetConfirmSchema.safeParse({ token: 'abc123', password: 'short' }).success).toBe(
       false
     );
   });
