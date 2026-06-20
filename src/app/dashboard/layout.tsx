@@ -7,6 +7,7 @@ import { FarmerShell } from './farmer/_components/FarmerShell';
 import { BuyerShell } from './buyer/_components/BuyerShell';
 import { StudentShell } from './student/_components/StudentShell';
 import { LecturerShell } from './lecturer/_components/LecturerShell';
+import { AdminShell } from './admin/_components/AdminShell';
 import { Role } from '@/types';
 
 export default async function DashboardLayout({
@@ -20,9 +21,7 @@ export default async function DashboardLayout({
     redirect('/auth/login');
   }
 
-  // Incremental Phase 7 rollout: the FARMER, BUYER, STUDENT, and LECTURER roles
-  // use the new app-design-system shell; the remaining roles keep the legacy
-  // shell until they are migrated.
+  // Phase 7 rollout complete: every role uses the new app-design-system shell.
   if (session.user.role === Role.FARMER) {
     return <FarmerShell>{children}</FarmerShell>;
   }
@@ -39,8 +38,12 @@ export default async function DashboardLayout({
     return <LecturerShell>{children}</LecturerShell>;
   }
 
+  if (session.user.role === Role.ADMIN) {
+    return <AdminShell>{children}</AdminShell>;
+  }
+
   return (
-    <LayoutWrapper role={session.user.role as Role} firstName={session.user.firstName}>
+    <LayoutWrapper role={session.user.role as unknown as Role} firstName={session.user.firstName}>
       {children}
     </LayoutWrapper>
   );
