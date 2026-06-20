@@ -239,6 +239,67 @@ describe('signIn callback — OAuth account lifecycle', () => {
   });
 });
 
+describe('credentials authorize — username + password sign-in', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const bcrypt = require('bcryptjs') as typeof import('bcryptjs');
+  type Authorize = (
+    c: Record<string, string> | undefined
+  ) => Promise<{ id: string; role: string | null } | null>;
+  // NextAuth v4 nests the user-supplied authorize under `.options`; the
+  // top-level `.authorize` is its default stub.
+  const credProvider = authOptions.providers.find(
+    (p) => (p as { id?: string }).id === 'credentials'
+  ) as unknown as { options: { authorize: Authorize } };
+  const authorize = credProvider.options.authorize;
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns the user for valid credentials on an active account', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({
+          _id: 'u1',
+          email: 'wanjiku@gmail.com',
+          firstName: 'Wanjiku',
+          role: 'FARMER',
+          hashedPassword,
+          status: 'ACTIVE',
+        }),
+    });
+    const res = await authorize({ username: 'wanjiku', password: 'Secret123' });
+    expect(res).toMatchObject({ id: 'u1', role: 'FARMER' });
+  });
+
+  it('rejects a wrong password', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({ _id: 'u1', hashedPassword, status: 'ACTIVE', role: 'FARMER' }),
+    });
+    expect(await authorize({ username: 'wanjiku', password: 'wrong' })).toBeNull();
+  });
+
+  it('rejects a non-active account', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({ _id: 'u1', hashedPassword, status: 'SUSPENDED', role: 'FARMER' }),
+    });
+    expect(await authorize({ username: 'wanjiku', password: 'Secret123' })).toBeNull();
+  });
+
+  it('rejects an unknown username', async () => {
+    mockUserFindOne.mockReturnValue({ select: () => Promise.resolve(null) });
+    expect(await authorize({ username: 'ghost', password: 'Secret123' })).toBeNull();
+  });
+
+  it('rejects malformed input without touching the DB', async () => {
+    expect(await authorize({ username: '', password: '' })).toBeNull();
+    expect(mockUserFindOne).not.toHaveBeenCalled();
+  });
+});
+
 describe('jwt + session callbacks — hydration', () => {
   beforeEach(() => jest.clearAllMocks());
 
