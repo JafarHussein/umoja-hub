@@ -14,6 +14,38 @@ export const roleSelectionSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// V2 onboarding (AUTH_ONBOARDING_FLOW_V2): username + password are collected
+// before the account exists and held in an OnboardingDraft. ADMIN is excluded
+// from the role enum at the schema boundary — admins are provisioned, never
+// self-registered (security invariant #1).
+// ---------------------------------------------------------------------------
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, 'Username must be at least 3 characters')
+  .max(20, 'Username must be at most 20 characters')
+  .regex(/^[a-z0-9_]+$/, 'Use only lowercase letters, numbers, and underscores');
+
+export const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(72, 'Password must be at most 72 characters') // bcrypt input limit
+  .regex(/[A-Za-z]/, 'Password must contain a letter')
+  .regex(/\d/, 'Password must contain a number');
+
+export const onboardingDraftSchema = z.object({
+  username: usernameSchema,
+  password: passwordSchema,
+  role: z.enum([Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER]),
+});
+
+export const credentialsLoginSchema = z.object({
+  username: usernameSchema,
+  password: z.string().min(1, 'Password is required'),
+});
+
+// ---------------------------------------------------------------------------
 // Stage 2 — role-conditional identity. Base fields fill the now-optional
 // top-level identity columns; role extensions populate the role sub-document.
 // githubUsername is OAuth-sourced and is never accepted from the client (UI-12).
@@ -90,6 +122,8 @@ export const institutionalEmailVerifySchema = z.object({
 });
 
 export type RoleSelectionInput = z.infer<typeof roleSelectionSchema>;
+export type OnboardingDraftInput = z.infer<typeof onboardingDraftSchema>;
+export type CredentialsLoginInput = z.infer<typeof credentialsLoginSchema>;
 export type FarmerIdentityInput = z.infer<typeof farmerIdentitySchema>;
 export type BuyerIdentityInput = z.infer<typeof buyerIdentitySchema>;
 export type StudentIdentityInput = z.infer<typeof studentIdentitySchema>;
