@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/Input';
-import { ListSkeleton } from '@/components/ui/SkeletonLoader';
+import { Button, Input, Select, Alert } from '@/components/app';
 import { Role } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -58,7 +56,12 @@ export default function AdminGroupTokensPage(): React.ReactElement {
   }, [status, session, router]);
 
   if (status !== 'authenticated' || session.user.role !== Role.ADMIN) {
-    return <ListSkeleton rows={4} />;
+    return (
+      <div className="max-w-xl space-y-6">
+        <div className="skeleton h-7 w-44 rounded" />
+        <div className="skeleton h-72 rounded-app-card" />
+      </div>
+    );
   }
 
   async function mint(e: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -111,11 +114,11 @@ export default function AdminGroupTokensPage(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="max-w-xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-fg">Group Tokens</h1>
-        <p className="text-t5 font-body text-fg-muted mt-0.5">
+        <h1 className="app-h1 text-app-ink">Group Tokens</h1>
+        <p className="app-body mt-1 text-app-muted">
           Mint a single-use join code for a cooperative group. The code is texted to the recipient
           farmer, who redeems it from their settings pane. Each code works once and then expires.
         </p>
@@ -123,26 +126,22 @@ export default function AdminGroupTokensPage(): React.ReactElement {
 
       {/* Mint result */}
       {result && (
-        <div className="bg-surface border border-brand/30 rounded p-4 space-y-3">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-            Token minted
-          </p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-t1 font-mono text-brand tracking-[0.2em]">
-              {result.token}
-            </span>
+        <div className="space-y-3 rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
+          <p className="app-label text-app-brand">Token minted</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="app-data-xl tracking-[0.2em] text-app-brand">{result.token}</span>
             <Button variant="secondary" size="sm" onClick={() => void copyToken()}>
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
-          <p className="text-t6 font-body text-fg-muted">
+          <p className="app-meta text-app-muted">
             Texted to the recipient. Expires{' '}
             {new Date(result.expiresAt).toLocaleDateString('en-KE', {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
             })}
-            . If the SMS does not arrive, relay this code directly — it is single-use.
+            . If the SMS does not arrive, relay this code directly; it is single-use.
           </p>
         </div>
       )}
@@ -150,9 +149,9 @@ export default function AdminGroupTokensPage(): React.ReactElement {
       {/* Mint form */}
       <form
         onSubmit={(e) => void mint(e)}
-        className="bg-surface border border-white/5 rounded p-4 space-y-4"
+        className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4"
       >
-        <h2 className="text-t3 font-heading font-medium text-fg">Mint a join code</h2>
+        <h2 className="app-h2 text-app-ink">Mint a join code</h2>
 
         <Input
           label="Group ID"
@@ -170,35 +169,21 @@ export default function AdminGroupTokensPage(): React.ReactElement {
           placeholder="0712 345 678 or +254712345678"
         />
 
-        <div className="space-y-1.5">
-          <label htmlFor="expiry" className="text-t5 font-body text-fg-muted block">
-            Expires in
-          </label>
-          <select
-            id="expiry"
-            value={expiresInHours}
-            onChange={(e) => setExpiresInHours(Number(e.target.value))}
-            className="w-full min-h-[44px] bg-surface-raised border border-white/10 rounded-sm text-t5 font-body text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
-          >
-            {EXPIRY_OPTIONS.map((opt) => (
-              <option key={opt.hours} value={opt.hours}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {formError !== null && (
-          <p role="alert" className="text-t6 font-body text-red-400">
-            {formError}
-          </p>
-        )}
-
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={submitState === 'submitting'}
+        <Select
+          label="Expires in"
+          value={expiresInHours}
+          onChange={(e) => setExpiresInHours(Number(e.target.value))}
         >
+          {EXPIRY_OPTIONS.map((opt) => (
+            <option key={opt.hours} value={opt.hours}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
+
+        {formError !== null && <Alert tone="danger">{formError}</Alert>}
+
+        <Button type="submit" variant="primary" isLoading={submitState === 'submitting'}>
           Mint token
         </Button>
       </form>
