@@ -4,9 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/Badge';
-import { ConfirmModal } from '@/components/ui/Modal';
+import { Button, Modal, VerificationBadge } from '@/components/app';
 import { Role, SupplierVerificationStatus } from '@/types';
 
 interface IRegistrations {
@@ -39,37 +37,52 @@ function formatDate(iso: string): string {
   });
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+      <p className="app-label mb-2 text-app-muted">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function InfoRow({
+  label,
+  children,
+  mono,
+}: {
+  label: string;
+  children: React.ReactNode;
+  mono?: boolean;
+}): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-app-hairline py-2.5 last:border-0">
+      <span className="app-body text-app-muted">{label}</span>
+      <span className={mono ? 'app-data-m text-app-ink' : 'app-body text-right text-app-ink'}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: SupplierVerificationStatus }): React.ReactElement {
+  switch (status) {
+    case SupplierVerificationStatus.VERIFIED:
+      return <VerificationBadge state="verified" />;
+    case SupplierVerificationStatus.SUSPENDED:
+      return <VerificationBadge state="denied" label="Suspended" />;
+    default:
+      return <VerificationBadge state="pending" />;
+  }
+}
+
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="space-y-6">
-      <div className="h-3 w-36 bg-surface-raised rounded-sm animate-pulse" />
-      <div className="space-y-2">
-        <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-52 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-5 w-16 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-      </div>
-      {[4, 3].map((rows, i) => (
-        <div key={i} className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
-          <div className="h-3 w-28 bg-surface-raised rounded-sm animate-pulse" />
-          <div>
-            {Array.from({ length: rows }).map((_, j) => (
-              <div
-                key={j}
-                className="flex justify-between py-2.5 border-b border-zinc-800/50 last:border-0"
-              >
-                <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
-                <div className="h-4 w-36 bg-surface-raised rounded-sm animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="flex gap-3">
-        <div className="h-11 w-32 bg-surface-raised rounded-sm animate-pulse" />
-        <div className="h-11 w-24 bg-surface-raised rounded-sm animate-pulse" />
-      </div>
+    <div className="max-w-3xl space-y-6">
+      <div className="skeleton h-3 w-36 rounded" />
+      <div className="skeleton h-7 w-52 rounded" />
+      <div className="skeleton h-40 rounded-app-card" />
+      <div className="skeleton h-24 rounded-app-card" />
     </div>
   );
 }
@@ -153,9 +166,9 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
 
   if (pageState === 'not-found') {
     return (
-      <div className="bg-surface border border-zinc-800/50 rounded-sm p-8 text-center">
-        <p className="text-t4 font-body text-fg">Supplier not found.</p>
-        <p className="text-t5 font-body text-fg-muted mt-1">
+      <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+        <p className="app-title text-app-ink">Supplier not found.</p>
+        <p className="app-body mt-1 text-app-muted">
           This record may have been removed or the ID is invalid.
         </p>
         <div className="mt-4">
@@ -172,12 +185,8 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load supplier profile
-        </p>
-        <p className="text-t5 font-body text-fg-muted mb-4">
-          Check your connection and try again.
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load supplier profile</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchSupplier()}>
           Retry
         </Button>
@@ -199,11 +208,11 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
   ).filter((r): r is { label: string; value: string } => r !== null);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl space-y-6">
       {/* Back link */}
       <Link
         href="/dashboard/admin/supplier-verification"
-        className="inline-flex items-center gap-1.5 text-t6 font-body text-fg-disabled hover:text-fg-muted transition-colors duration-150"
+        className="app-meta inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
@@ -219,92 +228,60 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
 
       {/* Page header */}
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-          Admin · Supplier Verification
-        </p>
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-            {supplier.businessName}
-          </h1>
-          {verificationStatus && <Badge label={verificationStatus} />}
+        <p className="app-label mb-1 text-app-faint">Admin · Supplier Verification</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="app-h1 text-app-ink">{supplier.businessName}</h1>
+          {verificationStatus && <StatusBadge status={verificationStatus} />}
         </div>
       </div>
 
       {/* Business information */}
-      <div className="bg-surface border border-zinc-800/50 rounded-sm p-4">
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-          Business information
-        </p>
-        <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted">Phone</span>
-          <span className="text-t5 font-mono text-fg tabular-nums">
-            {supplier.contactPhone}
-          </span>
-        </div>
+      <Section title="Business information">
+        <InfoRow label="Phone" mono>
+          {supplier.contactPhone}
+        </InfoRow>
         {supplier.contactEmail && (
-          <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-            <span className="text-t5 font-body text-fg-muted">Email</span>
-            <span className="text-t5 font-mono text-fg">{supplier.contactEmail}</span>
-          </div>
+          <InfoRow label="Email" mono>
+            {supplier.contactEmail}
+          </InfoRow>
         )}
-        <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted">County</span>
-          <span className="text-t5 font-body text-fg">{supplier.county}</span>
-        </div>
-        {supplier.physicalAddress && (
-          <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-            <span className="text-t5 font-body text-fg-muted">Address</span>
-            <span className="text-t5 font-body text-fg">{supplier.physicalAddress}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between py-2.5">
-          <span className="text-t5 font-body text-fg-muted">Registered</span>
-          <span className="text-t5 font-body text-fg-disabled">{formatDate(supplier.createdAt)}</span>
-        </div>
-      </div>
+        <InfoRow label="County">{supplier.county}</InfoRow>
+        {supplier.physicalAddress && <InfoRow label="Address">{supplier.physicalAddress}</InfoRow>}
+        <InfoRow label="Registered">{formatDate(supplier.createdAt)}</InfoRow>
+      </Section>
 
       {/* Input categories */}
       {supplier.inputCategories.length > 0 && (
-        <div className="bg-surface border border-zinc-800/50 rounded-sm p-4 space-y-3">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-            Input categories
-          </p>
+        <Section title="Input categories">
           <div className="flex flex-wrap gap-2">
             {supplier.inputCategories.map((cat) => (
               <span
                 key={cat}
-                className="text-t6 font-mono text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-1 uppercase"
+                className="app-meta rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-1 uppercase text-app-muted"
               >
                 {cat}
               </span>
             ))}
           </div>
-        </div>
+        </Section>
       )}
 
       {/* Regulatory registrations */}
       {regLines.length > 0 && (
-        <div className="bg-surface border border-zinc-800/50 rounded-sm p-4">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-            Regulatory registrations
-          </p>
-          {regLines.map((reg, i) => (
-            <div
-              key={reg.label}
-              className={`flex items-center justify-between py-2.5 ${i < regLines.length - 1 ? 'border-b border-zinc-800/50' : ''}`}
-            >
-              <span className="text-t5 font-body text-fg-muted">{reg.label}</span>
-              <span className="text-t5 font-mono text-fg tabular-nums">{reg.value}</span>
-            </div>
+        <Section title="Regulatory registrations">
+          {regLines.map((reg) => (
+            <InfoRow key={reg.label} label={reg.label} mono>
+              {reg.value}
+            </InfoRow>
           ))}
-        </div>
+        </Section>
       )}
 
       {/* Actions */}
       {isPending ? (
         <>
           {actionError && (
-            <p role="alert" className="text-t5 font-body text-red-400">
+            <p role="alert" className="app-body text-app-danger">
               {actionError}
             </p>
           )}
@@ -319,7 +296,7 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
               Verify supplier
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={() => {
                 setActiveModal('suspend');
                 setActionError(null);
@@ -330,10 +307,10 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
           </div>
         </>
       ) : (
-        <div className="bg-surface border border-zinc-800/50 rounded-sm px-4 py-3">
-          <p className="text-t5 font-body text-fg-muted">
+        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-3">
+          <p className="app-body text-app-muted">
             Supplier is{' '}
-            <span className="text-fg font-medium">
+            <span className="app-body-strong text-app-ink">
               {verificationStatus?.toLowerCase() ?? 'not reviewed'}
             </span>
             . No further action required.
@@ -342,26 +319,48 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
       )}
 
       {/* Verify confirm modal */}
-      <ConfirmModal
-        isOpen={activeModal === 'verify'}
+      <Modal
+        open={activeModal === 'verify'}
         onClose={() => setActiveModal(null)}
-        onConfirm={() => void handleAction('VERIFIED')}
         title="Verify supplier"
-        message={`Verify ${supplier.businessName} as a trusted input supplier? They will be listed as verified on the platform.`}
-        confirmLabel="Verify supplier"
-        isLoading={isActioning}
-      />
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
+              Cancel
+            </Button>
+            <Button variant="primary" isLoading={isActioning} onClick={() => void handleAction('VERIFIED')}>
+              Verify supplier
+            </Button>
+          </>
+        }
+      >
+        <p className="app-body text-app-body">
+          Verify {supplier.businessName} as a trusted input supplier? They will be listed as
+          verified on the platform.
+        </p>
+      </Modal>
 
       {/* Suspend confirm modal */}
-      <ConfirmModal
-        isOpen={activeModal === 'suspend'}
+      <Modal
+        open={activeModal === 'suspend'}
         onClose={() => setActiveModal(null)}
-        onConfirm={() => void handleAction('SUSPENDED')}
         title="Suspend supplier"
-        message={`Suspend ${supplier.businessName}? Their profile will be marked as suspended and they will not appear as verified.`}
-        confirmLabel="Suspend supplier"
-        isLoading={isActioning}
-      />
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
+              Cancel
+            </Button>
+            <Button variant="danger" isLoading={isActioning} onClick={() => void handleAction('SUSPENDED')}>
+              Suspend supplier
+            </Button>
+          </>
+        }
+      >
+        <p className="app-body text-app-body">
+          Suspend {supplier.businessName}? Their profile will be marked as suspended and they will
+          not appear as verified.
+        </p>
+      </Modal>
     </div>
   );
 }
