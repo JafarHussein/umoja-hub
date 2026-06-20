@@ -41,6 +41,13 @@ describe('middleware', () => {
     expect(res.status).toBe(401);
   });
 
+  it('lets an unauthenticated user into the V2 onboarding pages (pre-auth)', async () => {
+    mockGetToken.mockResolvedValue(null);
+    expect((await run('/onboarding/welcome')).status).toBe(200);
+    expect((await run('/onboarding/details')).status).toBe(200);
+    expect((await run('/onboarding/connect')).status).toBe(200);
+  });
+
   it('funnels a not-onboarded user to the onboarding stage', async () => {
     mockGetToken.mockResolvedValue({ role: null, isOnboarded: false, onboardingStage: 'ROLE_SELECTION' });
     const res = await run('/dashboard/farmer/listings');

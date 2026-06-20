@@ -3,10 +3,12 @@
 import React from 'react';
 import { Alert } from '@/components/app';
 
-const STEPS = ['Role', 'Identity', 'Verification'];
+const DEFAULT_STEPS = ['Role', 'Identity', 'Verification'];
 
 export interface IOnboardingShellProps {
-  step: 1 | 2 | 3;
+  step: number;
+  /** Step labels for the progress rail. Defaults to the legacy funnel labels. */
+  steps?: string[];
   title: string;
   subtitle?: string;
   /** Optional centered hero illustration (public path), shown above the content. */
@@ -19,6 +21,7 @@ export interface IOnboardingShellProps {
 // against the app token group + type ramp. Light mode (warm canvas).
 export function OnboardingShell({
   step,
+  steps = DEFAULT_STEPS,
   title,
   subtitle,
   illustration,
@@ -42,8 +45,8 @@ export function OnboardingShell({
 
         <div className="max-w-sm">
           <ol className="space-y-4" aria-label="Onboarding progress">
-            {STEPS.map((label, i) => {
-              const n = (i + 1) as 1 | 2 | 3;
+            {steps.map((label, i) => {
+              const n = i + 1;
               const active = n === step;
               const done = n < step;
               return (
@@ -100,8 +103,8 @@ export function OnboardingShell({
               <span className="app-h2 text-app-brand">Hub</span>
             </div>
             <ol className="mb-6 flex items-center gap-2" aria-label="Onboarding progress">
-              {STEPS.map((label, i) => {
-                const n = (i + 1) as 1 | 2 | 3;
+              {steps.map((label, i) => {
+                const n = i + 1;
                 const active = n === step;
                 const done = n < step;
                 return (
@@ -124,7 +127,7 @@ export function OnboardingShell({
                     >
                       {label}
                     </span>
-                    {n < STEPS.length && <span className="text-app-faint">›</span>}
+                    {n < steps.length && <span className="text-app-faint">›</span>}
                   </li>
                 );
               })}

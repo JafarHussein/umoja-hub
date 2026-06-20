@@ -1,14 +1,17 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Button, Alert } from '@/components/app';
 
-// OAuth-only sign-in (AUTH-07 hard cutover). Sign-in and sign-up are the same
-// action. The callback lands on the onboarding entry; the middleware bounces
-// already-onboarded users on to their dashboard.
-const POST_AUTH_CALLBACK = '/onboarding/role-selection';
+// Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
+// account through /onboarding/welcome; OAuth here reconciles an existing account.
+// The callback lands on an /onboarding route so the middleware bounces an
+// already-onboarded user on to their dashboard. An OAuth sign-in without an
+// account (no draft) is redirected back into onboarding by the signIn callback.
+const POST_AUTH_CALLBACK = '/onboarding/welcome';
 
 // Maps NextAuth `?error=` codes (set by our signIn callback redirects) to copy.
 const ERROR_COPY: Record<string, string> = {
@@ -116,6 +119,13 @@ function LoginContent(): React.ReactElement {
 
             <p className="app-meta mt-6 text-app-faint">
               Students sign in with GitHub. Farmers, buyers and lecturers use Google.
+            </p>
+
+            <p className="app-meta mt-4 text-app-muted">
+              New to UmojaHub?{' '}
+              <Link href="/onboarding/welcome" className="text-app-brand hover:underline">
+                Create your account
+              </Link>
             </p>
           </div>
         </div>
