@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { Button, Input, Select, Textarea, Alert, Table, THead, TH, TR, TD } from '@/components/app';
 import { Role, KnowledgeCategory } from '@/types';
 
 interface IArticle {
@@ -105,9 +106,7 @@ export default function AdminKnowledgePage(): React.ReactElement {
         throw new Error(body.error ?? 'Update failed.');
       }
       setArticles((prev) =>
-        prev.map((a) =>
-          a.slug === article.slug ? { ...a, isPublished: !article.isPublished } : a
-        )
+        prev.map((a) => (a.slug === article.slug ? { ...a, isPublished: !article.isPublished } : a))
       );
       setToggleState((prev) => ({ ...prev, [article.slug]: 'idle' }));
     } catch {
@@ -154,16 +153,22 @@ export default function AdminKnowledgePage(): React.ReactElement {
   }
 
   if (status === 'loading' || pageState === 'loading') {
-    return <p className="p-4">Loading...</p>;
+    return (
+      <div className="space-y-6">
+        <div className="skeleton h-7 w-52 rounded" />
+        <div className="skeleton h-64 rounded-app-card" />
+      </div>
+    );
   }
 
   if (pageState === 'error') {
     return (
-      <div className="p-4 flex flex-col gap-2">
-        <p>Failed to load articles.</p>
-        <button type="button" onClick={() => void fetchArticles()}>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load articles</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button variant="secondary" onClick={() => void fetchArticles()}>
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -171,212 +176,151 @@ export default function AdminKnowledgePage(): React.ReactElement {
   const slugPreview = toSlugPreview(form.title);
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-base font-semibold">Knowledge Hub CMS</h1>
-        <button
-          type="button"
-          onClick={() => setShowCreateForm((v) => !v)}
-          className="border border-gray-400 px-3 py-1 text-sm"
-        >
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="app-h1 text-app-ink">Knowledge Hub CMS</h1>
+        <Button variant={showCreateForm ? 'ghost' : 'primary'} onClick={() => setShowCreateForm((v) => !v)}>
           {showCreateForm ? 'Cancel' : 'New article'}
-        </button>
+        </Button>
       </div>
 
       {/* ── Create article form ─────────────────────────────────────────── */}
       {showCreateForm && (
         <form
-          className="flex flex-col gap-3 border border-gray-300 p-4"
+          className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4"
           onSubmit={(e) => void handleCreate(e)}
         >
-          <h2 className="text-sm font-semibold">Create article</h2>
+          <h2 className="app-h2 text-app-ink">Create article</h2>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="title" className="text-sm font-medium">
-              Title
-            </label>
-            <input
-              id="title"
-              type="text"
-              className="border border-gray-300 px-2 py-1 text-sm"
+          <div>
+            <Input
+              label="Title"
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               required
             />
-            {slugPreview && (
-              <p className="text-xs text-gray-500 font-mono">Slug: {slugPreview}</p>
-            )}
+            {slugPreview && <p className="app-meta mt-1 font-app-mono text-app-faint">Slug: {slugPreview}</p>}
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="category" className="text-sm font-medium">
-              Category
-            </label>
-            <select
-              id="category"
-              className="border border-gray-300 px-2 py-1 text-sm"
-              value={form.category}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, category: e.target.value as KnowledgeCategory }))
-              }
-            >
-              {CATEGORY_OPTIONS.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Category"
+            value={form.category}
+            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value as KnowledgeCategory }))}
+          >
+            {CATEGORY_OPTIONS.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </Select>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="sourceInstitution" className="text-sm font-medium">
-              Source institution
-            </label>
-            <input
-              id="sourceInstitution"
-              type="text"
-              className="border border-gray-300 px-2 py-1 text-sm"
-              value={form.sourceInstitution}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, sourceInstitution: e.target.value }))
-              }
-              placeholder="e.g. KALRO, FAO, KEBS"
-              required
-            />
-          </div>
+          <Input
+            label="Source institution"
+            value={form.sourceInstitution}
+            onChange={(e) => setForm((prev) => ({ ...prev, sourceInstitution: e.target.value }))}
+            placeholder="e.g. KALRO, FAO, KEBS"
+            required
+          />
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="summary" className="text-sm font-medium">
-              Summary{' '}
-              <span className="text-gray-500 font-normal">(20–500 chars)</span>
-            </label>
-            <textarea
-              id="summary"
-              rows={2}
-              className="border border-gray-300 px-2 py-1 text-sm resize-none"
-              value={form.summary}
-              onChange={(e) => setForm((prev) => ({ ...prev, summary: e.target.value }))}
-              required
-            />
-          </div>
+          <Textarea
+            label="Summary"
+            hint="20 to 500 characters."
+            rows={2}
+            value={form.summary}
+            onChange={(e) => setForm((prev) => ({ ...prev, summary: e.target.value }))}
+            required
+          />
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="content" className="text-sm font-medium">
-              Content{' '}
-              <span className="text-gray-500 font-normal">(min 100 chars)</span>
-            </label>
-            <textarea
-              id="content"
-              rows={8}
-              className="border border-gray-300 px-2 py-1 text-sm resize-y"
-              value={form.content}
-              onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
-              required
-            />
-          </div>
+          <Textarea
+            label="Content"
+            hint="Minimum 100 characters."
+            rows={8}
+            value={form.content}
+            onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
+            required
+          />
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="cropTags" className="text-sm font-medium">
-              Crop tags{' '}
-              <span className="text-gray-500 font-normal">(comma-separated, optional)</span>
-            </label>
-            <input
-              id="cropTags"
-              type="text"
-              className="border border-gray-300 px-2 py-1 text-sm"
-              value={form.cropTagsInput}
-              onChange={(e) => setForm((prev) => ({ ...prev, cropTagsInput: e.target.value }))}
-              placeholder="Maize, Beans, Tomatoes"
-            />
-          </div>
+          <Input
+            label="Crop tags"
+            hint="Comma-separated, optional."
+            value={form.cropTagsInput}
+            onChange={(e) => setForm((prev) => ({ ...prev, cropTagsInput: e.target.value }))}
+            placeholder="Maize, Beans, Tomatoes"
+          />
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="app-body flex items-center gap-2 text-app-ink">
             <input
               type="checkbox"
               checked={form.isPublished}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, isPublished: e.target.checked }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, isPublished: e.target.checked }))}
+              className="size-4 accent-app-brand"
             />
             Publish immediately
           </label>
 
-          {createError !== null && (
-            <p role="alert" className="text-sm text-red-600">
-              {createError}
-            </p>
-          )}
+          {createError !== null && <Alert tone="danger">{createError}</Alert>}
 
-          <button
-            type="submit"
-            disabled={createState === 'submitting'}
-            className="self-start border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
-          >
-            {createState === 'submitting' ? 'Creating...' : 'Create article'}
-          </button>
+          <Button type="submit" variant="primary" isLoading={createState === 'submitting'}>
+            Create article
+          </Button>
         </form>
       )}
 
       {/* ── Article list ────────────────────────────────────────────────── */}
-      {articles.length === 0 && (
-        <p className="text-sm text-gray-500">No articles yet.</p>
-      )}
-
-      {articles.length > 0 && (
-        <table className="border-collapse text-sm w-full">
-          <thead>
-            <tr className="border border-gray-300 bg-gray-50">
-              <th className="px-3 py-2 text-left border border-gray-300">Title</th>
-              <th className="px-3 py-2 text-left border border-gray-300 w-44">Category</th>
-              <th className="px-3 py-2 text-left border border-gray-300 w-24">Status</th>
-              <th className="px-3 py-2 text-left border border-gray-300 w-32">Action</th>
-            </tr>
-          </thead>
+      {articles.length === 0 ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">No articles yet.</p>
+        </div>
+      ) : (
+        <Table>
+          <THead>
+            <TH>Title</TH>
+            <TH className="w-44">Category</TH>
+            <TH className="w-24">Status</TH>
+            <TH className="w-32 text-right">Action</TH>
+          </THead>
           <tbody>
             {articles.map((article) => {
               const toggling = toggleState[article.slug] === 'submitting';
               const toggleError = toggleState[article.slug] === 'error';
               return (
-                <tr key={article.slug} className="border border-gray-300">
-                  <td className="px-3 py-2 border border-gray-300">
-                    <div>{article.title}</div>
-                    <div className="text-xs text-gray-500 font-mono">{article.slug}</div>
-                  </td>
-                  <td className="px-3 py-2 border border-gray-300 text-xs">
-                    {article.category.replace(/_/g, ' ')}
-                  </td>
-                  <td className="px-3 py-2 border border-gray-300">
+                <TR key={article.slug}>
+                  <TD>
+                    <p className="app-body-strong text-app-ink">{article.title}</p>
+                    <p className="app-meta font-app-mono text-app-faint">{article.slug}</p>
+                  </TD>
+                  <TD className="capitalize text-app-muted">
+                    {article.category.replace(/_/g, ' ').toLowerCase()}
+                  </TD>
+                  <TD>
                     <span
-                      className={[
-                        'text-xs font-medium',
-                        article.isPublished ? 'text-green-700' : 'text-gray-500',
-                      ].join(' ')}
+                      className={
+                        article.isPublished
+                          ? 'app-label inline-flex items-center rounded-app-pill bg-app-brand-surface px-2 py-0.5 text-app-brand'
+                          : 'app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted'
+                      }
                     >
                       {article.isPublished ? 'Published' : 'Draft'}
                     </span>
-                  </td>
-                  <td className="px-3 py-2 border border-gray-300">
-                    <button
-                      type="button"
-                      disabled={toggling}
-                      onClick={() => void handleTogglePublish(article)}
-                      className="border border-gray-400 px-2 py-0.5 text-xs disabled:opacity-50"
-                    >
-                      {toggling
-                        ? '...'
-                        : article.isPublished
-                          ? 'Unpublish'
-                          : 'Publish'}
-                    </button>
-                    {toggleError && (
-                      <span className="text-xs text-red-600 ml-2">Failed</span>
-                    )}
-                  </td>
-                </tr>
+                  </TD>
+                  <TD>
+                    <div className="flex items-center justify-end gap-2">
+                      {toggleError && <span className="app-meta text-app-danger">Failed</span>}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        isLoading={toggling}
+                        onClick={() => void handleTogglePublish(article)}
+                      >
+                        {article.isPublished ? 'Unpublish' : 'Publish'}
+                      </Button>
+                    </div>
+                  </TD>
+                </TR>
               );
             })}
           </tbody>
-        </table>
+        </Table>
       )}
     </div>
   );
