@@ -1,14 +1,110 @@
 # UmojaHub — Production Readiness Roadmap
 
+> ⚠️ **RE-BASELINED 2026-06-20 — read the re-baseline section first.** The 31-task
+> build order below was authored 2026-05-31 and is now **almost entirely
+> implemented**. The original analysis is preserved verbatim as the design record;
+> the current truth lives in **"## RE-BASELINE (2026-06-20)"** immediately below.
+
 **Target**: First 100 real users  
-**Assessed**: 2026-05-31  
-**Assessor**: Staff Engineering review (architecture, security, SRE, platform)  
-**Starting point**: ~78% functional completion, ~45% operational readiness  
-**Estimated effort to launch**: ~19 developer days + Safaricom go-live wait (1–2 weeks)
+**Originally assessed**: 2026-05-31 (Staff Engineering review)  
+**Original starting point**: ~78% functional / ~45% operational readiness  
+**Current status (2026-06-20)**: ~95% code-complete · ~60% launch-ready (remainder is external ops + Safaricom go-live)  
+**Estimated effort to launch**: launch-ops checklist + Safaricom go-live wait (1–2 weeks); feature build is effectively done
 
 > **Scope constraint**: This roadmap optimizes exclusively for safely serving the first 100 real users with real money transacting. It does not optimize for 10,000 users, venture scale, or speculative future requirements. Every item that does not meaningfully improve launch readiness is explicitly excluded.
 
 > **Budget constraint**: Until UmojaHub generates revenue, receives grants, secures partnerships, or obtains investor funding, no paid infrastructure is required. This roadmap targets $0/month in recurring infrastructure costs, with the sole exception of Africa's Talking SMS (pay-per-message, unavoidable for M-Pesa workflows — estimated $1–5/month at 100 users). Every recommendation has been evaluated against free-tier limits, and migration paths to paid infrastructure are documented for when revenue arrives.
+
+---
+
+## RE-BASELINE (2026-06-20)
+
+This section supersedes the headline numbers above. Everything below the next
+horizontal rule (PART 1 onward) is the **original 2026-05-31 design record**,
+preserved unedited.
+
+### What changed since 2026-05-31
+
+Three programs landed between the original assessment and this re-baseline:
+
+1. **Corrective Actions program** — `context/CORRECTIVE_ACTIONS_CHECKLIST.md` reads **51/51 complete** (DOC-01…07, FIX-01…08, BE-01…09, AUTH-01…07, QA-01…04, UI-01…15). Closed most functional + backend gaps.
+2. **Payment simulation layer** (PR #25) — `PaymentProvider` abstraction; `PAYMENT_PROVIDER=simulation` default with a production-grade simulator; Daraja swap-in preserved (`src/lib/payments/`).
+3. **Webapp nuclear reset + Auth & Onboarding V2** — full app design-system implementation, all five role dashboards migrated, and the dual credentials/OAuth onboarding with password reset + brute-force lockout. Currently open as **PR #33** (44 commits, `MERGEABLE`).
+
+> **Branch caveat:** the implementation above lives on `chore/webapp-uiux-nuclear-reset` (PR #33). `main` currently holds only the design *docs* from PR #32. "DONE" below means built + tested in the open PR, not yet in `main`/production.
+
+### 31-task build order — current status
+
+| # | Task | Status | Evidence |
+|---|------|--------|----------|
+| 1 | DB backup (GitHub Actions) | ✅ DONE | `.github/workflows/backup.yml` |
+| 2 | `vercel.json` 2-cron config | ✅ DONE | `vercel.json` + `api/cron/weekly-jobs` |
+| 3 | Health endpoint | ✅ DONE | `api/health` |
+| 4 | Axiom log drain | ⏳ EXTERNAL | code emits structured logs; needs account + Vercel integration |
+| 5 | Uptime monitoring | ⏳ EXTERNAL | needs UptimeRobot account on `/api/health` |
+| 6 | Upstash Redis setup | ◐ CODE DONE | `rateLimit.ts` uses `@upstash/redis`; needs prod env vars |
+| 7 | Distribute rate limiter | ✅ DONE | `src/lib/rateLimit.ts` |
+| 8 | Rate-limit AI/order endpoints | ✅ DONE | assistant, mentor/chat, orders |
+| 9 | Cloudinary 4MB limit | ✅ DONE | `cloudinaryService.ts` (`MAX_FILE_SIZE_BYTES = 4MB`) |
+| 10 | Email service | ✅ DONE (deviation) | `emailService.ts` — **nodemailer/SMTP**, not Resend |
+| 11 | Email verification at registration | ⊘ SUPERSEDED | Auth V2 uses OAuth provider-verified email + onboarding draft |
+| 12 | Password reset flow | ✅ DONE | `api/auth/password-reset/{request,confirm}` + UI pages |
+| 13 | Webhook IP allowlist + drop query secret | ✅ DONE | `middleware.ts` `DARAJA_ALLOWED_IPS`; signature verify |
+| 14 | Stuck-payment reconciliation | ✅ DONE | `api/cron/price-alert-check` reconciliation pass |
+| 15 | `AdminAuditLog` model | ✅ DONE | `AdminAuditLog.model.ts` |
+| 16 | Wire audit log into admin routes | ✅ DONE | admin verify/payout/mediation routes |
+| 17 | Suspended-user write enforcement | ✅ DONE | orders + marketplace status checks |
+| 18 | Request-ID logging | ◐ PARTIAL | present in several routes (e.g. cron, admin); not universal |
+| 19 | Admin verification UI | ✅ DONE | full `/dashboard/admin/*` (13 pages) |
+| 20 | TrustScoreDisplay on listings | ✅ DONE | `marketplace/[listingId]/page.tsx` |
+| 21 | Marketplace text search | ✅ DONE | `$text` + `?q=` in `api/marketplace` |
+| 22 | Payment-failure admin alerting | ✅ DONE | `payments/processCallback.ts` (admin SMS on `ResultCode!==0`) |
+| 23 | Webhook test coverage | ✅ DONE | `api/webhooks/daraja/__tests__/route.test.ts` |
+| 24 | Cloudinary signed uploads | ✅ DONE | `api/upload/sign` |
+| 25 | `Permissions-Policy` header | ✅ DONE | `next.config` |
+| 26 | Password complexity | ✅ DONE (deviation) | `passwordSchema` = min8 + letter + number (not upper/lower/digit) |
+| 27 | Seed production admin | ◐ CODE DONE | `scripts/seed.ts` seeds an admin; prod execution pending |
+| 28 | Production domain + HTTPS | ⏳ EXTERNAL | purchase + Vercel domain config |
+| 29 | Daraja production credentials | ⏳ EXTERNAL | Safaricom go-live (1–2 wk) — critical path |
+| 30 | Runbook | ✅ DONE | `context/RUNBOOK.md` (148 lines) |
+| 31 | Launch-readiness E2E on prod | ◐ PARTIAL | 18 Playwright specs exist; final prod walkthrough pending |
+
+### Security items — current status
+
+`C1` IP allowlist ✅ · `C2` query-secret removed ✅ · `C3` email-verify ⊘ superseded (OAuth) · `C4` email service ✅ · `C5` upload payload ✅ · `H1` distributed RL ✅ · `H2` AI RL ✅ · `H3` payment RL ✅ · `H4` suspended-user writes ✅ · `H5` admin audit ✅ · `M1` password complexity ◐ (letter+number only) · `M2` request-ID ◐ partial · **`M3` CSP `unsafe-eval`/`unsafe-inline` ✗ STILL PRESENT** · `M4` signed uploads ✅ · `L1` Permissions-Policy ✅ · `L2` user data-deletion endpoint ✗ deferred (manual process).
+
+### Revised scorecard (supersedes PART 9)
+
+| Category | 2026-05-31 | 2026-06-20 | Notes |
+|----------|-----------|-----------|-------|
+| Security | 55% | ~88% | M3 (CSP) + universal request-ID remain |
+| Operations | 40% | ~85% | Axiom/UptimeRobot are external setup |
+| Payments | 70% | ~92% | code done; Daraja go-live external |
+| Trust | 80% | ~95% | admin UI + display + audit all shipped |
+| Reliability | 45% | ~85% | backup/reconciliation done; needs prod wiring |
+| Monitoring | 15% | ~80% | health/alerting/logs done; Axiom external |
+| Testing | 35% | ~85% | 697 unit + 18 E2E + webhook tests |
+| Deployment | 70% | ~85% | CI/CD done; domain + Daraja external |
+| Documentation | 30% | ~70% | runbook complete |
+| Feature completeness | 78% | ~97% | every role workflow built + tested |
+
+### The TRUE remaining work
+
+**External / launch-ops (the dominant remainder):**
+1. Merge **PR #33** to `main`.
+2. Safaricom **Daraja production go-live** (Task 29) — the critical path; flip `PAYMENT_PROVIDER` to a Daraja provider with prod credentials.
+3. **Production domain + HTTPS** + set `NEXTAUTH_URL` / `MPESA_CALLBACK_URL` (Task 28).
+4. **Monitoring accounts**: Axiom log drain (Task 4) + UptimeRobot (Task 5).
+5. **Prod env vars** (Upstash, SMTP, etc.) and **seed the production admin** (Task 27).
+6. Final **production E2E walkthrough** (Task 31).
+
+**Minor code items still open (low effort, optional pre-launch):**
+- `M3` — remove CSP `unsafe-eval`; move to nonce-based `unsafe-inline`.
+- `M2`/Task 18 — make request-ID correlation universal across all routes.
+- Reconcile **doc deviations**: email is nodemailer/SMTP (not Resend); password complexity is letter+number (not upper/lower/digit). Either update this roadmap to accept them or change the code.
+- `L2` — self-service data-deletion endpoint (deferred; manual admin process documented).
+
+**Known follow-up from the auth work:** the old onboarding funnel pages/routes (`onboarding/{identity-input,role-selection,verification-upload}` + their APIs) are orphaned by Auth V2 and await a cleanup decision.
 
 ---
 
