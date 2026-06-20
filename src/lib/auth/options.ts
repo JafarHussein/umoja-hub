@@ -11,6 +11,7 @@ import {
   verifyDraftValue,
   clearedDraftCookieOptions,
 } from '@/lib/auth/onboardingDraftCookie';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, UserStatus, OnboardingStage, OAuthProvider } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -51,6 +52,15 @@ declare module 'next-auth/jwt' {
 }
 
 const LOGIN_PATH = '/auth/login';
+
+// Credentials brute-force controls (AUTH_ONBOARDING_FLOW_V2 §10). The throttle
+// caps attempt volume per username (cheap, pre-bcrypt); the lockout disables an
+// account after consecutive failures and is DB-backed so it holds across
+// serverless instances.
+const MAX_FAILED_LOGINS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+const LOGIN_THROTTLE_MAX = 10;
+const LOGIN_THROTTLE_WINDOW_MS = 10 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Policy helpers (Decision 01-B)
@@ -187,13 +197,54 @@ export const authOptions: NextAuthOptions = {
         if (!parsed.success) return null;
         const { username, password } = parsed.data;
 
+        // Front-line throttle: cap attempt volume per username before any bcrypt
+        // work (CPU-exhaustion / rapid brute-force mitigation).
+        const throttle = await checkRateLimit(
+          `login:${username}`,
+          LOGIN_THROTTLE_MAX,
+          LOGIN_THROTTLE_WINDOW_MS
+        );
+        if (!throttle.allowed) return null;
+
         await connectDB();
         const UserModel = (await import('@/lib/models/User.model')).default;
-        const dbUser = await UserModel.findOne({ username }).select('+hashedPassword');
+        const dbUser = await UserModel.findOne({ username }).select(
+          '+hashedPassword +failedLoginAttempts +lockedUntil'
+        );
         if (!dbUser?.hashedPassword || dbUser.status !== UserStatus.ACTIVE) return null;
 
+        // Account lockout — a locked account is denied regardless of the
+        // password. DB-backed so it holds across serverless instances.
+        if (dbUser.lockedUntil && dbUser.lockedUntil.getTime() > Date.now()) {
+          logger.warn('auth', 'Credentials sign-in blocked — account locked', {
+            userId: String(dbUser._id),
+          });
+          return null;
+        }
+
         const ok = await verifySecret(password, dbUser.hashedPassword);
-        if (!ok) return null;
+        if (!ok) {
+          const attempts = (dbUser.failedLoginAttempts ?? 0) + 1;
+          const lock = attempts >= MAX_FAILED_LOGINS;
+          await UserModel.findByIdAndUpdate(dbUser._id, {
+            $set: lock
+              ? { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + LOGIN_LOCKOUT_MS) }
+              : { failedLoginAttempts: attempts },
+          });
+          if (lock) {
+            logger.warn('auth', 'Account locked after repeated failed sign-ins', {
+              userId: String(dbUser._id),
+            });
+          }
+          return null;
+        }
+
+        // Success — clear any prior failure state so the counter never lingers.
+        if (dbUser.failedLoginAttempts || dbUser.lockedUntil) {
+          await UserModel.findByIdAndUpdate(dbUser._id, {
+            $set: { failedLoginAttempts: 0, lockedUntil: null },
+          });
+        }
 
         return {
           id: String(dbUser._id),

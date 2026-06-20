@@ -7,18 +7,27 @@
  * suspended-user rejection, and JWT hydration.
  */
 
+import bcrypt from 'bcryptjs';
+
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
 const mockUserFindOne = jest.fn();
 const mockUserCreate = jest.fn().mockResolvedValue({});
 const mockUserExists = jest.fn().mockResolvedValue(null);
+const mockUserFindByIdAndUpdate = jest.fn().mockResolvedValue({});
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
     findOne: (...a: unknown[]) => mockUserFindOne(...a),
     create: (...a: unknown[]) => mockUserCreate(...a),
     exists: (...a: unknown[]) => mockUserExists(...a),
+    findByIdAndUpdate: (...a: unknown[]) => mockUserFindByIdAndUpdate(...a),
   },
+}));
+
+const mockCheckRateLimit = jest.fn().mockResolvedValue({ allowed: true });
+jest.mock('@/lib/rateLimit', () => ({
+  checkRateLimit: (...a: unknown[]) => mockCheckRateLimit(...a),
 }));
 
 // V2 onboarding-draft reconcile dependencies (AUTH_ONBOARDING_FLOW_V2).
@@ -240,8 +249,6 @@ describe('signIn callback — OAuth account lifecycle', () => {
 });
 
 describe('credentials authorize — username + password sign-in', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const bcrypt = require('bcryptjs') as typeof import('bcryptjs');
   type Authorize = (
     c: Record<string, string> | undefined
   ) => Promise<{ id: string; role: string | null } | null>;
@@ -252,7 +259,11 @@ describe('credentials authorize — username + password sign-in', () => {
   ) as unknown as { options: { authorize: Authorize } };
   const authorize = credProvider.options.authorize;
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({ allowed: true });
+    mockUserFindByIdAndUpdate.mockResolvedValue({});
+  });
 
   it('returns the user for valid credentials on an active account', async () => {
     const hashedPassword = bcrypt.hashSync('Secret123', 4);
@@ -297,6 +308,72 @@ describe('credentials authorize — username + password sign-in', () => {
   it('rejects malformed input without touching the DB', async () => {
     expect(await authorize({ username: '', password: '' })).toBeNull();
     expect(mockUserFindOne).not.toHaveBeenCalled();
+  });
+
+  it('denies when the throttle is exceeded (before any DB work)', async () => {
+    mockCheckRateLimit.mockResolvedValue({ allowed: false });
+    expect(await authorize({ username: 'wanjiku', password: 'Secret123' })).toBeNull();
+    expect(mockUserFindOne).not.toHaveBeenCalled();
+  });
+
+  it('denies a locked account regardless of the password', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({
+          _id: 'u1',
+          hashedPassword,
+          status: 'ACTIVE',
+          role: 'FARMER',
+          lockedUntil: new Date(Date.now() + 60_000),
+        }),
+    });
+    expect(await authorize({ username: 'wanjiku', password: 'Secret123' })).toBeNull();
+    expect(mockUserFindByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('increments the failure counter on a wrong password below the threshold', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({ _id: 'u1', hashedPassword, status: 'ACTIVE', failedLoginAttempts: 1 }),
+    });
+    expect(await authorize({ username: 'wanjiku', password: 'wrong' })).toBeNull();
+    const update = mockUserFindByIdAndUpdate.mock.calls[0]?.[1] as { $set: Record<string, unknown> };
+    expect(update.$set).toEqual({ failedLoginAttempts: 2 });
+  });
+
+  it('locks the account at the failure threshold', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({ _id: 'u1', hashedPassword, status: 'ACTIVE', failedLoginAttempts: 4 }),
+    });
+    expect(await authorize({ username: 'wanjiku', password: 'wrong' })).toBeNull();
+    const update = mockUserFindByIdAndUpdate.mock.calls[0]?.[1] as { $set: Record<string, unknown> };
+    expect(update.$set.failedLoginAttempts).toBe(0);
+    expect(update.$set.lockedUntil).toBeInstanceOf(Date);
+  });
+
+  it('clears prior failure state on a successful sign-in', async () => {
+    const hashedPassword = bcrypt.hashSync('Secret123', 4);
+    mockUserFindOne.mockReturnValue({
+      select: () =>
+        Promise.resolve({
+          _id: 'u1',
+          email: 'a@b.com',
+          firstName: 'W',
+          role: 'FARMER',
+          hashedPassword,
+          status: 'ACTIVE',
+          failedLoginAttempts: 3,
+        }),
+    });
+    expect(await authorize({ username: 'wanjiku', password: 'Secret123' })).toMatchObject({
+      id: 'u1',
+    });
+    const update = mockUserFindByIdAndUpdate.mock.calls[0]?.[1] as { $set: Record<string, unknown> };
+    expect(update.$set).toEqual({ failedLoginAttempts: 0, lockedUntil: null });
   });
 });
 
