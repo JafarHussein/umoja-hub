@@ -46,11 +46,12 @@
 - [x] Tests: `escrow/__tests__/route.test.ts` (3) — guard, totals+ledger+derived state, cursor validation
 - [x] GATE green — tsc clean, lint clean, 719 tests pass
 
-## P3 — Party-facing surfaces (presentation only, `.theme-app`)
-- [ ] Farmer ledger `dashboard/farmer/ledger/page.tsx` — split Held / Releasable / Available; per-line escrow state badge
-- [ ] Farmer orders `dashboard/farmer/orders/page.tsx` — escrow pill + release requirement ("buyer must confirm receipt")
-- [ ] Buyer orders `dashboard/buyer/orders/page.tsx` + `[orderId]/page.tsx` — "payment protected in escrow"; confirm-receipt = release CTA
-- [ ] GATE green
+## P3 — Party-facing surfaces (presentation only, `.theme-app`) ✅ DONE 2026-06-21
+- [x] Farmer ledger — balance cards now Held in escrow / Releasable / Available (+ in-dispute note); per-payment EscrowPill (Held vs Releasable); escrow-framed copy
+- [x] Farmer orders — detail modal shows "The buyer has paid; held in escrow, released on receipt" + a refunded note
+- [x] Buyer orders list — "🔒 Payment protected in escrow" hint on held orders
+- [x] Buyer order detail — escrow-protection card (held), refunded alert, confirm-receipt copy now states it releases funds
+- [x] GATE green — tsc clean, lint clean, 719 tests pass (presentation-only)
 
 ## P4 — Notifications
 - [ ] Held (farmer), released (both), refund issued (buyer) SMS via existing non-blocking pattern (`processCallback.ts:202-230`)

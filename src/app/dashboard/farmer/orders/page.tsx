@@ -429,6 +429,34 @@ export default function FarmerOrdersPage(): React.ReactElement {
               <p className="app-body text-app-muted">{selectedOrder.buyerPhone}</p>
             </div>
 
+            {/* Escrow status — what the buyer's payment means for the farmer */}
+            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
+              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+                <div className="flex items-start gap-3 rounded-app-control border border-app-brand-border bg-app-brand-surface p-3">
+                  <span className="app-title leading-none text-app-brand" aria-hidden>
+                    🔒
+                  </span>
+                  <p className="app-meta text-app-muted">
+                    <span className="app-body-strong text-app-ink">The buyer has paid.</span> Their{' '}
+                    <span className="app-data-m text-app-ink">
+                      KSh {selectedOrder.totalAmountKES.toLocaleString()}
+                    </span>{' '}
+                    is held in escrow and released to you once they confirm they have received this
+                    order.
+                  </p>
+                </div>
+              )}
+
+            {/* Refunded — escrow returned to the buyer by mediation */}
+            {selectedOrder.paymentStatus === OrderPaymentStatus.REFUNDED && (
+              <div className="rounded-app-control border border-app-hairline bg-app-info-surface p-3">
+                <p className="app-meta text-app-muted">
+                  <span className="app-body-strong text-app-ink">Refunded to buyer.</span> The
+                  platform returned the held funds following a mediation decision.
+                </p>
+              </div>
+            )}
+
             {/* Timeline */}
             <div>
               <p className="app-label mb-3 text-app-muted">Order progress</p>

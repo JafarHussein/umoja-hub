@@ -150,6 +150,10 @@ export default function BuyerOrdersPage(): React.ReactElement {
                     {' · '}
                     {order.farmer.firstName} {order.farmer.lastName}
                   </p>
+                  {order.paymentStatus === OrderPaymentStatus.PAID &&
+                    order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+                      <p className="app-meta text-app-brand">🔒 Payment protected in escrow</p>
+                    )}
                 </div>
 
                 {/* Right: amount + status */}

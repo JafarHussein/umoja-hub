@@ -440,6 +440,38 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </Alert>
       )}
 
+      {/* Escrow protection — buyer's money is held until they confirm receipt */}
+      {order.paymentStatus === OrderPaymentStatus.PAID &&
+        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+          <div className="flex items-start gap-3 rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
+            <span className="app-title leading-none text-app-brand" aria-hidden>
+              🔒
+            </span>
+            <div className="space-y-0.5">
+              <p className="app-body-strong text-app-ink">
+                Your payment is protected in escrow
+              </p>
+              <p className="app-meta text-app-muted">
+                The platform is holding your{' '}
+                <span className="app-data-m text-app-ink">
+                  KSh {order.totalAmountKES.toLocaleString()}
+                </span>
+                . It is released to {order.farmer.firstName} only when you confirm you have received
+                your order.
+              </p>
+            </div>
+          </div>
+        )}
+
+      {/* Refunded — escrow returned to the buyer */}
+      {order.paymentStatus === OrderPaymentStatus.REFUNDED && (
+        <Alert tone="warning">
+          <span className="app-body-strong">Payment refunded.</span> Your{' '}
+          KSh {order.totalAmountKES.toLocaleString()} has been returned following the platform&apos;s
+          mediation decision.
+        </Alert>
+      )}
+
       {/* Progress timeline */}
       <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
         <p className="app-label text-app-muted">Progress</p>
@@ -498,7 +530,8 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
           <p className="app-label text-app-muted">Confirm receipt</p>
           <p className="app-body text-app-muted">
-            Have you received your order from {order.farmer.firstName}?
+            Have you received your order from {order.farmer.firstName}? Confirming releases your
+            payment from escrow to the farmer.
           </p>
           {receiveError && <Alert tone="danger">{receiveError}</Alert>}
           <Button
