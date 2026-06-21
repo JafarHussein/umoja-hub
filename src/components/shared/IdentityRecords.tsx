@@ -42,7 +42,7 @@ function Row({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <div className="grid grid-cols-[10rem_1fr] items-center gap-4 px-4 py-3">
+    <div className="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr] sm:items-center sm:gap-4">
       <span className="app-label text-app-muted">{label}</span>
       <span className="app-body min-w-0 break-words text-app-ink">{children}</span>
     </div>
