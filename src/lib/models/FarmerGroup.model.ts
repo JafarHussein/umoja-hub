@@ -9,12 +9,16 @@ const farmerGroupSchema = new Schema(
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     memberCount: { type: Number, default: 1 },
     status: { type: String, enum: Object.values(GroupStatus), default: GroupStatus.ACTIVE },
+    // Optional NGO sponsorship (additive): the NgoOrganization supporting this
+    // cooperative, modelling the "cooperative supported by an NGO" relationship.
+    sponsoredByNgoId: { type: Schema.Types.ObjectId, ref: 'NgoOrganization' },
   },
   { timestamps: true }
 );
 
 farmerGroupSchema.index({ county: 1, status: 1 });
 farmerGroupSchema.index({ createdBy: 1 });
+farmerGroupSchema.index({ sponsoredByNgoId: 1 });
 
 farmerGroupSchema.set('toJSON', {
   transform: (_: unknown, ret: Record<string, unknown>) => {

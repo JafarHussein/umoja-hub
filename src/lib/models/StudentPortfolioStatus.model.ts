@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { StudentTier, PortfolioStrength } from '@/types';
+import { StudentTier, PortfolioStrength, PortfolioVisibility } from '@/types';
 
 export interface StudentPortfolioStatusDoc {
   studentId: mongoose.Types.ObjectId;
@@ -15,6 +15,10 @@ export interface StudentPortfolioStatusDoc {
     techStacksUsed: string[];
     reviewerInstitutions: string[];
   };
+  // Public-portfolio surface (additive): visibility gate + the slug an employer
+  // reaches the portfolio by. View count is derived from PortfolioView docs.
+  visibility: string;
+  publicSlug?: string;
   lastRecalculatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -76,6 +80,12 @@ const studentPortfolioStatusSchema = new Schema(
       techStacksUsed: [{ type: String }],
       reviewerInstitutions: [{ type: String }],
     },
+    visibility: {
+      type: String,
+      enum: Object.values(PortfolioVisibility),
+      default: PortfolioVisibility.PRIVATE,
+    },
+    publicSlug: { type: String, unique: true, sparse: true, trim: true },
     lastRecalculatedAt: { type: Date },
   },
   { timestamps: true }
@@ -83,6 +93,7 @@ const studentPortfolioStatusSchema = new Schema(
 
 studentPortfolioStatusSchema.index({ studentId: 1 }, { unique: true });
 studentPortfolioStatusSchema.index({ currentTier: 1, 'stats.verifiedProjectCount': -1 });
+studentPortfolioStatusSchema.index({ publicSlug: 1 }, { unique: true, sparse: true });
 
 studentPortfolioStatusSchema.set('toJSON', {
   transform: (_: unknown, ret: Record<string, unknown>) => {
