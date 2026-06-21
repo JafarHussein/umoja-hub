@@ -61,6 +61,7 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
   const { default: Rating } = await import('../../../src/lib/models/Rating.model');
   const { default: WithdrawalRequest } = await import('../../../src/lib/models/WithdrawalRequest.model');
   const { default: MediationRequest } = await import('../../../src/lib/models/MediationRequest.model');
+  const { default: FarmerTrustScore } = await import('../../../src/lib/models/FarmerTrustScore.model');
 
   let seq = rng.int(1000, 5000);
   let mpesa = rng.int(100000, 900000);
@@ -254,8 +255,12 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
       });
     }
 
-    // Genuine trust score from the real calculator.
+    // Genuine trust score from the real calculator. recalculate() upserts a
+    // FarmerTrustScore outside the ledger, so track it here to keep the run's
+    // manifest complete (and reset clean).
     await recalculate(String(farmer.id));
+    const trustDoc = await FarmerTrustScore.findOne({ farmerId: farmer.id }).select('_id');
+    if (trustDoc) ledger.track('FarmerTrustScore', trustDoc);
 
     // Payout requests against releasable funds (drives the admin payout queue +
     // escrow committed/available split).

@@ -10,6 +10,7 @@ import '../../src/lib/models/FarmerGroup.model';
 import '../../src/lib/models/MarketplaceListing.model';
 import '../../src/lib/models/Order.model';
 import '../../src/lib/models/EscrowEventLog.model';
+import '../../src/lib/models/FarmerTrustScore.model';
 import '../../src/lib/models/PriceHistory.model';
 import '../../src/lib/models/Rating.model';
 import '../../src/lib/models/WithdrawalRequest.model';

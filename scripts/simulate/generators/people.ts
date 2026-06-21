@@ -38,7 +38,11 @@ import {
   GroupStatus,
 } from '../../../src/types';
 
+// Run-scoped identity dedup. Cleared and pre-loaded from the DB at the start of
+// each run so generated emails/usernames never collide with seed or genuine
+// users already present (the engine only ever creates).
 const usedEmails = new Set<string>();
+const usedUsernames = new Set<string>();
 
 function fullName(p: NamePart, last: string): string {
   return `${p.name} ${last}`;
@@ -56,6 +60,20 @@ function makeEmail(first: string, last: string): string {
   return email;
 }
 
+// Valid username (3-20 chars of [a-z0-9_]), globally unique against the DB.
+function makeUsername(first: string, last: string): string {
+  let base = `${first}_${last}`.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+  if (base.length < 3) base = `${base}_user`.slice(0, 20);
+  let username = base;
+  let n = 1;
+  while (usedUsernames.has(username)) {
+    username = `${base.slice(0, 17)}_${n}`.slice(0, 20);
+    n++;
+  }
+  usedUsernames.add(username);
+  return username;
+}
+
 function makePhone(rng: { int(a: number, b: number): number }): string {
   return `+2547${rng.int(10000000, 99999999)}`;
 }
@@ -69,6 +87,16 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
   const { default: NgoOrganization } = await import('../../../src/lib/models/NgoOrganization.model');
   const { default: VerifiedSupplier } = await import('../../../src/lib/models/VerifiedSupplier.model');
   const { default: FarmerGroup } = await import('../../../src/lib/models/FarmerGroup.model');
+
+  // Pre-load existing identities so generated users never collide with seed or
+  // genuine accounts already in the database.
+  usedEmails.clear();
+  usedUsernames.clear();
+  const existingUsers = await User.find({}, 'email username').lean();
+  for (const u of existingUsers) {
+    if (u.email) usedEmails.add(u.email);
+    if (u.username) usedUsernames.add(u.username);
+  }
 
   let faceM = rng.int(0, 99);
   let faceF = rng.int(0, 99);
@@ -118,7 +146,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -166,7 +194,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -208,7 +236,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -251,7 +279,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -287,7 +315,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -333,7 +361,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -374,7 +402,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       'User',
       await createDoc(User, {
         email,
-        username: email.split('@')[0],
+        username: makeUsername(p.name, last),
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
@@ -398,16 +426,29 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
     world.employers.push(person(p, last, 'Nairobi', 'employer', user._id, joinedAt));
   }
 
-  // ---- Admin (reuse a single steward) ----
+  // ---- Admin steward ----
+  // Reuse an existing admin (e.g. the seeded platform admin) as the mediation /
+  // payout actor so escrow records reference a real steward. It is referenced,
+  // never tracked or mutated. Only create one if the platform has no admin yet.
   {
     const joinedAt = joinDate(rng, 9);
-    const email = 'admin@umojahub.co.ke';
-    if (!usedEmails.has(email)) {
-      usedEmails.add(email);
+    const existingAdmin = await User.findOne({ role: Role.ADMIN })
+      .select('_id firstName lastName county')
+      .lean();
+    if (existingAdmin) {
+      world.admin = person(
+        { name: existingAdmin.firstName ?? 'Platform', gender: 'm' },
+        existingAdmin.lastName ?? 'Steward',
+        existingAdmin.county ?? 'Nairobi',
+        'admin',
+        existingAdmin._id,
+        joinedAt
+      );
+    } else {
       const user = ledger.track(
         'User',
         await createDoc(User, {
-          email,
+          email: 'admin@umojahub.co.ke',
           username: 'admin',
           firstName: 'Platform',
           lastName: 'Steward',

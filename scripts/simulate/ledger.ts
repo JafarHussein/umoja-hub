@@ -58,8 +58,20 @@ export class Ledger {
     });
   }
 
-  // Write the full manifest and mark the run active.
-  async finalize(): Promise<void> {
+  // Persist whatever was tracked so far without marking the run complete. Called
+  // when a run throws mid-way, so the partial manifest is recorded and seed:reset
+  // can still clean exactly what was created (status stays BUILDING = interrupted).
+  async fail(error: string): Promise<void> {
+    const { default: SimulationRun } = await import('../../src/lib/models/SimulationRun.model');
+    await SimulationRun.findOneAndUpdate(
+      { runId: this.runId },
+      { $set: { counts: this.counts, entities: this.entities, notes: `interrupted: ${error}`.slice(0, 500) } }
+    );
+  }
+
+  // Write the full manifest and mark the run active. Optional narrative notes
+  // describe the discoverable stories the run produced.
+  async finalize(notes?: string): Promise<void> {
     const { default: SimulationRun } = await import('../../src/lib/models/SimulationRun.model');
     const { SimulationRunStatus } = await import('../../src/types');
     await SimulationRun.findOneAndUpdate(
@@ -70,6 +82,7 @@ export class Ledger {
           counts: this.counts,
           entities: this.entities,
           completedAt: new Date(),
+          ...(notes ? { notes } : {}),
         },
       }
     );
