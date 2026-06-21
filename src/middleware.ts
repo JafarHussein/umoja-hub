@@ -37,6 +37,9 @@ const ROLE_ROUTE_MAP: Array<{ prefix: string; role: Role }> = [
   { prefix: '/dashboard/buyer', role: Role.BUYER },
   { prefix: '/dashboard/student', role: Role.STUDENT },
   { prefix: '/dashboard/lecturer', role: Role.LECTURER },
+  { prefix: '/dashboard/ngo', role: Role.NGO },
+  { prefix: '/dashboard/employer', role: Role.EMPLOYER },
+  { prefix: '/dashboard/institution', role: Role.INSTITUTION },
   { prefix: '/dashboard/admin', role: Role.ADMIN },
   { prefix: '/api/admin', role: Role.ADMIN },
 ];
@@ -101,6 +104,12 @@ function dashboardForRole(role: Role | null): string {
       return '/dashboard/student';
     case Role.LECTURER:
       return '/dashboard/lecturer/queue';
+    case Role.NGO:
+      return '/dashboard/ngo';
+    case Role.EMPLOYER:
+      return '/dashboard/employer';
+    case Role.INSTITUTION:
+      return '/dashboard/institution';
     case Role.ADMIN:
       return '/dashboard/admin/verification-queue';
     default:
