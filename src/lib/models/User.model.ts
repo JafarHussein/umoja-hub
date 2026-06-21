@@ -7,6 +7,7 @@ import {
   StudentTier,
   OnboardingStage,
   OAuthProvider,
+  InstitutionType,
 } from '@/types';
 
 const farmerDataSchema = new Schema(
@@ -41,6 +42,9 @@ const studentDataSchema = new Schema(
     primaryInterest: { type: String },
     techStackPreferences: [{ type: String }],
     universityAffiliation: { type: String },
+    // Optional link to a first-class Institution (complements the free-text
+    // universityAffiliation above).
+    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution' },
     completedProjectCount: { type: Number, default: 0 },
     // Institutional-email verification (AUTH-05): a university-domain address,
     // confirmed via a 6-digit pin, plus the academic registration number. The
@@ -57,12 +61,49 @@ const studentDataSchema = new Schema(
 const lecturerDataSchema = new Schema(
   {
     universityAffiliation: { type: String },
+    // Optional link to a first-class Institution (complements universityAffiliation).
+    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution' },
     isVerified: { type: Boolean, default: false },
     // Onboarding identity (AUTH-05) — department, staff ID, and the Cloudinary
     // URL of a faculty credential letter for the verification queue.
     departmentAssignment: { type: String, trim: true },
     academicStaffId: { type: String, trim: true },
     facultyCredentialLetterUrl: { type: String },
+  },
+  { _id: false }
+);
+
+// NGO role-data (additive). An NGO links to its NgoOrganization profile and the
+// farmer cooperatives it sponsors are modelled via FarmerGroup.sponsoredByNgoId.
+const ngoDataSchema = new Schema(
+  {
+    organizationId: { type: Schema.Types.ObjectId, ref: 'NgoOrganization' },
+    organizationName: { type: String, trim: true },
+    focusAreas: [{ type: String }],
+    countiesServed: [{ type: String }],
+  },
+  { _id: false }
+);
+
+// Employer role-data (additive). Employers discover verified student portfolios.
+const employerDataSchema = new Schema(
+  {
+    companyName: { type: String, trim: true },
+    industry: { type: String, trim: true },
+    website: { type: String, trim: true },
+    hiringInterests: [{ type: String }],
+  },
+  { _id: false }
+);
+
+// Institution role-data (additive). An institution account administers an
+// Institution organisation that hosts students and lecturers.
+const institutionDataSchema = new Schema(
+  {
+    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution' },
+    institutionName: { type: String, trim: true },
+    institutionType: { type: String, enum: Object.values(InstitutionType) },
+    contactRole: { type: String, trim: true },
   },
   { _id: false }
 );
@@ -126,10 +167,17 @@ const userSchema = new Schema(
     // Provider-asserted at OAuth sign-in (no self-managed verification exists
     // post-AUTH-07).
     isEmailVerified: { type: Boolean, default: false },
+    // Optional presentation fields (additive) — a profile photo URL and a short
+    // self-description, shown on profile surfaces across roles.
+    profilePhotoUrl: { type: String, trim: true },
+    bio: { type: String, trim: true },
     farmerData: { type: farmerDataSchema, default: undefined },
     studentData: { type: studentDataSchema, default: undefined },
     lecturerData: { type: lecturerDataSchema, default: undefined },
     buyerData: { type: buyerDataSchema, default: undefined },
+    ngoData: { type: ngoDataSchema, default: undefined },
+    employerData: { type: employerDataSchema, default: undefined },
+    institutionData: { type: institutionDataSchema, default: undefined },
   },
   { timestamps: true }
 );
@@ -164,6 +212,8 @@ export interface IUserDocument extends Document {
   onboardingStage: string;
   oauthProvider?: string;
   isEmailVerified: boolean;
+  profilePhotoUrl?: string;
+  bio?: string;
   createdAt: Date;
   updatedAt: Date;
   farmerData?: {
@@ -184,6 +234,7 @@ export interface IUserDocument extends Document {
     primaryInterest?: string;
     techStackPreferences: string[];
     universityAffiliation?: string;
+    institutionId?: mongoose.Types.ObjectId;
     completedProjectCount: number;
     institutionalEmail?: string;
     institutionalEmailVerified: boolean;
@@ -193,6 +244,7 @@ export interface IUserDocument extends Document {
   };
   lecturerData?: {
     universityAffiliation?: string;
+    institutionId?: mongoose.Types.ObjectId;
     isVerified: boolean;
     departmentAssignment?: string;
     academicStaffId?: string;
@@ -206,6 +258,24 @@ export interface IUserDocument extends Document {
     businessRegistrationNumber?: string;
     corporatePaybill?: string;
     procurementScale?: string;
+  };
+  ngoData?: {
+    organizationId?: mongoose.Types.ObjectId;
+    organizationName?: string;
+    focusAreas: string[];
+    countiesServed: string[];
+  };
+  employerData?: {
+    companyName?: string;
+    industry?: string;
+    website?: string;
+    hiringInterests: string[];
+  };
+  institutionData?: {
+    institutionId?: mongoose.Types.ObjectId;
+    institutionName?: string;
+    institutionType?: string;
+    contactRole?: string;
   };
 }
 

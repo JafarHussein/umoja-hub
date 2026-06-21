@@ -16,6 +16,10 @@
     "test:e2e:update": "playwright test --update-snapshots",
     "test:e2e:report": "playwright show-report",
     "db:seed": "tsx scripts/seed.ts",
+    "seed:demo": "tsx scripts/simulate/cli.ts demo",
+    "seed:reset": "tsx scripts/simulate/cli.ts reset",
+    "seed:rebuild": "tsx scripts/simulate/cli.ts rebuild",
+    "seed:validate": "tsx scripts/simulate/cli.ts validate",
     "illustrations": "tsx scripts/fetch-illustrations.ts"
   },
   "dependencies": {

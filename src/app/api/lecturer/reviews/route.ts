@@ -5,8 +5,25 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { lecturerReviewSchema } from '@/lib/validation/educationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, LecturerDecision, ProjectStatus } from '@/types';
+import { Role, LecturerDecision, ProjectStatus, NotificationType } from '@/types';
+import { notify } from '@/lib/notifications/notify';
 import type { LecturerReviewDoc } from '@/lib/models/LecturerReview.model';
+
+// Student-facing copy for each lecturer decision.
+const DECISION_NOTICE: Record<string, { title: string; body: string }> = {
+  [LecturerDecision.VERIFIED]: {
+    title: 'Project verified',
+    body: 'A lecturer has verified your project. It now counts toward your portfolio.',
+  },
+  [LecturerDecision.REVISION_REQUIRED]: {
+    title: 'Revision requested',
+    body: 'A lecturer reviewed your project and requested revisions before it can be verified.',
+  },
+  [LecturerDecision.DENIED]: {
+    title: 'Project not verified',
+    body: 'A lecturer reviewed your project and did not verify it. See the feedback for details.',
+  },
+};
 
 // ---------------------------------------------------------------------------
 // POST /api/lecturer/reviews — submit a lecturer review for an engagement
@@ -211,6 +228,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       decision,
       lecturerReviewId: String(lecturerReview._id),
     });
+
+    // Notify the student of the decision (non-blocking).
+    const notice = DECISION_NOTICE[decision];
+    if (notice) {
+      void notify({
+        userId: raw.studentId,
+        type: NotificationType.REVIEW_UPDATE,
+        title: notice.title,
+        body: notice.body,
+        relatedEntity: { kind: 'ProjectEngagement', id: engagementId },
+      });
+    }
 
     // 6. Reveal the peer review only now that the decision is irreversibly
     // recorded — the detail GET withholds it to keep assessments independent.

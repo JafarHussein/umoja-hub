@@ -7,6 +7,12 @@ export enum Role {
   STUDENT = 'STUDENT',
   LECTURER = 'LECTURER',
   ADMIN = 'ADMIN',
+  // Ecosystem participants (additive). NGOs sponsor farmer cooperatives;
+  // employers discover verified student portfolios; institutions host students
+  // and lecturers. Each has a role-data sub-document on User.
+  NGO = 'NGO',
+  EMPLOYER = 'EMPLOYER',
+  INSTITUTION = 'INSTITUTION',
 }
 
 export enum UserStatus {
@@ -289,6 +295,53 @@ export enum EscrowEventType {
   HELD = 'HELD',
   RELEASED = 'RELEASED',
   REFUND_ISSUED = 'REFUND_ISSUED',
+}
+
+// ---------------------------------------------------------------------------
+// Ecosystem extensions — NGO / Employer / Institution, notifications, portfolios
+// ---------------------------------------------------------------------------
+
+export enum InstitutionType {
+  UNIVERSITY = 'UNIVERSITY',
+  COLLEGE = 'COLLEGE',
+  POLYTECHNIC = 'POLYTECHNIC',
+  TVET = 'TVET',
+}
+
+// Whether a student portfolio is reachable by its public slug (employers) or
+// private to the student.
+export enum PortfolioVisibility {
+  PRIVATE = 'PRIVATE',
+  PUBLIC = 'PUBLIC',
+}
+
+// Persisted in-app notification taxonomy. The channel records how it was also
+// delivered out-of-band (the existing fire-and-forget SMS/email), if at all.
+export enum NotificationType {
+  ORDER_UPDATE = 'ORDER_UPDATE',
+  ESCROW_UPDATE = 'ESCROW_UPDATE',
+  VERIFICATION_UPDATE = 'VERIFICATION_UPDATE',
+  PAYOUT_UPDATE = 'PAYOUT_UPDATE',
+  REVIEW_UPDATE = 'REVIEW_UPDATE',
+  PORTFOLIO_VIEW = 'PORTFOLIO_VIEW',
+  GROUP_UPDATE = 'GROUP_UPDATE',
+  SYSTEM = 'SYSTEM',
+}
+
+export enum NotificationChannel {
+  IN_APP = 'IN_APP',
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+}
+
+// Lifecycle of one ecosystem-simulation run. The SimulationRun ledger records
+// every entity a run created so a reset can delete exactly those documents and
+// never touch genuine user data.
+export enum SimulationRunStatus {
+  BUILDING = 'BUILDING',
+  ACTIVE = 'ACTIVE',
+  RESETTING = 'RESETTING',
+  RESET = 'RESET',
 }
 
 // ---------------------------------------------------------------------------

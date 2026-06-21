@@ -14,6 +14,9 @@ const DASHBOARD_BY_ROLE: Record<Role, string> = {
   STUDENT: '/dashboard/student/projects/new',
   LECTURER: '/dashboard/lecturer/reviews/pending',
   ADMIN: '/dashboard/admin/verification-queue',
+  NGO: '/dashboard/ngo',
+  EMPLOYER: '/dashboard/employer',
+  INSTITUTION: '/dashboard/institution',
 };
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -22,6 +25,9 @@ const ROLE_LABELS: Record<Role, string> = {
   STUDENT: 'Student',
   LECTURER: 'Lecturer',
   ADMIN: 'Admin',
+  NGO: 'NGO',
+  EMPLOYER: 'Employer',
+  INSTITUTION: 'Institution',
 };
 
 export default function UnauthorizedPage(): React.ReactElement {

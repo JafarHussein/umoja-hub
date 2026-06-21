@@ -7,8 +7,9 @@ import WithdrawalRequest from '@/lib/models/WithdrawalRequest.model';
 import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminPayoutDecisionSchema } from '@/lib/validation/payoutSchema';
 import { sendSMS } from '@/lib/integrations/smsService';
+import { notify } from '@/lib/notifications/notify';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, WithdrawalRequestStatus } from '@/types';
+import { Role, WithdrawalRequestStatus, NotificationType } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET  /api/admin/payout-requests — Paginated payout queue (default REQUESTED)
@@ -205,6 +206,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
             : `UmojaHub: Your payout request for ${amount} was not approved. Reason: ${note ?? 'Contact support'}.`;
 
       await sendSMS(farmer.phoneNumber, message);
+      void notify({
+        userId: String(updated.farmerId),
+        type: NotificationType.PAYOUT_UPDATE,
+        title: `Payout ${decision.toLowerCase()}`,
+        body: message.replace('UmojaHub: ', ''),
+        relatedEntity: { kind: 'WithdrawalRequest', id: withdrawalId },
+      });
     })().catch(() => {
       // sendSMS logs its own failures
     });
