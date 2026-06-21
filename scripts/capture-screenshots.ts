@@ -30,7 +30,7 @@ import { chromium, type Browser, type BrowserContext } from '@playwright/test';
 import { encode } from 'next-auth/jwt';
 import { connectDB } from '../src/lib/db';
 import User from '../src/lib/models/User.model';
-import { Role, OnboardingStage } from '../src/types';
+import { Role, OnboardingStage, ProjectStatus } from '../src/types';
 
 const BASE_URL = process.env['BASE_URL'] ?? 'http://localhost:3000';
 const OUT_DIR = path.join(process.cwd(), 'docs', 'screenshots');
@@ -50,7 +50,7 @@ const ROLE_EMAIL: Partial<Record<Role, string>> = {
 interface Shot {
   file: string;
   path: string;
-  role: Role | 'public';
+  role: Role | 'public' | 'onboarding';
   viewport?: typeof MOBILE;
 }
 
@@ -59,9 +59,10 @@ const SHOTS: Shot[] = [
   // Public surface
   { file: 'website-hero', path: '/', role: 'public' },
   { file: 'auth-login', path: '/auth/login', role: 'public' },
-  { file: 'onboarding-role-selection', path: '/onboarding/role-selection', role: 'public' },
-  { file: 'onboarding-identity', path: '/onboarding/identity-input', role: 'public' },
-  { file: 'onboarding-verification-upload', path: '/onboarding/verification-upload', role: 'public' },
+  // Onboarding needs a not-yet-onboarded session, else it redirects to login.
+  { file: 'onboarding-role-selection', path: '/onboarding/role-selection', role: 'onboarding' },
+  { file: 'onboarding-identity', path: '/onboarding/identity-input', role: 'onboarding' },
+  { file: 'onboarding-verification-upload', path: '/onboarding/verification-upload', role: 'onboarding' },
   { file: 'marketplace-feed', path: '/marketplace', role: 'public' },
   { file: 'marketplace-listing-detail', path: '/marketplace/:listingId', role: 'public' },
   { file: 'knowledge-hub', path: '/knowledge', role: 'public' },
@@ -117,13 +118,33 @@ async function resolveDynamicParams(): Promise<Record<string, string>> {
   const listing = await MarketplaceListing.findOne().select('_id').lean();
   const article = await KnowledgeArticle.findOne({ isPublished: true }).select('slug').lean();
   const portfolio = await StudentPortfolioStatus.findOne({ publicSlug: { $exists: true, $ne: null } }).select('publicSlug').lean();
-  const engagement = await ProjectEngagement.findOne().select('_id').lean();
+  // Prefer an engagement still pending lecturer review, so the review page renders
+  // the rubric rather than "already reviewed".
+  const engagement =
+    (await ProjectEngagement.findOne({ status: ProjectStatus.UNDER_LECTURER_REVIEW }).select('_id').lean()) ??
+    (await ProjectEngagement.findOne().select('_id').lean());
   return {
     ':listingId': listing ? String(listing._id) : '',
     ':articleSlug': article?.slug ?? '',
     ':portfolioSlug': portfolio?.publicSlug ?? '',
     ':engagementId': engagement ? String(engagement._id) : '',
   };
+}
+
+// A not-yet-onboarded session (role null, ROLE_SELECTION) for the onboarding funnel.
+async function mintOnboardingCookie(secret: string): Promise<string> {
+  return encode({
+    token: {
+      id: '000000000000000000000000',
+      role: null,
+      firstName: 'New',
+      onboardingStage: OnboardingStage.ROLE_SELECTION,
+      isOnboarded: false,
+      isVerified: false,
+    },
+    secret,
+    maxAge: 24 * 60 * 60,
+  });
 }
 
 async function mintCookie(role: Role, secret: string): Promise<string | null> {
@@ -172,8 +193,16 @@ async function capture(context: BrowserContext, shot: Shot, params: Record<strin
   const page = await context.newPage();
   await page.setViewportSize(shot.viewport ?? VIEWPORT);
   try {
-    await page.goto(`${BASE_URL}${url}`, { waitUntil: 'networkidle', timeout: 30_000 });
-    await page.waitForTimeout(800);
+    // Warm-up navigation compiles the route in dev; the real load then renders fast.
+    await page.goto(`${BASE_URL}${url}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.waitForTimeout(500);
+    await page.reload({ waitUntil: 'networkidle', timeout: 45_000 });
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    // Wait for client-side data fetches to resolve: loading skeletons must clear.
+    await page
+      .waitForFunction(() => document.querySelectorAll('.skeleton, .animate-pulse').length === 0, { timeout: 10_000 })
+      .catch(() => undefined);
+    await page.waitForTimeout(900);
     await page.screenshot({ path: path.join(OUT_DIR, `${shot.file}.png`), fullPage: !shot.viewport });
     logLine(`captured ${shot.file}.png`);
   } catch (err) {
@@ -202,8 +231,21 @@ async function main(): Promise<void> {
     }
     await publicCtx.close();
 
+    // Onboarding shots use a not-yet-onboarded session.
+    const onboardingShots = SHOTS.filter((s) => s.role === 'onboarding');
+    if (onboardingShots.length) {
+      const onbCtx = await browser.newContext();
+      await onbCtx.addCookies([
+        { name: 'next-auth.session-token', value: await mintOnboardingCookie(secret), domain: new URL(BASE_URL).hostname, path: '/', httpOnly: true, sameSite: 'Lax' },
+      ]);
+      for (const shot of onboardingShots) await capture(onbCtx, shot, params);
+      await onbCtx.close();
+    }
+
     // Authenticated shots, grouped per role so we mint one cookie each.
-    const roles = [...new Set(SHOTS.filter((s) => s.role !== 'public').map((s) => s.role as Role))];
+    const roles = [
+      ...new Set(SHOTS.filter((s) => s.role !== 'public' && s.role !== 'onboarding').map((s) => s.role as Role)),
+    ];
     for (const role of roles) {
       const jwe = await mintCookie(role, secret);
       if (!jwe) continue;
