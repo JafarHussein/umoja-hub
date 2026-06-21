@@ -7,6 +7,7 @@ import MediationRequest from '@/lib/models/MediationRequest.model';
 import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminMediationDecisionSchema } from '@/lib/validation/mediationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
+import { sendSMS } from '@/lib/integrations/smsService';
 import {
   Role,
   MediationRequestStatus,
@@ -208,6 +209,18 @@ async function applyEscrowOutcome(
       occurredAt: new Date(),
     });
 
+    // Notify the buyer their held funds were returned (non-blocking).
+    (async () => {
+      const { default: User } = await import('@/lib/models/User.model');
+      const buyer = await User.findById(order.buyerId).select('phoneNumber').lean();
+      if (buyer?.phoneNumber) {
+        await sendSMS(
+          buyer.phoneNumber,
+          `UmojaHub: Following mediation, your KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`
+        );
+      }
+    })().catch(() => {});
+
     logger.info('admin/mediation-requests', 'Escrow refunded to buyer', {
       requestId,
       orderId: String(order._id),
@@ -243,6 +256,18 @@ async function applyEscrowOutcome(
       ...(note !== undefined && { note }),
       occurredAt: new Date(),
     });
+
+    // Notify the farmer their held funds were released (non-blocking).
+    (async () => {
+      const { default: User } = await import('@/lib/models/User.model');
+      const farmer = await User.findById(order.farmerId).select('phoneNumber').lean();
+      if (farmer?.phoneNumber) {
+        await sendSMS(
+          farmer.phoneNumber,
+          `UmojaHub: Following mediation, KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`
+        );
+      }
+    })().catch(() => {});
 
     logger.info('admin/mediation-requests', 'Escrow released to farmer', {
       requestId,

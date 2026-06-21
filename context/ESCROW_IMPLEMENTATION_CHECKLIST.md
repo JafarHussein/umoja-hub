@@ -53,10 +53,13 @@
 - [x] Buyer order detail — escrow-protection card (held), refunded alert, confirm-receipt copy now states it releases funds
 - [x] GATE green — tsc clean, lint clean, 719 tests pass (presentation-only)
 
-## P4 — Notifications
-- [ ] Held (farmer), released (both), refund issued (buyer) SMS via existing non-blocking pattern (`processCallback.ts:202-230`)
-- [ ] Tests where mockable
-- [ ] GATE green
+## P4 — Notifications ✅ DONE 2026-06-21
+- [x] HELD — payment-confirmation SMS in `processCallback` reframed for both parties ("held in escrow / protected, released on receipt")
+- [x] RELEASED — new farmer SMS when the buyer confirms receipt (status route): funds released, available to request
+- [x] REFUND_ISSUED — new buyer SMS on admin refund (mediation route): held funds refunded
+- [x] RELEASE (admin) — new farmer SMS: funds released from escrow
+- [x] All non-blocking via the existing `sendSMS` pattern (no test mocks, consistent with the payout route)
+- [x] GATE green — tsc clean, lint clean, 719 tests pass
 
 ## P5 — Docs truth-up
 - [ ] Update `src/components/website/topics/TopicPayments.tsx` — replace "There is no escrow" copy with held-pending-receipt model (website must keep building)

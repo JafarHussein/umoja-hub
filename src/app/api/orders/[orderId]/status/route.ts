@@ -134,7 +134,7 @@ export async function PATCH(
       });
 
       // Buyer-confirmed receipt releases the held escrow funds to the farmer —
-      // append the milestone (non-blocking).
+      // append the milestone and notify the farmer (non-blocking).
       (async () => {
         try {
           const { default: EscrowEventLog } = await import('@/lib/models/EscrowEventLog.model');
@@ -149,6 +149,14 @@ export async function PATCH(
             actorRole: Role.BUYER,
             occurredAt: now,
           });
+
+          const farmer = await User.findById(order.farmerId).select('phoneNumber').lean();
+          if (farmer?.phoneNumber) {
+            await sendSMS(
+              farmer.phoneNumber,
+              `UmojaHub: ${order.orderReferenceId} confirmed received. KES ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`
+            );
+          }
         } catch (err) {
           logger.error('orders', 'Failed to write escrow RELEASED event', { requestId, orderId, err });
         }
