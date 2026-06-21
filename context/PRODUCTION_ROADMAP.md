@@ -25,13 +25,14 @@ preserved unedited.
 
 ### What changed since 2026-05-31
 
-Three programs landed between the original assessment and this re-baseline:
+Four programs landed between the original assessment and this re-baseline:
 
 1. **Corrective Actions program** — `context/CORRECTIVE_ACTIONS_CHECKLIST.md` reads **51/51 complete** (DOC-01…07, FIX-01…08, BE-01…09, AUTH-01…07, QA-01…04, UI-01…15). Closed most functional + backend gaps.
 2. **Payment simulation layer** (PR #25) — `PaymentProvider` abstraction; `PAYMENT_PROVIDER=simulation` default with a production-grade simulator; Daraja swap-in preserved (`src/lib/payments/`).
-3. **Webapp nuclear reset + Auth & Onboarding V2** — full app design-system implementation, all five role dashboards migrated, and the dual credentials/OAuth onboarding with password reset + brute-force lockout. Currently open as **PR #33** (44 commits, `MERGEABLE`).
+3. **Webapp nuclear reset + Auth & Onboarding V2** — full app design-system implementation, all five role dashboards migrated, and the dual credentials/OAuth onboarding with password reset + brute-force lockout. Merged to `main` via **PR #33**.
+4. **Escrow (Food Hub)** — ✅ **DONE, merged to `main` 2026-06-21 (PR #34**, merge commit `c83cb5d`). Farmer payout now derives from order `COMPLETED` (buyer-confirmed receipt) rather than `PAID`, closing the non-dispatch trust gap the architecture always implied. Admin RELEASE/REFUND on mediation (activates the reserved `REFUNDED`/`DISPUTED` states), append-only `EscrowEventLog`, admin escrow read-model + dashboard, farmer/buyer escrow surfaces, lifecycle SMS, and public-copy truth-up. Provider-agnostic (downstream of `processStkCallback`); no stored wallet — balances stay derived. Investigation in `context/ESCROW_ARCHITECTURE_REPORT.md`; P0–P5 checklist in `context/ESCROW_IMPLEMENTATION_CHECKLIST.md`.
 
-> **Branch caveat:** the implementation above lives on `chore/webapp-uiux-nuclear-reset` (PR #33). `main` currently holds only the design *docs* from PR #32. "DONE" below means built + tested in the open PR, not yet in `main`/production.
+> **Branch caveat:** PRs #33 and #34 are now **merged to `main`**. The app implementation (design system, five role dashboards, Auth V2) and the escrow feature are in `main`/production-track. "DONE" below means built + tested + merged.
 
 ### 31-task build order — current status
 
@@ -91,7 +92,7 @@ Three programs landed between the original assessment and this re-baseline:
 ### The TRUE remaining work
 
 **External / launch-ops (the dominant remainder):**
-1. Merge **PR #33** to `main`.
+1. ✅ **DONE** — PR #33 (app/Auth V2) and PR #34 (escrow) both merged to `main` (2026-06-21).
 2. Safaricom **Daraja production go-live** (Task 29) — the critical path; flip `PAYMENT_PROVIDER` to a Daraja provider with prod credentials.
 3. **Production domain + HTTPS** + set `NEXTAUTH_URL` / `MPESA_CALLBACK_URL` (Task 28).
 4. **Monitoring accounts**: Axiom log drain (Task 4) + UptimeRobot (Task 5).
