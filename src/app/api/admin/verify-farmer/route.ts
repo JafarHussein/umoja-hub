@@ -7,8 +7,9 @@ import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
 import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminVerifyFarmerSchema } from '@/lib/validation/farmerSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, VerificationStatus } from '@/types';
+import { Role, VerificationStatus, NotificationType } from '@/types';
 import { sendSMS } from '@/lib/integrations/smsService';
+import { notify } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
 // PATCH /api/admin/verify-farmer — Admin approves or rejects farmer verification
@@ -111,6 +112,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       sendSMS(farmer.phoneNumber, smsMessage).catch(() => {
         // Already logged inside sendSMS
       });
+      void notify({
+        userId: farmerId,
+        type: NotificationType.VERIFICATION_UPDATE,
+        title: 'Your farmer account is verified',
+        body: 'Congratulations — your verification was approved. You can now list your produce on the marketplace.',
+        relatedEntity: { kind: 'User', id: farmerId },
+      });
     } else {
       logger.info('admin', 'Farmer verification rejected', {
         requestId,
@@ -131,6 +139,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       const smsMessage = `UmojaHub: Your verification was not approved. Reason: ${rejectionReason ?? 'Please contact support'}. Re-submit with correct documents.`;
       sendSMS(farmer.phoneNumber, smsMessage).catch(() => {
         // Already logged inside sendSMS
+      });
+      void notify({
+        userId: farmerId,
+        type: NotificationType.VERIFICATION_UPDATE,
+        title: 'Verification not approved',
+        body: `Your verification was not approved. Reason: ${rejectionReason ?? 'Please contact support'}. Re-submit with correct documents.`,
+        relatedEntity: { kind: 'User', id: farmerId },
       });
     }
 

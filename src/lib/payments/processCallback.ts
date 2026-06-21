@@ -3,6 +3,7 @@ import Order from '@/lib/models/Order.model';
 import User from '@/lib/models/User.model';
 import PaymentEventLog from '@/lib/models/PaymentEventLog.model';
 import { sendSMS } from '@/lib/integrations/smsService';
+import { notify } from '@/lib/notifications/notify';
 import { logger } from '@/lib/utils';
 import { env } from '@/lib/env';
 import type { DarajaCallbackInput } from '@/lib/validation/orderSchema';
@@ -11,6 +12,7 @@ import {
   OrderFulfillmentStatus,
   ListingStatus,
   PaymentEventType,
+  NotificationType,
 } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -229,12 +231,26 @@ export async function processStkCallback(
           farmer.phoneNumber,
           `UmojaHub: New order confirmed! Order ${order.orderReferenceId} for ${order.cropName} is paid — the funds are held in escrow and released to you once the buyer confirms receipt. Please prepare for fulfillment.`
         );
+        void notify({
+          userId: order.farmerId,
+          type: NotificationType.ESCROW_UPDATE,
+          title: 'New order paid — funds held in escrow',
+          body: `Order ${order.orderReferenceId} for ${order.cropName} is paid. The funds are held in escrow and released to you once the buyer confirms receipt.`,
+          relatedEntity: { kind: 'Order', id: order._id },
+        });
       }
       if (buyer) {
         await sendSMS(
           buyer.phoneNumber,
           `UmojaHub: Payment confirmed! Your KES ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`
         );
+        void notify({
+          userId: order.buyerId,
+          type: NotificationType.ORDER_UPDATE,
+          title: 'Payment confirmed — protected in escrow',
+          body: `Your KES ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`,
+          relatedEntity: { kind: 'Order', id: order._id },
+        });
       }
     } catch (err) {
       logger.error('payments', 'SMS notification failed after payment', {

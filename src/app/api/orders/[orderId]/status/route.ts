@@ -9,8 +9,15 @@ import PriceAlert from '@/lib/models/PriceAlert.model';
 import { updateOrderStatusSchema } from '@/lib/validation/orderSchema';
 import { recalculate } from '@/lib/trust/farmerTrustCalculator';
 import { sendSMS } from '@/lib/integrations/smsService';
+import { notify } from '@/lib/notifications/notify';
 import { AppError, handleApiError, logger } from '@/lib/utils';
-import { Role, OrderPaymentStatus, OrderFulfillmentStatus, PriceHistorySource } from '@/types';
+import {
+  Role,
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+  PriceHistorySource,
+  NotificationType,
+} from '@/types';
 import User from '@/lib/models/User.model';
 
 // ---------------------------------------------------------------------------
@@ -157,6 +164,13 @@ export async function PATCH(
               `UmojaHub: ${order.orderReferenceId} confirmed received. KES ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`
             );
           }
+          void notify({
+            userId: order.farmerId,
+            type: NotificationType.ESCROW_UPDATE,
+            title: 'Funds released from escrow',
+            body: `Order ${order.orderReferenceId} was confirmed received. KES ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`,
+            relatedEntity: { kind: 'Order', id: order._id },
+          });
         } catch (err) {
           logger.error('orders', 'Failed to write escrow RELEASED event', { requestId, orderId, err });
         }
