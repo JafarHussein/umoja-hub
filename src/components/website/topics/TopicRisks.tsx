@@ -21,14 +21,16 @@ export function TopicRisks() {
 
       <Sub id="risks-buyers" title="Buyers">
         <P>
-          A buyer pays before dispatch and confirms receipt afterwards. Their strongest protections
-          are the public Trust Score — read it before ordering — and the rating they leave once the
-          order completes.
+          A buyer pays before dispatch, but the payment is held in escrow and released to the farmer
+          only when the buyer confirms receipt. Their protections are this hold, the platform
+          mediation that can refund it, the public Trust Score — read it before ordering — and the
+          rating they leave once the order completes.
         </P>
         <Limitation>
           <p>
-            There is no escrow, chargeback, or platform refund, and the formal dispute workflow is
-            not yet available. A public low rating with a comment is the buyer&rsquo;s recourse today.
+            There is no card chargeback, and the escrow is platform-custodied rather than a regulated
+            trust account: a refund is an administrator&rsquo;s mediation decision, not an automated
+            guarantee. A public low rating with a comment remains part of the buyer&rsquo;s recourse.
           </p>
         </Limitation>
       </Sub>

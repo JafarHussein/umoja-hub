@@ -61,13 +61,14 @@
 - [x] All non-blocking via the existing `sendSMS` pattern (no test mocks, consistent with the payout route)
 - [x] GATE green — tsc clean, lint clean, 719 tests pass
 
-## P5 — Docs truth-up
-- [ ] Update `src/components/website/topics/TopicPayments.tsx` — replace "There is no escrow" copy with held-pending-receipt model (website must keep building)
-- [ ] Update `context/FOOD_HUB_ECOSYSTEM_MAP.md` failure-mode note (escrow now mitigates non-dispatch financially)
-- [ ] Final full gate + `npm run build` green
-- [ ] Commit per phase already done; final review pass
+## P5 — Docs truth-up ✅ DONE 2026-06-21
+- [x] `TopicPayments.tsx` — replaced "There is no escrow" with the held-pending-receipt model; flow diagram now shows Held in escrow → Released & settled; pilot + commission limitations corrected
+- [x] `TopicRisks.tsx` — buyer section now describes escrow hold + mediation refund (dropped the stale "no escrow / dispute workflow not yet available")
+- [x] `FOOD_HUB_ECOSYSTEM_MAP.md` — non-dispatch failure mode now names escrow as the primary financial mitigation
+- [x] Final full gate — `npm run build` green, tsc clean, lint 0 errors, 719 tests pass
 
 ---
 
 ## Progress log
 - 2026-06-21 — Checklist created; decisions defaulted D1=COMPLETED, D2=EscrowEventLog, D3=decoupled. Starting P0.
+- 2026-06-21 — **ALL PHASES P0–P5 COMPLETE.** Commits on `chore/webapp-uiux-nuclear-reset`: P0 `02d34ea`, P1 `c388c09`, P2 `d922da0`, P3 `1763042`, P4 `c97d863`, P5 (this). Build green, 719 tests. Escrow feature fully implemented end-to-end and discovered from the original architecture. Open: push branch + PR for owner review.
