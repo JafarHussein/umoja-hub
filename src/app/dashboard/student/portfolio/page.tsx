@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/app';
 
 interface IPortfolioStats {
   verifiedProjectCount: number;
@@ -27,25 +27,23 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="space-y-1.5">
-          <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-36 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-surface border border-zinc-800/50 rounded-[4px] p-3 space-y-2">
-              <div className="h-3 w-16 bg-surface-raised rounded-sm animate-pulse" />
-              <div className="h-6 w-12 bg-surface-raised rounded-sm animate-pulse" />
-            </div>
-          ))}
-        </div>
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-4 w-48 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
+    <div className="max-w-4xl space-y-6">
+      <div className="skeleton h-7 w-36 rounded" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton h-20 rounded-app-card" />
+        ))}
       </div>
+      <div className="skeleton h-24 rounded-app-card" />
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-3">
+      <p className="app-label mb-1 text-app-muted">{label}</p>
+      <p className="app-data-l text-app-ink">{value}</p>
     </div>
   );
 }
@@ -91,18 +89,18 @@ export default function PortfolioPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load portfolio.</p>
-            <button
-              onClick={() => { setPageState('loading'); void fetchPortfolio(); }}
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load portfolio</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setPageState('loading');
+            void fetchPortfolio();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
@@ -110,122 +108,88 @@ export default function PortfolioPage(): React.ReactElement {
   const hasVerifiedProjects = (portfolio?.stats.verifiedProjectCount ?? 0) > 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Student · Portfolio
-            </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              My Portfolio
-            </h1>
-          </div>
-          {portfolio && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Badge label={portfolio.currentTier} />
-              <Badge variant="neutral" label={portfolio.portfolioStrength} />
-            </div>
-          )}
-        </div>
-
-        {/* Stat grid */}
+    <div className="max-w-4xl space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="app-h1 text-app-ink">My Portfolio</h1>
         {portfolio && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                Verified
-              </p>
-              <p className="text-t2 font-heading font-semibold text-fg tabular-nums">
-                {portfolio.stats.verifiedProjectCount}
-              </p>
-            </div>
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                Total
-              </p>
-              <p className="text-t2 font-heading font-semibold text-fg tabular-nums">
-                {portfolio.stats.totalProjectCount}
-              </p>
-            </div>
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                Avg score
-              </p>
-              <p className="text-t2 font-heading font-semibold text-fg tabular-nums">
-                {portfolio.stats.averageScore > 0
-                  ? portfolio.stats.averageScore.toFixed(1)
-                  : '—'}
-              </p>
-            </div>
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                Tech stacks
-              </p>
-              <p className="text-t2 font-heading font-semibold text-fg tabular-nums">
-                {portfolio.stats.techStacksUsed.length}
-              </p>
-            </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <span className="app-label inline-flex items-center rounded-app-pill bg-app-brand-surface px-2 py-0.5 capitalize text-app-brand">
+              {portfolio.currentTier.replace(/_/g, ' ').toLowerCase()}
+            </span>
+            <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
+              {portfolio.portfolioStrength.replace(/_/g, ' ').toLowerCase()}
+            </span>
           </div>
-        )}
-
-        {/* Tech stack tags */}
-        {portfolio && portfolio.stats.techStacksUsed.length > 0 && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Skills used
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {portfolio.stats.techStacksUsed.map((tech) => (
-                <span
-                  key={tech}
-                  className="text-t6 font-mono text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
-                >
-                  {tech}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Verified projects */}
-        {!hasVerifiedProjects ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">No verified projects yet</p>
-            <p className="text-t5 font-body text-fg-disabled mt-1">
-              Complete a project and receive a VERIFIED decision from a lecturer to build your portfolio.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/50">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Verified projects
-              </p>
-            </div>
-            <div className="px-4 py-3">
-              <p className="text-t5 font-body text-fg-muted">
-                {portfolio!.stats.verifiedProjectCount} project
-                {portfolio!.stats.verifiedProjectCount !== 1 ? 's' : ''} verified
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Last recalculated timestamp */}
-        {portfolio?.lastRecalculatedAt && (
-          <p className="font-mono text-t6 text-fg-disabled">
-            Last updated{' '}
-            {new Date(portfolio.lastRecalculatedAt).toLocaleDateString('en-KE', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </p>
         )}
       </div>
+
+      {/* Stat grid */}
+      {portfolio && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Verified" value={portfolio.stats.verifiedProjectCount} />
+          <StatCard label="Total" value={portfolio.stats.totalProjectCount} />
+          <StatCard
+            label="Avg score"
+            value={
+              portfolio.stats.averageScore > 0 ? portfolio.stats.averageScore.toFixed(1) : '—'
+            }
+          />
+          <StatCard label="Tech stacks" value={portfolio.stats.techStacksUsed.length} />
+        </div>
+      )}
+
+      {/* Tech stack tags */}
+      {portfolio && portfolio.stats.techStacksUsed.length > 0 && (
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label text-app-muted">Skills used</p>
+          <div className="flex flex-wrap gap-1.5">
+            {portfolio.stats.techStacksUsed.map((tech) => (
+              <span
+                key={tech}
+                className="app-label rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-0.5 text-app-muted"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Verified projects */}
+      {!hasVerifiedProjects ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">No verified projects yet</p>
+          <p className="app-meta mt-1 text-app-faint">
+            Complete a project and receive a VERIFIED decision from a lecturer to build your
+            portfolio.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+          <div className="border-b border-app-hairline px-4 py-3">
+            <p className="app-label text-app-muted">Verified projects</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="app-body text-app-muted">
+              {portfolio!.stats.verifiedProjectCount} project
+              {portfolio!.stats.verifiedProjectCount !== 1 ? 's' : ''} verified
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Last recalculated timestamp */}
+      {portfolio?.lastRecalculatedAt && (
+        <p className="app-meta text-app-faint">
+          Last updated{' '}
+          {new Date(portfolio.lastRecalculatedAt).toLocaleDateString('en-KE', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </p>
+      )}
     </div>
   );
 }

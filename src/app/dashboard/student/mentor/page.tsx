@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, ProjectTrack } from '@/types';
+import { Button } from '@/components/app';
 import { MentorChat } from '@/components/education/MentorChat';
 
 interface IEngagementRef {
@@ -17,29 +18,9 @@ type PageState = 'loading' | 'ready' | 'no_engagement' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="space-y-1.5">
-          <div className="h-3 w-20 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-36 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-800/50 space-y-2">
-            <div className="h-5 w-24 bg-surface-raised rounded-sm animate-pulse" />
-            <div className="h-3 w-48 bg-surface-raised rounded-sm animate-pulse" />
-          </div>
-          <div className="p-6 space-y-4 min-h-[400px]">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className="h-12 rounded-sm bg-surface-raised animate-pulse"
-                  style={{ width: `${40 + i * 15}%` }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="skeleton h-7 w-36 rounded" />
+      <div className="skeleton h-[480px] rounded-app-card" />
     </div>
   );
 }
@@ -89,46 +70,35 @@ export default function MentorPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load mentor.</p>
-            <button
-              onClick={() => { setPageState('loading'); void fetchEngagement(); }}
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load mentor</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setPageState('loading');
+            void fetchEngagement();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
 
   if (pageState === 'no_engagement' || !engagement) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Student · AI Mentor
-            </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              AI Mentor
-            </h1>
-          </div>
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">No active project</p>
-            <p className="text-t5 font-body text-fg-disabled mt-1">
-              Start a project to unlock the AI mentor.
-            </p>
-            <Link
-              href="/dashboard/student/projects/new"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              Start new project →
-            </Link>
-          </div>
+      <div className="mx-auto max-w-3xl space-y-6">
+        <h1 className="app-h1 text-app-ink">AI Mentor</h1>
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">No active project</p>
+          <p className="app-meta mt-1 text-app-faint">Start a project to unlock the AI mentor.</p>
+          <Link
+            href="/dashboard/student/projects/new"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+          >
+            Start new project →
+          </Link>
         </div>
       </div>
     );
@@ -140,32 +110,24 @@ export default function MentorPage(): React.ReactElement {
       : ((engagement.brief as { repoName?: string }).repoName ?? 'Your project');
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-            Student · AI Mentor
-          </p>
-          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-            AI Mentor
-          </h1>
-        </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <h1 className="app-h1 text-app-ink">AI Mentor</h1>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-surface-raised border border-zinc-800/50 rounded-sm">
-          <span className="font-mono text-t6 text-fg-disabled">AI</span>
-          <span className="font-body text-t6 text-fg-disabled">
-            Groq Llama 3 · Socratic guidance · Engagement-scoped
-          </span>
-        </div>
-
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-          <MentorChat engagementId={engagement._id} briefTitle={briefTitle} />
-        </div>
-
-        <p className="font-body text-t6 text-fg-disabled">
-          The AI mentor guides your thinking without solving problems for you. It is scoped to your current project and maintains conversation history for 30 days.
-        </p>
+      <div className="inline-flex items-center gap-2 rounded-app-pill border border-app-hairline bg-app-sunken px-3 py-1">
+        <span className="app-label text-app-muted">AI</span>
+        <span className="app-meta text-app-muted">
+          Groq Llama 3 · Socratic guidance · Engagement-scoped
+        </span>
       </div>
+
+      <div className="overflow-hidden rounded-app-card border border-app-hairline">
+        <MentorChat engagementId={engagement._id} briefTitle={briefTitle} />
+      </div>
+
+      <p className="app-meta text-app-faint">
+        The AI mentor guides your thinking without solving problems for you. It is scoped to your
+        current project and maintains conversation history for 30 days.
+      </p>
     </div>
   );
 }

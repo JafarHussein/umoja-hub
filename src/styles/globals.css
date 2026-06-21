@@ -149,6 +149,107 @@
     --info: var(--c-info-700);
   }
 
+  /* ════════════════════════════════════════════════════════════════════
+   * APP DESIGN SYSTEM — code mirror of webapp-reset/DESIGN_SYSTEM_V1.md
+   * (Phase 6, ratified 2026-06-19). The new research-driven app token set,
+   * mirrored from Figma "App Color"/"App Radius" collections. Namespaced
+   * (`--app-*`) and consumed via the isolated Tailwind `app` group
+   * (bg-app-canvas, text-app-ink, …) so it NEVER collides with the live
+   * website tokens above — app and website stay separate (DS doc principle).
+   *
+   * Two-tier (semantic only; no app primitive layer — palette is small).
+   * Values are space-separated RGB triplets for Tailwind `<alpha-value>`.
+   * Light is the base; `.dark` / `[data-theme="dark"]` flips to the dark
+   * value-map. Applied via class="theme-app" on app route roots when the
+   * dashboard/auth/onboarding components are rebuilt (later phase).
+   * Contrast: core AA-clean; see DS doc "Contrast audit". ════════════════ */
+  .theme-app {
+    /* Surfaces */
+    --app-canvas: 247 246 242; /* bg/canvas  #F7F6F2 */
+    --app-card: 255 255 255; /* bg/card    #FFFFFF */
+    --app-sunken: 238 237 231; /* bg/sunken  #EEEDE7 */
+
+    /* Borders */
+    --app-hairline: 228 226 218; /* border/hairline #E4E2DA */
+    --app-border-strong: 205 202 192; /* border/strong   #CDCAC0 */
+
+    /* Text ramp (ink → body → muted → faint) */
+    --app-ink: 28 27 23; /* text/ink   #1C1B17 */
+    --app-body: 69 67 59; /* text/body  #45433B */
+    --app-muted: 110 107 97; /* text/muted #6E6B61 */
+    --app-faint: 151 147 138; /* text/faint #97938A (placeholder/disabled/large only) */
+
+    /* Brand (deep shamba green — brand + verified + proceed) */
+    --app-brand: 30 92 69; /* brand          #1E5C45 */
+    --app-brand-hover: 24 76 57; /* brand/hover    #184C39 */
+    --app-brand-surface: 232 240 235; /* brand/surface  #E8F0EB */
+    --app-brand-border: 191 214 200; /* brand/border   #BFD6C8 */
+    --app-on-brand: 255 255 255; /* text/on-brand  #FFFFFF (ink on brand/danger fills) */
+
+    /* Murram — warm accent (illustration/highlight, never CTA) */
+    --app-murram: 181 99 31; /* murram         #B5631F */
+    --app-murram-surface: 246 236 224; /* murram/surface #F6ECE0 */
+
+    /* State (success == brand; always paired with icon + shape + text) */
+    --app-success: 30 92 69; /* success          #1E5C45 */
+    --app-success-surface: 232 240 235; /* success/surface  #E8F0EB */
+    --app-warning: 154 91 18; /* warning          #9A5B12 */
+    --app-warning-surface: 247 236 221; /* warning/surface  #F7ECDD */
+    --app-danger: 165 42 31; /* danger           #A52A1F */
+    --app-danger-surface: 247 230 227; /* danger/surface   #F7E6E3 */
+    --app-info: 44 90 115; /* info             #2C5A73 */
+    --app-info-surface: 230 237 241; /* info/surface     #E6EDF1 */
+
+    /* Focus ring */
+    --app-ring: 30 92 69; /* focus/ring #1E5C45 */
+
+    /* Radius (App Radius collection) */
+    --app-radius-card: 10px;
+    --app-radius-control: 8px;
+    --app-radius-pill: 999px;
+    --app-radius-cell: 6px;
+
+    /* Convenience defaults for bare app containers (scoped; opt-out via utilities) */
+    background-color: rgb(var(--app-canvas));
+    color: rgb(var(--app-body));
+  }
+
+  /* Dark value-map — parallel mapping, no pure #000/#fff (DS doc §Color). */
+  .theme-app.dark,
+  .theme-app[data-theme='dark'] {
+    --app-canvas: 21 20 15; /* #15140F */
+    --app-card: 30 28 22; /* #1E1C16 */
+    --app-sunken: 16 15 11; /* #100F0B */
+
+    --app-hairline: 50 47 38; /* #322F26 */
+    --app-border-strong: 74 70 58; /* #4A463A */
+
+    --app-ink: 243 241 234; /* #F3F1EA */
+    --app-body: 207 203 190; /* #CFCBBE */
+    --app-muted: 152 148 138; /* #98948A */
+    --app-faint: 124 120 110; /* #7C786E */
+
+    --app-brand: 95 184 147; /* #5FB893 */
+    --app-brand-hover: 84 164 131; /* #54A483 */
+    --app-brand-surface: 28 58 46; /* #1C3A2E */
+    --app-brand-border: 46 90 69; /* #2E5A45 */
+    --app-on-brand: 21 20 15; /* #15140F */
+
+    --app-murram: 217 138 69; /* #D98A45 */
+    --app-murram-surface: 58 42 27; /* #3A2A1B */
+
+    --app-success: 95 184 147; /* #5FB893 */
+    --app-success-surface: 28 58 46; /* #1C3A2E */
+    --app-warning: 217 154 60; /* #D99A3C */
+    --app-warning-surface: 58 44 24; /* #3A2C18 */
+    --app-danger: 226 122 110; /* #E27A6E */
+    --app-danger-surface: 58 32 28; /* #3A201C */
+    --app-info: 111 163 192; /* #6FA3C0 */
+    --app-info-surface: 27 44 54; /* #1B2C36 */
+
+    --app-ring: 95 184 147; /* #5FB893 */
+  }
+
   /* Legacy compatibility layer removed in Visual System V1 P5 — all dashboard
    * surfaces were migrated from the --color-* / --text-t* / --space-* /
    * --radius-* / motion aliases to the TIER 2 semantic tokens above. */
@@ -174,6 +275,91 @@ body {
   font-size: 16px;
   line-height: 1.5;
   min-height: 100vh;
+}
+
+/* APP design system type ramp (Phase 6, mirror of HIFI_VISUAL_LANGUAGE_V1 §1).
+ * Exposed as utility classes (not Tailwind fontSize) to avoid a text-app-body
+ * collision with the app/body color token. Typography only — colour is applied
+ * separately via text-app-ink / text-app-body / … . Hanken Grotesk for UI,
+ * Spline Sans Mono (tabular) for data/figures. Weights are exact (variable
+ * fonts). Pair these with the app colour utilities under .theme-app. */
+@layer components {
+  .app-display {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 30px;
+    line-height: 36px;
+    font-weight: 700;
+  }
+  .app-h1 {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 23px;
+    line-height: 30px;
+    font-weight: 700;
+  }
+  .app-h2 {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 650;
+  }
+  .app-title {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 650;
+  }
+  .app-body {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 14.5px;
+    line-height: 22px;
+    font-weight: 450;
+  }
+  .app-body-strong {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 14.5px;
+    line-height: 22px;
+    font-weight: 600;
+  }
+  .app-label {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 12.5px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .app-meta {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 12.5px;
+    line-height: 16px;
+    font-weight: 450;
+  }
+  .app-nav {
+    font-family: var(--font-hanken), sans-serif;
+    font-size: 13.5px;
+    line-height: 20px;
+    font-weight: 550;
+  }
+  .app-data-xl {
+    font-family: var(--font-spline-mono), monospace;
+    font-size: 30px;
+    line-height: 34px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .app-data-l {
+    font-family: var(--font-spline-mono), monospace;
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 550;
+    font-variant-numeric: tabular-nums;
+  }
+  .app-data-m {
+    font-family: var(--font-spline-mono), monospace;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 450;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* Skeleton shimmer utility */

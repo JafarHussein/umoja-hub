@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/app';
 import { Role } from '@/types';
 
 interface ISummary {
@@ -57,25 +58,35 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
   }, [status, session, router, fetchSummary]);
 
   if (status === 'loading' || pageState === 'loading') {
-    return <p className="p-4">Loading...</p>;
+    return (
+      <div className="space-y-6">
+        <div className="skeleton h-7 w-44 rounded" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="skeleton h-20 rounded-app-card" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (pageState === 'error') {
     return (
-      <div className="p-4 flex flex-col gap-2">
-        <p>Failed to load impact summary.</p>
-        <button type="button" onClick={() => void fetchSummary()}>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load impact summary</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button variant="secondary" onClick={() => void fetchSummary()}>
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
 
   if (!summary) {
     return (
-      <div className="p-4 flex flex-col gap-2">
-        <h1 className="text-base font-semibold">Impact Summary</h1>
-        <p className="text-sm text-gray-500">
+      <div className="space-y-2">
+        <h1 className="app-h1 text-app-ink">Impact Summary</h1>
+        <p className="app-body text-app-muted">
           No snapshot yet. Run the impact-summary cron to generate the first record.
         </p>
       </div>
@@ -88,10 +99,7 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
     { label: 'Total buyers', value: summary.totalBuyers.toLocaleString() },
     { label: 'Total orders placed', value: summary.totalOrders.toLocaleString() },
     { label: 'Completed orders', value: summary.completedOrders.toLocaleString() },
-    {
-      label: 'Revenue facilitated',
-      value: `KES ${summary.totalRevenueKES.toLocaleString()}`,
-    },
+    { label: 'Revenue facilitated', value: `KES ${summary.totalRevenueKES.toLocaleString()}` },
     { label: 'Counties active', value: summary.countiesCovered.toLocaleString() },
   ];
 
@@ -102,17 +110,20 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-base font-semibold">Impact Summary</h1>
-        <p className="text-xs text-gray-500">Last updated: {generatedAt}</p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="app-h1 text-app-ink">Impact Summary</h1>
+        <p className="app-meta mt-1 text-app-faint">Last updated: {generatedAt}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {metrics.map(({ label, value }) => (
-          <div key={label} className="border border-gray-300 p-3 flex flex-col gap-1">
-            <span className="text-xs text-gray-500">{label}</span>
-            <span className="text-xl font-semibold tabular-nums">{value}</span>
+          <div
+            key={label}
+            className="flex flex-col gap-1 rounded-app-card border border-app-hairline bg-app-card p-3"
+          >
+            <span className="app-label text-app-faint">{label}</span>
+            <span className="app-data-l text-app-ink">{value}</span>
           </div>
         ))}
       </div>

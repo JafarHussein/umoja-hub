@@ -3,10 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { Input } from '@/components/ui/Input';
-import { Modal } from '@/components/ui/Modal';
+import { Button, Input, Modal, Table, THead, TH, TR, TD } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Role, OrderFulfillmentStatus, WithdrawalRequestStatus } from '@/types';
 
@@ -38,15 +36,65 @@ interface IPayoutRequest {
 
 type PageState = 'loading' | 'ready' | 'error';
 
-const STATUS_VARIANT: Record<WithdrawalRequestStatus, BadgeVariant> = {
-  [WithdrawalRequestStatus.REQUESTED]: 'warning',
-  [WithdrawalRequestStatus.APPROVED]: 'success',
-  [WithdrawalRequestStatus.PAID]: 'success',
-  [WithdrawalRequestStatus.REJECTED]: 'error',
+// Withdrawal-request status pill — app design-system tinted pill (state conveyed
+// by icon + text + tint, never colour alone). REQUESTED is an attention state.
+const REQUEST_PILL: Record<
+  WithdrawalRequestStatus,
+  { label: string; glyph: string; wrap: string; text: string }
+> = {
+  [WithdrawalRequestStatus.REQUESTED]: {
+    label: 'Requested',
+    glyph: '◷',
+    wrap: 'bg-app-warning-surface',
+    text: 'text-app-warning',
+  },
+  [WithdrawalRequestStatus.APPROVED]: {
+    label: 'Approved',
+    glyph: '✓',
+    wrap: 'bg-app-success-surface',
+    text: 'text-app-success',
+  },
+  [WithdrawalRequestStatus.PAID]: {
+    label: 'Paid',
+    glyph: '✓',
+    wrap: 'bg-app-success-surface',
+    text: 'text-app-success',
+  },
+  [WithdrawalRequestStatus.REJECTED]: {
+    label: 'Rejected',
+    glyph: '⊘',
+    wrap: 'bg-app-danger-surface',
+    text: 'text-app-danger',
+  },
 };
 
+function RequestPill({ status }: { status: WithdrawalRequestStatus }): React.ReactElement {
+  const p = REQUEST_PILL[status];
+  return (
+    <span
+      className={cn(
+        'app-label inline-flex items-center gap-1 rounded-app-pill px-2 py-0.5',
+        p.wrap,
+        p.text
+      )}
+    >
+      <span aria-hidden>{p.glyph}</span>
+      {p.label}
+    </span>
+  );
+}
+
+// Neutral fulfillment-status pill — informational, not a trust signal.
+function FulfillmentPill({ status }: { status: OrderFulfillmentStatus }): React.ReactElement {
+  return (
+    <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted">
+      {status.replace(/_/g, ' ').toLowerCase()}
+    </span>
+  );
+}
+
 function formatKES(amount: number): string {
-  return `KES ${amount.toLocaleString()}`;
+  return `KSh ${amount.toLocaleString()}`;
 }
 
 function formatDate(iso?: string | null): string {
@@ -167,12 +215,8 @@ export default function FarmerLedgerPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load your settlement ledger
-        </p>
-        <p className="text-t5 font-body text-fg-muted mb-4">
-          Check your connection and try again.
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load your settlement ledger</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchData()}>
           Retry
         </Button>
@@ -185,165 +229,148 @@ export default function FarmerLedgerPage(): React.ReactElement {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-t2 font-heading font-semibold text-fg">Settlement</h1>
-          <p className="text-t5 font-body text-fg-muted mt-0.5">
+          <h1 className="app-h1 text-app-ink">Settlement</h1>
+          <p className="app-meta mt-0.5 max-w-prose text-app-muted">
             Funds the platform has received on your behalf. Payouts are released manually after
             review — there is no automated disbursement.
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={!canRequest}
-          onClick={openForm}
-          aria-label="Request a payout"
-        >
+        <Button size="sm" disabled={!canRequest} onClick={openForm} aria-label="Request a payout">
           Request Payout
         </Button>
       </div>
 
       {/* Balance summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-surface border border-white/5 rounded p-4">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-            Received by platform
-          </p>
-          <p className="text-t2 font-mono text-fg">
-            {formatKES(balance?.grossReceivedKES ?? 0)}
-          </p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label mb-2 text-app-muted">Received by platform</p>
+          <p className="app-data-l text-app-ink">{formatKES(balance?.grossReceivedKES ?? 0)}</p>
         </div>
-        <div className="bg-surface border border-white/5 rounded p-4">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-            Committed to payouts
-          </p>
-          <p className="text-t2 font-mono text-fg">
-            {formatKES(balance?.committedPayoutsKES ?? 0)}
-          </p>
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label mb-2 text-app-muted">Committed to payouts</p>
+          <p className="app-data-l text-app-ink">{formatKES(balance?.committedPayoutsKES ?? 0)}</p>
         </div>
-        <div className="bg-surface border border-brand/30 rounded p-4">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-            Available to request
-          </p>
-          <p className="text-t2 font-mono text-brand">{formatKES(availableKES)}</p>
+        <div className="rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
+          <p className="app-label mb-2 text-app-muted">Available to request</p>
+          <p className="app-data-l text-app-brand">{formatKES(availableKES)}</p>
         </div>
       </div>
 
       {hasOpenRequest && (
-        <p className="text-t6 font-body text-fg-muted">
+        <p className="app-meta text-app-muted">
           You have a payout request awaiting review. You can file another once it is resolved.
         </p>
       )}
 
       {/* Payout request history */}
       <section className="space-y-3">
-        <h2 className="text-t3 font-heading font-medium text-fg">Payout requests</h2>
+        <h2 className="app-h2 text-app-ink">Payout requests</h2>
         {requests.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
-            <p className="text-t5 font-body text-fg-muted">No payout requests yet.</p>
+          <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
+            <p className="app-body text-app-muted">No payout requests yet.</p>
           </div>
         ) : (
-          <div className="bg-surface border border-white/5 rounded overflow-hidden">
-            <div className="grid grid-cols-[auto_auto_1fr_auto] gap-4 px-4 py-3 border-b border-white/5">
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Amount
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Status
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Note
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
-                Requested
-              </span>
-            </div>
-            {requests.map((req) => (
-              <div
-                key={req._id}
-                className="grid grid-cols-[auto_auto_1fr_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
-              >
-                <span className="text-t5 font-mono text-fg whitespace-nowrap">
-                  {formatKES(req.amountKES)}
-                </span>
-                <Badge variant={STATUS_VARIANT[req.status]} label={req.status} />
-                <span className="text-t6 font-body text-fg-muted min-w-0 truncate">
-                  {req.note ?? '—'}
-                </span>
-                <span className="text-t6 font-body text-fg-disabled text-right whitespace-nowrap">
-                  {formatDate(req.createdAt)}
-                </span>
-              </div>
-            ))}
-          </div>
+          <Table>
+            <THead>
+              <TH>Amount</TH>
+              <TH>Status</TH>
+              <TH>Note</TH>
+              <TH className="text-right">Requested</TH>
+            </THead>
+            <tbody>
+              {requests.map((req) => (
+                <TR key={req._id}>
+                  <TD className="whitespace-nowrap">
+                    <span className="app-data-m text-app-ink">{formatKES(req.amountKES)}</span>
+                  </TD>
+                  <TD>
+                    <RequestPill status={req.status} />
+                  </TD>
+                  <TD className="max-w-0">
+                    <span className="block truncate text-app-muted">{req.note ?? '—'}</span>
+                  </TD>
+                  <TD className="whitespace-nowrap text-right">
+                    <span className="app-meta text-app-muted">{formatDate(req.createdAt)}</span>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
         )}
       </section>
 
       {/* Settlement ledger — PAID-order line items */}
       <section className="space-y-3">
-        <h2 className="text-t3 font-heading font-medium text-fg">Payments received</h2>
-        <p className="text-t6 font-body text-fg-muted">
+        <h2 className="app-h2 text-app-ink">Payments received</h2>
+        <p className="app-meta text-app-muted">
           Each payment below has been received by the platform — payout pending until you request
           settlement and an administrator releases it.
         </p>
         {lineItems.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
-            <p className="text-t5 font-body text-fg-muted">No payments received yet.</p>
+          <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
+            <p className="app-body text-app-muted">No payments received yet.</p>
           </div>
         ) : (
-          <div className="bg-surface border border-white/5 rounded overflow-hidden">
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Ref
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Item
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
-                Amount
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Fulfillment
-              </span>
-              <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
-                Received
-              </span>
-            </div>
-            {lineItems.map((item) => (
-              <div
-                key={item.orderId}
-                className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
-              >
-                <span className="text-t6 font-mono text-fg-disabled whitespace-nowrap">
-                  {item.orderReferenceId}
-                </span>
-                <p className="text-t5 font-body text-fg capitalize min-w-0 truncate">
-                  {item.cropName}{' '}
-                  <span className="font-normal text-fg-muted">
-                    · {item.quantityOrdered} {item.unit.toLowerCase()}
-                  </span>
-                </p>
-                <span className="text-t5 font-mono text-fg text-right whitespace-nowrap">
-                  {formatKES(item.amountKES)}
-                </span>
-                <Badge variant="neutral" label={item.fulfillmentStatus} />
-                <span className="text-t6 font-body text-fg-disabled text-right whitespace-nowrap">
-                  {formatDate(item.paidAt)}
-                </span>
-              </div>
-            ))}
-          </div>
+          <Table>
+            <THead>
+              <TH>Ref</TH>
+              <TH>Item</TH>
+              <TH className="text-right">Amount</TH>
+              <TH>Fulfillment</TH>
+              <TH className="text-right">Received</TH>
+            </THead>
+            <tbody>
+              {lineItems.map((item) => (
+                <TR key={item.orderId}>
+                  <TD className="whitespace-nowrap">
+                    <span className="app-data-m text-app-muted">{item.orderReferenceId}</span>
+                  </TD>
+                  <TD className="max-w-0">
+                    <p className="app-body-strong truncate capitalize text-app-ink">
+                      {item.cropName}{' '}
+                      <span className="app-body font-normal text-app-muted">
+                        · {item.quantityOrdered} {item.unit.toLowerCase()}
+                      </span>
+                    </p>
+                  </TD>
+                  <TD className="whitespace-nowrap text-right">
+                    <span className="app-data-m text-app-ink">{formatKES(item.amountKES)}</span>
+                  </TD>
+                  <TD>
+                    <FulfillmentPill status={item.fulfillmentStatus} />
+                  </TD>
+                  <TD className="whitespace-nowrap text-right">
+                    <span className="app-meta text-app-muted">{formatDate(item.paidAt)}</span>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
         )}
       </section>
 
       {/* Payout request modal */}
       <Modal
-        isOpen={showForm}
+        open={showForm}
         onClose={() => setShowForm(false)}
         title="Request Payout"
-        description="Payouts are released manually by an administrator after review. There is no automated disbursement."
-        size="sm"
+        className="max-w-sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" isLoading={submitting} onClick={() => void submitPayout()}>
+              Submit Request
+            </Button>
+          </>
+        }
       >
         <div className="space-y-4">
+          <p className="app-meta text-app-muted">
+            Payouts are released manually by an administrator after review. There is no automated
+            disbursement.
+          </p>
           <Input
             type="number"
             label="Amount (KES)"
@@ -356,19 +383,6 @@ export default function FarmerLedgerPage(): React.ReactElement {
             hint={`Available: ${formatKES(availableKES)}`}
             aria-label="Payout amount in KES"
           />
-          <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              isLoading={submitting}
-              onClick={() => void submitPayout()}
-            >
-              Submit Request
-            </Button>
-          </div>
         </div>
       </Modal>
     </div>

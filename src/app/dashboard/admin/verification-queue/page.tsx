@@ -3,11 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/Badge';
-import { ConfirmModal, Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
-import { ListSkeleton } from '@/components/ui/SkeletonLoader';
+import { Button, Modal, Input, Table, THead, TH, TR, TD } from '@/components/app';
 import { Role, DocumentType, VerificationStatus } from '@/types';
 
 interface IVerificationDocument {
@@ -45,6 +41,16 @@ type ActionModal =
   | { type: 'reject'; farmer: IPendingFarmer }
   | { type: 'detail'; farmer: IPendingFarmer }
   | null;
+
+// Key/value tile inside the detail modal.
+function DetailTile({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="rounded-app-control bg-app-sunken p-3">
+      <p className="app-label mb-1 text-app-muted">{label}</p>
+      <p className="app-body text-app-ink">{children}</p>
+    </div>
+  );
+}
 
 export default function AdminVerificationQueuePage(): React.ReactElement {
   const { data: session, status } = useSession();
@@ -142,8 +148,8 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
   if (status === 'loading' || pageState === 'loading') {
     return (
       <div className="space-y-6">
-        <div className="skeleton h-6 w-48 rounded" />
-        <ListSkeleton rows={5} />
+        <div className="skeleton h-7 w-48 rounded" />
+        <div className="skeleton h-64 rounded-app-card" />
       </div>
     );
   }
@@ -152,12 +158,8 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load verification queue
-        </p>
-        <p className="text-t5 font-body text-fg-muted mb-4">
-          Check your connection and try again.
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load verification queue</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchQueue()}>
           Retry
         </Button>
@@ -174,177 +176,147 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-fg">
-          Verification queue
-        </h1>
-        <p className="text-t5 font-body text-fg-muted mt-0.5">
+        <h1 className="app-h1 text-app-ink">Verification queue</h1>
+        <p className="app-body mt-1 text-app-muted">
           {total} pending verification{total !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Empty state */}
       {farmers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface">
-          <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              aria-hidden="true"
-            >
+        <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-16 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path
                 d="M3 8L7 12L17 4"
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-brand"
+                className="text-app-brand"
               />
             </svg>
           </div>
-          <p className="text-t4 font-body font-medium text-fg mb-1">
-            Queue is clear
-          </p>
-          <p className="text-t5 font-body text-fg-muted">
+          <p className="app-body-strong mb-1 text-app-ink">Queue is clear</p>
+          <p className="app-body text-app-muted">
             All farmer verification requests have been reviewed.
           </p>
         </div>
       ) : (
         /* Queue table */
-        <div className="bg-surface border border-white/5 rounded overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Farmer
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              County
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Document
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Submitted
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Actions
-            </span>
-          </div>
-
-          {farmers.map((farmer) => (
-            <div
-              key={farmer._id}
-              className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
-            >
-              {/* Farmer name + crops */}
-              <div className="min-w-0">
-                <p className="text-t5 font-body font-medium text-fg">
-                  {farmer.firstName} {farmer.lastName}
-                </p>
-                <p className="text-t6 font-body text-fg-disabled truncate">
-                  {farmer.farmerData.cropsGrown.join(', ')}
-                </p>
-              </div>
-
-              {/* County */}
-              <span className="text-t5 font-body text-fg-muted">{farmer.county}</span>
-
-              {/* Document type */}
-              <span className="text-t6 font-mono text-fg-muted">
-                {farmer.farmerData.verificationDocument
-                  ? docTypeLabel(farmer.farmerData.verificationDocument.documentType)
-                  : '—'}
-              </span>
-
-              {/* Submission date */}
-              <span className="text-t6 font-body text-fg-disabled">
-                {farmer.farmerData.verificationDocument
-                  ? formatDate(farmer.farmerData.verificationDocument.submittedAt)
-                  : formatDate(farmer.createdAt)}
-              </span>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveModal({ type: 'detail', farmer })}
-                >
-                  Review
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setActiveModal({ type: 'approve', farmer })}
-                  aria-label={`Approve ${farmer.firstName} ${farmer.lastName}`}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setActiveModal({ type: 'reject', farmer });
-                    setRejectionReason('');
-                    setActionError(null);
-                  }}
-                  aria-label={`Reject ${farmer.firstName} ${farmer.lastName}`}
-                >
-                  Reject
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Table>
+          <THead>
+            <TH>Farmer</TH>
+            <TH>County</TH>
+            <TH>Document</TH>
+            <TH>Submitted</TH>
+            <TH className="text-right">Actions</TH>
+          </THead>
+          <tbody>
+            {farmers.map((farmer) => (
+              <TR key={farmer._id}>
+                <TD>
+                  <p className="app-body-strong text-app-ink">
+                    {farmer.firstName} {farmer.lastName}
+                  </p>
+                  <p className="app-meta truncate text-app-faint">
+                    {farmer.farmerData.cropsGrown.join(', ')}
+                  </p>
+                </TD>
+                <TD className="text-app-muted">{farmer.county}</TD>
+                <TD className="font-app-mono text-app-muted">
+                  {farmer.farmerData.verificationDocument
+                    ? docTypeLabel(farmer.farmerData.verificationDocument.documentType)
+                    : '—'}
+                </TD>
+                <TD className="text-app-faint">
+                  {farmer.farmerData.verificationDocument
+                    ? formatDate(farmer.farmerData.verificationDocument.submittedAt)
+                    : formatDate(farmer.createdAt)}
+                </TD>
+                <TD>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveModal({ type: 'detail', farmer })}
+                    >
+                      Review
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setActiveModal({ type: 'approve', farmer })}
+                      aria-label={`Approve ${farmer.firstName} ${farmer.lastName}`}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => {
+                        setActiveModal({ type: 'reject', farmer });
+                        setRejectionReason('');
+                        setActionError(null);
+                      }}
+                      aria-label={`Reject ${farmer.firstName} ${farmer.lastName}`}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </tbody>
+        </Table>
       )}
 
       {/* ── Approve confirm modal ──────────────────────────────────────────── */}
-      <ConfirmModal
-        isOpen={activeModal?.type === 'approve'}
+      <Modal
+        open={activeModal?.type === 'approve'}
         onClose={() => setActiveModal(null)}
-        onConfirm={() => {
-          if (activeModal?.type === 'approve') {
-            void handleDecision(activeModal.farmer._id, VerificationStatus.APPROVED);
-          }
-        }}
         title="Approve verification"
-        message={
-          activeModal?.type === 'approve'
-            ? `Approve ${activeModal.farmer.firstName} ${activeModal.farmer.lastName} as a verified farmer? This will grant them a 40-point trust score and send an SMS notification.`
-            : ''
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              isLoading={isActioning}
+              onClick={() => {
+                if (activeModal?.type === 'approve') {
+                  void handleDecision(activeModal.farmer._id, VerificationStatus.APPROVED);
+                }
+              }}
+            >
+              Approve farmer
+            </Button>
+          </>
         }
-        confirmLabel="Approve farmer"
-        isLoading={isActioning}
-      />
+      >
+        {activeModal?.type === 'approve' && (
+          <p className="app-body text-app-body">
+            Approve {activeModal.farmer.firstName} {activeModal.farmer.lastName} as a verified
+            farmer? This will grant them a 40-point trust score and send an SMS notification.
+          </p>
+        )}
+      </Modal>
 
       {/* ── Reject modal ──────────────────────────────────────────────────── */}
       {activeModal?.type === 'reject' && selectedFarmer && (
         <Modal
-          isOpen
+          open
           onClose={() => setActiveModal(null)}
           title="Reject verification"
-          description={`Provide a reason for rejecting ${selectedFarmer.firstName} ${selectedFarmer.lastName}. They will be notified via SMS.`}
-          size="sm"
-        >
-          <div className="space-y-4">
-            <Input
-              label="Rejection reason"
-              placeholder="e.g. Document number could not be verified"
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              error={actionError ?? undefined}
-            />
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="ghost"
-                onClick={() => setActiveModal(null)}
-                disabled={isActioning}
-              >
+          className="max-w-sm"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setActiveModal(null)} disabled={isActioning}>
                 Cancel
               </Button>
               <Button
-                variant="destructive"
+                variant="danger"
                 isLoading={isActioning}
                 disabled={!rejectionReason.trim()}
                 onClick={() =>
@@ -357,7 +329,21 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
               >
                 Reject farmer
               </Button>
-            </div>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <p className="app-body text-app-muted">
+              Provide a reason for rejecting {selectedFarmer.firstName} {selectedFarmer.lastName}.
+              They will be notified via SMS.
+            </p>
+            <Input
+              label="Rejection reason"
+              placeholder="e.g. Document number could not be verified"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              error={actionError ?? undefined}
+            />
           </div>
         </Modal>
       )}
@@ -365,60 +351,56 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
       {/* ── Detail modal ──────────────────────────────────────────────────── */}
       {activeModal?.type === 'detail' && selectedFarmer && (
         <Modal
-          isOpen
+          open
           onClose={() => setActiveModal(null)}
           title={`${selectedFarmer.firstName} ${selectedFarmer.lastName}`}
-          size="md"
+          className="max-w-lg"
+          footer={
+            <div className="flex w-full gap-3">
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={() => setActiveModal({ type: 'approve', farmer: selectedFarmer })}
+              >
+                Approve
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                onClick={() => {
+                  setActiveModal({ type: 'reject', farmer: selectedFarmer });
+                  setRejectionReason('');
+                  setActionError(null);
+                }}
+              >
+                Reject
+              </Button>
+            </div>
+          }
         >
           <div className="space-y-5">
             {/* Personal info */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  Phone
-                </p>
-                <p className="text-t5 font-mono text-fg">
-                  {selectedFarmer.phoneNumber}
-                </p>
-              </div>
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  County
-                </p>
-                <p className="text-t5 font-body text-fg">
-                  {selectedFarmer.county}
-                </p>
-              </div>
+              <DetailTile label="Phone">
+                <span className="font-app-mono">{selectedFarmer.phoneNumber}</span>
+              </DetailTile>
+              <DetailTile label="County">{selectedFarmer.county}</DetailTile>
               {selectedFarmer.farmerData.farmSizeAcres && (
-                <div className="bg-surface-raised rounded p-3">
-                  <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                    Farm size
-                  </p>
-                  <p className="text-t5 font-body text-fg">
-                    {selectedFarmer.farmerData.farmSizeAcres} acres
-                  </p>
-                </div>
+                <DetailTile label="Farm size">
+                  {selectedFarmer.farmerData.farmSizeAcres} acres
+                </DetailTile>
               )}
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  Registered
-                </p>
-                <p className="text-t5 font-body text-fg">
-                  {formatDate(selectedFarmer.createdAt)}
-                </p>
-              </div>
+              <DetailTile label="Registered">{formatDate(selectedFarmer.createdAt)}</DetailTile>
             </div>
 
             {/* Crops */}
             <div>
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-                Crops grown
-              </p>
+              <p className="app-label mb-2 text-app-muted">Crops grown</p>
               <div className="flex flex-wrap gap-2">
                 {selectedFarmer.farmerData.cropsGrown.map((crop) => (
                   <span
                     key={crop}
-                    className="text-t6 font-body text-fg-muted bg-surface-raised border border-white/5 rounded-[2px] px-2 py-1"
+                    className="app-meta rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-1 text-app-muted"
                   >
                     {crop}
                   </span>
@@ -429,41 +411,25 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
             {/* Verification document */}
             {selectedFarmer.farmerData.verificationDocument ? (
               <div className="space-y-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                  Verification document
-                </p>
+                <p className="app-label text-app-muted">Verification document</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-surface-raised rounded p-3">
-                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                      Type
-                    </p>
-                    <p className="text-t5 font-body text-fg">
-                      {docTypeLabel(selectedFarmer.farmerData.verificationDocument.documentType)}
-                    </p>
-                  </div>
-                  <div className="bg-surface-raised rounded p-3">
-                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                      Number
-                    </p>
-                    <p className="text-t5 font-mono text-fg">
+                  <DetailTile label="Type">
+                    {docTypeLabel(selectedFarmer.farmerData.verificationDocument.documentType)}
+                  </DetailTile>
+                  <DetailTile label="Number">
+                    <span className="font-app-mono">
                       {selectedFarmer.farmerData.verificationDocument.documentNumber}
-                    </p>
-                  </div>
+                    </span>
+                  </DetailTile>
                 </div>
                 <a
                   href={selectedFarmer.farmerData.verificationDocument.documentImageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-t5 font-body text-brand hover:underline underline-offset-2"
+                  className="app-body inline-flex items-center gap-2 text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
                 >
                   View document image
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    aria-hidden="true"
-                  >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                     <path
                       d="M2 10L10 2M10 2H6M10 2V6"
                       stroke="currentColor"
@@ -475,37 +441,15 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                 </a>
               </div>
             ) : (
-              <div className="bg-surface-raised rounded p-3">
-                <Badge label="PENDING" />
-                <p className="text-t5 font-body text-fg-disabled mt-1">
+              <div className="rounded-app-control bg-app-sunken p-3">
+                <span className="app-label inline-flex items-center rounded-app-pill bg-app-card px-2 py-0.5 text-app-muted">
+                  Pending
+                </span>
+                <p className="app-body mt-1 text-app-faint">
                   No verification document submitted yet
                 </p>
               </div>
             )}
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2 border-t border-white/5">
-              <Button
-                variant="primary"
-                className="flex-1"
-                onClick={() => {
-                  setActiveModal({ type: 'approve', farmer: selectedFarmer });
-                }}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={() => {
-                  setActiveModal({ type: 'reject', farmer: selectedFarmer });
-                  setRejectionReason('');
-                  setActionError(null);
-                }}
-              >
-                Reject
-              </Button>
-            </div>
           </div>
         </Modal>
       )}

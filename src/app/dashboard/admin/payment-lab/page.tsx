@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { ListSkeleton } from '@/components/ui/SkeletonLoader';
+import { Button, Alert } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { Role } from '@/types';
 import { PAYMENT_LAB_ACTIONS, type PaymentLabAction } from '@/lib/validation/paymentLabSchema';
 
@@ -54,6 +53,7 @@ interface ILabResponse {
 }
 
 type PageState = 'loading' | 'ready' | 'error';
+type EventTone = 'success' | 'danger' | 'warning' | 'neutral';
 
 const ACTION_LABELS: Record<PaymentLabAction, string> = {
   success: 'Success',
@@ -68,23 +68,51 @@ const ACTION_LABELS: Record<PaymentLabAction, string> = {
   lost: 'Lost callback',
 };
 
-const EVENT_VARIANT: Record<string, BadgeVariant> = {
+const EVENT_TONE: Record<string, EventTone> = {
   SUCCESS: 'success',
   INITIATED: 'neutral',
   CALLBACK_RECEIVED: 'neutral',
-  FAILED: 'error',
+  FAILED: 'danger',
   TIMEOUT: 'warning',
   DUPLICATE: 'warning',
-  LOST: 'error',
+  LOST: 'danger',
   RECONCILED: 'warning',
 };
+
+const TONE_CLASS: Record<EventTone, string> = {
+  success: 'text-app-success',
+  danger: 'text-app-danger',
+  warning: 'text-app-warning',
+  neutral: 'text-app-muted',
+};
+
+const SELECT_CLASS =
+  'app-body min-h-[36px] rounded-app-control border border-app-border-strong bg-app-card px-2 text-app-ink transition-colors duration-150 focus:border-app-brand focus:outline-none focus:ring-2 focus:ring-app-brand/30';
 
 function formatKES(amount?: number | null): string {
   return amount != null ? `KES ${amount.toLocaleString()}` : '—';
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-KE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function EventBadge({ eventType }: { eventType: string }): React.ReactElement {
+  const tone = EVENT_TONE[eventType] ?? 'neutral';
+  return (
+    <span
+      className={cn(
+        'app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5',
+        TONE_CLASS[tone]
+      )}
+    >
+      {eventType}
+    </span>
+  );
 }
 
 export default function AdminPaymentLabPage(): React.ReactElement {
@@ -151,8 +179,9 @@ export default function AdminPaymentLabPage(): React.ReactElement {
   if (status === 'loading' || pageState === 'loading') {
     return (
       <div className="space-y-6">
-        <div className="skeleton h-6 w-40 rounded" />
-        <ListSkeleton rows={5} />
+        <div className="skeleton h-7 w-40 rounded" />
+        <div className="skeleton h-24 rounded-app-card" />
+        <div className="skeleton h-48 rounded-app-card" />
       </div>
     );
   }
@@ -160,9 +189,7 @@ export default function AdminPaymentLabPage(): React.ReactElement {
   if (pageState === 'error' || !data) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load the Payment Lab
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load the Payment Lab</p>
         <Button variant="secondary" onClick={() => void fetchData()}>
           Retry
         </Button>
@@ -179,7 +206,10 @@ export default function AdminPaymentLabPage(): React.ReactElement {
     { label: 'Timeout', value: String(m.timeout) },
     { label: 'Duplicate', value: String(m.duplicate) },
     { label: 'Lost', value: String(m.lost) },
-    { label: 'Avg completion', value: m.avgCompletionMs ? `${(m.avgCompletionMs / 1000).toFixed(1)}s` : '—' },
+    {
+      label: 'Avg completion',
+      value: m.avgCompletionMs ? `${(m.avgCompletionMs / 1000).toFixed(1)}s` : '—',
+    },
   ];
 
   return (
@@ -187,69 +217,72 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-t2 font-heading font-semibold text-fg">Payment Lab</h1>
-          <p className="text-t5 font-body text-fg-muted mt-0.5 max-w-2xl">
+          <h1 className="app-h1 text-app-ink">Payment Lab</h1>
+          <p className="app-body mt-1 max-w-2xl text-app-muted">
             Drive payment scenarios against live orders and watch orders, notifications, audit, and
             trust react exactly as in production. The only thing simulated is the M-Pesa callback.
           </p>
         </div>
-        <Badge
-          variant={data.simulationActive ? 'success' : 'neutral'}
-          label={data.provider}
-        />
+        <span
+          className={cn(
+            'app-label inline-flex shrink-0 items-center rounded-app-pill px-2 py-0.5',
+            data.simulationActive
+              ? 'bg-app-brand-surface text-app-brand'
+              : 'bg-app-sunken text-app-muted'
+          )}
+        >
+          {data.provider}
+        </span>
       </div>
 
       {!data.simulationActive && (
-        <p className="text-t5 font-body text-fg-muted border border-yellow-800/40 bg-yellow-950/40 rounded px-4 py-3">
-          A real Daraja provider is active — scenario triggers are disabled. Metrics below reflect
+        <Alert tone="warning">
+          A real Daraja provider is active; scenario triggers are disabled. Metrics below reflect
           real payment events.
-        </p>
+        </Alert>
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="bg-surface border border-white/5 rounded p-3">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              {s.label}
-            </p>
-            <p className="text-t3 font-mono text-fg">{s.value}</p>
+          <div key={s.label} className="rounded-app-card border border-app-hairline bg-app-card p-3">
+            <p className="app-label mb-1 text-app-faint">{s.label}</p>
+            <p className="app-data-l text-app-ink">{s.value}</p>
           </div>
         ))}
       </div>
 
       {notice && (
-        <p className="text-t6 font-body text-fg-muted" role="status">
+        <p className="app-meta text-app-muted" role="status">
           {notice}
         </p>
       )}
 
       {/* Trigger panel — awaiting-payment orders */}
       <section className="space-y-3">
-        <h2 className="text-t3 font-heading font-medium text-fg">Awaiting payment</h2>
+        <h2 className="app-h2 text-app-ink">Awaiting payment</h2>
         {data.pendingOrders.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
-            <p className="text-t5 font-body text-fg-muted">
+          <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
+            <p className="app-body text-app-muted">
               No orders are awaiting payment. Place an order, then fire a scenario here.
             </p>
           </div>
         ) : (
-          <div className="bg-surface border border-white/5 rounded overflow-hidden">
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
             {data.pendingOrders.map((o) => (
               <div
                 key={o.orderId}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 border-b border-white/5 last:border-0"
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-app-hairline px-4 py-4 last:border-0"
               >
                 <div className="min-w-0 flex-1 basis-[14rem]">
-                  <p className="text-t5 font-body text-fg truncate">
-                    {o.orderReferenceId}{' '}
-                    <span className="text-fg-muted">· {o.cropName}</span>
+                  <p className="app-body-strong truncate text-app-ink">
+                    {o.orderReferenceId} <span className="text-app-muted">· {o.cropName}</span>
                   </p>
-                  <p className="text-t6 font-body text-fg-disabled truncate">
+                  <p className="app-meta truncate text-app-faint">
                     {o.buyerName} · {formatKES(o.totalAmountKES)}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 items-center gap-2">
                   <select
                     aria-label={`Scenario for ${o.orderReferenceId}`}
                     value={selectedActions[o.orderId] ?? 'success'}
@@ -259,7 +292,7 @@ export default function AdminPaymentLabPage(): React.ReactElement {
                         [o.orderId]: e.target.value as PaymentLabAction,
                       }))
                     }
-                    className="min-h-[36px] bg-surface-raised border border-white/10 rounded-sm text-t6 font-body text-fg px-2 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
+                    className={SELECT_CLASS}
                   >
                     {PAYMENT_LAB_ACTIONS.map((a) => (
                       <option key={a} value={a}>
@@ -286,36 +319,34 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Recent events */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-t3 font-heading font-medium text-fg">Recent events</h2>
+          <h2 className="app-h2 text-app-ink">Recent events</h2>
           <Button variant="ghost" size="sm" onClick={() => void fetchData()}>
             Refresh
           </Button>
         </div>
         {data.recentEvents.length === 0 ? (
-          <div className="border border-white/5 rounded bg-surface px-4 py-8 text-center">
-            <p className="text-t5 font-body text-fg-muted">No payment events yet.</p>
+          <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
+            <p className="app-body text-app-muted">No payment events yet.</p>
           </div>
         ) : (
-          <div className="bg-surface border border-white/5 rounded overflow-hidden">
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
             {data.recentEvents.map((e, i) => (
               <div
                 key={`${e.occurredAt}-${i}`}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 border-b border-white/5 last:border-0"
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-app-hairline px-4 py-3 last:border-0"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Badge variant={EVENT_VARIANT[e.eventType] ?? 'neutral'} label={e.eventType} />
-                  <span className="text-t6 font-mono text-fg-disabled truncate">
+                <div className="flex min-w-0 items-center gap-2">
+                  <EventBadge eventType={e.eventType} />
+                  <span className="app-meta truncate font-app-mono text-app-faint">
                     {e.paymentReference ?? '—'}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
-                  <span className="text-t6 font-mono text-fg-muted">{formatKES(e.amount)}</span>
+                <div className="flex shrink-0 items-center gap-4">
+                  <span className="app-data-m text-app-muted">{formatKES(e.amount)}</span>
                   {e.resultCode != null && (
-                    <span className="text-t6 font-mono text-fg-disabled">code {e.resultCode}</span>
+                    <span className="app-meta font-app-mono text-app-faint">code {e.resultCode}</span>
                   )}
-                  <span className="text-t6 font-body text-fg-disabled">
-                    {formatTime(e.occurredAt)}
-                  </span>
+                  <span className="app-meta text-app-faint">{formatTime(e.occurredAt)}</span>
                 </div>
               </div>
             ))}

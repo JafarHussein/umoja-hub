@@ -3,11 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/Badge';
+import { Button, Modal, Table, THead, TH, TR, TD } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { OrderTimeline, OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
-import { Modal } from '@/components/ui/Modal';
 import {
   Role,
   OrderPaymentStatus,
@@ -40,6 +39,51 @@ interface IFarmerOrder {
   };
 }
 
+// Payment-status pill — app design-system tinted pill (mirrors the listings
+// status pill). State is conveyed by icon + text + tint, never colour alone.
+const PAYMENT_PILL: Record<OrderPaymentStatus, { label: string; glyph: string; wrap: string; text: string }> = {
+  [OrderPaymentStatus.PAID]: {
+    label: 'Paid',
+    glyph: '✓',
+    wrap: 'bg-app-success-surface',
+    text: 'text-app-success',
+  },
+  [OrderPaymentStatus.PENDING_PAYMENT]: {
+    label: 'Pending',
+    glyph: '◷',
+    wrap: 'bg-app-warning-surface',
+    text: 'text-app-warning',
+  },
+  [OrderPaymentStatus.FAILED]: {
+    label: 'Failed',
+    glyph: '⊘',
+    wrap: 'bg-app-danger-surface',
+    text: 'text-app-danger',
+  },
+  [OrderPaymentStatus.REFUNDED]: {
+    label: 'Refunded',
+    glyph: '↺',
+    wrap: 'bg-app-info-surface',
+    text: 'text-app-info',
+  },
+};
+
+function PaymentPill({ status }: { status: OrderPaymentStatus }): React.ReactElement {
+  const p = PAYMENT_PILL[status];
+  return (
+    <span
+      className={cn(
+        'app-label inline-flex items-center gap-1 rounded-app-pill px-2 py-0.5',
+        p.wrap,
+        p.text
+      )}
+    >
+      <span aria-hidden>{p.glyph}</span>
+      {p.label}
+    </span>
+  );
+}
+
 // Farmers who confirm carrier handover within 24 h of payment count as on-time
 // in farmerTrustCalculator. The prompt counts down against that window.
 const HANDOVER_WINDOW_HOURS = 24;
@@ -63,7 +107,7 @@ function handoverState(
 }
 
 // Live 24-h handover countdown. Re-reads the clock every minute; tone escalates
-// green -> yellow -> red as the on-time window closes (matching Badge precedent).
+// brand -> warning -> danger as the on-time window closes.
 function HandoverCountdown({ paidAt }: { paidAt: string }): React.ReactElement {
   const [now, setNow] = useState<number>(() => Date.now());
 
@@ -76,27 +120,27 @@ function HandoverCountdown({ paidAt }: { paidAt: string }): React.ReactElement {
 
   const tone =
     urgency === 'elapsed'
-      ? 'text-red-400 border-red-800/40 bg-red-950/40'
+      ? 'text-app-danger border-app-danger/40 bg-app-danger-surface'
       : urgency === 'warning'
-        ? 'text-yellow-400 border-yellow-800/40 bg-yellow-950/40'
-        : 'text-brand border-brand/30 bg-brand/10';
+        ? 'text-app-warning border-app-warning/40 bg-app-warning-surface'
+        : 'text-app-brand border-app-brand-border bg-app-brand-surface';
 
   const dot =
     urgency === 'elapsed'
-      ? 'bg-red-500'
+      ? 'bg-app-danger'
       : urgency === 'warning'
-        ? 'bg-yellow-400'
-        : 'bg-brand';
+        ? 'bg-app-warning'
+        : 'bg-app-brand';
 
   return (
     <span
-      className={[
-        'inline-flex items-center gap-1.5 rounded-[2px] border px-2 py-0.5 font-mono text-t6 font-medium uppercase tracking-wide whitespace-nowrap',
-        tone,
-      ].join(' ')}
+      className={cn(
+        'app-label inline-flex items-center gap-1.5 whitespace-nowrap rounded-app-pill border px-2 py-0.5 font-app-mono',
+        tone
+      )}
       role="status"
     >
-      <span className={['w-1.5 h-1.5 rounded-full flex-shrink-0', dot].join(' ')} aria-hidden="true" />
+      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-app-pill', dot)} aria-hidden="true" />
       {label}
     </span>
   );
@@ -206,12 +250,8 @@ export default function FarmerOrdersPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load orders
-        </p>
-        <p className="text-t5 font-body text-fg-muted mb-4">
-          Check your connection and try again.
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load orders</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchOrders()}>
           Retry
         </Button>
@@ -223,23 +263,17 @@ export default function FarmerOrdersPage(): React.ReactElement {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-t2 font-heading font-semibold text-fg">Orders</h1>
-        <p className="text-t5 font-body text-fg-muted mt-0.5">
+        <h1 className="app-h1 text-app-ink">Orders</h1>
+        <p className="app-meta mt-0.5 text-app-muted">
           {orders.length} order{orders.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Empty state */}
       {orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface">
-          <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              aria-hidden="true"
-            >
+        <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-16 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <rect
                 x="3"
                 y="5"
@@ -248,157 +282,139 @@ export default function FarmerOrdersPage(): React.ReactElement {
                 rx="1"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="text-fg-disabled"
+                className="text-app-faint"
               />
               <path
                 d="M7 5V4a3 3 0 016 0v1"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="text-fg-disabled"
+                className="text-app-faint"
               />
             </svg>
           </div>
-          <p className="text-t4 font-body font-medium text-fg mb-1">No orders yet</p>
-          <p className="text-t5 font-body text-fg-muted">
+          <p className="app-title mb-1 text-app-ink">No orders yet</p>
+          <p className="app-body text-app-muted">
             Orders will appear here once buyers purchase from your listings.
           </p>
         </div>
       ) : (
-        /* Orders list */
-        <div className="bg-surface border border-white/5 rounded overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Ref
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Order
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
-              Amount
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Progress
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Actions
-            </span>
-          </div>
+        /* Orders table */
+        <Table>
+          <THead>
+            <TH>Ref</TH>
+            <TH>Order</TH>
+            <TH className="text-right">Amount</TH>
+            <TH>Progress</TH>
+            <TH className="text-right">
+              <span className="sr-only">Actions</span>
+            </TH>
+          </THead>
+          <tbody>
+            {orders.map((order) => (
+              <TR key={order._id}>
+                {/* Reference */}
+                <TD className="whitespace-nowrap align-top">
+                  <span className="app-data-m text-app-muted">{order.orderReferenceId}</span>
+                </TD>
 
-          {orders.map((order) => (
-            <div
-              key={order._id}
-              className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
-            >
-              {/* Reference */}
-              <span className="text-t6 font-mono text-fg-disabled whitespace-nowrap">
-                {order.orderReferenceId}
-              </span>
+                {/* Crop + buyer */}
+                <TD className="align-top">
+                  <p className="app-body-strong capitalize text-app-ink">
+                    {order.cropName}{' '}
+                    <span className="app-body font-normal text-app-muted">
+                      · {order.quantityOrdered} {order.unit.toLowerCase()}
+                    </span>
+                  </p>
+                  <p className="app-meta text-app-muted">
+                    {order.buyer.firstName} {order.buyer.lastName} · {formatDate(order.createdAt)}
+                  </p>
+                </TD>
 
-              {/* Crop + buyer */}
-              <div className="min-w-0">
-                <p className="text-t5 font-body font-medium text-fg capitalize">
-                  {order.cropName} ·{' '}
-                  <span className="font-normal text-fg-muted">
-                    {order.quantityOrdered} {order.unit.toLowerCase()}
+                {/* Amount */}
+                <TD className="whitespace-nowrap text-right align-top">
+                  <span className="app-data-m text-app-ink">
+                    KSh {order.totalAmountKES.toLocaleString()}
                   </span>
-                </p>
-                <p className="text-t6 font-body text-fg-disabled">
-                  {order.buyer.firstName} {order.buyer.lastName} · {formatDate(order.createdAt)}
-                </p>
-              </div>
+                  <div className="mt-1 flex justify-end">
+                    <PaymentPill status={order.paymentStatus} />
+                  </div>
+                </TD>
 
-              {/* Amount */}
-              <div className="text-right">
-                <span className="text-t5 font-mono text-fg">
-                  KES {order.totalAmountKES.toLocaleString()}
-                </span>
-                <p className="text-t6">
-                  <Badge label={order.paymentStatus} />
-                </p>
-              </div>
+                {/* Progress */}
+                <TD className="align-top">
+                  <OrderTimeline
+                    paymentStatus={order.paymentStatus}
+                    fulfillmentStatus={order.fulfillmentStatus}
+                    paidAt={order.paidAt}
+                    confirmedByFarmerAt={order.confirmedByFarmerAt}
+                    receivedByBuyerAt={order.receivedByBuyerAt}
+                  />
+                </TD>
 
-              {/* Progress */}
-              <OrderTimeline
-                paymentStatus={order.paymentStatus}
-                fulfillmentStatus={order.fulfillmentStatus}
-                paidAt={order.paidAt}
-                confirmedByFarmerAt={order.confirmedByFarmerAt}
-                receivedByBuyerAt={order.receivedByBuyerAt}
-              />
-
-              {/* Actions */}
-              <div className="flex flex-col items-end gap-2">
-                {order.canConfirmDispatch && order.paidAt && (
-                  <HandoverCountdown paidAt={order.paidAt} />
-                )}
-                <div className="flex items-center gap-2">
-                  {order.canConfirmDispatch && (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      isLoading={confirmingId === order._id}
-                      onClick={() => void confirmDispatch(order._id)}
-                      aria-label={`Confirm carrier handover for order ${order.orderReferenceId}`}
-                    >
-                      Confirm Carrier Handover
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedOrder(order)}
-                    aria-label={`View details for order ${order.orderReferenceId}`}
-                  >
-                    Details
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                {/* Actions */}
+                <TD className="align-top">
+                  <div className="flex flex-col items-end gap-2">
+                    {order.canConfirmDispatch && order.paidAt && (
+                      <HandoverCountdown paidAt={order.paidAt} />
+                    )}
+                    <div className="flex items-center gap-2">
+                      {order.canConfirmDispatch && (
+                        <Button
+                          size="sm"
+                          isLoading={confirmingId === order._id}
+                          onClick={() => void confirmDispatch(order._id)}
+                          aria-label={`Confirm carrier handover for order ${order.orderReferenceId}`}
+                        >
+                          Confirm handover
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedOrder(order)}
+                        aria-label={`View details for order ${order.orderReferenceId}`}
+                      >
+                        Details
+                      </Button>
+                    </div>
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </tbody>
+        </Table>
       )}
 
       {/* Order detail modal */}
       {selectedOrder && (
         <Modal
-          isOpen={selectedOrder !== null}
+          open={selectedOrder !== null}
           onClose={() => setSelectedOrder(null)}
           title={`Order ${selectedOrder.orderReferenceId}`}
-          size="md"
+          className="max-w-lg"
         >
           <div className="space-y-5">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  Crop
-                </p>
-                <p className="text-t5 font-body text-fg capitalize">
-                  {selectedOrder.cropName}
-                </p>
+              <div className="rounded-app-control bg-app-sunken p-3">
+                <p className="app-label mb-1 text-app-muted">Crop</p>
+                <p className="app-body capitalize text-app-ink">{selectedOrder.cropName}</p>
               </div>
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  Quantity
-                </p>
-                <p className="text-t5 font-mono text-fg">
+              <div className="rounded-app-control bg-app-sunken p-3">
+                <p className="app-label mb-1 text-app-muted">Quantity</p>
+                <p className="app-data-m text-app-ink">
                   {selectedOrder.quantityOrdered} {selectedOrder.unit.toLowerCase()}
                 </p>
               </div>
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  Total
-                </p>
-                <p className="text-t5 font-mono text-fg">
-                  KES {selectedOrder.totalAmountKES.toLocaleString()}
+              <div className="rounded-app-control bg-app-sunken p-3">
+                <p className="app-label mb-1 text-app-muted">Total</p>
+                <p className="app-data-m text-app-ink">
+                  KSh {selectedOrder.totalAmountKES.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-surface-raised rounded p-3">
-                <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                  Collection
-                </p>
-                <p className="text-t5 font-body text-fg capitalize">
+              <div className="rounded-app-control bg-app-sunken p-3">
+                <p className="app-label mb-1 text-app-muted">Collection</p>
+                <p className="app-body capitalize text-app-ink">
                   {selectedOrder.fulfillmentType.toLowerCase()}
                 </p>
               </div>
@@ -406,20 +422,16 @@ export default function FarmerOrdersPage(): React.ReactElement {
 
             {/* Buyer */}
             <div>
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-                Buyer
-              </p>
-              <p className="text-t5 font-body text-fg">
+              <p className="app-label mb-2 text-app-muted">Buyer</p>
+              <p className="app-body text-app-ink">
                 {selectedOrder.buyer.firstName} {selectedOrder.buyer.lastName}
               </p>
-              <p className="text-t5 font-body text-fg-muted">{selectedOrder.buyerPhone}</p>
+              <p className="app-body text-app-muted">{selectedOrder.buyerPhone}</p>
             </div>
 
             {/* Timeline */}
             <div>
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-3">
-                Order progress
-              </p>
+              <p className="app-label mb-3 text-app-muted">Order progress</p>
               <OrderTimelineDetailed
                 paymentStatus={selectedOrder.paymentStatus}
                 fulfillmentStatus={selectedOrder.fulfillmentStatus}
@@ -433,15 +445,14 @@ export default function FarmerOrdersPage(): React.ReactElement {
             {selectedOrder.canConfirmDispatch && (
               <div className="space-y-3">
                 {selectedOrder.paidAt && (
-                  <div className="flex items-center justify-between gap-3 rounded bg-surface-raised border border-white/5 p-3">
-                    <p className="text-t6 font-body text-fg-muted">
+                  <div className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline bg-app-sunken p-3">
+                    <p className="app-meta text-app-muted">
                       Confirm within 24 h of payment to keep your reliability score on-time.
                     </p>
                     <HandoverCountdown paidAt={selectedOrder.paidAt} />
                   </div>
                 )}
                 <Button
-                  variant="primary"
                   size="lg"
                   className="w-full"
                   isLoading={confirmingId === selectedOrder._id}

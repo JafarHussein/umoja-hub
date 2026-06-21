@@ -2,8 +2,16 @@ import type { NextAuthOptions, Session, User, Profile, Account } from 'next-auth
 import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { connectDB } from '@/lib/db';
-import { logger } from '@/lib/utils';
+import { logger, verifySecret } from '@/lib/utils';
+import { credentialsLoginSchema } from '@/lib/validation/onboardingSchema';
+import {
+  ONBOARDING_DRAFT_COOKIE,
+  verifyDraftValue,
+  clearedDraftCookieOptions,
+} from '@/lib/auth/onboardingDraftCookie';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, UserStatus, OnboardingStage, OAuthProvider } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +52,15 @@ declare module 'next-auth/jwt' {
 }
 
 const LOGIN_PATH = '/auth/login';
+
+// Credentials brute-force controls (AUTH_ONBOARDING_FLOW_V2 §10). The throttle
+// caps attempt volume per username (cheap, pre-bcrypt); the lockout disables an
+// account after consecutive failures and is DB-backed so it holds across
+// serverless instances.
+const MAX_FAILED_LOGINS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+const LOGIN_THROTTLE_MAX = 10;
+const LOGIN_THROTTLE_WINDOW_MS = 10 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Policy helpers (Decision 01-B)
@@ -164,12 +181,89 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
       authorization: { params: { scope: 'read:user user:email' } },
     }),
+
+    // V2 dual-auth (AUTH_ONBOARDING_FLOW_V2): username + password. The account
+    // is still created via OAuth at the end of onboarding; this path lets an
+    // existing account sign in with the credentials they set. Requires the JWT
+    // session strategy (already configured below).
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials): Promise<User | null> {
+        const parsed = credentialsLoginSchema.safeParse(credentials);
+        if (!parsed.success) return null;
+        const { username, password } = parsed.data;
+
+        // Front-line throttle: cap attempt volume per username before any bcrypt
+        // work (CPU-exhaustion / rapid brute-force mitigation).
+        const throttle = await checkRateLimit(
+          `login:${username}`,
+          LOGIN_THROTTLE_MAX,
+          LOGIN_THROTTLE_WINDOW_MS
+        );
+        if (!throttle.allowed) return null;
+
+        await connectDB();
+        const UserModel = (await import('@/lib/models/User.model')).default;
+        const dbUser = await UserModel.findOne({ username }).select(
+          '+hashedPassword +failedLoginAttempts +lockedUntil'
+        );
+        if (!dbUser?.hashedPassword || dbUser.status !== UserStatus.ACTIVE) return null;
+
+        // Account lockout — a locked account is denied regardless of the
+        // password. DB-backed so it holds across serverless instances.
+        if (dbUser.lockedUntil && dbUser.lockedUntil.getTime() > Date.now()) {
+          logger.warn('auth', 'Credentials sign-in blocked — account locked', {
+            userId: String(dbUser._id),
+          });
+          return null;
+        }
+
+        const ok = await verifySecret(password, dbUser.hashedPassword);
+        if (!ok) {
+          const attempts = (dbUser.failedLoginAttempts ?? 0) + 1;
+          const lock = attempts >= MAX_FAILED_LOGINS;
+          await UserModel.findByIdAndUpdate(dbUser._id, {
+            $set: lock
+              ? { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + LOGIN_LOCKOUT_MS) }
+              : { failedLoginAttempts: attempts },
+          });
+          if (lock) {
+            logger.warn('auth', 'Account locked after repeated failed sign-ins', {
+              userId: String(dbUser._id),
+            });
+          }
+          return null;
+        }
+
+        // Success — clear any prior failure state so the counter never lingers.
+        if (dbUser.failedLoginAttempts || dbUser.lockedUntil) {
+          await UserModel.findByIdAndUpdate(dbUser._id, {
+            $set: { failedLoginAttempts: 0, lockedUntil: null },
+          });
+        }
+
+        return {
+          id: String(dbUser._id),
+          email: dbUser.email,
+          firstName: dbUser.firstName,
+          role: (dbUser.role as Role | null) ?? null,
+        };
+      },
+    }),
   ],
 
   callbacks: {
     async signIn({ user, account, profile }): Promise<boolean | string> {
       const provider = account?.provider;
       if (!provider) return false;
+
+      // Credentials sign-in is fully validated in `authorize` above (username +
+      // bcrypt password + active status); nothing more to enforce here.
+      if (provider === 'credentials') return true;
 
       await connectDB();
       const UserModel = (await import('@/lib/models/User.model')).default;
@@ -199,20 +293,60 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
 
-      // New OAuth user. Allowlisted Google emails are bootstrapped straight to
-      // ADMIN (COMPLETED, no funnel); everyone else enters at ROLE_SELECTION
-      // with no role yet. GitHub implies STUDENT (enforced at role selection),
-      // so its login is captured now as the read-only githubUsername (UI-12).
-      const isAllowlistedAdmin =
-        provider === OAuthProvider.GOOGLE && getAdminAllowlist().includes(email);
+      // New OAuth identity (AUTH_ONBOARDING_FLOW_V2). Allowlisted Google emails
+      // are bootstrapped straight to ADMIN with no draft. Everyone else MUST have
+      // completed onboarding first — their username/role/password live in a signed
+      // OnboardingDraft cookie, reconciled into the account here.
       const githubLogin = (profile as { login?: string } | undefined)?.login;
+
+      if (provider === OAuthProvider.GOOGLE && getAdminAllowlist().includes(email)) {
+        await UserModel.create({
+          email,
+          firstName: deriveFirstName(profile, email),
+          role: Role.ADMIN,
+          onboardingStage: OnboardingStage.COMPLETED,
+          oauthProvider: provider,
+          isEmailVerified: true,
+          status: UserStatus.ACTIVE,
+        });
+        logger.info('auth', 'Allowlisted admin provisioned via OAuth', { email });
+        return true;
+      }
+
+      // Reconcile the onboarding draft (the signed cookie survives the OAuth
+      // round-trip; the NextAuth handler runs in a request context so
+      // next/headers cookies() is readable here).
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      const draftId = verifyDraftValue(cookieStore.get(ONBOARDING_DRAFT_COOKIE)?.value);
+      if (!draftId) {
+        // No draft → the user reached OAuth without onboarding. Send them through it.
+        return '/onboarding/welcome';
+      }
+
+      const OnboardingDraft = (await import('@/lib/models/OnboardingDraft.model')).default;
+      const draft = await OnboardingDraft.findById(draftId);
+      if (!draft) {
+        return '/onboarding/welcome';
+      }
+
+      // Security invariant: ADMIN is never created from a draft (defence in depth;
+      // the schema already excludes it from the role enum).
+      if (draft.role === Role.ADMIN || !providerAllowsRole(provider, draft.role)) {
+        return `${LOGIN_PATH}?error=ProviderRoleMismatch`;
+      }
+      // Username may have been claimed since the draft was made (race / TTL).
+      if (await UserModel.exists({ username: draft.username })) {
+        return `${LOGIN_PATH}?error=AccountExists`;
+      }
+
       await UserModel.create({
         email,
+        username: draft.username,
+        hashedPassword: draft.hashedPassword,
         firstName: deriveFirstName(profile, email),
-        role: isAllowlistedAdmin ? Role.ADMIN : null,
-        onboardingStage: isAllowlistedAdmin
-          ? OnboardingStage.COMPLETED
-          : OnboardingStage.ROLE_SELECTION,
+        role: draft.role,
+        onboardingStage: OnboardingStage.COMPLETED,
         oauthProvider: provider,
         isEmailVerified: true,
         status: UserStatus.ACTIVE,
@@ -221,10 +355,17 @@ export const authOptions: NextAuthOptions = {
           : {}),
       });
 
-      logger.info('auth', 'New OAuth user created', {
+      await OnboardingDraft.findByIdAndDelete(draftId);
+      try {
+        cookieStore.set(ONBOARDING_DRAFT_COOKIE, '', clearedDraftCookieOptions);
+      } catch {
+        // Cookie clearing is best-effort; the draft row is already deleted, so a
+        // dangling cookie reference is harmless and the DB TTL backstops it.
+      }
+
+      logger.info('auth', 'Account finalized from onboarding draft', {
         provider,
-        email,
-        isAdmin: isAllowlistedAdmin,
+        role: draft.role,
       });
       return true;
     },

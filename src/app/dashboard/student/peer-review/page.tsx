@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Badge } from '@/components/ui/Badge';
+import { Button, buttonVariants } from '@/components/app';
 
 interface IAssignedReview {
   _id: string;
@@ -18,18 +18,9 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="space-y-1.5">
-          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-40 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-6 space-y-3">
-          <div className="h-4 w-32 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-4 w-56 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-9 w-28 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-      </div>
+    <div className="max-w-3xl space-y-6">
+      <div className="skeleton h-7 w-40 rounded" />
+      <div className="skeleton h-40 rounded-app-card" />
     </div>
   );
 }
@@ -75,76 +66,67 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load peer review assignment.</p>
-            <button
-              onClick={() => { setPageState('loading'); void fetchAssignment(); }}
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load peer review assignment</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setPageState('loading');
+            void fetchAssignment();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-            Student · Peer Review
+    <div className="max-w-3xl space-y-6">
+      <h1 className="app-h1 text-app-ink">My Review Assignment</h1>
+
+      {review === null ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">No review assignment</p>
+          <p className="app-meta mt-1 text-app-faint">
+            You will be assigned a project to review after another student submits theirs.
           </p>
-          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-            My Review Assignment
-          </h1>
         </div>
-
-        {review === null ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">No review assignment</p>
-            <p className="text-t5 font-body text-fg-disabled mt-1">
-              You will be assigned a project to review after another student submits theirs.
-            </p>
+      ) : (
+        <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <div className="flex items-center justify-between">
+            <p className="app-label text-app-muted">Assignment</p>
+            <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
+              {review.status.replace(/_/g, ' ').toLowerCase()}
+            </span>
           </div>
-        ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Assignment
-              </p>
-              <Badge label={review.status} />
-            </div>
 
-            <div className="space-y-0">
-              <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-                <span className="text-t5 font-body text-fg-muted">Review ID</span>
-                <span className="text-t6 font-mono text-fg-disabled">{review._id}</span>
-              </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-t5 font-body text-fg-muted">Assigned</span>
-                <span className="text-t5 font-mono text-fg-muted tabular-nums">
-                  {new Date(review.createdAt).toLocaleDateString('en-KE', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              </div>
+          <div className="space-y-0">
+            <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
+              <span className="app-body text-app-muted">Review ID</span>
+              <span className="app-data-m text-app-faint">{review._id}</span>
             </div>
-
-            <Link
-              href={`/dashboard/student/peer-review/${review._id}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand text-fg rounded-sm font-body text-t5 hover:opacity-90 transition-all duration-150 min-h-[44px]"
-            >
-              Open review →
-            </Link>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="app-body text-app-muted">Assigned</span>
+              <span className="app-data-m text-app-muted">
+                {new Date(review.createdAt).toLocaleDateString('en-KE', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            </div>
           </div>
-        )}
-      </div>
+
+          <Link
+            href={`/dashboard/student/peer-review/${review._id}`}
+            className={buttonVariants({ variant: 'primary' })}
+          >
+            Open review →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

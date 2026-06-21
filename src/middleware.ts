@@ -63,6 +63,20 @@ function isExempt(path: string): boolean {
   return EXEMPT_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`) || path.startsWith(p));
 }
 
+// V2 onboarding (AUTH_ONBOARDING_FLOW_V2) is pre-auth: welcome/details/connect
+// run before an account exists, so they must be reachable without a JWT. The
+// connect step self-guards its draft cookie server-side (Node runtime), and an
+// already-onboarded user is still bounced to their dashboard below (step 6).
+const V2_ONBOARDING_PREFIXES = [
+  '/onboarding/welcome',
+  '/onboarding/details',
+  '/onboarding/connect',
+];
+
+function isPreAuthOnboarding(path: string): boolean {
+  return V2_ONBOARDING_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
 // Onboarding funnel target for a given stage (Decision 02-A). The /onboarding
 // route group is built by AUTH-06; these slugs are the contract it must honour.
 function onboardingPathForStage(stage: string | undefined): string {
@@ -137,6 +151,10 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
         { error: 'Authentication required. Please sign in.', code: 'AUTH_REQUIRED' },
         { status: 401 }
       );
+    }
+    // V2 onboarding happens before an account exists — let it through.
+    if (isPreAuthOnboarding(path)) {
+      return NextResponse.next();
     }
     const signInUrl = new URL('/auth/login', req.url);
     signInUrl.searchParams.set('callbackUrl', req.url);

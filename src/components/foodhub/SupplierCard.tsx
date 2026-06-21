@@ -19,8 +19,8 @@ interface ISupplierCardProps {
 function RegistrationBadge({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-t6 text-fg-disabled uppercase">{label}</span>
-      <span className="font-mono text-t6 text-brand">{value}</span>
+      <span className="app-label text-app-muted">{label}</span>
+      <span className="app-data-m text-app-brand">{value}</span>
     </div>
   );
 }
@@ -38,12 +38,12 @@ export default function SupplierCard({
     registrations.kebsNumber || registrations.pcpbNumber || registrations.kephisNumber;
 
   return (
-    <div className="bg-surface border border-white/5 rounded p-6">
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 min-w-0">
+      <div className="mb-4 flex items-start justify-between">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-heading text-t3 text-fg truncate">{businessName}</h4>
+            <h4 className="app-h2 truncate text-app-ink">{businessName}</h4>
             {/* Verified badge */}
             <svg
               width="16"
@@ -56,26 +56,26 @@ export default function SupplierCard({
             >
               <path
                 d="M3 8L6.5 11.5L13 4.5"
-                stroke="#007F4E"
+                stroke="#1E5C45"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
           </div>
-          <p className="font-body text-t5 text-fg-muted mt-1">{county}</p>
+          <p className="app-meta mt-1 text-app-muted">{county}</p>
         </div>
       </div>
 
       {/* Input categories */}
       {inputCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="mb-4 flex flex-wrap gap-2">
           {inputCategories.map((cat) => (
             <span
               key={cat}
-              className="font-body text-t6 text-fg-muted bg-surface-raised border border-white/5 px-2 py-1 rounded-[2px]"
+              className="app-label rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-0.5 capitalize text-app-muted"
             >
-              {cat.replace('_', ' ')}
+              {cat.replace('_', ' ').toLowerCase()}
             </span>
           ))}
         </div>
@@ -83,7 +83,7 @@ export default function SupplierCard({
 
       {/* Registration numbers */}
       {hasRegistrations && (
-        <div className="mb-4 p-3 bg-surface-raised border border-white/5 rounded space-y-1">
+        <div className="mb-4 space-y-1 rounded-app-control border border-app-hairline bg-app-sunken p-3">
           {registrations.kebsNumber && (
             <RegistrationBadge label="KEBS" value={registrations.kebsNumber} />
           )}
@@ -99,24 +99,21 @@ export default function SupplierCard({
       {/* Contact details */}
       <div className="space-y-1">
         {contactPhone && (
-          <p className="font-body text-t5 text-fg-muted">
-            <span className="text-fg-disabled">Tel: </span>
-            <a
-              href={`tel:${contactPhone}`}
-              className="hover:text-fg transition-all duration-150"
-            >
+          <p className="app-body text-app-muted">
+            <span className="text-app-faint">Tel: </span>
+            <a href={`tel:${contactPhone}`} className="transition-colors duration-150 hover:text-app-ink">
               {contactPhone}
             </a>
           </p>
         )}
         {physicalAddress && (
-          <p className="font-body text-t5 text-fg-muted">
-            <span className="text-fg-disabled">Location: </span>
+          <p className="app-body text-app-muted">
+            <span className="text-app-faint">Location: </span>
             {physicalAddress}
           </p>
         )}
         {verifiedAt && (
-          <p className="font-body text-t6 text-fg-disabled">
+          <p className="app-meta text-app-faint">
             Verified{' '}
             {new Date(verifiedAt).toLocaleDateString('en-KE', {
               month: 'short',

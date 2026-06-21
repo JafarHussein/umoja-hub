@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Textarea } from '@/components/ui/Input';
-import { Button } from '@/components/ui/button';
+import { Button, Textarea } from '@/components/app';
 
 export type DocumentType = 'problemBreakdown' | 'approachPlan' | 'finalReflection';
 
@@ -189,50 +188,43 @@ export function DocumentsTab({
 
         return (
           <div key={cfg.type}>
-            {idx > 0 && <div className="border-t border-zinc-800/50 my-5" />}
+            {idx > 0 && <div className="my-5 border-t border-app-hairline" />}
 
             <div className="space-y-2">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                {cfg.label}
-              </p>
+              <p className="app-label text-app-muted">{cfg.label}</p>
 
               <Textarea
                 rows={8}
                 value={editor.content}
                 onChange={(e) => handleChange(cfg.type, e.target.value)}
-                hint={editor.content.length < MIN_CONTENT ? cfg.hint : undefined}
+                {...(editor.content.length < MIN_CONTENT ? { hint: cfg.hint } : {})}
                 aria-label={cfg.label}
               />
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p
-                    className={[
-                      'text-t6 font-mono',
-                      isSaved ? 'text-brand' : 'text-fg-disabled',
-                    ].join(' ')}
-                  >
+                  <p className={['app-meta font-app-mono', isSaved ? 'text-app-brand' : 'text-app-faint'].join(' ')}>
                     {statusLabel(editor)}
                   </p>
                   {editor.saveState === 'error' && editor.errorMsg && (
-                    <p className="text-t6 font-body text-red-400 mt-0.5">{editor.errorMsg}</p>
+                    <p className="app-meta mt-0.5 text-app-danger">{editor.errorMsg}</p>
                   )}
                 </div>
                 <Button
                   variant="secondary"
                   size="sm"
                   disabled={saveDisabled}
+                  isLoading={isSaving}
                   onClick={() => void save(cfg.type, editor.content)}
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  Save
                 </Button>
               </div>
 
               {/* Per-document hash string (corrected VIEW-DET-01) */}
               {editor.hash && (
-                <p className="text-t6 font-mono text-fg-disabled break-all">
-                  <span className="uppercase tracking-widest text-fg-muted">SHA-256</span>{' '}
-                  {editor.hash}
+                <p className="app-meta break-all font-app-mono text-app-faint">
+                  <span className="app-label text-app-muted">SHA-256</span> {editor.hash}
                 </p>
               )}
             </div>

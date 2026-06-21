@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/Badge';
+import { Button, Table, THead, TH, TR, TD } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { CreateListingForm } from '@/components/foodhub/CreateListingForm';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import {
@@ -160,12 +160,8 @@ export default function FarmerListingsPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-t4 font-body font-medium text-fg mb-2">
-          Could not load listings
-        </p>
-        <p className="text-t5 font-body text-fg-muted mb-4">
-          Check your connection and try again.
-        </p>
+        <p className="app-title mb-2 text-app-ink">Could not load listings</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchData()}>
           Retry
         </Button>
@@ -179,7 +175,7 @@ export default function FarmerListingsPage(): React.ReactElement {
   if (verification !== VerificationStatus.APPROVED) {
     return (
       <div className="space-y-6">
-        <h1 className="text-t2 font-heading font-semibold text-fg">My Listings</h1>
+        <h1 className="app-h1 text-app-ink">My Listings</h1>
         <VerificationLockout {...lockoutForStatus(verification)} />
       </div>
     );
@@ -190,12 +186,12 @@ export default function FarmerListingsPage(): React.ReactElement {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-t2 font-heading font-semibold text-fg">My Listings</h1>
-          <p className="text-t5 font-body text-fg-muted mt-0.5">
+          <h1 className="app-h1 text-app-ink">My Listings</h1>
+          <p className="app-meta mt-0.5 text-app-muted">
             {listings.length} listing{listings.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button variant="primary" onClick={() => setIsCreateOpen(true)}>
+        <Button onClick={() => setIsCreateOpen(true)}>
           <svg
             width="14"
             height="14"
@@ -212,8 +208,8 @@ export default function FarmerListingsPage(): React.ReactElement {
 
       {/* Empty state */}
       {listings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-white/5 rounded bg-surface">
-          <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-16 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
             <svg
               width="20"
               height="20"
@@ -226,99 +222,84 @@ export default function FarmerListingsPage(): React.ReactElement {
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinejoin="round"
-                className="text-fg-disabled"
+                className="text-app-faint"
               />
             </svg>
           </div>
-          <p className="text-t4 font-body font-medium text-fg mb-1">
-            No listings yet
-          </p>
-          <p className="text-t5 font-body text-fg-muted mb-4">
+          <p className="app-title mb-1 text-app-ink">No listings yet</p>
+          <p className="app-body mb-4 text-app-muted">
             Create your first listing to start receiving orders from buyers across Kenya.
           </p>
-          <Button variant="primary" onClick={() => setIsCreateOpen(true)}>
-            Create first listing
-          </Button>
+          <Button onClick={() => setIsCreateOpen(true)}>Create first listing</Button>
         </div>
       ) : (
         /* Listings table */
-        <div className="bg-surface border border-white/5 rounded overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/5">
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Listing
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
-              Price
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest text-right">
-              Stock
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Status
-            </span>
-            <span className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Actions
-            </span>
-          </div>
-
-          {listings.map((listing) => (
-            <div
-              key={listing._id}
-              className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-4 border-b border-white/5 last:border-0 items-center"
-            >
-              {/* Title + meta */}
-              <div className="min-w-0">
-                <p className="text-t5 font-body font-medium text-fg truncate">
-                  {listing.title}
-                </p>
-                <p className="text-t6 font-body text-fg-disabled">
-                  {listing.cropName} · {listing.pickupCounty} · {formatDate(listing.createdAt)}
-                </p>
-              </div>
-
-              {/* Price */}
-              <div className="text-right">
-                <span className="text-t5 font-mono text-fg">
-                  KES {listing.currentPricePerUnit.toLocaleString()}
-                </span>
-                <span className="text-t6 text-fg-disabled ml-1">
-                  /{listing.unit.toLowerCase()}
-                </span>
-              </div>
-
-              {/* Stock */}
-              <div className="text-right">
-                <span className="text-t5 font-mono text-fg-muted">
-                  {listing.quantityAvailable.toLocaleString()}
-                </span>
-                <span className="text-t6 text-fg-disabled ml-1">
-                  {listing.unit.toLowerCase()}
-                </span>
-              </div>
-
-              {/* Status badge */}
-              <Badge label={listing.listingStatus} />
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  isLoading={updatingId === listing._id}
-                  onClick={() => void toggleStatus(listing)}
-                  aria-label={
-                    listing.listingStatus === ListingStatus.AVAILABLE
-                      ? `Pause ${listing.title}`
-                      : `Reactivate ${listing.title}`
-                  }
-                >
-                  {listing.listingStatus === ListingStatus.AVAILABLE ? 'Pause' : 'Reactivate'}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Table>
+          <THead>
+            <TH>Listing</TH>
+            <TH className="text-right">Price</TH>
+            <TH className="text-right">Stock</TH>
+            <TH>Status</TH>
+            <TH className="text-right">
+              <span className="sr-only">Actions</span>
+            </TH>
+          </THead>
+          <tbody>
+            {listings.map((listing) => {
+              const available = listing.listingStatus === ListingStatus.AVAILABLE;
+              return (
+                <TR key={listing._id}>
+                  <TD>
+                    <p className="app-body-strong truncate text-app-ink">{listing.title}</p>
+                    <p className="app-meta text-app-muted">
+                      {listing.cropName} · {listing.pickupCounty} · {formatDate(listing.createdAt)}
+                    </p>
+                  </TD>
+                  <TD className="whitespace-nowrap text-right">
+                    <span className="app-data-m text-app-ink">
+                      KSh {listing.currentPricePerUnit.toLocaleString()}
+                    </span>
+                    <span className="app-meta ml-1 text-app-faint">
+                      /{listing.unit.toLowerCase()}
+                    </span>
+                  </TD>
+                  <TD className="whitespace-nowrap text-right">
+                    <span className="app-data-m text-app-muted">
+                      {listing.quantityAvailable.toLocaleString()}
+                    </span>
+                    <span className="app-meta ml-1 text-app-faint">
+                      {listing.unit.toLowerCase()}
+                    </span>
+                  </TD>
+                  <TD>
+                    <span
+                      className={cn(
+                        'app-label inline-flex items-center gap-1 rounded-app-pill px-2 py-0.5',
+                        available
+                          ? 'bg-app-success-surface text-app-success'
+                          : 'bg-app-sunken text-app-muted'
+                      )}
+                    >
+                      <span aria-hidden>{available ? '✓' : '◌'}</span>
+                      {available ? 'Available' : 'Inactive'}
+                    </span>
+                  </TD>
+                  <TD className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      isLoading={updatingId === listing._id}
+                      onClick={() => void toggleStatus(listing)}
+                      aria-label={available ? `Pause ${listing.title}` : `Reactivate ${listing.title}`}
+                    >
+                      {available ? 'Pause' : 'Reactivate'}
+                    </Button>
+                  </TD>
+                </TR>
+              );
+            })}
+          </tbody>
+        </Table>
       )}
 
       {/* Create listing modal */}

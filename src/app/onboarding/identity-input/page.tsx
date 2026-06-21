@@ -3,10 +3,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/button';
+import { Input, Select, Button } from '@/components/app';
 import { Role, KENYAN_COUNTIES } from '@/types';
-import { OnboardingShell, OnboardingError, onboardingSelectClasses } from '../_components/OnboardingShell';
+import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
 // SCR-ONB-002 — role-conditional identity (Stage 2). Common identity fields plus
 // the role-specific profile fields. githubUsername is OAuth-sourced and never
@@ -66,12 +65,12 @@ export default function IdentityInputPage(): React.ReactElement {
   if (role === null) {
     return (
       <OnboardingShell step={2} title="Tell us about you">
-        <p className="font-body text-t5 text-fg-muted">
+        <p className="app-body text-app-muted">
           Loading your details… If this persists, return to{' '}
           <button
             type="button"
             onClick={() => router.push('/onboarding/role-selection')}
-            className="text-brand hover:opacity-80"
+            className="text-app-brand hover:opacity-80"
           >
             role selection
           </button>
@@ -108,30 +107,21 @@ export default function IdentityInputPage(): React.ReactElement {
           required
         />
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="county" className="font-body text-t6 text-fg-muted">
-            County
-          </label>
-          <select
-            id="county"
-            className={onboardingSelectClasses}
-            value={form.county ?? ''}
-            onChange={(e) => set('county', e.target.value)}
-            required
-          >
-            <option value="">Select your county</option>
-            {KENYAN_COUNTIES.map((county) => (
-              <option key={county} value={county}>
-                {county}
-              </option>
-            ))}
-          </select>
-          {fieldErrors['county'] && (
-            <p role="alert" className="font-body text-t6 text-red-400">
-              {fieldErrors['county']?.[0]}
-            </p>
-          )}
-        </div>
+        <Select
+          id="county"
+          label="County"
+          value={form.county ?? ''}
+          onChange={(e) => set('county', e.target.value)}
+          error={fieldErrors['county']?.[0]}
+          required
+        >
+          <option value="">Select your county</option>
+          {KENYAN_COUNTIES.map((county) => (
+            <option key={county} value={county}>
+              {county}
+            </option>
+          ))}
+        </Select>
 
         {role === Role.FARMER && (
           <Input
@@ -235,7 +225,7 @@ export default function IdentityInputPage(): React.ReactElement {
           </>
         )}
 
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">
+        <Button type="submit" size="lg" isLoading={isLoading} className="mt-2 w-full">
           Continue
         </Button>
       </form>

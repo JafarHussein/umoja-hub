@@ -1,14 +1,17 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
+import { Button, Alert, Input } from '@/components/app';
 
-// OAuth-only sign-in (AUTH-07 hard cutover). Sign-in and sign-up are the same
-// action. The callback lands on the onboarding entry; the middleware bounces
-// already-onboarded users on to their dashboard.
-const POST_AUTH_CALLBACK = '/onboarding/role-selection';
+// Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
+// account through /onboarding/welcome; OAuth here reconciles an existing account.
+// The callback lands on an /onboarding route so the middleware bounces an
+// already-onboarded user on to their dashboard. An OAuth sign-in without an
+// account (no draft) is redirected back into onboarding by the signIn callback.
+const POST_AUTH_CALLBACK = '/onboarding/welcome';
 
 // Maps NextAuth `?error=` codes (set by our signIn callback redirects) to copy.
 const ERROR_COPY: Record<string, string> = {
@@ -30,71 +33,170 @@ export default function LoginPage(): React.ReactElement {
 }
 
 function LoginContent(): React.ReactElement {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const errorCode = searchParams.get('error');
-  const error = errorCode ? (ERROR_COPY[errorCode] ?? 'Sign-in failed. Please try again.') : '';
-  const [loading, setLoading] = useState<'google' | 'github' | null>(null);
+  const urlError = errorCode ? (ERROR_COPY[errorCode] ?? 'Sign-in failed. Please try again.') : '';
+
+  const [loading, setLoading] = useState<'google' | 'github' | 'credentials' | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [formError, setFormError] = useState('');
+  const error = formError || urlError;
 
   function handleSignIn(provider: 'google' | 'github'): void {
     setLoading(provider);
     void signIn(provider, { callbackUrl: POST_AUTH_CALLBACK });
   }
 
+  async function handleCredentials(e: React.FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault();
+    if (!username || !password) return;
+    setFormError('');
+    setLoading('credentials');
+    try {
+      const res = await signIn('credentials', { username, password, redirect: false });
+      if (!res || res.error) {
+        setFormError('Invalid username or password.');
+        return;
+      }
+      // Onboarded account → the middleware routes /onboarding/welcome to the
+      // role's dashboard.
+      router.push(POST_AUTH_CALLBACK);
+    } catch {
+      setFormError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 mb-8">
-          <span className="font-heading font-semibold text-t2 text-fg">Umoja</span>
-          <span className="font-heading font-semibold text-t2 text-brand">Hub</span>
+    <div className="theme-app grid min-h-screen bg-app-canvas lg:grid-cols-2">
+      {/* Brand panel — desktop only. Fills the left half with the wordmark, a
+          value statement, and the secure-login illustration. */}
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-app-hairline bg-app-brand-surface px-12 py-12 lg:flex">
+        <div className="flex items-center gap-1">
+          <span className="app-h2 text-app-ink">Umoja</span>
+          <span className="app-h2 text-app-brand">Hub</span>
         </div>
 
-        <div className="bg-surface border border-white/5 rounded p-6">
-          <h1 className="font-heading font-semibold text-t2 text-fg mb-1">
-            Sign in to UmojaHub
-          </h1>
-          <p className="font-body text-t5 text-fg-muted mb-6">
-            Continue with Google or GitHub. New here? This creates your account.
+        <div className="max-w-md">
+          <h2 className="app-display text-app-ink">Trade you can verify. Skills you can prove.</h2>
+          <p className="app-body mt-3 text-app-muted">
+            One account for the verified farmer marketplace and the hands-on build track.
           </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/illustrations/concepts/concept-secure-login.svg"
+            alt=""
+            aria-hidden="true"
+            className="mt-10 h-56 w-auto max-w-full object-contain"
+          />
+        </div>
 
-          {error && (
-            <div
-              role="alert"
-              className="mb-4 px-4 py-3 rounded-sm bg-red-950/40 border border-red-800/50 font-body text-t5 text-red-400"
-            >
-              {error}
-            </div>
-          )}
+        <p className="app-meta text-app-muted">
+          Verified identities · Honest delivery history · Recourse on every order
+        </p>
+      </aside>
 
-          <div className="flex flex-col gap-3">
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              isLoading={loading === 'google'}
-              disabled={loading !== null}
-              onClick={() => handleSignIn('google')}
-              className="w-full"
-            >
-              Continue with Google
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              isLoading={loading === 'github'}
-              disabled={loading !== null}
-              onClick={() => handleSignIn('github')}
-              className="w-full"
-            >
-              Continue with GitHub
-            </Button>
+      {/* Form panel — centered, full-height on every breakpoint. */}
+      <main className="flex min-h-screen items-center justify-center px-6 py-10">
+        <div className="w-full max-w-sm">
+          {/* Wordmark shown here on mobile (the brand panel is hidden < lg). */}
+          <div className="mb-8 flex items-center gap-1 lg:hidden">
+            <span className="app-h2 text-app-ink">Umoja</span>
+            <span className="app-h2 text-app-brand">Hub</span>
           </div>
 
-          <p className="mt-6 font-body text-t6 text-fg-disabled">
-            Students sign in with GitHub. Farmers, buyers and lecturers use Google.
-          </p>
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6 sm:p-8">
+            <h1 className="app-h1 mb-1 text-app-ink">Sign in to UmojaHub</h1>
+            <p className="app-body mb-6 text-app-muted">
+              Use your username and password, or continue with your connected provider.
+            </p>
+
+            {error && (
+              <div className="mb-4">
+                <Alert tone="danger">{error}</Alert>
+              </div>
+            )}
+
+            <form onSubmit={handleCredentials} className="flex flex-col gap-4">
+              <Input
+                label="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+              <Button
+                type="submit"
+                size="lg"
+                isLoading={loading === 'credentials'}
+                disabled={loading !== null || !username || !password}
+                className="w-full"
+              >
+                Sign in
+              </Button>
+              <Link
+                href="/auth/forgot-password"
+                className="app-meta self-start text-app-brand hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </form>
+
+            <div className="my-6 flex items-center gap-3" aria-hidden="true">
+              <span className="h-px flex-1 bg-app-hairline" />
+              <span className="app-meta text-app-faint">or</span>
+              <span className="h-px flex-1 bg-app-hairline" />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                isLoading={loading === 'google'}
+                disabled={loading !== null}
+                onClick={() => handleSignIn('google')}
+                className="w-full"
+              >
+                Continue with Google
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                isLoading={loading === 'github'}
+                disabled={loading !== null}
+                onClick={() => handleSignIn('github')}
+                className="w-full"
+              >
+                Continue with GitHub
+              </Button>
+            </div>
+
+            <p className="app-meta mt-6 text-app-faint">
+              Students sign in with GitHub. Farmers, buyers and lecturers use Google.
+            </p>
+
+            <p className="app-meta mt-4 text-app-muted">
+              New to UmojaHub?{' '}
+              <Link href="/onboarding/welcome" className="text-app-brand hover:underline">
+                Create your account
+              </Link>
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

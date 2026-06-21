@@ -1,5 +1,11 @@
 import {
   roleSelectionSchema,
+  usernameSchema,
+  passwordSchema,
+  onboardingDraftSchema,
+  credentialsLoginSchema,
+  passwordResetRequestSchema,
+  passwordResetConfirmSchema,
   farmerIdentitySchema,
   buyerIdentitySchema,
   studentIdentitySchema,
@@ -12,6 +18,120 @@ import {
 } from '../onboardingSchema';
 
 const CLOUDINARY = 'https://res.cloudinary.com/umojahub/image/upload/x.jpg';
+
+describe('usernameSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
+  it('accepts and lowercases a valid username', () => {
+    const result = usernameSchema.safeParse('Wanjiku_01');
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data).toBe('wanjiku_01');
+  });
+
+  it('rejects too-short and too-long usernames', () => {
+    expect(usernameSchema.safeParse('ab').success).toBe(false);
+    expect(usernameSchema.safeParse('a'.repeat(21)).success).toBe(false);
+  });
+
+  it('rejects disallowed characters', () => {
+    expect(usernameSchema.safeParse('has space').success).toBe(false);
+    expect(usernameSchema.safeParse('dot.name').success).toBe(false);
+    expect(usernameSchema.safeParse('hyphen-name').success).toBe(false);
+  });
+});
+
+describe('passwordSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
+  it('accepts a password with uppercase, lowercase, and a number', () => {
+    expect(passwordSchema.safeParse('Farmer2024').success).toBe(true);
+  });
+
+  it('rejects a too-short password', () => {
+    expect(passwordSchema.safeParse('Ab1').success).toBe(false);
+  });
+
+  it('rejects a password missing a lowercase letter', () => {
+    expect(passwordSchema.safeParse('FARMER2024').success).toBe(false);
+  });
+
+  it('rejects a password missing an uppercase letter', () => {
+    expect(passwordSchema.safeParse('farmer2024').success).toBe(false);
+  });
+
+  it('rejects a password missing a number', () => {
+    expect(passwordSchema.safeParse('FarmerPass').success).toBe(false);
+  });
+
+  it('rejects a password over the bcrypt 72-char input limit', () => {
+    // 73 chars with upper + lower + digit — fails only on the max(72) rule.
+    expect(passwordSchema.safeParse(`Aa1${'a'.repeat(70)}`).success).toBe(false);
+  });
+});
+
+describe('onboardingDraftSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
+  it('accepts a valid farmer draft', () => {
+    expect(
+      onboardingDraftSchema.safeParse({
+        username: 'wanjiku',
+        password: 'Farmer2024',
+        role: 'FARMER',
+      }).success
+    ).toBe(true);
+  });
+
+  it('rejects an ADMIN role at the schema boundary (security invariant #1)', () => {
+    expect(
+      onboardingDraftSchema.safeParse({
+        username: 'sneaky',
+        password: 'Sneaky2024',
+        role: 'ADMIN',
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe('credentialsLoginSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
+  it('accepts a username and any non-empty password', () => {
+    expect(credentialsLoginSchema.safeParse({ username: 'wanjiku', password: 'x' }).success).toBe(
+      true
+    );
+  });
+
+  it('rejects an empty password', () => {
+    expect(credentialsLoginSchema.safeParse({ username: 'wanjiku', password: '' }).success).toBe(
+      false
+    );
+  });
+});
+
+describe('passwordResetRequestSchema (AUTH_ONBOARDING_FLOW_V2 §10)', () => {
+  it('accepts and lowercases a valid email', () => {
+    const r = passwordResetRequestSchema.safeParse({ email: 'Jane@Gmail.COM' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.email).toBe('jane@gmail.com');
+  });
+
+  it('rejects a malformed email', () => {
+    expect(passwordResetRequestSchema.safeParse({ email: 'nope' }).success).toBe(false);
+  });
+});
+
+describe('passwordResetConfirmSchema (AUTH_ONBOARDING_FLOW_V2 §10)', () => {
+  it('accepts a token with a valid new password', () => {
+    expect(
+      passwordResetConfirmSchema.safeParse({ token: 'abc123', password: 'Renewed2024' }).success
+    ).toBe(true);
+  });
+
+  it('rejects a missing token', () => {
+    expect(passwordResetConfirmSchema.safeParse({ token: '', password: 'Renewed2024' }).success).toBe(
+      false
+    );
+  });
+
+  it('rejects a weak new password (reuses passwordSchema)', () => {
+    expect(passwordResetConfirmSchema.safeParse({ token: 'abc123', password: 'short' }).success).toBe(
+      false
+    );
+  });
+});
 
 describe('roleSelectionSchema', () => {
   it.each(['FARMER', 'BUYER', 'STUDENT', 'LECTURER'])('accepts %s', (role) => {

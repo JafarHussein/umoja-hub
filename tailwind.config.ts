@@ -45,12 +45,61 @@ const config: Config = {
         // were removed in Visual System V1 P5 (migrated to semantic tokens). The
         // website palette (canvas/ws.*/copper/teal/violet) was removed in the
         // reset. Do not reintroduce legacy or website palettes here.
+
+        // ── APP design system (Phase 6 mirror of webapp-reset/DESIGN_SYSTEM_V1.md)
+        // Isolated `app` group → bg-app-canvas, text-app-ink, text-app-warning,
+        // bg-app-warning-surface, border-app-hairline … Themed by `.theme-app`
+        // (light) + `.theme-app.dark`/`[data-theme=dark]` in src/styles/globals.css.
+        // Kept separate from the website tokens above by design.
+        app: {
+          canvas: 'rgb(var(--app-canvas) / <alpha-value>)',
+          card: 'rgb(var(--app-card) / <alpha-value>)',
+          sunken: 'rgb(var(--app-sunken) / <alpha-value>)',
+          hairline: 'rgb(var(--app-hairline) / <alpha-value>)',
+          'border-strong': 'rgb(var(--app-border-strong) / <alpha-value>)',
+          ink: 'rgb(var(--app-ink) / <alpha-value>)',
+          body: 'rgb(var(--app-body) / <alpha-value>)',
+          muted: 'rgb(var(--app-muted) / <alpha-value>)',
+          faint: 'rgb(var(--app-faint) / <alpha-value>)',
+          'on-brand': 'rgb(var(--app-on-brand) / <alpha-value>)',
+          ring: 'rgb(var(--app-ring) / <alpha-value>)',
+          brand: {
+            DEFAULT: 'rgb(var(--app-brand) / <alpha-value>)',
+            hover: 'rgb(var(--app-brand-hover) / <alpha-value>)',
+            surface: 'rgb(var(--app-brand-surface) / <alpha-value>)',
+            border: 'rgb(var(--app-brand-border) / <alpha-value>)',
+          },
+          murram: {
+            DEFAULT: 'rgb(var(--app-murram) / <alpha-value>)',
+            surface: 'rgb(var(--app-murram-surface) / <alpha-value>)',
+          },
+          success: {
+            DEFAULT: 'rgb(var(--app-success) / <alpha-value>)',
+            surface: 'rgb(var(--app-success-surface) / <alpha-value>)',
+          },
+          warning: {
+            DEFAULT: 'rgb(var(--app-warning) / <alpha-value>)',
+            surface: 'rgb(var(--app-warning-surface) / <alpha-value>)',
+          },
+          danger: {
+            DEFAULT: 'rgb(var(--app-danger) / <alpha-value>)',
+            surface: 'rgb(var(--app-danger-surface) / <alpha-value>)',
+          },
+          info: {
+            DEFAULT: 'rgb(var(--app-info) / <alpha-value>)',
+            surface: 'rgb(var(--app-info-surface) / <alpha-value>)',
+          },
+        },
       },
       fontFamily: {
         // Dashboard fonts — Sora / IBM Plex Sans / JetBrains Mono
         heading: ['var(--font-sora)', 'sans-serif'],
         body: ['var(--font-ibm-plex-sans)', 'sans-serif'],
         mono: ['var(--font-jetbrains-mono)', 'monospace'],
+        // APP design system (Phase 6): Hanken Grotesk (UI) + Spline Sans Mono
+        // (data/figures, tabular). font-app-sans / font-app-mono.
+        'app-sans': ['var(--font-hanken)', 'sans-serif'],
+        'app-mono': ['var(--font-spline-mono)', 'monospace'],
       },
       fontSize: {
         // Dashboard scale (6-point) — compact, data-dense product surfaces
@@ -78,6 +127,15 @@ const config: Config = {
       borderRadius: {
         DEFAULT: '6px',
         sm: '4px',
+        // APP design system (Phase 6) — App Radius collection.
+        'app-card': '10px',
+        'app-control': '8px',
+        'app-pill': '999px',
+        'app-cell': '6px',
+      },
+      boxShadow: {
+        // APP design system — Elevation/Float (warm-tinted, floating layers only).
+        'app-float': '0 1px 2px rgba(28,27,23,.05), 0 8px 24px rgba(28,27,23,.08)',
       },
       // Functional motion only (foundation §10): the two durations actually in
       // use (150 micro / 250 panel) + one standard easing. The StoryWorld-era

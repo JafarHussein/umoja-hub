@@ -93,6 +93,18 @@ const buyerDataSchema = new Schema(
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    // V2 dual-auth (AUTH_ONBOARDING_FLOW_V2): a unique login handle chosen at
+    // onboarding, and the bcrypt password hash for the credentials login path.
+    // sparse — legacy/seed users may predate it; hashedPassword is select:false
+    // so it never leaves the DB unless explicitly requested.
+    username: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
+    hashedPassword: { type: String, select: false },
+    // Credentials-login brute-force lockout (AUTH_ONBOARDING_FLOW_V2 §10).
+    // Consecutive failures increment failedLoginAttempts; at the threshold the
+    // account is locked until lockedUntil. Both select:false so they never leave
+    // the DB unless explicitly requested by the authorize path.
+    failedLoginAttempts: { type: Number, default: 0, select: false },
+    lockedUntil: { type: Date, default: null, select: false },
     firstName: { type: String, required: true, trim: true },
     // Optional until onboarding Stage 2 (IDENTITY_INPUT, AUTH-05): a fresh OAuth
     // user has only an email + first name until they complete the funnel.
@@ -139,6 +151,10 @@ userSchema.set('toJSON', {
 // The full API-facing interface lives in src/types/foodhub.ts.
 export interface IUserDocument extends Document {
   email: string;
+  username?: string;
+  hashedPassword?: string;
+  failedLoginAttempts?: number;
+  lockedUntil?: Date | null;
   firstName: string;
   lastName: string;
   phoneNumber: string;

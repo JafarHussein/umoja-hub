@@ -360,6 +360,31 @@ async function seed(): Promise<void> {
     },
   ]);
 
+  // V2 credentials login (AUTH_ONBOARDING_FLOW_V2): every seeded account gets a
+  // deterministic username derived from its email local-part so the demo users
+  // can sign in with username + password (the validation rule is 3–20 chars of
+  // [a-z0-9_]). Uniqueness is guarded with a numeric suffix.
+  const usedUsernames = new Set<string>();
+  for (const u of users) {
+    let base = (u.email.split('@')[0] ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .slice(0, 20);
+    if (base.length < 3) base = `${base}_user`.slice(0, 20);
+    let username = base;
+    let n = 1;
+    while (usedUsernames.has(username)) {
+      username = `${base.slice(0, 18)}_${n}`.slice(0, 20);
+      n += 1;
+    }
+    usedUsernames.add(username);
+    u.username = username;
+    await u.save();
+  }
+  log(`Assigned usernames to ${users.length} users.`);
+
   // Build lookup maps by email for foreign key references
   const userByEmail = new Map(users.map((u) => [u.email, u]));
 

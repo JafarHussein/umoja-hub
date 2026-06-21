@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import { Button, Alert } from '@/components/app';
 
 interface IContextEntry {
   id: string;
@@ -26,21 +25,9 @@ type PublishState = 'idle' | 'submitting';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="space-y-1.5">
-          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-48 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-1.5">
-              <div className="h-4 w-40 bg-surface-raised rounded-sm animate-pulse" />
-              <div className="h-3 w-64 bg-surface-raised rounded-sm animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="max-w-4xl space-y-6">
+      <div className="skeleton h-7 w-48 rounded" />
+      <div className="skeleton h-64 rounded-app-card" />
     </div>
   );
 }
@@ -136,7 +123,9 @@ export default function BriefContextsPage(): React.ReactElement {
 
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
-        setPublishError(body.error ?? 'Failed to publish. Check the JSON matches the required schema.');
+        setPublishError(
+          body.error ?? 'Failed to publish. Check the JSON matches the required schema.'
+        );
         setPublishState('idle');
         return;
       }
@@ -158,140 +147,133 @@ export default function BriefContextsPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load brief context library.</p>
-            <button
-              onClick={() => { setPageState('loading'); void fetchLibrary(); }}
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load brief context library</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setPageState('loading');
+            void fetchLibrary();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Admin · Brief Context Library
+    <div className="max-w-4xl space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="app-label mb-1 text-app-faint">Admin · Brief Context Library</p>
+          <h1 className="app-h1 text-app-ink">Brief Contexts</h1>
+          {library && (
+            <p className="app-data-m mt-1 text-app-muted">
+              Version {library.version} · Published{' '}
+              {new Date(library.createdAt).toLocaleDateString('en-KE', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
             </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              Brief Contexts
-            </h1>
-            {library && (
-              <p className="text-t5 font-mono text-fg-muted mt-1 tabular-nums">
-                Version {library.version} · Published{' '}
-                {new Date(library.createdAt).toLocaleDateString('en-KE', {
-                  year: 'numeric', month: 'short', day: 'numeric',
-                })}
-              </p>
-            )}
-          </div>
+          )}
+        </div>
+        <Button
+          variant="primary"
+          onClick={() => {
+            setShowPublishForm((v) => !v);
+            setPublishError(null);
+          }}
+        >
+          {showPublishForm ? 'Cancel' : 'Publish new version'}
+        </Button>
+      </div>
+
+      {/* Publish form */}
+      {showPublishForm && (
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label text-app-muted">New library version</p>
+          <p className="app-body text-app-muted">
+            Paste a JSON array of context objects. Each object must include{' '}
+            <span className="app-data-m text-app-ink">id</span>,{' '}
+            <span className="app-data-m text-app-ink">industryName</span>,{' '}
+            <span className="app-data-m text-app-ink">description</span>,{' '}
+            <span className="app-data-m text-app-ink">targetTiers</span>, and{' '}
+            <span className="app-data-m text-app-ink">clientPersonaTemplate</span>.
+          </p>
+          <textarea
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            placeholder={PLACEHOLDER_JSON}
+            rows={16}
+            className="w-full resize-y rounded-app-control border border-app-border-strong bg-app-sunken px-3 py-2.5 font-app-mono text-[13px] leading-relaxed text-app-ink placeholder:text-app-faint transition-colors duration-150 focus:border-app-brand focus:outline-none focus:ring-2 focus:ring-app-brand/30"
+          />
+          {publishError && <Alert tone="danger">{publishError}</Alert>}
           <Button
             variant="primary"
-            size="md"
-            onClick={() => { setShowPublishForm((v) => !v); setPublishError(null); }}
+            disabled={!jsonInput.trim() || publishState === 'submitting'}
+            isLoading={publishState === 'submitting'}
+            onClick={() => void handlePublish()}
           >
-            {showPublishForm ? 'Cancel' : 'Publish new version'}
+            Publish
           </Button>
         </div>
+      )}
 
-        {/* Publish form */}
-        {showPublishForm && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              New library version
-            </p>
-            <p className="text-t5 font-body text-fg-muted">
-              Paste a JSON array of context objects. Each object must include{' '}
-              <span className="font-mono text-t6 text-fg">id</span>,{' '}
-              <span className="font-mono text-t6 text-fg">industryName</span>,{' '}
-              <span className="font-mono text-t6 text-fg">description</span>,{' '}
-              <span className="font-mono text-t6 text-fg">targetTiers</span>, and{' '}
-              <span className="font-mono text-t6 text-fg">clientPersonaTemplate</span>.
-            </p>
-            <textarea
-              value={jsonInput}
-              onChange={(e) => setJsonInput(e.target.value)}
-              placeholder={PLACEHOLDER_JSON}
-              rows={16}
-              className="w-full bg-surface-raised border border-zinc-800/50 rounded-sm px-3 py-2.5 font-mono text-t6 text-fg placeholder-fg-disabled resize-y focus:outline-none focus:border-brand/50 transition-colors duration-150"
-            />
-            {publishError && (
-              <p className="text-t5 font-body text-red-400 bg-red-950/20 border border-red-900/30 rounded-sm px-3 py-2">
-                {publishError}
-              </p>
-            )}
-            <Button
-              variant="primary"
-              size="md"
-              disabled={!jsonInput.trim() || publishState === 'submitting'}
-              isLoading={publishState === 'submitting'}
-              onClick={() => void handlePublish()}
-            >
-              Publish
-            </Button>
+      {/* Current library */}
+      {pageState === 'empty' || !library ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">No library published yet</p>
+          <p className="app-meta mt-1 text-app-faint">
+            Publish a version to enable AI brief generation with Kenyan industry context.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+          <div className="border-b border-app-hairline px-4 py-3">
+            <p className="app-label text-app-muted">Contexts · {library.contexts.length}</p>
           </div>
-        )}
-
-        {/* Current library */}
-        {pageState === 'empty' || !library ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">No library published yet</p>
-            <p className="text-t5 font-body text-fg-disabled mt-1">
-              Publish a version to enable AI brief generation with Kenyan industry context.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/50">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Contexts · {library.contexts.length}
-              </p>
-            </div>
-            {library.contexts.map((ctx, i) => (
-              <div key={ctx.id ?? i} className="px-4 py-3 border-b border-zinc-800/50 last:border-0 space-y-1.5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-0.5 min-w-0">
-                    <p className="text-t5 font-body text-fg">{ctx.industryName}</p>
-                    <p className="text-t6 font-body text-fg-muted line-clamp-2">{ctx.description}</p>
-                  </div>
-                  <div className="flex gap-1.5 flex-shrink-0">
-                    {ctx.targetTiers.map((tier) => (
-                      <Badge key={tier} variant="neutral" label={tier} />
-                    ))}
-                  </div>
+          {library.contexts.map((ctx, i) => (
+            <div key={ctx.id ?? i} className="space-y-1.5 border-b border-app-hairline px-4 py-3 last:border-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 space-y-0.5">
+                  <p className="app-body-strong text-app-ink">{ctx.industryName}</p>
+                  <p className="app-meta line-clamp-2 text-app-muted">{ctx.description}</p>
                 </div>
-                {ctx.problemDomains.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {ctx.problemDomains.slice(0, 4).map((domain) => (
-                      <span
-                        key={domain}
-                        className="text-t6 font-mono text-fg-disabled bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
-                      >
-                        {domain}
-                      </span>
-                    ))}
-                    {ctx.problemDomains.length > 4 && (
-                      <span className="text-t6 font-mono text-fg-disabled px-1">
-                        +{ctx.problemDomains.length - 4}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="flex flex-shrink-0 gap-1.5">
+                  {ctx.targetTiers.map((tier) => (
+                    <span
+                      key={tier}
+                      className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted"
+                    >
+                      {tier}
+                    </span>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              {ctx.problemDomains.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {ctx.problemDomains.slice(0, 4).map((domain) => (
+                    <span
+                      key={domain}
+                      className="app-meta rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-0.5 font-app-mono text-app-faint"
+                    >
+                      {domain}
+                    </span>
+                  ))}
+                  {ctx.problemDomains.length > 4 && (
+                    <span className="app-meta px-1 font-app-mono text-app-faint">
+                      +{ctx.problemDomains.length - 4}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

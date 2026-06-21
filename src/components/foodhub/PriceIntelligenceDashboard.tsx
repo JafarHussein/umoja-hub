@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PriceTrendChart from './PriceTrendChart';
+import { Button, Input, Select } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { KENYAN_COUNTIES } from '@/types';
 
 const CROPS = ['maize', 'beans', 'tomatoes', 'potatoes', 'tea', 'coffee', 'rice', 'kale', 'capsicum', 'dairy'];
@@ -39,10 +41,10 @@ interface IAlertFormState {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-surface-raised border border-white/5 rounded p-4">
-      <p className="font-body text-t6 text-fg-muted mb-1">{label}</p>
-      <p className="font-mono text-t3 text-fg">{value}</p>
-      {sub && <p className="font-body text-t6 text-fg-disabled mt-1">{sub}</p>}
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+      <p className="app-label mb-1 text-app-muted">{label}</p>
+      <p className="app-data-l text-app-ink">{value}</p>
+      {sub && <p className="app-meta mt-1 text-app-faint">{sub}</p>}
     </div>
   );
 }
@@ -111,57 +113,52 @@ export default function PriceIntelligenceDashboard() {
   const premiumColor =
     stats?.platformPremium !== null && stats?.platformPremium !== undefined
       ? stats.platformPremium >= 0
-        ? 'text-brand'
-        : 'text-red-400'
-      : 'text-fg-muted';
+        ? 'text-app-brand'
+        : 'text-app-danger'
+      : 'text-app-muted';
 
   return (
     <div className="space-y-6">
       {/* Crop/County/Period selectors */}
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1 min-w-[160px]">
-          <label className="block font-body text-t6 text-fg-muted mb-1">Crop</label>
-          <select
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="min-w-[160px] flex-1">
+          <Select
+            label="Crop"
             value={selectedCrop}
             onChange={(e) => setSelectedCrop(e.target.value)}
-            className="w-full bg-surface-raised border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-fg focus:outline-none focus:border-brand/50 min-h-[44px]"
           >
             {CROPS.map((c) => (
-              <option key={c} value={c} className="bg-surface capitalize">
+              <option key={c} value={c}>
                 {c.charAt(0).toUpperCase() + c.slice(1)}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
-        <div className="flex-1 min-w-[160px]">
-          <label className="block font-body text-t6 text-fg-muted mb-1">County</label>
-          <select
+        <div className="min-w-[160px] flex-1">
+          <Select
+            label="County"
             value={selectedCounty}
             onChange={(e) => setSelectedCounty(e.target.value)}
-            className="w-full bg-surface-raised border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-fg focus:outline-none focus:border-brand/50 min-h-[44px]"
           >
             {KENYAN_COUNTIES.map((c) => (
-              <option key={c} value={c} className="bg-surface">
+              <option key={c} value={c}>
                 {c}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
-          <label className="block font-body text-t6 text-fg-muted mb-1">Period</label>
+          <span className="app-label mb-1.5 block text-app-body">Period</span>
           <div className="flex gap-2">
             {(['7d', '30d', '90d'] as const).map((p) => (
-              <button
+              <Button
                 key={p}
+                type="button"
+                variant={period === p ? 'primary' : 'secondary'}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-2 rounded-sm font-body text-t5 border transition-all duration-150 min-h-[44px] ${
-                  period === p
-                    ? 'bg-brand text-white border-brand'
-                    : 'bg-surface-raised text-fg-muted border-white/5 hover:text-fg'
-                }`}
               >
                 {p}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -172,32 +169,32 @@ export default function PriceIntelligenceDashboard() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
             label="Avg Price"
-            value={stats.averagePrice !== null ? `KES ${stats.averagePrice.toFixed(0)}` : '—'}
+            value={stats.averagePrice !== null ? `KSh ${stats.averagePrice.toFixed(0)}` : '—'}
             sub="UmojaHub average"
           />
           <StatCard
             label="Lowest"
-            value={stats.lowestPrice !== null ? `KES ${stats.lowestPrice.toFixed(0)}` : '—'}
+            value={stats.lowestPrice !== null ? `KSh ${stats.lowestPrice.toFixed(0)}` : '—'}
           />
           <StatCard
             label="Highest"
-            value={stats.highestPrice !== null ? `KES ${stats.highestPrice.toFixed(0)}` : '—'}
+            value={stats.highestPrice !== null ? `KSh ${stats.highestPrice.toFixed(0)}` : '—'}
           />
-          <div className="bg-surface-raised border border-white/5 rounded p-4">
-            <p className="font-body text-t6 text-fg-muted mb-1">Platform Premium</p>
-            <p className={`font-mono text-t3 ${premiumColor}`}>
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+            <p className="app-label mb-1 text-app-muted">Platform Premium</p>
+            <p className={cn('app-data-l', premiumColor)}>
               {stats.platformPremium !== null
                 ? `${stats.platformPremium > 0 ? '+' : ''}${stats.platformPremium}%`
                 : '—'}
             </p>
-            <p className="font-body text-t6 text-fg-disabled mt-1">vs middleman benchmark</p>
+            <p className="app-meta mt-1 text-app-faint">vs middleman benchmark</p>
           </div>
         </div>
       )}
 
       {/* Price chart */}
-      <div className="bg-surface border border-white/5 rounded p-6">
-        <h3 className="font-heading text-t3 text-fg mb-4 capitalize">
+      <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+        <h3 className="app-h2 mb-4 capitalize text-app-ink">
           {selectedCrop} prices — {selectedCounty}
         </h3>
         <PriceTrendChart
@@ -208,87 +205,68 @@ export default function PriceIntelligenceDashboard() {
       </div>
 
       {/* Alert creation form */}
-      <div className="bg-surface border border-white/5 rounded p-6">
-        <h3 className="font-heading text-t3 text-fg mb-4">Create Price Alert</h3>
-        <p className="font-body text-t5 text-fg-muted mb-6">
+      <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+        <h3 className="app-h2 mb-2 text-app-ink">Create Price Alert</h3>
+        <p className="app-body mb-6 text-app-muted">
           Get notified by SMS when the price of your crop reaches your target.
         </p>
         <form onSubmit={(e) => void createAlert(e)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block font-body text-t5 text-fg-muted mb-1">Crop</label>
-              <select
-                value={alertForm.cropName}
-                onChange={(e) => setAlertForm((f) => ({ ...f, cropName: e.target.value }))}
-                className="w-full bg-surface-raised border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-fg focus:outline-none focus:border-brand/50 min-h-[44px]"
-              >
-                {CROPS.map((c) => (
-                  <option key={c} value={c} className="bg-surface capitalize">
-                    {c.charAt(0).toUpperCase() + c.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block font-body text-t5 text-fg-muted mb-1">County</label>
-              <select
-                value={alertForm.county}
-                onChange={(e) => setAlertForm((f) => ({ ...f, county: e.target.value }))}
-                className="w-full bg-surface-raised border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-fg focus:outline-none focus:border-brand/50 min-h-[44px]"
-              >
-                {KENYAN_COUNTIES.map((c) => (
-                  <option key={c} value={c} className="bg-surface">
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block font-body text-t5 text-fg-muted mb-1">
-                Target Price (KES)
-              </label>
-              <input
-                type="number"
-                min="1"
-                step="0.01"
-                value={alertForm.targetPricePerUnit}
-                onChange={(e) => setAlertForm((f) => ({ ...f, targetPricePerUnit: e.target.value }))}
-                placeholder="e.g. 45"
-                required
-                className="w-full bg-surface-raised border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-fg placeholder-fg-disabled focus:outline-none focus:border-brand/50 min-h-[44px]"
-              />
-            </div>
-            <div>
-              <label className="block font-body text-t5 text-fg-muted mb-1">Unit</label>
-              <select
-                value={alertForm.unit}
-                onChange={(e) => setAlertForm((f) => ({ ...f, unit: e.target.value }))}
-                className="w-full bg-surface-raised border border-white/5 rounded-sm px-3 py-2 font-body text-t5 text-fg focus:outline-none focus:border-brand/50 min-h-[44px]"
-              >
-                {['KG', 'BAG', 'CRATE', 'LITRE', 'PIECE'].map((u) => (
-                  <option key={u} value={u} className="bg-surface">
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Crop"
+              value={alertForm.cropName}
+              onChange={(e) => setAlertForm((f) => ({ ...f, cropName: e.target.value }))}
+            >
+              {CROPS.map((c) => (
+                <option key={c} value={c}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="County"
+              value={alertForm.county}
+              onChange={(e) => setAlertForm((f) => ({ ...f, county: e.target.value }))}
+            >
+              {KENYAN_COUNTIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+            <Input
+              type="number"
+              label="Target Price (KES)"
+              min="1"
+              step="0.01"
+              value={alertForm.targetPricePerUnit}
+              onChange={(e) => setAlertForm((f) => ({ ...f, targetPricePerUnit: e.target.value }))}
+              placeholder="e.g. 45"
+              required
+            />
+            <Select
+              label="Unit"
+              value={alertForm.unit}
+              onChange={(e) => setAlertForm((f) => ({ ...f, unit: e.target.value }))}
+            >
+              {['KG', 'BAG', 'CRATE', 'LITRE', 'PIECE'].map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </Select>
           </div>
 
-          {alertError && (
-            <p className="font-body text-t5 text-red-400">{alertError}</p>
-          )}
+          {alertError && <p className="app-body text-app-danger">{alertError}</p>}
           {alertSuccess && (
-            <p className="font-body text-t5 text-brand">
+            <p className="app-body text-app-brand">
               Price alert created. You will be notified when the price is reached.
             </p>
           )}
 
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-6 py-3 bg-brand text-white rounded-sm font-body text-t4 hover:opacity-90 transition-all duration-150 min-h-[44px]"
-          >
+          <Button type="submit" className="w-full sm:w-auto">
             Set Alert
-          </button>
+          </Button>
         </form>
       </div>
     </div>

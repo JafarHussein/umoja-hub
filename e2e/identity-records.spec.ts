@@ -35,7 +35,9 @@ test.describe('student profile', () => {
     // GitHub username (OAuth-sourced) + institutional fields.
     await expect(page.getByText('e2e-student')).toBeVisible();
     await expect(page.getByText('student@uni.e2e.test')).toBeVisible();
-    await expect(page.getByText('Verified', { exact: true })).toBeVisible();
+    // The verification pill renders an aria-hidden glyph next to the label, so
+    // no element has the exact text "Verified"; anchor on the glyph + label.
+    await expect(page.getByText(/^.\s?Verified$/)).toBeVisible();
     await expect(page.getByText('REG-E2E-001')).toBeVisible();
   });
 });

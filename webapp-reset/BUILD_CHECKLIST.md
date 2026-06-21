@@ -87,10 +87,14 @@ Visual-complete screens + clickable prototype, per role. Visual language is a **
   - [x] **4 role characters placed on ON-05 Intent** — added a 120×72 framed-thumbnail character slot to each `choice/*` card (layout: radio · avatar · label): Sell←farmer, Buy←buyer, Build portfolio←student, Review work←lecturer. Serves the self-identify job. (Figma thumbnails are renders of the same unDraw illustrations; buyer/lecturer use a simplified subset for converter compatibility — the repo holds the full optimized SVGs for Phase-6 code.)
   - [ ] **3 SVGs still unplaced** (committed as assets, for Phase 6): `concept-farming` (Farm-setup is text), `state-empty`/`state-error` (System-states uses 72px icon glyphs, not illustration slots). Wire in code, or add slots if a later design pass wants them.
 - [ ] Clickable prototype (smart-animate, functional motion only).
-- [ ] Clickable prototype (smart-animate, functional motion only).
 
-## Phase 5 — Design System  (the gate where colour & type are decided)
-- [ ] Palette · typography · tokens (Figma variables ↔ code) · component library · multi-theme
+## Phase 5 — Design System  🔄 IN PROGRESS (owner gave go 2026-06-19) — the gate where colour & type are decided
+Ratifies `HIFI_VISUAL_LANGUAGE_V1.md` → tokens. Canonical spec: **`webapp-reset/DESIGN_SYSTEM_V1.md`**. Owner ruling: **Figma-only this gate; code token mirror lands at Phase 6.**
+- [x] **Token foundation (Figma variables)** — new **App Color** collection (`245:2`) with **Light/Dark** modes (24 semantic color tokens, scoped); **App Radius** collection (`245:27`, 10/8/full/6); Spacing reused. Typography ratified on the applied `HiFi/*` ramp (Hanken Grotesk + Spline Sans Mono); `MidFi/*` kept only for the preserved mid-fi page.
+- [x] **Foundations board** on new **"Design System"** page (`247:2`, board `247:3`) — color swatches + type ramp + radius, all bound to variables. **Multi-theme proven** (board flips Light↔Dark via one mode switch).
+- [x] **Trust components (the heart)** on new **"Components"** page (`250:2`), variants/properties + bound variables, validated Light + Dark: **StatusPill** (`250:18`, 5 states) · **VerificationBadge** (`251:11`, 3 states, bordered) · **TrustScore** (`251:12`, `Score` text prop, mono number) · **DeliveryConfidence** (`252:12`, Building/Established — honest/progressive) · **DecisionAttribution** (`254:2`, Reviewer/Date/Basis text props).
+- [ ] **Base components** — Button · Input · Card · Nav item · Table row · Tab · Modal/Sheet.
+- [ ] Light + dark proofed across the full component set.
 
 ## Phase 6 — Implementation
 - [ ] Implementation plan → code (replacing the gutted app surfaces, build stays green)

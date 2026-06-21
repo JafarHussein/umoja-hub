@@ -12,8 +12,15 @@ import {
   MediationRequestStatus,
   MEDIATION_ESCALATION_HOURS,
 } from '@/types';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import {
+  Button,
+  Select,
+  Textarea,
+  Alert,
+  StatusPill,
+  type StatusState,
+} from '@/components/app';
+import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 
 interface IBuyerOrder {
@@ -61,20 +68,18 @@ interface IPaymentStatusResponse {
 type PageState = 'loading' | 'ready' | 'error' | 'not_found';
 type ActionState = 'idle' | 'submitting' | 'error';
 
-type BadgeVariant = 'success' | 'warning' | 'error' | 'neutral' | 'status' | 'tier-farmer' | 'tier-student' | 'project-status';
-
-function paymentBadgeVariant(status: OrderPaymentStatus): BadgeVariant {
-  if (status === OrderPaymentStatus.PAID) return 'success';
-  if (status === OrderPaymentStatus.FAILED) return 'error';
-  if (status === OrderPaymentStatus.PENDING_PAYMENT) return 'warning';
-  return 'neutral';
+function paymentPillState(status: OrderPaymentStatus): StatusState {
+  if (status === OrderPaymentStatus.PAID) return 'completed';
+  if (status === OrderPaymentStatus.FAILED) return 'denied';
+  return 'pending';
 }
 
-function fulfillmentBadgeVariant(status: OrderFulfillmentStatus): BadgeVariant {
-  if (status === OrderFulfillmentStatus.COMPLETED) return 'success';
-  if (status === OrderFulfillmentStatus.DISPUTED) return 'error';
-  if (status === OrderFulfillmentStatus.IN_FULFILLMENT) return 'neutral';
-  return 'neutral';
+function fulfillmentPillState(status: OrderFulfillmentStatus): StatusState {
+  if (status === OrderFulfillmentStatus.COMPLETED) return 'completed';
+  if (status === OrderFulfillmentStatus.RECEIVED) return 'completed';
+  if (status === OrderFulfillmentStatus.DISPUTED) return 'denied';
+  if (status === OrderFulfillmentStatus.IN_FULFILLMENT) return 'in-transit';
+  return 'pending';
 }
 
 const PAYMENT_LABEL: Record<OrderPaymentStatus, string> = {
@@ -302,26 +307,13 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Loading ─────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-          <div className="space-y-1.5">
-            <div className="h-3 w-20 bg-surface-raised rounded-[4px] animate-pulse" />
-            <div className="h-7 w-40 bg-surface-raised rounded-[4px] animate-pulse" />
-          </div>
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex justify-between">
-                <div className="h-4 w-24 bg-surface-raised rounded-[4px] animate-pulse" />
-                <div className="h-4 w-32 bg-surface-raised rounded-[4px] animate-pulse" />
-              </div>
-            ))}
-          </div>
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-4 w-full bg-surface-raised rounded-[4px] animate-pulse" />
-            ))}
-          </div>
+      <div className="max-w-2xl space-y-6">
+        <div className="space-y-1.5">
+          <div className="skeleton h-3 w-20 rounded" />
+          <div className="skeleton h-7 w-40 rounded" />
         </div>
+        <div className="skeleton h-40 rounded-app-card" />
+        <div className="skeleton h-48 rounded-app-card" />
       </div>
     );
   }
@@ -329,17 +321,15 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Not found ────────────────────────────────────────────────────────────
   if (pageState === 'not_found' || !order) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Order not found.</p>
-            <Link
-              href="/dashboard/buyer/orders"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              ← Back to orders
-            </Link>
-          </div>
+      <div className="max-w-2xl">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">Order not found.</p>
+          <Link
+            href="/dashboard/buyer/orders"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+          >
+            ← Back to orders
+          </Link>
         </div>
       </div>
     );
@@ -348,16 +338,12 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Error ────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load order.</p>
-            <div className="mt-3">
-              <Button variant="ghost" size="sm" onClick={() => void fetchOrder()}>
-                Retry
-              </Button>
-            </div>
-          </div>
+      <div className="max-w-2xl">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body mb-3 text-app-muted">Failed to load order.</p>
+          <Button variant="secondary" onClick={() => void fetchOrder()}>
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -387,346 +373,274 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         })
       : null;
 
+  const detailRows: { label: string; value: string; mono: boolean }[] = [
+    { label: 'Crop', value: order.cropName, mono: false },
+    {
+      label: 'Quantity',
+      value: `${order.quantityOrdered.toLocaleString()} ${order.unit.toLowerCase()}`,
+      mono: true,
+    },
+    { label: 'Total', value: `KSh ${order.totalAmountKES.toLocaleString()}`, mono: true },
+    { label: 'Farmer', value: `${order.farmer.firstName} ${order.farmer.lastName}`, mono: false },
+    {
+      label: 'Placed',
+      value: new Date(order.createdAt).toLocaleDateString('en-KE', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+      mono: false,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-2xl space-y-6">
+      {/* Back link */}
+      <Link
+        href="/dashboard/buyer/orders"
+        className="app-body inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path
+            d="M9.5 6H2.5M5.5 9L2.5 6L5.5 3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Back to orders
+      </Link>
 
-        {/* Back link */}
-        <Link
-          href="/dashboard/buyer/orders"
-          className="inline-flex items-center gap-1.5 text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path
-              d="M9.5 6H2.5M5.5 9L2.5 6L5.5 3"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Back to orders
-        </Link>
-
-        {/* Page header */}
-        <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-            {order.orderReferenceId}
-          </p>
-          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight capitalize">
-            {order.cropName}
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge
-              variant={paymentBadgeVariant(order.paymentStatus)}
-              label={PAYMENT_LABEL[order.paymentStatus]}
-            />
-            <Badge
-              variant={fulfillmentBadgeVariant(order.fulfillmentStatus)}
-              label={FULFILLMENT_LABEL[order.fulfillmentStatus]}
-            />
-          </div>
-        </div>
-
-        {/* UNDER_MEDIATION alert bar — decoupled from order state */}
-        {activeMediation && (
-          <div className="bg-yellow-950/40 border border-yellow-800/40 rounded-[4px] p-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" aria-hidden="true" />
-              <p className="text-t4 font-body font-medium text-yellow-400">
-                Under platform mediation
-              </p>
-            </div>
-            <p className="text-t5 font-body text-fg-muted mt-2">
-              Our mediation team{' '}
-              {activeMediation.status === MediationRequestStatus.IN_REVIEW
-                ? 'is reviewing'
-                : 'has received'}{' '}
-              your escalation ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order
-              status is unchanged while this is resolved.
-            </p>
-          </div>
-        )}
-
-        {/* Progress timeline */}
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-            Progress
-          </p>
-          <OrderTimelineDetailed
-            paymentStatus={order.paymentStatus}
-            fulfillmentStatus={order.fulfillmentStatus}
-            paidAt={order.paidAt}
-            confirmedByFarmerAt={order.confirmedByFarmerAt}
-            receivedByBuyerAt={order.receivedByBuyerAt}
+      {/* Page header */}
+      <div>
+        <p className="app-data-m text-app-faint">{order.orderReferenceId}</p>
+        <h1 className="app-h1 capitalize text-app-ink">{order.cropName}</h1>
+        <div className="mt-2 flex items-center gap-2">
+          <StatusPill
+            state={paymentPillState(order.paymentStatus)}
+            label={PAYMENT_LABEL[order.paymentStatus]}
+          />
+          <StatusPill
+            state={fulfillmentPillState(order.fulfillmentStatus)}
+            label={FULFILLMENT_LABEL[order.fulfillmentStatus]}
           />
         </div>
+      </div>
 
-        {/* Order details */}
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px]">
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Order details
-            </p>
-          </div>
-          {[
-            { label: 'Crop', value: order.cropName, mono: false },
-            {
-              label: 'Quantity',
-              value: `${order.quantityOrdered.toLocaleString()} ${order.unit.toLowerCase()}`,
-              mono: true,
-            },
-            { label: 'Total', value: `KES ${order.totalAmountKES.toLocaleString()}`, mono: true },
-            { label: 'Farmer', value: `${order.farmer.firstName} ${order.farmer.lastName}`, mono: false },
-            { label: 'Placed', value: new Date(order.createdAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }), mono: false },
-          ].map(({ label, value, mono }) => (
-            <div
-              key={label}
-              className="flex items-center justify-between px-4 py-2.5 border-t border-zinc-800/50"
-            >
-              <span className="text-t5 font-body text-fg-muted">{label}</span>
-              <span
-                className={[
-                  'text-t5 text-fg capitalize',
-                  mono ? 'font-mono tabular-nums' : 'font-body',
-                ].join(' ')}
-              >
-                {value}
-              </span>
-            </div>
-          ))}
+      {/* UNDER_MEDIATION alert bar — decoupled from order state */}
+      {activeMediation && (
+        <Alert tone="warning">
+          <span className="app-body-strong">Under platform mediation.</span> Our mediation team{' '}
+          {activeMediation.status === MediationRequestStatus.IN_REVIEW
+            ? 'is reviewing'
+            : 'has received'}{' '}
+          your escalation ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status
+          is unchanged while this is resolved.
+        </Alert>
+      )}
+
+      {/* Progress timeline */}
+      <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <p className="app-label text-app-muted">Progress</p>
+        <OrderTimelineDetailed
+          paymentStatus={order.paymentStatus}
+          fulfillmentStatus={order.fulfillmentStatus}
+          paidAt={order.paidAt}
+          confirmedByFarmerAt={order.confirmedByFarmerAt}
+          receivedByBuyerAt={order.receivedByBuyerAt}
+        />
+      </div>
+
+      {/* Order details */}
+      <div className="rounded-app-card border border-app-hairline bg-app-card">
+        <div className="px-4 pb-2 pt-4">
+          <p className="app-label text-app-muted">Order details</p>
         </div>
-
-        {/* ── Action zone ─────────────────────────────────────────────────── */}
-
-        {/* PENDING_PAYMENT — waiting for M-Pesa */}
-        {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" aria-hidden="true" />
-              <p className="text-t4 font-body font-medium text-fg">
-                Awaiting payment
-              </p>
-            </div>
-            <p className="text-t5 font-body text-fg-muted">
-              Check your phone and enter your M-Pesa PIN to complete this order.
-            </p>
+        {detailRows.map(({ label, value, mono }) => (
+          <div
+            key={label}
+            className="flex items-center justify-between border-t border-app-hairline px-4 py-2.5"
+          >
+            <span className="app-body text-app-muted">{label}</span>
+            <span
+              className={cn(
+                'capitalize text-app-ink',
+                mono ? 'app-data-m' : 'app-body'
+              )}
+            >
+              {value}
+            </span>
           </div>
-        )}
+        ))}
+      </div>
 
-        {/* IN_FULFILLMENT — mark as received */}
-        {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Confirm receipt
+      {/* ── Action zone ─────────────────────────────────────────────────── */}
+
+      {/* PENDING_PAYMENT — waiting for M-Pesa */}
+      {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
+        <div className="space-y-2 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="h-2 w-2 flex-shrink-0 animate-pulse rounded-app-pill bg-app-warning"
+              aria-hidden="true"
+            />
+            <p className="app-body-strong text-app-ink">Awaiting payment</p>
+          </div>
+          <p className="app-body text-app-muted">
+            Check your phone and enter your M-Pesa PIN to complete this order.
+          </p>
+        </div>
+      )}
+
+      {/* IN_FULFILLMENT — mark as received */}
+      {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label text-app-muted">Confirm receipt</p>
+          <p className="app-body text-app-muted">
+            Have you received your order from {order.farmer.firstName}?
+          </p>
+          {receiveError && <Alert tone="danger">{receiveError}</Alert>}
+          <Button
+            isLoading={receiveState === 'submitting'}
+            onClick={() => void handleMarkReceived()}
+            className="w-full"
+          >
+            Mark as received
+          </Button>
+        </div>
+      )}
+
+      {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}
+      {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && !activeMediation && (
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label text-app-muted">Problem with this order?</p>
+
+          {!canEscalate ? (
+            <p className="app-body text-app-muted">
+              Give {order.farmer.firstName} time to fulfil your order. If it still hasn&apos;t
+              arrived, you can escalate to platform mediation from {eligibleDate}.
             </p>
-            <p className="text-t5 font-body text-fg-muted">
-              Have you received your order from {order.farmer.firstName}?
-            </p>
-            {receiveError && (
-              <p className="text-t5 font-body text-red-400" role="alert">
-                {receiveError}
+          ) : !escalateOpen ? (
+            <>
+              <p className="app-body text-app-muted">
+                Haven&apos;t received your order? Our team can step in to help resolve it.
               </p>
-            )}
+              <Button variant="secondary" onClick={() => setEscalateOpen(true)} className="w-full">
+                Escalate to Platform Mediation
+              </Button>
+            </>
+          ) : (
+            <form onSubmit={(e) => void submitMediation(e)} className="space-y-3">
+              <Select
+                label="What went wrong?"
+                value={mediationForm.category}
+                onChange={(e) =>
+                  setMediationForm((prev) => ({
+                    ...prev,
+                    category: e.target.value as MediationCategory,
+                  }))
+                }
+              >
+                {Object.values(MediationCategory).map((c) => (
+                  <option key={c} value={c}>
+                    {MEDIATION_CATEGORY_LABEL[c]}
+                  </option>
+                ))}
+              </Select>
+
+              <Textarea
+                label="Describe the problem (at least 20 characters)"
+                rows={4}
+                value={mediationForm.description}
+                onChange={(e) =>
+                  setMediationForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="Tell our team what happened so we can help."
+              />
+
+              {mediationError && <Alert tone="danger">{mediationError}</Alert>}
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setEscalateOpen(false);
+                    setMediationError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  isLoading={mediationState === 'submitting'}
+                  className="flex-1"
+                >
+                  Submit escalation
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* COMPLETED + not rated — rating form */}
+      {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && !hasRated && (
+        <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-label text-app-muted">Rate this order</p>
+          <form onSubmit={(e) => void handleRatingSubmit(e)} className="space-y-4">
+            {/* Star selector */}
+            <div>
+              <p className="app-body mb-2 text-app-muted">
+                How was your experience with {order.farmer.firstName}?
+              </p>
+              <div className="flex gap-1" role="group" aria-label="Rating">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRatingForm((prev) => ({ ...prev, rating: star }))}
+                    aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+                    className="rounded-app-cell text-2xl leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-app-ring"
+                  >
+                    <span className={ratingForm.rating >= star ? 'text-app-brand' : 'text-app-faint'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Comment */}
+            <Textarea
+              label="Comment (optional)"
+              rows={3}
+              value={ratingForm.comment}
+              onChange={(e) => setRatingForm((prev) => ({ ...prev, comment: e.target.value }))}
+              placeholder="Share your experience..."
+            />
+
+            {ratingError && <Alert tone="danger">{ratingError}</Alert>}
+
             <Button
-              variant="primary"
-              size="md"
-              isLoading={receiveState === 'submitting'}
-              onClick={() => void handleMarkReceived()}
+              type="submit"
+              isLoading={ratingState === 'submitting'}
+              disabled={ratingForm.rating === 0}
               className="w-full"
             >
-              Mark as received
+              Submit rating
             </Button>
-          </div>
-        )}
+          </form>
+        </div>
+      )}
 
-        {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}
-        {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && !activeMediation && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Problem with this order?
-            </p>
-
-            {!canEscalate ? (
-              <p className="text-t5 font-body text-fg-muted">
-                Give {order.farmer.firstName} time to fulfil your order. If it still hasn&apos;t
-                arrived, you can escalate to platform mediation from {eligibleDate}.
-              </p>
-            ) : !escalateOpen ? (
-              <>
-                <p className="text-t5 font-body text-fg-muted">
-                  Haven&apos;t received your order? Our team can step in to help resolve it.
-                </p>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  onClick={() => setEscalateOpen(true)}
-                  className="w-full"
-                >
-                  Escalate to Platform Mediation
-                </Button>
-              </>
-            ) : (
-              <form onSubmit={(e) => void submitMediation(e)} className="space-y-3">
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="mediation-category"
-                    className="text-t5 font-body text-fg-muted block"
-                  >
-                    What went wrong?
-                  </label>
-                  <select
-                    id="mediation-category"
-                    value={mediationForm.category}
-                    onChange={(e) =>
-                      setMediationForm((prev) => ({
-                        ...prev,
-                        category: e.target.value as MediationCategory,
-                      }))
-                    }
-                    className="w-full min-h-[44px] bg-surface-raised border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-fg focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
-                  >
-                    {Object.values(MediationCategory).map((c) => (
-                      <option key={c} value={c} className="bg-surface">
-                        {MEDIATION_CATEGORY_LABEL[c]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="mediation-description"
-                    className="text-t5 font-body text-fg-muted block"
-                  >
-                    Describe the problem{' '}
-                    <span className="text-fg-disabled">(at least 20 characters)</span>
-                  </label>
-                  <textarea
-                    id="mediation-description"
-                    rows={4}
-                    value={mediationForm.description}
-                    onChange={(e) =>
-                      setMediationForm((prev) => ({ ...prev, description: e.target.value }))
-                    }
-                    className="w-full bg-surface-raised border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-fg placeholder:text-fg-disabled resize-none focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
-                    placeholder="Tell our team what happened so we can help."
-                  />
-                </div>
-
-                {mediationError && (
-                  <p className="text-t5 font-body text-red-400" role="alert">
-                    {mediationError}
-                  </p>
-                )}
-
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="md"
-                    onClick={() => {
-                      setEscalateOpen(false);
-                      setMediationError(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    isLoading={mediationState === 'submitting'}
-                    className="flex-1"
-                  >
-                    Submit escalation
-                  </Button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* COMPLETED + not rated — rating form */}
-        {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && !hasRated && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Rate this order
-            </p>
-            <form onSubmit={(e) => void handleRatingSubmit(e)} className="space-y-4">
-              {/* Star selector */}
-              <div>
-                <p className="text-t5 font-body text-fg-muted mb-2">
-                  How was your experience with {order.farmer.firstName}?
-                </p>
-                <div className="flex gap-1" role="group" aria-label="Rating">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRatingForm((prev) => ({ ...prev, rating: star }))}
-                      aria-label={`${star} star${star !== 1 ? 's' : ''}`}
-                      className="text-2xl leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand rounded-[2px]"
-                    >
-                      <span
-                        className={ratingForm.rating >= star ? 'text-brand' : 'text-fg-disabled'}
-                      >
-                        ★
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Comment */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="rating-comment"
-                  className="text-t5 font-body text-fg-muted block"
-                >
-                  Comment{' '}
-                  <span className="text-fg-disabled">(optional)</span>
-                </label>
-                <textarea
-                  id="rating-comment"
-                  rows={3}
-                  value={ratingForm.comment}
-                  onChange={(e) => setRatingForm((prev) => ({ ...prev, comment: e.target.value }))}
-                  className="w-full bg-surface-raised border border-zinc-800/50 rounded-[4px] px-3 py-2 text-t5 font-body text-fg placeholder:text-fg-disabled resize-none focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150"
-                  placeholder="Share your experience..."
-                />
-              </div>
-
-              {ratingError && (
-                <p className="text-t5 font-body text-red-400" role="alert">
-                  {ratingError}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                isLoading={ratingState === 'submitting'}
-                disabled={ratingForm.rating === 0}
-                className="w-full"
-              >
-                Submit rating
-              </Button>
-            </form>
-          </div>
-        )}
-
-        {/* COMPLETED + already rated */}
-        {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && hasRated && (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4">
-            <p className="text-t5 font-body text-fg-muted">
-              You have rated this order.
-            </p>
-          </div>
-        )}
-
-      </div>
+      {/* COMPLETED + already rated */}
+      {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && hasRated && (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-body text-app-muted">You have rated this order.</p>
+        </div>
+      )}
     </div>
   );
 }

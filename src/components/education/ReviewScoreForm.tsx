@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, Alert } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { LecturerDecision, REVIEW_MIN_WORD_COUNT } from '@/types';
 
 // Peer review data revealed by POST /api/lecturer/reviews after the decision
@@ -35,6 +36,10 @@ const DECISIONS = [
   { value: LecturerDecision.DENIED, label: 'Denied' },
 ] as const;
 
+// Shared textarea styling — mirrors the app Field shell for a bare textarea.
+const FIELD_CLASS =
+  'app-body w-full resize-none rounded-app-control border bg-app-card px-3 py-2.5 text-app-ink placeholder:text-app-faint transition-colors duration-150 focus:outline-none focus:ring-2';
+
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter((w) => w.length > 0).length;
 }
@@ -50,20 +55,20 @@ function ScoreSelector({
 }): React.ReactElement {
   return (
     <div className="space-y-1.5">
-      <p className="text-t5 font-body text-fg-muted">{label}</p>
+      <p className="app-body text-app-muted">{label}</p>
       <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={[
-              'w-9 h-9 rounded-sm font-mono text-t5 border transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand',
+            className={cn(
+              'app-data-m h-9 w-9 rounded-app-control border transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring',
               value === n
-                ? 'bg-brand/10 border-brand text-brand'
-                : 'bg-surface-raised border-zinc-800/50 text-fg-muted hover:border-white/20',
-            ].join(' ')}
+                ? 'border-app-brand bg-app-brand-surface text-app-brand'
+                : 'border-app-border-strong bg-app-card text-app-muted hover:border-app-brand'
+            )}
             aria-pressed={value === n}
           >
             {n}
@@ -89,13 +94,8 @@ function CommentField({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <p className="text-t5 font-body text-fg-muted">{label}</p>
-        <span
-          className={[
-            'text-t6 font-mono tabular-nums',
-            met ? 'text-brand' : 'text-fg-disabled',
-          ].join(' ')}
-        >
+        <p className="app-body text-app-muted">{label}</p>
+        <span className={cn('app-meta font-app-mono', met ? 'text-app-brand' : 'text-app-faint')}>
           {words}/{REVIEW_MIN_WORD_COUNT}
         </span>
       </div>
@@ -103,12 +103,7 @@ function CommentField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={4}
-        className={[
-          'w-full bg-surface-raised border rounded-sm px-3 py-2.5 font-body text-t5',
-          'text-fg placeholder-fg-disabled resize-none',
-          'focus:outline-none transition-colors duration-150',
-          met ? 'border-zinc-800/50 focus:border-brand/50' : 'border-zinc-800/50',
-        ].join(' ')}
+        className={cn(FIELD_CLASS, 'border-app-border-strong focus:border-app-brand focus:ring-app-brand/30')}
         placeholder={`Write at least ${REVIEW_MIN_WORD_COUNT} words...`}
       />
     </div>
@@ -195,11 +190,24 @@ export function ReviewScoreForm({
     }
   }
 
+  // Decision option tint by outcome.
+  function decisionClasses(value: LecturerDecision, selected: boolean): string {
+    if (!selected) return 'border-app-border-strong hover:border-app-brand';
+    if (value === LecturerDecision.VERIFIED) return 'border-app-brand bg-app-brand-surface';
+    if (value === LecturerDecision.DENIED) return 'border-app-danger bg-app-danger-surface';
+    return 'border-app-warning bg-app-warning-surface';
+  }
+
+  function decisionTextClass(value: LecturerDecision, selected: boolean): string {
+    if (!selected) return 'text-app-muted';
+    if (value === LecturerDecision.VERIFIED) return 'text-app-brand';
+    if (value === LecturerDecision.DENIED) return 'text-app-danger';
+    return 'text-app-warning';
+  }
+
   return (
     <div className="space-y-6">
-      <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-        Review form
-      </p>
+      <p className="app-label text-app-muted">Review form</p>
 
       {/* Scores */}
       <div className="space-y-4">
@@ -214,7 +222,7 @@ export function ReviewScoreForm({
       </div>
 
       {/* Comments */}
-      <div className="space-y-4 pt-2 border-t border-zinc-800/50">
+      <div className="space-y-4 border-t border-app-hairline pt-2">
         {SCORE_DIMS.map(({ key, label }) => (
           <CommentField
             key={key}
@@ -225,90 +233,67 @@ export function ReviewScoreForm({
         ))}
 
         <div className="space-y-1.5">
-          <p className="text-t5 font-body text-fg-muted">
-            Overall feedback{' '}
-            <span className="text-fg-disabled">(optional)</span>
+          <p className="app-body text-app-muted">
+            Overall feedback <span className="text-app-faint">(optional)</span>
           </p>
           <textarea
             value={overallFeedback}
             onChange={(e) => setOverallFeedback(e.target.value)}
             rows={3}
-            className="w-full bg-surface-raised border border-zinc-800/50 rounded-sm px-3 py-2.5 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-brand/50 transition-colors duration-150"
+            className={cn(FIELD_CLASS, 'border-app-border-strong focus:border-app-brand focus:ring-app-brand/30')}
             placeholder="Any additional comments for the student..."
           />
         </div>
       </div>
 
       {/* Decision */}
-      <div className="space-y-2 pt-2 border-t border-zinc-800/50">
-        <p className="text-t5 font-body text-fg-muted">Decision</p>
+      <div className="space-y-2 border-t border-app-hairline pt-2">
+        <p className="app-body text-app-muted">Decision</p>
         <div className="space-y-1.5">
-          {DECISIONS.map(({ value, label }) => (
-            <label
-              key={value}
-              className={[
-                'flex items-center gap-3 px-3 py-2.5 rounded-sm border cursor-pointer transition-colors duration-150',
-                decision === value
-                  ? value === LecturerDecision.VERIFIED
-                    ? 'border-brand bg-brand/5'
-                    : value === LecturerDecision.DENIED
-                      ? 'border-red-800/50 bg-red-950/10'
-                      : 'border-amber-800/50 bg-amber-950/10'
-                  : 'border-zinc-800/50 hover:border-white/20',
-              ].join(' ')}
-            >
-              <input
-                type="radio"
-                name="decision"
-                value={value}
-                checked={decision === value}
-                onChange={() => setDecision(value)}
-                className="accent-brand"
-              />
-              <span
-                className={[
-                  'text-t5 font-body',
-                  decision === value
-                    ? value === LecturerDecision.VERIFIED
-                      ? 'text-brand'
-                      : value === LecturerDecision.DENIED
-                        ? 'text-red-400'
-                        : 'text-amber-400'
-                    : 'text-fg-muted',
-                ].join(' ')}
+          {DECISIONS.map(({ value, label }) => {
+            const selected = decision === value;
+            return (
+              <label
+                key={value}
+                className={cn(
+                  'flex cursor-pointer items-center gap-3 rounded-app-control border px-3 py-2.5 transition-colors duration-150',
+                  decisionClasses(value, selected)
+                )}
               >
-                {label}
-              </span>
-            </label>
-          ))}
+                <input
+                  type="radio"
+                  name="decision"
+                  value={value}
+                  checked={selected}
+                  onChange={() => setDecision(value)}
+                  className="accent-app-brand"
+                />
+                <span className={cn('app-body', decisionTextClass(value, selected))}>{label}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
       {/* Rejection reason — only when DENIED */}
       {decision === LecturerDecision.DENIED && (
         <div className="space-y-1.5">
-          <p className="text-t5 font-body text-red-400">Rejection reason</p>
+          <p className="app-body text-app-danger">Rejection reason</p>
           <textarea
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
             rows={3}
-            className="w-full bg-surface-raised border border-red-900/40 rounded-sm px-3 py-2.5 font-body text-t5 text-fg placeholder-fg-disabled resize-none focus:outline-none focus:border-red-700/50 transition-colors duration-150"
+            className={cn(FIELD_CLASS, 'border-app-danger/40 focus:border-app-danger focus:ring-app-danger/30')}
             placeholder="Explain why this project is being denied..."
           />
         </div>
       )}
 
-      {submitError && (
-        <p className="text-t5 font-body text-red-400 bg-red-950/20 border border-red-900/30 rounded-sm px-3 py-2">
-          {submitError}
-        </p>
-      )}
+      {submitError && <Alert tone="danger">{submitError}</Alert>}
 
       <Button
-        variant="primary"
-        size="md"
         className="w-full"
-        disabled={!canSubmit() || submitState === 'submitting'}
+        disabled={!canSubmit()}
         isLoading={submitState === 'submitting'}
         onClick={() => void handleSubmit()}
       >

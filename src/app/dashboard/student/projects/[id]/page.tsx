@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { Role, ProjectStatus, ProjectTrack, StudentTier } from '@/types';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import { Button, Alert } from '@/components/app';
+import { cn } from '@/lib/cn';
 import { ProjectStatusStepper } from '@/components/education/ProjectStatusStepper';
 import { DocumentsTab } from '@/components/education/DocumentsTab';
 import { BlockersTab } from '@/components/education/BlockersTab';
@@ -78,12 +78,10 @@ type ActionState = 'idle' | 'beginning';
 type SubmitState = 'idle' | 'submitting';
 type WorkspaceTab = 'overview' | 'documents' | 'blockers' | 'ai-usage';
 
-type ComplexityVariant = 'success' | 'warning' | 'error';
-
-const COMPLEXITY_VARIANT: Record<'LOW' | 'MEDIUM' | 'HIGH', ComplexityVariant> = {
-  LOW: 'success',
-  MEDIUM: 'warning',
-  HIGH: 'error',
+const COMPLEXITY_PILL: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
+  LOW: 'bg-app-success-surface text-app-success',
+  MEDIUM: 'bg-app-warning-surface text-app-warning',
+  HIGH: 'bg-app-danger-surface text-app-danger',
 };
 
 const TAB_CONFIG: { id: WorkspaceTab; label: string }[] = [
@@ -105,37 +103,35 @@ const DOC_ITEMS: { type: DocumentType; label: string }[] = [
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="h-4 w-24 bg-surface-raised rounded-sm animate-pulse" />
-        <div className="space-y-1.5">
-          <div className="h-3 w-32 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-56 bg-surface-raised rounded-sm animate-pulse" />
+    <div className="max-w-5xl space-y-6">
+      <div className="skeleton h-4 w-24 rounded" />
+      <div className="skeleton h-7 w-56 rounded" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        <div className="space-y-4 md:col-span-8">
+          <div className="skeleton h-64 rounded-app-card" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-8 space-y-4">
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-              <div className="h-5 w-48 bg-surface-raised rounded-sm animate-pulse" />
-              <div className="h-4 w-full bg-surface-raised rounded-sm animate-pulse" />
-              <div className="h-4 w-3/4 bg-surface-raised rounded-sm animate-pulse" />
-              <div className="h-4 w-5/6 bg-surface-raised rounded-sm animate-pulse" />
-              <div className="h-4 w-2/3 bg-surface-raised rounded-sm animate-pulse" />
-            </div>
-          </div>
-          <div className="md:col-span-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i}>
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-surface-raised animate-pulse flex-shrink-0" />
-                  <div className="h-4 w-28 bg-surface-raised rounded-sm animate-pulse" />
-                </div>
-                {i < 4 && <div className="ml-[4px] w-px h-4 bg-zinc-800/50" />}
-              </div>
-            ))}
-          </div>
+        <div className="space-y-4 md:col-span-4">
+          <div className="skeleton h-48 rounded-app-card" />
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Bullet list ───────────────────────────────────────────────────────────────
+
+function BulletList({ items }: { items: string[] }): React.ReactElement {
+  return (
+    <ul className="space-y-1">
+      {items.map((item, i) => (
+        <li key={i} className="flex items-start gap-2">
+          <span className="mt-1 flex-shrink-0 text-app-faint" aria-hidden="true">
+            –
+          </span>
+          <span className="app-body text-app-muted">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -143,87 +139,59 @@ function PageSkeleton(): React.ReactElement {
 
 function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
   return (
-    <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-          Brief
-        </p>
-        <h2 className="text-t3 font-heading font-semibold text-fg tracking-tight">
-          {brief.title}
-        </h2>
+        <p className="app-label mb-1 text-app-muted">Brief</p>
+        <h2 className="app-h2 text-app-ink">{brief.title}</h2>
       </div>
 
       <div className="space-y-0">
-        <div className="flex items-start justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted flex-shrink-0 mr-4">
-            Client
-          </span>
-          <span className="text-t5 font-body text-fg text-right">
+        <div className="flex items-start justify-between border-b border-app-hairline py-2.5">
+          <span className="app-body mr-4 flex-shrink-0 text-app-muted">Client</span>
+          <span className="app-body text-right text-app-ink">
             {brief.clientPersona.businessType} · {brief.clientPersona.county}
           </span>
         </div>
-        <div className="flex items-start justify-between py-2.5 border-b border-zinc-800/50">
-          <span className="text-t5 font-body text-fg-muted flex-shrink-0 mr-4">
-            Complexity
+        <div className="flex items-start justify-between border-b border-app-hairline py-2.5">
+          <span className="app-body mr-4 flex-shrink-0 text-app-muted">Complexity</span>
+          <span
+            className={cn(
+              'app-label inline-flex items-center rounded-app-pill px-2 py-0.5 capitalize',
+              COMPLEXITY_PILL[brief.estimatedComplexity]
+            )}
+          >
+            {brief.estimatedComplexity.toLowerCase()}
           </span>
-          <Badge
-            variant={COMPLEXITY_VARIANT[brief.estimatedComplexity]}
-            label={brief.estimatedComplexity}
-          />
         </div>
       </div>
 
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
-          Problem statement
-        </p>
-        <p className="text-t5 font-body text-fg-muted leading-relaxed">
-          {brief.problemStatement}
-        </p>
+        <p className="app-label mb-1.5 text-app-muted">Problem statement</p>
+        <p className="app-body leading-relaxed text-app-muted">{brief.problemStatement}</p>
       </div>
 
       {brief.coreRequirements.length > 0 && (
         <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
-            Core requirements
-          </p>
-          <ul className="space-y-1">
-            {brief.coreRequirements.map((req, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-fg-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
-                <span className="text-t5 font-body text-fg-muted">{req}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="app-label mb-1.5 text-app-muted">Core requirements</p>
+          <BulletList items={brief.coreRequirements} />
         </div>
       )}
 
       {brief.deliverables.length > 0 && (
         <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
-            Deliverables
-          </p>
-          <ul className="space-y-1">
-            {brief.deliverables.map((d, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-fg-disabled mt-1 flex-shrink-0" aria-hidden="true">–</span>
-                <span className="text-t5 font-body text-fg-muted">{d}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="app-label mb-1.5 text-app-muted">Deliverables</p>
+          <BulletList items={brief.deliverables} />
         </div>
       )}
 
       {brief.suggestedTechStack.length > 0 && (
         <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
-            Suggested stack
-          </p>
+          <p className="app-label mb-1.5 text-app-muted">Suggested stack</p>
           <div className="flex flex-wrap gap-1.5">
             {brief.suggestedTechStack.map((tech) => (
               <span
                 key={tech}
-                className="text-t6 font-mono text-fg-muted bg-surface-raised border border-zinc-800/50 rounded-[2px] px-2 py-0.5"
+                className="app-label rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-0.5 text-app-muted"
               >
                 {tech}
               </span>
@@ -239,44 +207,32 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
 
 function OpenSourceBriefCard({ brief }: { brief: IOpenSourceBrief }): React.ReactElement {
   return (
-    <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-4">
+    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-          Open Source Brief
-        </p>
-        <h2 className="text-t3 font-heading font-semibold text-fg tracking-tight">
-          {brief.repoName}
-        </h2>
+        <p className="app-label mb-1 text-app-muted">Open Source Brief</p>
+        <h2 className="app-h2 text-app-ink">{brief.repoName}</h2>
       </div>
 
-      <div className="flex items-center justify-between py-2.5 border-b border-zinc-800/50">
-        <span className="text-t5 font-body text-fg-muted">Repository</span>
+      <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
+        <span className="app-body text-app-muted">Repository</span>
         <a
           href={brief.repoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-t5 font-mono text-brand hover:text-brand/80 transition-colors duration-150"
+          className="app-data-m text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
         >
           {brief.repoUrl.replace('https://github.com/', '')}
         </a>
       </div>
 
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
-          Contribution goal
-        </p>
-        <p className="text-t5 font-body text-fg-muted leading-relaxed">
-          {brief.contributionGoal}
-        </p>
+        <p className="app-label mb-1.5 text-app-muted">Contribution goal</p>
+        <p className="app-body leading-relaxed text-app-muted">{brief.contributionGoal}</p>
       </div>
 
       <div>
-        <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1.5">
-          Proposed approach
-        </p>
-        <p className="text-t5 font-body text-fg-muted leading-relaxed">
-          {brief.proposedApproach}
-        </p>
+        <p className="app-label mb-1.5 text-app-muted">Proposed approach</p>
+        <p className="app-body leading-relaxed text-app-muted">{brief.proposedApproach}</p>
       </div>
     </div>
   );
@@ -288,8 +244,8 @@ function OverviewContent({ status }: { status: ProjectStatus }): React.ReactElem
   if (status === ProjectStatus.BRIEF_GENERATED) {
     return (
       <div className="p-6 text-center">
-        <p className="text-t4 font-body text-fg-muted">Workspace locked</p>
-        <p className="text-t5 font-body text-fg-disabled mt-1">
+        <p className="app-body text-app-muted">Workspace locked</p>
+        <p className="app-meta mt-1 text-app-faint">
           Click &quot;Begin project&quot; to start working on your brief.
         </p>
       </div>
@@ -297,8 +253,8 @@ function OverviewContent({ status }: { status: ProjectStatus }): React.ReactElem
   }
   return (
     <div className="p-6 text-center">
-      <p className="text-t4 font-body text-fg-muted">Project is active</p>
-      <p className="text-t5 font-body text-fg-disabled mt-1">
+      <p className="app-body text-app-muted">Project is active</p>
+      <p className="app-meta mt-1 text-app-faint">
         Use the Documents, Blockers, and AI Usage tabs to track your work.
       </p>
     </div>
@@ -374,9 +330,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   function handleDocumentSaved(type: DocumentType, saved: IProcessDocument): void {
     setEngagement((prev) =>
-      prev
-        ? { ...prev, documents: { ...prev.documents, [type]: saved } }
-        : null
+      prev ? { ...prev, documents: { ...prev.documents, [type]: saved } } : null
     );
   }
 
@@ -471,17 +425,15 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load project.</p>
-            <Link
-              href="/dashboard/student"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              ← My projects
-            </Link>
-          </div>
+      <div className="max-w-5xl">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">Failed to load project.</p>
+          <Link
+            href="/dashboard/student"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+          >
+            ← My projects
+          </Link>
         </div>
       </div>
     );
@@ -489,17 +441,15 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   if (pageState === 'not_found' || !engagement) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Project not found.</p>
-            <Link
-              href="/dashboard/student"
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              ← My projects
-            </Link>
-          </div>
+      <div className="max-w-5xl">
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">Project not found.</p>
+          <Link
+            href="/dashboard/student"
+            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+          >
+            ← My projects
+          </Link>
         </div>
       </div>
     );
@@ -518,262 +468,217 @@ export default function ProjectWorkspacePage(): React.ReactElement {
   const allDocsPresent = completedCount === DOC_ITEMS.length;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-5xl space-y-6">
+      {/* Back link */}
+      <Link
+        href="/dashboard/student"
+        className="app-body inline-flex text-app-muted transition-colors duration-150 hover:text-app-ink"
+      >
+        ← My projects
+      </Link>
 
-        {/* Back link */}
-        <Link
-          href="/dashboard/student"
-          className="inline-flex text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150"
-        >
-          ← My projects
-        </Link>
+      {/* Page header */}
+      <div>
+        <p className="app-data-m text-app-faint">{engagement._id}</p>
+        <h1 className="app-h1 text-app-ink">{briefTitle}</h1>
+      </div>
 
-        {/* Page header */}
-        <div>
-          <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-            {engagement._id}
-          </p>
-          <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-            {briefTitle}
-          </h1>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        {/* Left — brief + workspace tabs */}
+        <div className="space-y-6 md:col-span-8">
+          {/* Brief card */}
+          {isAIBrief ? (
+            <AIBriefCard brief={brief as unknown as IAIBrief} />
+          ) : (
+            <OpenSourceBriefCard brief={brief as unknown as IOpenSourceBrief} />
+          )}
+
+          {/* Workspace tabs */}
+          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+            {/* Tab bar */}
+            <div className="flex border-b border-app-hairline">
+              {TAB_CONFIG.map(({ id, label }) => {
+                const isActive = activeTab === id;
+                const isLocked = id !== 'overview' && !tabsUnlocked;
+
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => !isLocked && setActiveTab(id)}
+                    className={cn(
+                      'app-nav border-b-2 px-4 py-2.5 transition-colors duration-150',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-ring',
+                      isActive
+                        ? 'border-app-brand text-app-ink'
+                        : isLocked
+                          ? 'cursor-not-allowed border-transparent text-app-faint'
+                          : 'cursor-pointer border-transparent text-app-muted hover:text-app-ink'
+                    )}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab content */}
+            {activeTab === 'overview' && <OverviewContent status={engagement.status} />}
+            {activeTab === 'documents' && tabsUnlocked && (
+              <DocumentsTab
+                engagementId={engagement._id}
+                documents={engagement.documents}
+                onDocumentSaved={handleDocumentSaved}
+              />
+            )}
+            {activeTab === 'blockers' && tabsUnlocked && (
+              <BlockersTab
+                engagementId={engagement._id}
+                initialBlockers={engagement.documents.blockerLog}
+                onBlockerAdded={handleBlockerAdded}
+              />
+            )}
+            {activeTab === 'ai-usage' && tabsUnlocked && (
+              <AIUsageTab
+                engagementId={engagement._id}
+                initialEntries={engagement.documents.aiUsageLog}
+                onEntryAdded={handleAIUsageAdded}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Main grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-          {/* Left — brief + workspace tabs */}
-          <div className="md:col-span-8 space-y-6">
-
-            {/* Brief card */}
-            {isAIBrief ? (
-              <AIBriefCard brief={brief as unknown as IAIBrief} />
-            ) : (
-              <OpenSourceBriefCard brief={brief as unknown as IOpenSourceBrief} />
-            )}
-
-            {/* Workspace tabs */}
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-
-              {/* Tab bar */}
-              <div className="flex border-b border-zinc-800/50">
-                {TAB_CONFIG.map(({ id, label }) => {
-                  const isActive = activeTab === id;
-                  const isLocked = id !== 'overview' && !tabsUnlocked;
-
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      disabled={isLocked}
-                      onClick={() => !isLocked && setActiveTab(id)}
-                      className={[
-                        'px-4 py-2.5 text-t5 font-body border-b-2 transition-colors duration-150',
-                        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-inset',
-                        isActive
-                          ? 'border-brand text-fg'
-                          : isLocked
-                          ? 'border-transparent text-fg-disabled cursor-not-allowed'
-                          : 'border-transparent text-fg-muted hover:text-fg cursor-pointer',
-                      ].join(' ')}
-                      aria-current={isActive ? 'true' : undefined}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Tab content */}
-              {activeTab === 'overview' && (
-                <OverviewContent status={engagement.status} />
-              )}
-              {activeTab === 'documents' && tabsUnlocked && (
-                <DocumentsTab
-                  engagementId={engagement._id}
-                  documents={engagement.documents}
-                  onDocumentSaved={handleDocumentSaved}
-                />
-              )}
-              {activeTab === 'blockers' && tabsUnlocked && (
-                <BlockersTab
-                  engagementId={engagement._id}
-                  initialBlockers={engagement.documents.blockerLog}
-                  onBlockerAdded={handleBlockerAdded}
-                />
-              )}
-              {activeTab === 'ai-usage' && tabsUnlocked && (
-                <AIUsageTab
-                  engagementId={engagement._id}
-                  initialEntries={engagement.documents.aiUsageLog}
-                  onEntryAdded={handleAIUsageAdded}
-                />
-              )}
-            </div>
+        {/* Right — stepper + actions */}
+        <div className="space-y-4 md:col-span-4">
+          {/* Status stepper */}
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+            <p className="app-label mb-3 text-app-muted">Progress</p>
+            <ProjectStatusStepper status={engagement.status} />
           </div>
 
-          {/* Right — stepper + actions */}
-          <div className="md:col-span-4 space-y-4">
+          {/* Action zone */}
+          <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+            <p className="app-label text-app-muted">Actions</p>
 
-            {/* Status stepper */}
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-3">
-                Progress
-              </p>
-              <ProjectStatusStepper status={engagement.status} />
-            </div>
+            {/* BRIEF_GENERATED */}
+            {engagement.status === ProjectStatus.BRIEF_GENERATED && (
+              <>
+                <Button
+                  className="w-full"
+                  isLoading={actionState === 'beginning'}
+                  onClick={() => void handleBeginProject()}
+                >
+                  Begin project
+                </Button>
+                {actionError && <Alert tone="danger">{actionError}</Alert>}
+              </>
+            )}
 
-            {/* Action zone */}
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                Actions
-              </p>
-
-              {/* BRIEF_GENERATED */}
-              {engagement.status === ProjectStatus.BRIEF_GENERATED && (
-                <>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full"
-                    disabled={actionState === 'beginning'}
-                    onClick={() => void handleBeginProject()}
-                  >
-                    {actionState === 'beginning' ? 'Starting...' : 'Begin project'}
-                  </Button>
-                  {actionError && (
-                    <p className="text-t6 font-body text-red-400">{actionError}</p>
-                  )}
-                </>
-              )}
-
-              {/* IN_PROGRESS — 3/3 checklist, then Finalize & Hash → Submit */}
-              {engagement.status === ProjectStatus.IN_PROGRESS && (
-                <div className="space-y-4">
-                  {/* Submission checklist */}
-                  <div className="space-y-2">
-                    <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                      Submission checklist
-                    </p>
-                    <ul className="space-y-1.5">
-                      {DOC_ITEMS.map((item) => {
-                        const done = Boolean(engagement.documents[item.type]);
-                        return (
-                          <li key={item.type} className="flex items-center gap-2">
-                            <span
-                              className={[
-                                'flex h-4 w-4 items-center justify-center rounded-full border text-[10px]',
-                                done
-                                  ? 'border-brand bg-brand/15 text-brand'
-                                  : 'border-zinc-700 text-fg-disabled',
-                              ].join(' ')}
-                              aria-hidden="true"
-                            >
-                              {done ? '✓' : ''}
-                            </span>
-                            <span
-                              className={[
-                                'text-t5 font-body',
-                                done ? 'text-fg' : 'text-fg-muted',
-                              ].join(' ')}
-                            >
-                              {item.label}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    <p className="text-t6 font-mono text-fg-muted">
-                      {completedCount} of {DOC_ITEMS.length} documents
-                    </p>
-                  </div>
-
-                  {!finalized ? (
-                    <>
-                      <Button
-                        variant="primary"
-                        size="md"
-                        className="w-full"
-                        disabled={!allDocsPresent}
-                        onClick={() => setFinalized(true)}
-                      >
-                        Finalize &amp; Hash for Review
-                      </Button>
-                      {!allDocsPresent && (
-                        <p className="text-t6 font-body text-fg-disabled">
-                          Complete all 3 documents to finalize.
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Three per-document hash strings (no compiled hash) */}
-                      <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-                        Document hashes
-                      </p>
-                      <div className="space-y-2.5">
-                        {DOC_ITEMS.map((item) => (
-                          <div key={item.type}>
-                            <p className="text-t6 font-body text-fg-muted">{item.label}</p>
-                            <p className="text-t6 font-mono text-fg-disabled break-all">
-                              {engagement.documents[item.type]?.hash ?? '—'}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        variant="primary"
-                        size="md"
-                        className="w-full"
-                        disabled={submitState === 'submitting'}
-                        onClick={() => void handleSubmitProject()}
-                      >
-                        {submitState === 'submitting' ? 'Submitting...' : 'Submit for Review'}
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => setFinalized(false)}
-                        className="text-t6 font-body text-fg-muted hover:text-fg transition-colors duration-150"
-                      >
-                        ← Back to editing
-                      </button>
-                      {submitError && (
-                        <p className="text-t6 font-body text-red-400">{submitError}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Review statuses */}
-              {(engagement.status === ProjectStatus.SUBMITTED ||
-                engagement.status === ProjectStatus.UNDER_PEER_REVIEW ||
-                engagement.status === ProjectStatus.UNDER_LECTURER_REVIEW) && (
-                <p className="text-t5 font-body text-fg-muted">Awaiting review</p>
-              )}
-
-              {/* REVISION_REQUIRED */}
-              {engagement.status === ProjectStatus.REVISION_REQUIRED && (
-                <div className="p-3 bg-amber-950/20 border border-amber-900/30 rounded-[4px]">
-                  <p className="text-t5 font-body text-amber-400">
-                    Revision required — check lecturer feedback.
+            {/* IN_PROGRESS — 3/3 checklist, then Finalize & Hash → Submit */}
+            {engagement.status === ProjectStatus.IN_PROGRESS && (
+              <div className="space-y-4">
+                {/* Submission checklist */}
+                <div className="space-y-2">
+                  <p className="app-label text-app-muted">Submission checklist</p>
+                  <ul className="space-y-1.5">
+                    {DOC_ITEMS.map((item) => {
+                      const done = Boolean(engagement.documents[item.type]);
+                      return (
+                        <li key={item.type} className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              'flex h-4 w-4 items-center justify-center rounded-app-pill border text-[10px]',
+                              done
+                                ? 'border-app-brand bg-app-brand-surface text-app-brand'
+                                : 'border-app-border-strong text-app-faint'
+                            )}
+                            aria-hidden="true"
+                          >
+                            {done ? '✓' : ''}
+                          </span>
+                          <span className={cn('app-body', done ? 'text-app-ink' : 'text-app-muted')}>
+                            {item.label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p className="app-meta text-app-muted">
+                    {completedCount} of {DOC_ITEMS.length} documents
                   </p>
                 </div>
-              )}
 
-              {/* VERIFIED */}
-              {engagement.status === ProjectStatus.VERIFIED && (
-                <p className="text-t5 font-body text-brand">Project verified</p>
-              )}
+                {!finalized ? (
+                  <>
+                    <Button
+                      className="w-full"
+                      disabled={!allDocsPresent}
+                      onClick={() => setFinalized(true)}
+                    >
+                      Finalize &amp; Hash for Review
+                    </Button>
+                    {!allDocsPresent && (
+                      <p className="app-meta text-app-faint">
+                        Complete all 3 documents to finalize.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Three per-document hash strings (no compiled hash) */}
+                    <p className="app-label text-app-muted">Document hashes</p>
+                    <div className="space-y-2.5">
+                      {DOC_ITEMS.map((item) => (
+                        <div key={item.type}>
+                          <p className="app-meta text-app-muted">{item.label}</p>
+                          <p className="app-data-m break-all text-app-faint">
+                            {engagement.documents[item.type]?.hash ?? '—'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      className="w-full"
+                      isLoading={submitState === 'submitting'}
+                      onClick={() => void handleSubmitProject()}
+                    >
+                      Submit for Review
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setFinalized(false)}
+                      className="app-meta text-app-muted transition-colors duration-150 hover:text-app-ink"
+                    >
+                      ← Back to editing
+                    </button>
+                    {submitError && <Alert tone="danger">{submitError}</Alert>}
+                  </div>
+                )}
+              </div>
+            )}
 
-              {/* DENIED */}
-              {engagement.status === ProjectStatus.DENIED && (
-                <div className="p-3 bg-red-950/20 border border-red-900/30 rounded-[4px]">
-                  <p className="text-t5 font-body text-red-400">Project denied.</p>
-                </div>
-              )}
-            </div>
+            {/* Review statuses */}
+            {(engagement.status === ProjectStatus.SUBMITTED ||
+              engagement.status === ProjectStatus.UNDER_PEER_REVIEW ||
+              engagement.status === ProjectStatus.UNDER_LECTURER_REVIEW) && (
+              <p className="app-body text-app-muted">Awaiting review</p>
+            )}
 
+            {/* REVISION_REQUIRED */}
+            {engagement.status === ProjectStatus.REVISION_REQUIRED && (
+              <Alert tone="warning">Revision required — check lecturer feedback.</Alert>
+            )}
+
+            {/* VERIFIED */}
+            {engagement.status === ProjectStatus.VERIFIED && (
+              <Alert tone="success">Project verified.</Alert>
+            )}
+
+            {/* DENIED */}
+            {engagement.status === ProjectStatus.DENIED && <Alert tone="danger">Project denied.</Alert>}
           </div>
         </div>
       </div>

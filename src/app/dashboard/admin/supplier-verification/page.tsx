@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/app';
 import { Role, SupplierVerificationStatus } from '@/types';
 
 interface IRegistrations {
@@ -35,6 +36,24 @@ type Decision = 'VERIFIED' | 'SUSPENDED';
 interface IPendingAction {
   supplierId: string;
   decision: Decision;
+}
+
+// Key/value row inside the expanded supplier detail.
+function DetailRow({
+  label,
+  children,
+  mono,
+}: {
+  label: string;
+  children: React.ReactNode;
+  mono?: boolean;
+}): React.ReactElement {
+  return (
+    <div className="flex gap-4 border-b border-app-hairline py-2 last:border-0">
+      <span className="app-label w-32 shrink-0 text-app-muted">{label}</span>
+      <span className={mono ? 'app-data-m text-app-ink' : 'app-body text-app-ink'}>{children}</span>
+    </div>
+  );
 }
 
 export default function AdminSupplierVerificationPage(): React.ReactElement {
@@ -114,170 +133,160 @@ export default function AdminSupplierVerificationPage(): React.ReactElement {
   }
 
   if (status === 'loading' || pageState === 'loading') {
-    return <p className="p-4">Loading...</p>;
+    return (
+      <div className="space-y-6">
+        <div className="skeleton h-7 w-52 rounded" />
+        <div className="skeleton h-40 rounded-app-card" />
+      </div>
+    );
   }
 
   if (pageState === 'error') {
     return (
-      <div className="p-4 flex flex-col gap-2">
-        <p>Failed to load supplier verification queue.</p>
-        <button type="button" onClick={() => void fetchQueue()}>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Could not load supplier verification queue</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button variant="secondary" onClick={() => void fetchQueue()}>
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-base font-semibold">Supplier Verification</h1>
-        <p className="text-sm text-gray-500">
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <h1 className="app-h1 text-app-ink">Supplier Verification</h1>
+        <p className="app-body mt-1 text-app-muted">
           {queueSize} pending verification{queueSize !== 1 ? 's' : ''}
         </p>
       </div>
 
-      {suppliers.length === 0 && (
-        <p className="text-sm text-gray-500">Queue is clear. No pending supplier verifications.</p>
-      )}
+      {suppliers.length === 0 ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">Queue is clear</p>
+          <p className="app-meta mt-1 text-app-faint">No pending supplier verifications.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {suppliers.map((supplier) => {
+            const isExpanded = expandedId === supplier._id;
+            const isPending = pendingAction?.supplierId === supplier._id;
+            const registrations = supplier.registrations ?? {};
+            const registrationLine = [
+              registrations.kebsNumber && `KEBS: ${registrations.kebsNumber}`,
+              registrations.pcpbNumber && `PCPB: ${registrations.pcpbNumber}`,
+              registrations.kephisNumber && `KEPHIS: ${registrations.kephisNumber}`,
+            ]
+              .filter(Boolean)
+              .join(' · ');
 
-      {suppliers.map((supplier) => {
-        const isExpanded = expandedId === supplier._id;
-        const isPending =
-          pendingAction?.supplierId === supplier._id;
-        const registrations = supplier.registrations ?? {};
-        const hasRegistrations =
-          registrations.kebsNumber ?? registrations.pcpbNumber ?? registrations.kephisNumber;
-
-        return (
-          <div key={supplier._id} className="border border-gray-300 flex flex-col gap-0">
-            {/* ── Summary row ─── */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-300">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">{supplier.businessName}</span>
-                <span className="text-xs text-gray-500">
-                  {supplier.county} · {supplier.inputCategories.join(', ')} · Applied{' '}
-                  {formatDate(supplier.createdAt)}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setExpandedId(isExpanded ? null : supplier._id)}
-                className="text-xs border border-gray-300 px-2 py-1"
+            return (
+              <div
+                key={supplier._id}
+                className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card"
               >
-                {isExpanded ? 'Collapse' : 'Review'}
-              </button>
-            </div>
+                {/* Summary row */}
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="app-body-strong truncate text-app-ink">{supplier.businessName}</p>
+                    <p className="app-meta text-app-muted">
+                      {supplier.county} · {supplier.inputCategories.join(', ')} · Applied{' '}
+                      {formatDate(supplier.createdAt)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpandedId(isExpanded ? null : supplier._id)}
+                  >
+                    {isExpanded ? 'Collapse' : 'Review'}
+                  </Button>
+                </div>
 
-            {/* ── Detail view ─── */}
-            {isExpanded && (
-              <div className="px-3 py-3 flex flex-col gap-3 border-b border-gray-300">
-                <table className="border-collapse text-sm w-full">
-                  <tbody>
-                    <tr className="border border-gray-300">
-                      <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300 w-36">
-                        Phone
-                      </th>
-                      <td className="px-3 py-2 font-mono text-xs">{supplier.contactPhone}</td>
-                    </tr>
+                {/* Detail view */}
+                {isExpanded && (
+                  <div className="border-t border-app-hairline px-4 py-3">
+                    <DetailRow label="Phone" mono>
+                      {supplier.contactPhone}
+                    </DetailRow>
                     {supplier.contactEmail && (
-                      <tr className="border border-gray-300">
-                        <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                          Email
-                        </th>
-                        <td className="px-3 py-2 text-xs">{supplier.contactEmail}</td>
-                      </tr>
+                      <DetailRow label="Email">{supplier.contactEmail}</DetailRow>
                     )}
                     {supplier.physicalAddress && (
-                      <tr className="border border-gray-300">
-                        <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                          Address
-                        </th>
-                        <td className="px-3 py-2 text-xs">{supplier.physicalAddress}</td>
-                      </tr>
+                      <DetailRow label="Address">{supplier.physicalAddress}</DetailRow>
                     )}
-                    {hasRegistrations && (
-                      <tr className="border border-gray-300">
-                        <th className="px-3 py-2 text-left bg-gray-50 border-r border-gray-300">
-                          Registrations
-                        </th>
-                        <td className="px-3 py-2 font-mono text-xs">
-                          {[
-                            registrations.kebsNumber && `KEBS: ${registrations.kebsNumber}`,
-                            registrations.pcpbNumber && `PCPB: ${registrations.pcpbNumber}`,
-                            registrations.kephisNumber && `KEPHIS: ${registrations.kephisNumber}`,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </td>
-                      </tr>
+                    {registrationLine && (
+                      <DetailRow label="Registrations" mono>
+                        {registrationLine}
+                      </DetailRow>
                     )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  </div>
+                )}
 
-            {/* ── Action bar ─── */}
-            <div className="px-3 py-2 flex items-center gap-3">
-              {!isPending ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingAction({ supplierId: supplier._id, decision: 'VERIFIED' });
-                      setActionError(null);
-                    }}
-                    className="border border-gray-400 px-3 py-1 text-sm"
-                  >
-                    Verify
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingAction({ supplierId: supplier._id, decision: 'SUSPENDED' });
-                      setActionError(null);
-                    }}
-                    className="border border-gray-400 px-3 py-1 text-sm"
-                  >
-                    Suspend
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm">
-                    Confirm{' '}
-                    <strong>
-                      {pendingAction.decision === 'VERIFIED' ? 'verify' : 'suspend'}
-                    </strong>{' '}
-                    {supplier.businessName}?
-                  </span>
-                  <button
-                    type="button"
-                    disabled={isActioning}
-                    onClick={() => void handleConfirmAction()}
-                    className="border border-gray-400 px-3 py-1 text-sm disabled:opacity-50"
-                  >
-                    {isActioning ? 'Processing...' : 'Yes, confirm'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isActioning}
-                    onClick={() => setPendingAction(null)}
-                    className="border border-gray-300 px-3 py-1 text-sm text-gray-500 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
-              {isPending && actionError !== null && (
-                <p role="alert" className="text-xs text-red-600">
-                  {actionError}
-                </p>
-              )}
-            </div>
-          </div>
-        );
-      })}
+                {/* Action bar */}
+                <div className="flex flex-wrap items-center gap-3 border-t border-app-hairline bg-app-sunken/50 px-4 py-3">
+                  {!isPending ? (
+                    <>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          setPendingAction({ supplierId: supplier._id, decision: 'VERIFIED' });
+                          setActionError(null);
+                        }}
+                      >
+                        Verify
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setPendingAction({ supplierId: supplier._id, decision: 'SUSPENDED' });
+                          setActionError(null);
+                        }}
+                      >
+                        Suspend
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="app-body text-app-ink">
+                        Confirm{' '}
+                        <strong className="app-body-strong">
+                          {pendingAction.decision === 'VERIFIED' ? 'verify' : 'suspend'}
+                        </strong>{' '}
+                        {supplier.businessName}?
+                      </span>
+                      <Button
+                        variant={pendingAction.decision === 'VERIFIED' ? 'primary' : 'danger'}
+                        size="sm"
+                        isLoading={isActioning}
+                        onClick={() => void handleConfirmAction()}
+                      >
+                        Yes, confirm
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isActioning}
+                        onClick={() => setPendingAction(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+                  {isPending && actionError !== null && (
+                    <p role="alert" className="app-meta text-app-danger">
+                      {actionError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

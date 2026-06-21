@@ -49,27 +49,23 @@ export function ProjectStatusStepper({
         const isRevision = step === ProjectStatus.REVISION_REQUIRED && state === 'current';
 
         const dotClass = [
-          'w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5',
-          state === 'complete' ? 'bg-brand' : '',
-          state === 'current' && !isDenied && !isRevision
-            ? 'bg-brand animate-pulse'
-            : '',
-          state === 'future' ? 'bg-surface-raised border border-zinc-800/50' : '',
-          isDenied ? 'bg-red-600' : '',
-          isRevision ? 'bg-amber-500' : '',
+          'w-2.5 h-2.5 rounded-app-pill flex-shrink-0 mt-0.5',
+          state === 'complete' ? 'bg-app-brand' : '',
+          state === 'current' && !isDenied && !isRevision ? 'bg-app-brand animate-pulse' : '',
+          state === 'future' ? 'bg-app-sunken border border-app-hairline' : '',
+          isDenied ? 'bg-app-danger' : '',
+          isRevision ? 'bg-app-warning' : '',
         ]
           .filter(Boolean)
           .join(' ');
 
         const labelClass = [
-          'text-t5 font-body',
-          state === 'complete' ? 'text-fg-muted' : '',
-          state === 'current' && !isDenied && !isRevision
-            ? 'text-fg font-medium'
-            : '',
-          state === 'future' ? 'text-fg-disabled' : '',
-          isDenied ? 'text-red-400' : '',
-          isRevision ? 'text-amber-400' : '',
+          state === 'current' && !isDenied && !isRevision ? 'app-body-strong' : 'app-body',
+          state === 'complete' ? 'text-app-muted' : '',
+          state === 'current' && !isDenied && !isRevision ? 'text-app-ink' : '',
+          state === 'future' ? 'text-app-faint' : '',
+          isDenied ? 'text-app-danger' : '',
+          isRevision ? 'text-app-warning' : '',
         ]
           .filter(Boolean)
           .join(' ');
@@ -80,9 +76,7 @@ export function ProjectStatusStepper({
               <div className={dotClass} aria-hidden="true" />
               <span className={labelClass}>{STEP_LABEL[step]}</span>
             </div>
-            {!isLast && (
-              <div className="ml-[4px] w-px h-4 bg-zinc-800/50" aria-hidden="true" />
-            )}
+            {!isLast && <div className="ml-[4px] h-4 w-px bg-app-hairline" aria-hidden="true" />}
           </div>
         );
       })}

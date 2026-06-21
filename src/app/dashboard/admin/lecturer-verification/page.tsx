@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import { Button, Alert, VerificationBadge } from '@/components/app';
 
 interface ILecturerData {
   isVerified: boolean;
@@ -26,27 +25,19 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="space-y-1.5">
-          <div className="h-3 w-24 bg-surface-raised rounded-sm animate-pulse" />
-          <div className="h-7 w-48 bg-surface-raised rounded-sm animate-pulse" />
-        </div>
-        <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 last:border-0">
-              <div className="space-y-1.5">
-                <div className="h-4 w-36 bg-surface-raised rounded-sm animate-pulse" />
-                <div className="h-3 w-48 bg-surface-raised rounded-sm animate-pulse" />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-20 bg-surface-raised rounded-[2px] animate-pulse" />
-                <div className="h-9 w-16 bg-surface-raised rounded-sm animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="max-w-4xl space-y-6">
+      <div className="skeleton h-7 w-48 rounded" />
+      <div className="skeleton h-64 rounded-app-card" />
+    </div>
+  );
+}
+
+// Count tile in the header.
+function StatTile({ label, value, tone }: { label: string; value: number; tone: string }): React.ReactElement {
+  return (
+    <div className="rounded-app-control border border-app-hairline bg-app-card px-3 py-2">
+      <span className="app-label text-app-faint">{label} </span>
+      <span className={`app-data-m ${tone}`}>{value}</span>
     </div>
   );
 }
@@ -126,18 +117,18 @@ export default function LecturerVerificationPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">Failed to load lecturers.</p>
-            <button
-              onClick={() => { setPageState('loading'); void fetchLecturers(); }}
-              className="inline-flex mt-4 text-t5 font-body text-brand hover:text-brand/80 transition-colors duration-150"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="app-title mb-2 text-app-ink">Failed to load lecturers</p>
+        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setPageState('loading');
+            void fetchLecturers();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
@@ -146,86 +137,62 @@ export default function LecturerVerificationPage(): React.ReactElement {
   const verified = lecturers.filter((l) => l.lecturerData?.isVerified);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-              Admin · Lecturer Verification
-            </p>
-            <h1 className="text-t2 font-heading font-semibold text-fg tracking-tight">
-              Lecturer Accounts
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] px-3 py-2">
-              <span className="text-t6 font-mono text-fg-disabled">PENDING </span>
-              <span className="text-t5 font-mono font-semibold text-amber-400 tabular-nums">
-                {unverified.length}
-              </span>
-            </div>
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] px-3 py-2">
-              <span className="text-t6 font-mono text-fg-disabled">VERIFIED </span>
-              <span className="text-t5 font-mono font-semibold text-brand tabular-nums">
-                {verified.length}
-              </span>
-            </div>
-          </div>
+    <div className="max-w-4xl space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="app-label mb-1 text-app-faint">Admin · Lecturer Verification</p>
+          <h1 className="app-h1 text-app-ink">Lecturer Accounts</h1>
         </div>
-
-        {actionError && (
-          <div className="px-4 py-3 bg-red-950/20 border border-red-900/30 rounded-[4px]">
-            <p className="text-t5 font-body text-red-400">{actionError}</p>
-          </div>
-        )}
-
-        {lecturers.length === 0 ? (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-8 text-center">
-            <p className="text-t4 font-body text-fg-muted">No lecturer accounts registered yet.</p>
-          </div>
-        ) : (
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] overflow-hidden">
-            {lecturers.map((lecturer) => {
-              const isVerified = lecturer.lecturerData?.isVerified ?? false;
-              return (
-                <div
-                  key={lecturer._id}
-                  className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 last:border-0"
-                >
-                  <div className="space-y-0.5 min-w-0 mr-4">
-                    <p className="text-t5 font-body text-fg">
-                      {lecturer.firstName} {lecturer.lastName}
-                    </p>
-                    <p className="text-t6 font-body text-fg-muted truncate">
-                      {lecturer.email}
-                      {lecturer.lecturerData?.universityAffiliation && (
-                        <> · {lecturer.lecturerData.universityAffiliation}</>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <Badge
-                      label={isVerified ? 'Verified' : 'Pending'}
-                      variant={isVerified ? 'success' : 'warning'}
-                    />
-                    {!isVerified && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        disabled={verifying === lecturer._id}
-                        onClick={() => void handleVerify(lecturer._id)}
-                      >
-                        {verifying === lecturer._id ? 'Verifying...' : 'Verify'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <StatTile label="Pending" value={unverified.length} tone="text-app-warning" />
+          <StatTile label="Verified" value={verified.length} tone="text-app-brand" />
+        </div>
       </div>
+
+      {actionError && <Alert tone="danger">{actionError}</Alert>}
+
+      {lecturers.length === 0 ? (
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
+          <p className="app-body text-app-muted">No lecturer accounts registered yet.</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+          {lecturers.map((lecturer) => {
+            const isVerified = lecturer.lecturerData?.isVerified ?? false;
+            return (
+              <div
+                key={lecturer._id}
+                className="flex items-center justify-between border-b border-app-hairline px-4 py-3 last:border-0"
+              >
+                <div className="mr-4 min-w-0 space-y-0.5">
+                  <p className="app-body-strong text-app-ink">
+                    {lecturer.firstName} {lecturer.lastName}
+                  </p>
+                  <p className="app-meta truncate text-app-muted">
+                    {lecturer.email}
+                    {lecturer.lecturerData?.universityAffiliation && (
+                      <> · {lecturer.lecturerData.universityAffiliation}</>
+                    )}
+                  </p>
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-3">
+                  <VerificationBadge state={isVerified ? 'verified' : 'pending'} />
+                  {!isVerified && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      isLoading={verifying === lecturer._id}
+                      onClick={() => void handleVerify(lecturer._id)}
+                    >
+                      Verify
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

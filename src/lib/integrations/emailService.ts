@@ -41,3 +41,25 @@ export async function sendInstitutionalEmailPin(to: string, pin: string): Promis
     return { success: false };
   }
 }
+
+export async function sendPasswordResetEmail(
+  to: string,
+  resetLink: string
+): Promise<ISendEmailResult> {
+  try {
+    const from = process.env['SMTP_FROM'] ?? process.env['SMTP_USER'];
+
+    const info = await getTransporter().sendMail({
+      from,
+      to,
+      subject: 'Reset your UmojaHub password',
+      html: `<p>We received a request to reset your UmojaHub password.</p><p><a href="${resetLink}">Choose a new password</a></p><p>This link expires in 30 minutes and can be used once. If you did not request a reset, you can safely ignore this email — your password will not change.</p>`,
+    });
+
+    logger.info('emailService', 'Password reset email sent', { to, messageId: info.messageId });
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    logger.error('emailService', 'EXT_EMAIL_FAILED — password reset', { to, error });
+    return { success: false };
+  }
+}
