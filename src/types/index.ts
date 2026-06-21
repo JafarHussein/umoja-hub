@@ -281,6 +281,16 @@ export enum MediationOutcome {
   NONE = 'NONE',
 }
 
+// Append-only escrow milestone trail (mirrors PaymentEventLog). HELD when funds
+// enter custody at payment; RELEASED when the buyer (or an admin resolution)
+// confirms receipt and funds become the farmer's; REFUND_ISSUED when an admin
+// returns held funds to the buyer.
+export enum EscrowEventType {
+  HELD = 'HELD',
+  RELEASED = 'RELEASED',
+  REFUND_ISSUED = 'REFUND_ISSUED',
+}
+
 // ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------

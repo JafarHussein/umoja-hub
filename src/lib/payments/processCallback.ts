@@ -199,6 +199,23 @@ export async function processStkCallback(
     processingTimeMs,
   });
 
+  // Funds are now held in escrow on the farmer's behalf — append the milestone.
+  try {
+    const { default: EscrowEventLog } = await import('@/lib/models/EscrowEventLog.model');
+    const { EscrowEventType } = await import('@/types');
+    await EscrowEventLog.create({
+      eventType: EscrowEventType.HELD,
+      orderId: order._id,
+      buyerId: order.buyerId,
+      farmerId: order.farmerId,
+      amountKES: order.totalAmountKES,
+      actorRole: 'SYSTEM',
+      occurredAt: new Date(),
+    });
+  } catch (err) {
+    logger.error('payments', 'Failed to write escrow HELD event', { requestId, provider, err });
+  }
+
   // Notifications — identical to the production path (non-blocking).
   (async () => {
     try {

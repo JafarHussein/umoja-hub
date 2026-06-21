@@ -30,14 +30,14 @@
 - [x] Tests: `escrow.test.ts` (4) + `orderEscrowState.test.ts` (7) — 11 new, all green
 - [x] GATE green — tsc clean, lint 0 errors, 711 tests pass
 
-## P1 — Admin release / refund on dispute (activates reserved states)
-- [ ] Add optional `outcome: RELEASE | REFUND | NONE` to admin mediation decision schema (`mediationSchema.ts`, Zod)
-- [ ] `api/admin/mediation-requests` PATCH: on `RESOLVED` + `REFUND` → write `OrderPaymentStatus.REFUNDED` + `OrderFulfillmentStatus.DISPUTED` + set `disputeFlaggedAt`/`disputeReason` + restore inventory (reuse FAILED-path restore from `processCallback.ts:96-104`)
-- [ ] `RELEASE`/`NONE` leave order on normal track; all outcomes stay `AdminAuditLog`-logged
-- [ ] (D2) New `src/lib/models/EscrowEventLog.model.ts` — append-only HELD / RELEASED / REFUND_ISSUED; lazy-import; index `{orderId:1}`, `{occurredAt:-1}`
-- [ ] Write `EscrowEventLog` rows at: payment held (in `processCallback` success), receipt-confirmed/released (status route COMPLETED), refund issued (mediation refund)
-- [ ] Tests: refund transition writes REFUNDED+DISPUTED+restores stock; release/none leave order intact; event log rows
-- [ ] GATE green
+## P1 — Admin release / refund on dispute (activates reserved states) ✅ DONE 2026-06-21
+- [x] Added optional `outcome: RELEASE | REFUND | NONE` to `adminMediationDecisionSchema` (Zod; money outcome only valid with RESOLVED)
+- [x] `api/admin/mediation-requests` PATCH `applyEscrowOutcome`: `REFUND` → atomic held-guard → `REFUNDED` + `DISPUTED` + `disputeFlaggedAt`/`disputeReason` + inventory restore (mirrors FAILED path)
+- [x] `RELEASE` → completes the order (funds become farmer's); `NONE`/absent → order untouched; all outcomes audit-logged with outcome in details
+- [x] (D2) `src/lib/models/EscrowEventLog.model.ts` — append-only HELD / RELEASED / REFUND_ISSUED; lazy-import; indexes on orderId/occurredAt/eventType/farmerId
+- [x] `EscrowEventLog` rows written at: HELD (`processCallback` success), RELEASED (buyer confirms receipt in status route; admin RELEASE), REFUND_ISSUED (admin REFUND)
+- [x] Tests: `escrowOutcome.test.ts` (5) — refund/release/no-op/plain-resolution/validation. Existing mediation tests unaffected (outcome defaults NONE)
+- [x] GATE green — tsc clean, lint clean, 716 tests pass
 
 ## P2 — Admin escrow read model + dashboard
 - [ ] New `src/app/api/admin/escrow/route.ts` — ADMIN GET: platform totals (held/releasable/in-dispute/settled) + paginated per-order ledger (aggregate over Order + WithdrawalRequest + MediationRequest)
