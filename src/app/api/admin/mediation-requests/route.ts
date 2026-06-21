@@ -7,7 +7,16 @@ import MediationRequest from '@/lib/models/MediationRequest.model';
 import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminMediationDecisionSchema } from '@/lib/validation/mediationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, MediationRequestStatus } from '@/types';
+import { sendSMS } from '@/lib/integrations/smsService';
+import {
+  Role,
+  MediationRequestStatus,
+  MediationOutcome,
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+  ListingStatus,
+  EscrowEventType,
+} from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET   /api/admin/mediation-requests — Paginated escalation queue
@@ -136,6 +145,139 @@ type MediationLean = {
   status: string;
 };
 
+// Apply the admin's escrow decision to the held funds. Atomic + status-guarded:
+// only a PAID order still IN_FULFILLMENT (held in escrow) can be released or
+// refunded, so a double-submit or a race is a clean no-op. REFUND returns funds
+// to the buyer (REFUNDED/DISPUTED + inventory restored); RELEASE completes the
+// order so the funds become the farmer's. Every move appends an EscrowEventLog.
+async function applyEscrowOutcome(
+  mediation: MediationLean,
+  outcome: MediationOutcome,
+  note: string | undefined,
+  adminId: string,
+  requestId: string
+): Promise<void> {
+  const [{ default: Order }, { default: EscrowEventLog }] = await Promise.all([
+    import('@/lib/models/Order.model'),
+    import('@/lib/models/EscrowEventLog.model'),
+  ]);
+
+  const heldGuard = {
+    _id: mediation.orderId,
+    paymentStatus: OrderPaymentStatus.PAID,
+    fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT,
+  } as object;
+
+  if (outcome === MediationOutcome.REFUND) {
+    const order = await Order.findOneAndUpdate(
+      heldGuard,
+      {
+        $set: {
+          paymentStatus: OrderPaymentStatus.REFUNDED,
+          fulfillmentStatus: OrderFulfillmentStatus.DISPUTED,
+          disputeFlaggedAt: new Date(),
+          ...(note !== undefined && { disputeReason: note }),
+        },
+      },
+      { new: true }
+    ).lean();
+
+    if (!order) {
+      logger.warn('admin/mediation-requests', 'Refund skipped — order not in a held state', {
+        requestId,
+        orderId: String(mediation.orderId),
+      });
+      return;
+    }
+
+    // Return the produce to the marketplace, mirroring the failed-payment path.
+    const { default: MarketplaceListing } = await import('@/lib/models/MarketplaceListing.model');
+    await MarketplaceListing.findByIdAndUpdate(order.listingId, {
+      $inc: { quantityAvailable: order.quantityOrdered },
+      listingStatus: ListingStatus.AVAILABLE,
+    });
+
+    await EscrowEventLog.create({
+      eventType: EscrowEventType.REFUND_ISSUED,
+      orderId: order._id,
+      buyerId: order.buyerId,
+      farmerId: order.farmerId,
+      amountKES: order.totalAmountKES,
+      actorId: adminId,
+      actorRole: Role.ADMIN,
+      ...(note !== undefined && { note }),
+      occurredAt: new Date(),
+    });
+
+    // Notify the buyer their held funds were returned (non-blocking).
+    (async () => {
+      const { default: User } = await import('@/lib/models/User.model');
+      const buyer = await User.findById(order.buyerId).select('phoneNumber').lean();
+      if (buyer?.phoneNumber) {
+        await sendSMS(
+          buyer.phoneNumber,
+          `UmojaHub: Following mediation, your KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`
+        );
+      }
+    })().catch(() => {});
+
+    logger.info('admin/mediation-requests', 'Escrow refunded to buyer', {
+      requestId,
+      orderId: String(order._id),
+      amountKES: order.totalAmountKES,
+      adminId,
+    });
+    return;
+  }
+
+  if (outcome === MediationOutcome.RELEASE) {
+    const order = await Order.findOneAndUpdate(
+      heldGuard,
+      { $set: { fulfillmentStatus: OrderFulfillmentStatus.COMPLETED } },
+      { new: true }
+    ).lean();
+
+    if (!order) {
+      logger.warn('admin/mediation-requests', 'Release skipped — order not in a held state', {
+        requestId,
+        orderId: String(mediation.orderId),
+      });
+      return;
+    }
+
+    await EscrowEventLog.create({
+      eventType: EscrowEventType.RELEASED,
+      orderId: order._id,
+      buyerId: order.buyerId,
+      farmerId: order.farmerId,
+      amountKES: order.totalAmountKES,
+      actorId: adminId,
+      actorRole: Role.ADMIN,
+      ...(note !== undefined && { note }),
+      occurredAt: new Date(),
+    });
+
+    // Notify the farmer their held funds were released (non-blocking).
+    (async () => {
+      const { default: User } = await import('@/lib/models/User.model');
+      const farmer = await User.findById(order.farmerId).select('phoneNumber').lean();
+      if (farmer?.phoneNumber) {
+        await sendSMS(
+          farmer.phoneNumber,
+          `UmojaHub: Following mediation, KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`
+        );
+      }
+    })().catch(() => {});
+
+    logger.info('admin/mediation-requests', 'Escrow released to farmer', {
+      requestId,
+      orderId: String(order._id),
+      amountKES: order.totalAmountKES,
+      adminId,
+    });
+  }
+}
+
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
     const requestId = crypto.randomUUID();
@@ -156,7 +298,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { requestId: mediationId, status, resolutionNote } = parsed.data;
+    const { requestId: mediationId, status, resolutionNote, outcome } = parsed.data;
 
     if (!mongoose.isValidObjectId(mediationId)) {
       return NextResponse.json(
@@ -206,8 +348,27 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       action: auditAction,
       targetId: mediationId,
       targetType: 'MediationRequest',
-      ...(resolutionNote !== undefined && { details: { resolutionNote } }),
+      ...(resolutionNote !== undefined && { details: { resolutionNote, outcome } }),
     }).catch(() => {});
+
+    // Apply the escrow decision to the held funds when resolving. Awaited so the
+    // money outcome is settled before responding; failures are logged but never
+    // un-resolve the mediation (admin can re-apply).
+    if (
+      status === MediationRequestStatus.RESOLVED &&
+      (outcome === MediationOutcome.RELEASE || outcome === MediationOutcome.REFUND)
+    ) {
+      try {
+        await applyEscrowOutcome(updated, outcome, resolutionNote, session!.user.id, requestId);
+      } catch (err) {
+        logger.error('admin/mediation-requests', 'Escrow outcome failed to apply', {
+          requestId,
+          mediationRequestId: mediationId,
+          outcome,
+          err,
+        });
+      }
+    }
 
     return NextResponse.json({ data: updated });
   } catch (error) {

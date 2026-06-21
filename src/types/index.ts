@@ -249,6 +249,49 @@ export enum PaymentEventType {
 }
 
 // ---------------------------------------------------------------------------
+// Escrow — a derived view over Order + MediationRequest, not a stored wallet.
+// The platform receives buyer funds to its M-Pesa shortcode at payment (PAID),
+// holds them through fulfilment, and they become releasable to the farmer only
+// once the buyer confirms receipt (order COMPLETED). An open mediation blocks
+// release; an admin refund returns the funds to the buyer (REFUNDED/DISPUTED).
+// EscrowState is the per-order projection surfaced to all three roles.
+// ---------------------------------------------------------------------------
+
+export enum EscrowState {
+  // Order not yet paid (PENDING_PAYMENT) or payment failed — nothing is held.
+  NO_FUNDS = 'NO_FUNDS',
+  // Paid and in fulfilment, farmer has not yet confirmed dispatch.
+  HELD = 'HELD',
+  // Paid and in fulfilment, farmer confirmed dispatch — awaiting buyer receipt.
+  HELD_DISPATCHED = 'HELD_DISPATCHED',
+  // An open/in-review mediation is blocking release.
+  HELD_UNDER_REVIEW = 'HELD_UNDER_REVIEW',
+  // Buyer confirmed receipt (COMPLETED) — funds count toward the farmer's
+  // releasable balance and may be settled via a payout request.
+  RELEASABLE = 'RELEASABLE',
+  // Funds returned to the buyer by an admin dispute resolution.
+  REFUNDED = 'REFUNDED',
+}
+
+// Admin's terminal decision when resolving a mediation, applied to the held
+// funds. NONE = resolved without moving money (order continues on its track).
+export enum MediationOutcome {
+  RELEASE = 'RELEASE',
+  REFUND = 'REFUND',
+  NONE = 'NONE',
+}
+
+// Append-only escrow milestone trail (mirrors PaymentEventLog). HELD when funds
+// enter custody at payment; RELEASED when the buyer (or an admin resolution)
+// confirms receipt and funds become the farmer's; REFUND_ISSUED when an admin
+// returns held funds to the buyer.
+export enum EscrowEventType {
+  HELD = 'HELD',
+  RELEASED = 'RELEASED',
+  REFUND_ISSUED = 'REFUND_ISSUED',
+}
+
+// ---------------------------------------------------------------------------
 // Kenyan counties (used in validation and seed data)
 // ---------------------------------------------------------------------------
 

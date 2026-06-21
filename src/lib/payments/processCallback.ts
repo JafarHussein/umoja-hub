@@ -199,6 +199,23 @@ export async function processStkCallback(
     processingTimeMs,
   });
 
+  // Funds are now held in escrow on the farmer's behalf — append the milestone.
+  try {
+    const { default: EscrowEventLog } = await import('@/lib/models/EscrowEventLog.model');
+    const { EscrowEventType } = await import('@/types');
+    await EscrowEventLog.create({
+      eventType: EscrowEventType.HELD,
+      orderId: order._id,
+      buyerId: order.buyerId,
+      farmerId: order.farmerId,
+      amountKES: order.totalAmountKES,
+      actorRole: 'SYSTEM',
+      occurredAt: new Date(),
+    });
+  } catch (err) {
+    logger.error('payments', 'Failed to write escrow HELD event', { requestId, provider, err });
+  }
+
   // Notifications — identical to the production path (non-blocking).
   (async () => {
     try {
@@ -210,13 +227,13 @@ export async function processStkCallback(
       if (farmer) {
         await sendSMS(
           farmer.phoneNumber,
-          `UmojaHub: New order confirmed! Order ${order.orderReferenceId} for ${order.cropName} has been paid. Please prepare for fulfillment.`
+          `UmojaHub: New order confirmed! Order ${order.orderReferenceId} for ${order.cropName} is paid — the funds are held in escrow and released to you once the buyer confirms receipt. Please prepare for fulfillment.`
         );
       }
       if (buyer) {
         await sendSMS(
           buyer.phoneNumber,
-          `UmojaHub: Payment confirmed! Your order ${order.orderReferenceId} (KES ${order.totalAmountKES}) has been received. The farmer will prepare your ${order.cropName}.`
+          `UmojaHub: Payment confirmed! Your KES ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`
         );
       }
     } catch (err) {

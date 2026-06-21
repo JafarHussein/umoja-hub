@@ -281,10 +281,10 @@ export default async function globalSetup(): Promise<void> {
       { upsert: true, setDefaultsOnInsert: true }
     );
 
-    // Keep the settlement ledger (UI-02) deterministic: with no committed
-    // payouts the fixture farmer's available balance always equals the single
-    // PAID fixture order (KES 4,000). Clears anything a prior run/manual test
-    // may have filed.
+    // Keep the settlement ledger (UI-02) deterministic. The single PAID fixture
+    // order is IN_FULFILLMENT, so under escrow its KSh 4,000 is HELD (released
+    // only on buyer-confirmed receipt) and the available balance is zero. Clear
+    // any withdrawal a prior run/manual test may have filed.
     await WithdrawalRequestModel.deleteMany({ farmerId });
 
     // Clear all of the buyer's mediations so E2E-FAR-0001 starts each run with

@@ -136,7 +136,7 @@ Trust in this ecosystem is not a single thing. It moves in layers.
 The Safaricom push times out or the buyer declines. The order remains PENDING. No money has moved. The farmer is not notified unless a new payment is initiated. Resolution: buyer retries or cancels the order.
 
 ### Farmer non-dispatch after payment
-Payment is confirmed (PAID status) but the farmer does not dispatch. This is the most significant trust failure in the system. Current mitigation: the rating system penalizes non-fulfillment. The reliability component of the Trust Score tracks fulfilment rate. Platform administrators can review accounts with sustained non-dispatch patterns.
+Payment is confirmed (PAID status) but the farmer does not dispatch. This was historically the most significant trust failure in the system. Primary mitigation is now financial: the buyer's payment is held in escrow and is released to the farmer only when the buyer confirms receipt — a farmer who never dispatches is never paid, and the buyer can escalate to mediation for a refund. The rating system and the reliability component of the Trust Score reinforce this by penalizing non-fulfilment, and platform administrators can review accounts with sustained non-dispatch patterns.
 
 ### Produce does not match listing
 The farmer dispatches and the buyer receives, but the produce is underweight, different variety, or in poor condition. The buyer's recourse is: submit a low rating with explanation. There is currently no automated dispute resolution for quality claims — the rating is the mechanism. This is a documented limitation.

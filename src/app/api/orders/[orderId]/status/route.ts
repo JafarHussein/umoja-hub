@@ -133,6 +133,35 @@ export async function PATCH(
         buyerId,
       });
 
+      // Buyer-confirmed receipt releases the held escrow funds to the farmer —
+      // append the milestone and notify the farmer (non-blocking).
+      (async () => {
+        try {
+          const { default: EscrowEventLog } = await import('@/lib/models/EscrowEventLog.model');
+          const { EscrowEventType } = await import('@/types');
+          await EscrowEventLog.create({
+            eventType: EscrowEventType.RELEASED,
+            orderId: order._id,
+            buyerId: order.buyerId,
+            farmerId: order.farmerId,
+            amountKES: order.totalAmountKES,
+            actorId: order.buyerId,
+            actorRole: Role.BUYER,
+            occurredAt: now,
+          });
+
+          const farmer = await User.findById(order.farmerId).select('phoneNumber').lean();
+          if (farmer?.phoneNumber) {
+            await sendSMS(
+              farmer.phoneNumber,
+              `UmojaHub: ${order.orderReferenceId} confirmed received. KES ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`
+            );
+          }
+        } catch (err) {
+          logger.error('orders', 'Failed to write escrow RELEASED event', { requestId, orderId, err });
+        }
+      })().catch(() => {});
+
       // Step 2: Insert PriceHistory record (ORDER_COMPLETED) — non-blocking
       (async () => {
         try {

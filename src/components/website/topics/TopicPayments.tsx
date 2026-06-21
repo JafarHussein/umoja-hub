@@ -5,27 +5,35 @@ export function TopicPayments() {
   return (
     <Topic topic={topic('payments')}>
       <Sub id="payments-flow" title="How payment works">
-        <Lead>Payment uses M-Pesa STK Push, and it happens before dispatch.</Lead>
+        <Lead>
+          Payment uses M-Pesa STK Push before dispatch, and the platform holds the funds in escrow
+          until the buyer confirms receipt.
+        </Lead>
         <P>
           When a buyer orders, the platform reserves the stock atomically — so two buyers can never
           buy the same units — creates the order with a reference, and sends an STK push; the buyer
           enters their M-Pesa PIN. If the push fails, the order is cancelled and the stock released.
           The buyer&rsquo;s screen waits up to 90 seconds and then shows the order as paid or failed.
+          Once paid, the money is held in escrow: it is released to the farmer only when the buyer
+          confirms the produce arrived, and an open dispute holds it until an administrator resolves
+          the mediation — releasing it to the farmer or refunding the buyer.
         </P>
         <FlowDiagram
-          caption="The order & payment lifecycle"
+          caption="The order, escrow & settlement lifecycle"
           steps={[
             { label: 'Order placed', note: 'Stock is reserved atomically, so two buyers can never claim the same units.' },
             { label: 'STK push sent', note: 'The buyer enters their M-Pesa PIN.' },
-            { label: 'Paid', note: 'Payment is confirmed. If it fails, the order is cancelled and the stock released.' },
-            { label: 'Receipt confirmed', note: 'The buyer marks the order received.' },
-            { label: 'Completed', note: "The farmer's Trust Score recalculates." },
+            { label: 'Held in escrow', note: 'Payment is confirmed and held by the platform. If it fails, the order is cancelled and the stock released.' },
+            { label: 'Receipt confirmed', note: 'The buyer marks the order received — this releases the funds to the farmer.' },
+            { label: 'Released & settled', note: "Funds become releasable; the farmer requests a payout and the Trust Score recalculates." },
           ]}
         />
         <Limitation>
           <p>
-            The buyer commits money first, then confirms receipt. There is no escrow: the platform
-            does not hold funds pending delivery.
+            This escrow is platform-custodied, not a regulated trust account: in production M-Pesa
+            settles to the platform&rsquo;s shortcode, and releasing a payout is an explicit
+            administrator action. The hold is enforced by the order lifecycle, and disputes are
+            resolved by human mediation rather than an automated guarantee.
           </p>
         </Limitation>
       </Sub>
@@ -40,10 +48,10 @@ export function TopicPayments() {
         </P>
         <Limitation>
           <p>
-            Because the pilot simulates settlement, no real funds move yet, and the platform does not
-            currently disburse money to farmers — live M-Pesa would pay the platform&rsquo;s
-            shortcode, and farmer payout is not part of the pilot. We state this plainly because it
-            changes what &ldquo;payment&rdquo; means today.
+            Because the pilot simulates settlement, no real funds move yet. The full escrow-and-payout
+            flow is modelled end to end — funds are held, released on receipt, and settled through
+            administrator-approved payout requests — but the underlying M-Pesa transfer is simulated.
+            We state this plainly because it changes what &ldquo;payment&rdquo; means today.
           </p>
         </Limitation>
       </Sub>
@@ -54,8 +62,10 @@ export function TopicPayments() {
         </P>
         <Limitation>
           <p>
-            No commission also means there is no platform-funded refund pool or buyer-protection
-            fund. Recourse is the rating system (see <em>The buyer path</em>), not a chargeback.
+            No commission means there is no platform-funded refund pool. Buyer protection instead
+            comes from escrow — the buyer&rsquo;s own funds are held until they confirm receipt, and
+            platform mediation can refund them — backed by the rating system (see{' '}
+            <em>The buyer path</em>), not a card chargeback.
           </p>
         </Limitation>
       </Sub>

@@ -21,6 +21,9 @@ interface ILedgerLineItem {
 
 interface IEscrowBalance {
   grossReceivedKES: number;
+  heldKES: number;
+  inDisputeKES: number;
+  releasableKES: number;
   committedPayoutsKES: number;
   availableKES: number;
 }
@@ -84,11 +87,20 @@ function RequestPill({ status }: { status: WithdrawalRequestStatus }): React.Rea
   );
 }
 
-// Neutral fulfillment-status pill — informational, not a trust signal.
-function FulfillmentPill({ status }: { status: OrderFulfillmentStatus }): React.ReactElement {
+// Per-payment escrow pill. A payment is HELD until the buyer confirms receipt,
+// then RELEASABLE (it counts toward the available balance). Derived from the
+// order's fulfillment status — the only two states a PAID ledger row can be in.
+function EscrowPill({ status }: { status: OrderFulfillmentStatus }): React.ReactElement {
+  const releasable = status === OrderFulfillmentStatus.COMPLETED;
   return (
-    <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted">
-      {status.replace(/_/g, ' ').toLowerCase()}
+    <span
+      className={cn(
+        'app-label inline-flex items-center gap-1 rounded-app-pill px-2 py-0.5',
+        releasable ? 'bg-app-success-surface text-app-success' : 'bg-app-warning-surface text-app-warning'
+      )}
+    >
+      <span aria-hidden>{releasable ? '✓' : '🔒'}</span>
+      {releasable ? 'Releasable' : 'Held in escrow'}
     </span>
   );
 }
@@ -231,8 +243,8 @@ export default function FarmerLedgerPage(): React.ReactElement {
         <div>
           <h1 className="app-h1 text-app-ink">Settlement</h1>
           <p className="app-meta mt-0.5 max-w-prose text-app-muted">
-            Funds the platform has received on your behalf. Payouts are released manually after
-            review — there is no automated disbursement.
+            When a buyer pays, the money is held in escrow by the platform. It becomes releasable
+            once the buyer confirms they received your produce — then you can request a payout.
           </p>
         </div>
         <Button size="sm" disabled={!canRequest} onClick={openForm} aria-label="Request a payout">
@@ -240,19 +252,31 @@ export default function FarmerLedgerPage(): React.ReactElement {
         </Button>
       </div>
 
-      {/* Balance summary */}
+      {/* Balance summary — the escrow story: held → releasable → available */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-label mb-2 text-app-muted">Received by platform</p>
-          <p className="app-data-l text-app-ink">{formatKES(balance?.grossReceivedKES ?? 0)}</p>
+          <p className="app-label mb-2 text-app-muted">Held in escrow</p>
+          <p className="app-data-l text-app-ink">{formatKES(balance?.heldKES ?? 0)}</p>
+          <p className="app-meta mt-1 text-app-faint">awaiting buyer confirmation</p>
         </div>
         <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-label mb-2 text-app-muted">Committed to payouts</p>
-          <p className="app-data-l text-app-ink">{formatKES(balance?.committedPayoutsKES ?? 0)}</p>
+          <p className="app-label mb-2 text-app-muted">Releasable</p>
+          <p className="app-data-l text-app-ink">{formatKES(balance?.releasableKES ?? 0)}</p>
+          <p className="app-meta mt-1 text-app-faint">
+            confirmed received
+            {balance && balance.committedPayoutsKES > 0
+              ? ` · ${formatKES(balance.committedPayoutsKES)} committed`
+              : ''}
+          </p>
         </div>
         <div className="rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
           <p className="app-label mb-2 text-app-muted">Available to request</p>
           <p className="app-data-l text-app-brand">{formatKES(availableKES)}</p>
+          {balance && balance.inDisputeKES > 0 && (
+            <p className="app-meta mt-1 text-app-faint">
+              {formatKES(balance.inDisputeKES)} held under review
+            </p>
+          )}
         </div>
       </div>
 
@@ -303,8 +327,8 @@ export default function FarmerLedgerPage(): React.ReactElement {
       <section className="space-y-3">
         <h2 className="app-h2 text-app-ink">Payments received</h2>
         <p className="app-meta text-app-muted">
-          Each payment below has been received by the platform — payout pending until you request
-          settlement and an administrator releases it.
+          Each payment is held in escrow until the buyer confirms receipt, at which point it becomes
+          releasable. You can then request a payout, which an administrator releases.
         </p>
         {lineItems.length === 0 ? (
           <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
@@ -316,7 +340,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
               <TH>Ref</TH>
               <TH>Item</TH>
               <TH className="text-right">Amount</TH>
-              <TH>Fulfillment</TH>
+              <TH>Escrow</TH>
               <TH className="text-right">Received</TH>
             </THead>
             <tbody>
@@ -337,7 +361,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
                     <span className="app-data-m text-app-ink">{formatKES(item.amountKES)}</span>
                   </TD>
                   <TD>
-                    <FulfillmentPill status={item.fulfillmentStatus} />
+                    <EscrowPill status={item.fulfillmentStatus} />
                   </TD>
                   <TD className="whitespace-nowrap text-right">
                     <span className="app-meta text-app-muted">{formatDate(item.paidAt)}</span>
