@@ -39,12 +39,12 @@
 - [x] Tests: `escrowOutcome.test.ts` (5) — refund/release/no-op/plain-resolution/validation. Existing mediation tests unaffected (outcome defaults NONE)
 - [x] GATE green — tsc clean, lint clean, 716 tests pass
 
-## P2 — Admin escrow read model + dashboard
-- [ ] New `src/app/api/admin/escrow/route.ts` — ADMIN GET: platform totals (held/releasable/in-dispute/settled) + paginated per-order ledger (aggregate over Order + WithdrawalRequest + MediationRequest)
-- [ ] New `src/app/dashboard/admin/escrow/page.tsx` — held funds, pending releases, completed releases, in-dispute, history, risk indicators
-- [ ] Add "Escrow" entry to admin shell nav (alongside Payouts/Mediation)
-- [ ] Tests: admin escrow route auth + aggregation
-- [ ] GATE green
+## P2 — Admin escrow read model + dashboard ✅ DONE 2026-06-21
+- [x] `src/app/api/admin/escrow/route.ts` — ADMIN GET: totals (held/releasable/in-dispute/refunded/settled) + paginated per-order ledger with derived `escrowState`; `state` filter (ALL/HELD/RELEASABLE/REFUNDED); pure aggregation over Order + MediationRequest + WithdrawalRequest
+- [x] `src/app/dashboard/admin/escrow/page.tsx` — 5 totals cards + filterable ledger with escrow-state pills (read-only steward view; actions live on Mediation/Payouts)
+- [x] "Escrow" nav entry added to `AdminShell` (after Payouts)
+- [x] Tests: `escrow/__tests__/route.test.ts` (3) — guard, totals+ledger+derived state, cursor validation
+- [x] GATE green — tsc clean, lint clean, 719 tests pass
 
 ## P3 — Party-facing surfaces (presentation only, `.theme-app`)
 - [ ] Farmer ledger `dashboard/farmer/ledger/page.tsx` — split Held / Releasable / Available; per-line escrow state badge
