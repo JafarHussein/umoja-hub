@@ -26,7 +26,7 @@ test('settlement ledger shows the derived balance, line item, and payout CTA', a
   await expect(page.getByRole('heading', { name: 'Settlement' })).toBeVisible({ timeout: 30_000 });
 
   // Derived balance from the single PAID fixture order; available == gross.
-  await expect(page.getByText('KES 4,000').first()).toBeVisible();
+  await expect(page.getByText('KSh 4,000').first()).toBeVisible();
 
   // The PAID fixture order surfaces as a settlement line item.
   await expect(page.getByText('E2E-FAR-0001')).toBeVisible();
@@ -50,5 +50,5 @@ test('payout request form opens with the available-balance constraint', async ({
   await expect(
     page.getByText(/payouts are released manually by an administrator/i)
   ).toBeVisible();
-  await expect(page.getByText('Available: KES 4,000')).toBeVisible();
+  await expect(page.getByText('Available: KSh 4,000')).toBeVisible();
 });

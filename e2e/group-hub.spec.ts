@@ -39,8 +39,10 @@ test('read-only hub: roster, manager variant, off-platform notice, histories', a
   // name also appears in the nav user menu, which is hidden on mobile).
   await expect(page.getByText('E2E Unverified Farmer')).toBeVisible();
   await expect(page.getByText('Creator')).toBeVisible();
-  await expect(page.getByText('Verified', { exact: true })).toBeVisible();
-  await expect(page.getByText('Unverified', { exact: true })).toBeVisible();
+  // The verification pill renders an aria-hidden glyph next to the label, so no
+  // element has the exact text "Verified"; anchor on the glyph + label instead.
+  await expect(page.getByText(/^.\s?Verified$/)).toBeVisible();
+  await expect(page.getByText(/^.\s?Unverified$/)).toBeVisible();
 
   // GroupOrder state history.
   await expect(page.getByText('Fertilizer (DAP)')).toBeVisible();
