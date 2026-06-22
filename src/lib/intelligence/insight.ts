@@ -49,7 +49,7 @@ function trendClause(trend: TrendResult): string {
 function seasonClause(crop: string, season: SeasonPhase): string {
   switch (season) {
     case 'PEAK_SUPPLY':
-      return ` ${capitalize(crop)} is entering peak supply, so prices typically soften in the coming weeks.`;
+      return ` Supply is entering its seasonal peak, so prices typically soften in the coming weeks.`;
     case 'LOW_SUPPLY':
       return ` Supply is tight this time of year, which tends to support firmer prices.`;
     case 'OFF_SEASON':
