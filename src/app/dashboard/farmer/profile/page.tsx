@@ -48,10 +48,6 @@ type PageState = 'loading' | 'ready' | 'error';
 type SubmitState = 'idle' | 'submitting' | 'error';
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
-interface ICloudinaryUploadResponse {
-  secure_url: string;
-}
-
 // Key/value row inside a bordered summary card.
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
   return (
@@ -165,34 +161,24 @@ export default function FarmerProfilePage(): React.ReactElement {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-    if (!cloudName || !uploadPreset) {
-      setUploadError('Cloudinary is not configured. Contact support.');
-      setUploadState('error');
-      return;
-    }
-
     setUploadState('uploading');
     setUploadError(null);
     setVerifyForm((prev) => ({ ...prev, documentImageUrl: '' }));
 
     try {
+      // Server-side upload — uses the validated CLOUDINARY_* credentials, so it
+      // works regardless of build-time NEXT_PUBLIC_* configuration.
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
+      formData.append('folder', 'umojahub/verification');
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = (await res.json()) as ICloudinaryUploadResponse;
-      setVerifyForm((prev) => ({ ...prev, documentImageUrl: data.secure_url }));
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = (await res.json()) as { data?: { url?: string }; error?: string };
+      if (!res.ok || !data.data?.url) throw new Error(data.error ?? 'Upload failed');
+      setVerifyForm((prev) => ({ ...prev, documentImageUrl: data.data!.url! }));
       setUploadState('done');
-    } catch {
-      setUploadError('Upload failed. Try again.');
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed. Try again.');
       setUploadState('error');
     }
   }
