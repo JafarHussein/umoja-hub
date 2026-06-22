@@ -12,8 +12,9 @@ import User from '@/lib/models/User.model';
 import ChatSession from '@/lib/models/ChatSession.model';
 import { buildAssistantSystemPrompt } from '@/lib/foodhub/assistantPrompt';
 import { getCountyForecast } from '@/lib/integrations/weatherService';
+import { buildPriceContextForMessage } from '@/lib/intelligence/assistantPriceContext';
 import { CHAT_SESSION_TTL_DAYS, Role } from '@/types';
-import type { WeatherContext } from '@/lib/foodhub/assistantPrompt';
+import type { WeatherContext, PriceContextLine } from '@/lib/foodhub/assistantPrompt';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
@@ -61,6 +62,19 @@ export async function farmAssistantChat(
     // Fetch weather — non-blocking; null on failure
     weatherContext = await getCountyForecast(farmer.county ?? 'Nairobi');
 
+    // Price Intelligence context — grounds any price the assistant quotes in
+    // real engine numbers. Best-effort; empty on any failure (never blocks chat).
+    let priceContext: PriceContextLine[] = [];
+    try {
+      priceContext = await buildPriceContextForMessage(
+        userMessage,
+        farmer.county ?? 'Nairobi',
+        farmer.farmerData?.cropsGrown ?? []
+      );
+    } catch (priceErr) {
+      logger.warn('groqService', 'Failed to build price context for assistant', { farmerId, priceErr });
+    }
+
     // Build or load ChatSession
     const ttlMs = CHAT_SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
     let session = existingSessionId
@@ -96,7 +110,8 @@ export async function farmAssistantChat(
           }),
         },
       },
-      weatherContext
+      weatherContext,
+      priceContext
     );
 
     const groqMessages: GroqMessage[] = [
