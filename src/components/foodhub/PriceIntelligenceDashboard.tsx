@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PriceTrendChart from './PriceTrendChart';
+import { PriceRecommendationPanel, usePriceRecommendation } from './PriceRecommendationPanel';
 import { Button, Input, Select } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { KENYAN_COUNTIES } from '@/types';
@@ -109,6 +110,12 @@ export default function PriceIntelligenceDashboard() {
     }
   }
 
+  const { data: recommendation, isLoading: isRecLoading } = usePriceRecommendation(
+    selectedCrop,
+    selectedCounty,
+    'KG'
+  );
+
   const stats = priceData?.stats;
   const premiumColor =
     stats?.platformPremium !== null && stats?.platformPremium !== undefined
@@ -163,6 +170,9 @@ export default function PriceIntelligenceDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Recommendation panel — the headline guidance */}
+      <PriceRecommendationPanel recommendation={recommendation} isLoading={isRecLoading} />
 
       {/* Stats row */}
       {stats && (
