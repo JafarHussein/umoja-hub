@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { PriceRecommendationPanel, usePriceRecommendation } from './PriceRecommendationPanel';
 import { ListingUnit, BuyerContactPreference, KENYAN_COUNTIES } from '@/types';
 
 export interface ICreateListingFormProps {
@@ -138,6 +139,17 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
     }
   }
 
+  // Price Intelligence — fires once a crop (not the free-text "other") and county
+  // are chosen. Quantity, when entered, drives the earnings projection.
+  const cropForQuery = form.cropName && form.cropName !== 'other' ? form.cropName : '';
+  const quantityForQuery = parseInt(form.quantityAvailable, 10);
+  const { data: recommendation, isLoading: isRecLoading } = usePriceRecommendation(
+    cropForQuery,
+    form.pickupCounty,
+    form.unit,
+    Number.isFinite(quantityForQuery) && quantityForQuery > 0 ? quantityForQuery : undefined
+  );
+
   return (
     <Modal
       isOpen={isOpen}
@@ -236,6 +248,15 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
           error={errors.currentPricePerUnit}
           required
         />
+
+        {/* Price Intelligence — guidance, never enforcement */}
+        {cropForQuery && form.pickupCounty && (
+          <PriceRecommendationPanel
+            recommendation={recommendation}
+            isLoading={isRecLoading}
+            onUsePrice={(price) => set('currentPricePerUnit', String(price))}
+          />
+        )}
 
         {/* Pickup county */}
         <div className="space-y-1.5">
