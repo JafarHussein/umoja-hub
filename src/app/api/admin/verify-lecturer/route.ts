@@ -5,7 +5,8 @@ import { connectDB } from '@/lib/db';
 import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminVerifyLecturerSchema } from '@/lib/validation/educationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role } from '@/types';
+import { Role, NotificationType } from '@/types';
+import { notify } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
 // POST /api/admin/verify-lecturer — Admin grants lecturer verification
@@ -65,6 +66,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       targetId: lecturerId,
       targetType: 'User',
     }).catch(() => {});
+
+    void notify({
+      userId: lecturerId,
+      type: NotificationType.VERIFICATION_UPDATE,
+      title: 'Your lecturer account is verified',
+      body: 'Congratulations — your faculty verification was approved. You can now review student projects from your queue.',
+      relatedEntity: { kind: 'User', id: lecturerId },
+    });
 
     return NextResponse.json(
       { data: { lecturerId, isVerified: true } },

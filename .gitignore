@@ -100,3 +100,10 @@ IMPLEMENTATION_PLAN.md
 
 # Installed agent skills (taste-skill etc.) - local tooling
 .agents/
+
+#project paper folder
+project-paper/
+Undergraduate Project Paper Guidelines March, 2017.pdf
+
+# Playwright MCP local run artifacts
+.playwright-mcp/

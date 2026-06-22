@@ -52,6 +52,87 @@ function DetailTile({ label, children }: { label: string; children: React.ReactN
   );
 }
 
+// Join names without rendering the literal "undefined" when a lastName is absent.
+function fullName(f: { firstName: string; lastName?: string }): string {
+  return [f.firstName, f.lastName].filter(Boolean).join(' ');
+}
+
+function isPdfUrl(url: string): boolean {
+  return /\.pdf($|\?)/i.test(url);
+}
+
+// Cloudinary: inserting fl_attachment after /upload/ forces a file download
+// (with the stored filename) instead of inline rendering.
+function downloadUrl(url: string): string {
+  return url.includes('/upload/') ? url.replace('/upload/', '/upload/fl_attachment/') : url;
+}
+
+// Inline evidence viewer for the admin. Images render in-place and open full
+// resolution in a new tab on click (zoom); PDFs show an open/download card.
+// Both expose an explicit download. The uploaded document is evidence, so it is
+// presented directly rather than hidden behind a bare link.
+function DocumentPreview({ url }: { url: string }): React.ReactElement {
+  if (!url) {
+    return <p className="app-body text-app-faint">No document image was provided.</p>;
+  }
+  const pdf = isPdfUrl(url);
+  return (
+    <div className="space-y-2">
+      {pdf ? (
+        <div className="flex items-center gap-3 rounded-app-control border border-app-hairline bg-app-sunken p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-app-control bg-app-card font-app-mono text-app-brand">
+            PDF
+          </div>
+          <p className="app-body text-app-muted">PDF document — open to review full resolution.</p>
+        </div>
+      ) : (
+        <a href={url} target="_blank" rel="noopener noreferrer" title="Open full resolution">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt="Submitted verification document"
+            className="max-h-72 w-full cursor-zoom-in rounded-app-control border border-app-hairline bg-app-sunken object-contain"
+          />
+        </a>
+      )}
+      <div className="flex items-center gap-4">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+        >
+          Open full size
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path
+              d="M2 10L10 2M10 2H6M10 2V6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </a>
+        <a
+          href={downloadUrl(url)}
+          className="app-body inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink"
+        >
+          Download
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path
+              d="M6 1.5V8M6 8L3.5 5.5M6 8L8.5 5.5M2 10.5h8"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminVerificationQueuePage(): React.ReactElement {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -217,7 +298,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
               <TR key={farmer._id}>
                 <TD>
                   <p className="app-body-strong text-app-ink">
-                    {farmer.firstName} {farmer.lastName}
+                    {fullName(farmer)}
                   </p>
                   <p className="app-meta truncate text-app-faint">
                     {farmer.farmerData.cropsGrown.join(', ')}
@@ -297,7 +378,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
       >
         {activeModal?.type === 'approve' && (
           <p className="app-body text-app-body">
-            Approve {activeModal.farmer.firstName} {activeModal.farmer.lastName} as a verified
+            Approve {fullName(activeModal.farmer)} as a verified
             farmer? This will grant them a 40-point trust score and send an SMS notification.
           </p>
         )}
@@ -334,7 +415,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
         >
           <div className="space-y-4">
             <p className="app-body text-app-muted">
-              Provide a reason for rejecting {selectedFarmer.firstName} {selectedFarmer.lastName}.
+              Provide a reason for rejecting {fullName(selectedFarmer)}.
               They will be notified via SMS.
             </p>
             <Input
@@ -353,7 +434,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
         <Modal
           open
           onClose={() => setActiveModal(null)}
-          title={`${selectedFarmer.firstName} ${selectedFarmer.lastName}`}
+          title={fullName(selectedFarmer)}
           className="max-w-lg"
           footer={
             <div className="flex w-full gap-3">
@@ -421,24 +502,13 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                       {selectedFarmer.farmerData.verificationDocument.documentNumber}
                     </span>
                   </DetailTile>
+                  <DetailTile label="Submitted">
+                    {formatDate(selectedFarmer.farmerData.verificationDocument.submittedAt)}
+                  </DetailTile>
                 </div>
-                <a
-                  href={selectedFarmer.farmerData.verificationDocument.documentImageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="app-body inline-flex items-center gap-2 text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
-                >
-                  View document image
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path
-                      d="M2 10L10 2M10 2H6M10 2V6"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </a>
+                <DocumentPreview
+                  url={selectedFarmer.farmerData.verificationDocument.documentImageUrl}
+                />
               </div>
             ) : (
               <div className="rounded-app-control bg-app-sunken p-3">

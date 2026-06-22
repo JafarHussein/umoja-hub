@@ -8,10 +8,11 @@ import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { env } from '@/lib/env';
 import { Role, ProjectStatus, MENTOR_SESSION_TTL_DAYS } from '@/types';
+import { EDUCATION_PLATFORM_KNOWLEDGE } from '@/lib/ai/platformKnowledge';
 import type { ProjectEngagementDoc } from '@/lib/models/ProjectEngagement.model';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama3-8b-8192';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const MENTOR_RATE_LIMIT = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const MENTOR_FALLBACK =
@@ -129,7 +130,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const systemPrompt = `You are an AI mentor for a ${engagement.tier} computer science student in Kenya working on "${briefTitle}".
 Your role is to guide without writing code for the student directly.
 Ask Socratic questions, explain concepts, and encourage independent problem-solving.
-Keep responses concise and grounded in East African tech constraints (mobile-first, M-Pesa, intermittent connectivity).`;
+Keep responses concise and grounded in East African tech constraints (mobile-first, M-Pesa, intermittent connectivity).
+
+You can also answer questions about how the UmojaHub platform works — portfolios, the project review lifecycle, peer and lecturer review, skills, tiers, and student verification — using only the platform facts below. If a platform question is not covered, say you are not certain and suggest contacting UmojaHub support rather than guessing.
+
+${EDUCATION_PLATFORM_KNOWLEDGE}`;
 
     const groqMessages = [
       { role: 'system' as const, content: systemPrompt },

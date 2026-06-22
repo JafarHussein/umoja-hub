@@ -1,6 +1,6 @@
 /**
  * Groq AI service for the Farm Assistant.
- * Uses Llama 3 (llama3-8b-8192) via the Groq OpenAI-compatible API.
+ * Uses Llama 3.3 70B (llama-3.3-70b-versatile) via the Groq OpenAI-compatible API.
  * Uses plain fetch — consistent with darajaService.ts pattern.
  * Gracefully degrades on any failure.
  */
@@ -16,7 +16,7 @@ import { CHAT_SESSION_TTL_DAYS, Role } from '@/types';
 import type { WeatherContext } from '@/lib/foodhub/assistantPrompt';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama3-8b-8192';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const FALLBACK_RESPONSE =
   "I'm having trouble connecting right now. Please try again in a moment. In the meantime, you can visit Wakulima Market or contact your local KEBS office for guidance.";
 

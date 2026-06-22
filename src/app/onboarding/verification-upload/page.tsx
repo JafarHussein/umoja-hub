@@ -14,24 +14,21 @@ const DASHBOARD_BY_ROLE: Record<string, string> = {
   LECTURER: '/dashboard/lecturer/queue',
 };
 
-// Unsigned Cloudinary upload — returns the secure res.cloudinary.com URL the
-// onboarding verification schemas require.
+// Server-side upload via /api/upload — returns the secure res.cloudinary.com URL
+// the onboarding verification schemas require. The server uses the validated
+// CLOUDINARY_* credentials, so this works in every environment (no reliance on
+// build-time NEXT_PUBLIC_* vars that were silently undefined in production).
 async function uploadToCloudinary(file: File): Promise<string> {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-  if (!cloudName || !uploadPreset) throw new Error('Uploads are not configured. Contact support.');
-
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', uploadPreset);
+  formData.append('folder', 'umojahub/verification');
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: formData,
-  });
-  const data = (await res.json()) as { secure_url?: string };
-  if (!res.ok || !data.secure_url) throw new Error('Upload failed. Please try again.');
-  return data.secure_url;
+  const res = await fetch('/api/upload', { method: 'POST', body: formData });
+  const data = (await res.json()) as { data?: { url?: string }; error?: string };
+  if (!res.ok || !data.data?.url) {
+    throw new Error(data.error ?? 'Upload failed. Please try again.');
+  }
+  return data.data.url;
 }
 
 export default function VerificationUploadPage(): React.ReactElement {

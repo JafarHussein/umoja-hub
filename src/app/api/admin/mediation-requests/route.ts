@@ -8,6 +8,7 @@ import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminMediationDecisionSchema } from '@/lib/validation/mediationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { sendSMS } from '@/lib/integrations/smsService';
+import { notify } from '@/lib/notifications/notify';
 import {
   Role,
   MediationRequestStatus,
@@ -16,6 +17,7 @@ import {
   OrderFulfillmentStatus,
   ListingStatus,
   EscrowEventType,
+  NotificationType,
 } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -221,6 +223,21 @@ async function applyEscrowOutcome(
       }
     })().catch(() => {});
 
+    void notify({
+      userId: String(order.buyerId),
+      type: NotificationType.ESCROW_UPDATE,
+      title: 'Dispute resolved — funds refunded',
+      body: `Following mediation, your KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`,
+      relatedEntity: { kind: 'Order', id: String(order._id) },
+    });
+    void notify({
+      userId: String(order.farmerId),
+      type: NotificationType.ORDER_UPDATE,
+      title: 'Dispute resolved',
+      body: `The mediation for order ${order.orderReferenceId} has concluded. The buyer was refunded and the produce returned to the marketplace.`,
+      relatedEntity: { kind: 'Order', id: String(order._id) },
+    });
+
     logger.info('admin/mediation-requests', 'Escrow refunded to buyer', {
       requestId,
       orderId: String(order._id),
@@ -268,6 +285,21 @@ async function applyEscrowOutcome(
         );
       }
     })().catch(() => {});
+
+    void notify({
+      userId: String(order.farmerId),
+      type: NotificationType.ESCROW_UPDATE,
+      title: 'Dispute resolved — funds released',
+      body: `Following mediation, KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`,
+      relatedEntity: { kind: 'Order', id: String(order._id) },
+    });
+    void notify({
+      userId: String(order.buyerId),
+      type: NotificationType.ORDER_UPDATE,
+      title: 'Dispute resolved',
+      body: `The mediation for order ${order.orderReferenceId} has concluded and the payment was released to the farmer.`,
+      relatedEntity: { kind: 'Order', id: String(order._id) },
+    });
 
     logger.info('admin/mediation-requests', 'Escrow released to farmer', {
       requestId,

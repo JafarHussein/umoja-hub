@@ -7,7 +7,10 @@
 import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+// Verification documents are uploaded here too (ID photos, tax certificates,
+// faculty credential letters) — those are commonly PDFs, which Cloudinary
+// accepts on the image endpoint (resource_type "image", deliverable as a page).
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB — Vercel payload ceiling is 4.5MB
 
 interface IUploadResult {
@@ -26,7 +29,7 @@ export async function uploadImage(file: File, folder: string): Promise<IUploadRe
   // MIME type validation
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     throw new AppError(
-      'Only image files (JPG, PNG, WebP) are accepted.',
+      'Only image files (JPG, PNG, WebP) or PDF documents are accepted.',
       400,
       'EXT_CLOUDINARY_INVALID_TYPE'
     );
