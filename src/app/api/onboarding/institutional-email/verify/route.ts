@@ -5,7 +5,8 @@ import { connectDB } from '@/lib/db';
 import { institutionalEmailVerifySchema } from '@/lib/validation/onboardingSchema';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AppError, handleApiError, verifySecret, logger } from '@/lib/utils';
-import { Role, OnboardingStage } from '@/types';
+import { Role, OnboardingStage, NotificationType } from '@/types';
+import { notify } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/institutional-email/verify — Stage 3 for STUDENT (AUTH-05)
@@ -79,6 +80,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('onboarding', 'Institutional email verified', { userId: session.user.id });
+
+    // Students are verified the moment their university email is confirmed —
+    // send a true welcome with their first next step.
+    void notify({
+      userId: session.user.id,
+      type: NotificationType.VERIFICATION_UPDATE,
+      title: 'Welcome to UmojaHub — your student account is verified',
+      body: 'Your university email is confirmed and your student account is verified. Generate your first project brief and start building a verified portfolio that employers can trust.',
+      relatedEntity: { kind: 'User', id: session.user.id },
+    });
 
     return NextResponse.json({ data: { onboardingStage: OnboardingStage.COMPLETED } });
   } catch (error) {

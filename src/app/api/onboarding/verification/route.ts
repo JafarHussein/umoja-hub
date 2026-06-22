@@ -8,7 +8,8 @@ import {
   lecturerOnboardingVerificationSchema,
 } from '@/lib/validation/onboardingSchema';
 import { AppError, handleApiError, logger } from '@/lib/utils';
-import { Role, OnboardingStage, VerificationStatus } from '@/types';
+import { Role, OnboardingStage, VerificationStatus, NotificationType } from '@/types';
+import { notify, notifyAdmins } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/verification — Stage 3 for FARMER/BUYER/LECTURER (AUTH-05)
@@ -88,6 +89,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     logger.info('onboarding', 'Verification submitted', {
       userId: session.user.id,
       role: user.role,
+    });
+
+    // Welcome + "documents under review" acknowledgement to the new member, and
+    // an operational alert to administrators that a verification awaits review.
+    const credential =
+      user.role === Role.LECTURER
+        ? 'faculty credentials'
+        : user.role === Role.BUYER
+          ? 'tax compliance certificate'
+          : 'identity documents';
+    void notify({
+      userId: session.user.id,
+      type: NotificationType.VERIFICATION_UPDATE,
+      title: 'Welcome to UmojaHub — your account is under review',
+      body: `Thank you for joining UmojaHub. We have received your ${credential} and an administrator will review them shortly. You can start exploring the platform right away.`,
+      relatedEntity: { kind: 'User', id: session.user.id },
+    });
+    void notifyAdmins({
+      type: NotificationType.VERIFICATION_UPDATE,
+      title: 'New verification request',
+      body: `A ${String(user.role).toLowerCase()} submitted ${credential} for verification. Open the verification queue to review.`,
+      relatedEntity: { kind: 'User', id: session.user.id },
     });
 
     return NextResponse.json({ data: { onboardingStage: OnboardingStage.COMPLETED } });

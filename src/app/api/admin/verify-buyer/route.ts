@@ -6,8 +6,9 @@ import User from '@/lib/models/User.model';
 import AdminAuditLog from '@/lib/models/AdminAuditLog.model';
 import { adminVerifyBuyerSchema } from '@/lib/validation/buyerSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, VerificationStatus } from '@/types';
+import { Role, VerificationStatus, NotificationType } from '@/types';
 import { sendSMS } from '@/lib/integrations/smsService';
+import { notify } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
 // PATCH /api/admin/verify-buyer — Admin approves or rejects buyer KYC (BE-09)
@@ -93,6 +94,16 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       : `UmojaHub: Your verification was not approved. Reason: ${rejectionReason ?? 'Please contact support'}. Re-submit with a valid certificate.`;
     sendSMS(buyer.phoneNumber, smsMessage).catch(() => {
       // Already logged inside sendSMS
+    });
+
+    void notify({
+      userId: buyerId,
+      type: NotificationType.VERIFICATION_UPDATE,
+      title: isApproved ? 'Your buyer account is verified' : 'Verification not approved',
+      body: isApproved
+        ? 'Congratulations — your verification was approved. You can now place orders on the marketplace.'
+        : `Your verification was not approved. Reason: ${rejectionReason ?? 'Please contact support'}. Re-submit with a valid tax compliance certificate.`,
+      relatedEntity: { kind: 'User', id: buyerId },
     });
 
     return NextResponse.json(

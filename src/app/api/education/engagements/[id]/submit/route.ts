@@ -4,7 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, ProjectStatus, PeerReviewStatus, UserStatus } from '@/types';
+import { notify } from '@/lib/notifications/notify';
+import { Role, ProjectStatus, PeerReviewStatus, UserStatus, NotificationType } from '@/types';
 import type { ProjectEngagementDoc } from '@/lib/models/ProjectEngagement.model';
 
 // ---------------------------------------------------------------------------
@@ -112,6 +113,21 @@ export async function POST(
       studentId,
       reviewerId: String(reviewer._id),
       peerReviewId: String(peerReview._id),
+    });
+
+    void notify({
+      userId: studentId,
+      type: NotificationType.REVIEW_UPDATE,
+      title: 'Your project was submitted for peer review',
+      body: 'Your project is now under peer review. We will let you know as soon as feedback is ready and it advances to lecturer review.',
+      relatedEntity: { kind: 'ProjectEngagement', id },
+    });
+    void notify({
+      userId: String(reviewer._id),
+      type: NotificationType.REVIEW_UPDATE,
+      title: 'You have a new peer review to complete',
+      body: 'A fellow student has submitted a project for your review. Open your peer-review queue to read their work and give structured feedback.',
+      relatedEntity: { kind: 'ProjectEngagement', id },
     });
 
     return NextResponse.json({ data: updated }, { status: 201 });

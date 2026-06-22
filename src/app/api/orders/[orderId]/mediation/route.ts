@@ -5,12 +5,14 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { mediationRequestSchema } from '@/lib/validation/mediationSchema';
 import { AppError, handleApiError, logger } from '@/lib/utils';
+import { notify, notifyAdmins } from '@/lib/notifications/notify';
 import {
   Role,
   OrderPaymentStatus,
   OrderFulfillmentStatus,
   MediationRequestStatus,
   MEDIATION_ESCALATION_HOURS,
+  NotificationType,
 } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -126,6 +128,27 @@ export async function POST(req: NextRequest, { params }: Params): Promise<NextRe
       orderId,
       buyerId: session.user.id,
       category: parsed.data.category,
+    });
+
+    void notify({
+      userId: session.user.id,
+      type: NotificationType.ORDER_UPDATE,
+      title: 'Your mediation request was received',
+      body: 'Our team will review your report and the order. Your funds remain protected in escrow until this dispute is resolved.',
+      relatedEntity: { kind: 'Order', id: orderId },
+    });
+    void notify({
+      userId: String(order.farmerId),
+      type: NotificationType.ORDER_UPDATE,
+      title: 'An order has been escalated to mediation',
+      body: `A buyer reported an issue (${parsed.data.category}) and the order is now with the UmojaHub mediation team. The funds remain held in escrow until the dispute is resolved.`,
+      relatedEntity: { kind: 'Order', id: orderId },
+    });
+    void notifyAdmins({
+      type: NotificationType.ORDER_UPDATE,
+      title: 'New dispute filed',
+      body: `A buyer escalated an order to mediation (${parsed.data.category}). Open the mediation queue to review and resolve it.`,
+      relatedEntity: { kind: 'Order', id: orderId },
     });
 
     return NextResponse.json({ data: mediation }, { status: 201 });
