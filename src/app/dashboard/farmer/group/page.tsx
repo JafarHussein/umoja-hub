@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import GroupOrderCard from '@/components/foodhub/GroupOrderCard';
+import { CoopInsightsPanel } from '@/components/foodhub/CoopInsightsPanel';
 import { VerificationBadge } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role } from '@/types';
+import type { CooperativeInsights } from '@/lib/intelligence/cooperativeInsights';
 
 interface IGroup {
   _id: string;
@@ -64,8 +66,10 @@ export default function FarmerGroupPage() {
   const [groups, setGroups] = useState<IGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<IGroupDetail | null>(null);
   const [groupOrders, setGroupOrders] = useState<IGroupOrder[]>([]);
+  const [coopInsights, setCoopInsights] = useState<CooperativeInsights | null>(null);
   const [isLoadingGroups, setIsLoadingGroups] = useState(true);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   const userId = session?.user.id;
 
@@ -100,8 +104,10 @@ export default function FarmerGroupPage() {
 
   async function selectGroup(group: IGroup): Promise<void> {
     setIsLoadingDetail(true);
+    setIsLoadingInsights(true);
     setSelectedGroup({ ...group, members: [] });
     setGroupOrders([]);
+    setCoopInsights(null);
     try {
       const [detailRes, ordersRes] = await Promise.all([
         fetch(`/api/groups/${group._id}`),
@@ -117,6 +123,17 @@ export default function FarmerGroupPage() {
       }
     } finally {
       setIsLoadingDetail(false);
+    }
+
+    // Price insights load independently — slower (queries + recommendation engine).
+    try {
+      const res = await fetch(`/api/groups/${group._id}/price-insights`);
+      if (res.ok) {
+        const body = (await res.json()) as { data: CooperativeInsights };
+        setCoopInsights(body.data);
+      }
+    } finally {
+      setIsLoadingInsights(false);
     }
   }
 
@@ -265,6 +282,12 @@ export default function FarmerGroupPage() {
                     ))}
                   </div>
                 )}
+              </section>
+
+              {/* Cooperative price insights */}
+              <section>
+                <h3 className="app-title mb-3 text-app-ink">Price insights</h3>
+                <CoopInsightsPanel insights={coopInsights} isLoading={isLoadingInsights} />
               </section>
 
               {/* Group order histories */}
