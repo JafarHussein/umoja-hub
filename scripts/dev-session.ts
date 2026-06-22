@@ -95,12 +95,13 @@ async function main(): Promise<void> {
 
   // Mirror the JWT claim set produced by authOptions.callbacks.jwt so the
   // session callback hydrates a fully-onboarded session.
+  const stage = (user.onboardingStage as OnboardingStage) ?? OnboardingStage.COMPLETED;
   const token = {
     id: String(user._id),
     role: (user.role as Role | null) ?? null,
     firstName: user.firstName,
-    onboardingStage: (user.onboardingStage as OnboardingStage) ?? OnboardingStage.COMPLETED,
-    isOnboarded: true,
+    onboardingStage: stage,
+    isOnboarded: stage === OnboardingStage.COMPLETED,
     isVerified: computeIsVerified(user),
   };
 

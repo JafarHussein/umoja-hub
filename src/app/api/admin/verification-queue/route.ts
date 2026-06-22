@@ -33,7 +33,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const farmers = await User.find(filter)
       .select(
-        'firstName lastName phoneNumber county farmerData.documentType farmerData.documentImageUrl farmerData.documentNumber createdAt'
+        'firstName lastName phoneNumber county farmerData.documentType farmerData.documentImageUrl farmerData.documentNumber farmerData.cropsGrown farmerData.farmSizeAcres farmerData.verificationStatus createdAt'
       )
       .sort({ _id: 1 })
       .limit(limit + 1)
@@ -45,19 +45,33 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const total = await User.countDocuments(filter);
 
-    const data = page.map((farmer) => ({
-      userId: String(farmer._id),
-      firstName: farmer.firstName,
-      lastName: farmer.lastName,
-      phoneNumber: farmer.phoneNumber,
-      county: farmer.county,
-      documentType: farmer.farmerData?.documentType ?? null,
-      documentImageUrl: farmer.farmerData?.documentImageUrl ?? null,
-      documentNumber: farmer.farmerData?.documentNumber ?? null,
-      submittedAt: (farmer.createdAt as Date).toISOString(),
-    }));
+    const data = page.map((farmer) => {
+      const fd = farmer.farmerData;
+      const submittedAt = (farmer.createdAt as Date).toISOString();
+      return {
+        _id: String(farmer._id),
+        firstName: farmer.firstName,
+        lastName: farmer.lastName,
+        phoneNumber: farmer.phoneNumber,
+        county: farmer.county,
+        farmerData: {
+          cropsGrown: fd?.cropsGrown ?? [],
+          farmSizeAcres: fd?.farmSizeAcres,
+          verificationStatus: fd?.verificationStatus,
+          verificationDocument: fd?.documentType
+            ? {
+                documentType: fd.documentType,
+                documentNumber: fd.documentNumber ?? '',
+                documentImageUrl: fd.documentImageUrl ?? '',
+                submittedAt,
+              }
+            : undefined,
+        },
+        createdAt: submittedAt,
+      };
+    });
 
-    return NextResponse.json({ data, nextCursor, total });
+    return NextResponse.json({ farmers: data, nextCursor, total });
   } catch (error) {
     return handleApiError(error);
   }

@@ -252,6 +252,9 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
           isVerified: !isNew,
           documentType: DocumentType.NATIONAL_ID,
           documentNumber: String(rng.int(20000000, 39999999)),
+          // Sample identity document so the admin verification queue has real
+          // evidence to review (specimen image, clearly marked, served locally).
+          documentImageUrl: '/images/documents/sample-national-id.svg',
           cropsGrown: crops,
           farmSizeAcres: rng.int(1, 12),
           primaryLanguage: rng.pick(['English', 'Kiswahili', 'Kikuyu', 'Luo', 'Kalenjin']),
