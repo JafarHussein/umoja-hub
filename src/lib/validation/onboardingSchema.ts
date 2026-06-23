@@ -41,8 +41,23 @@ export const onboardingDraftSchema = z.object({
   role: z.enum([Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER]),
 });
 
+// Login accepts either a username or an account email in the same field. The
+// account is still resolved server-side (authorize), but we validate the shape
+// here: a value is acceptable if it matches the username rule OR is an email.
+export const loginIdentifierSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, 'Enter your username or email')
+  .max(254, 'That value is too long')
+  .refine(
+    (value) =>
+      /^[a-z0-9_]{3,20}$/.test(value) || z.string().email().safeParse(value).success,
+    'Enter a valid username or email'
+  );
+
 export const credentialsLoginSchema = z.object({
-  username: usernameSchema,
+  username: loginIdentifierSchema,
   password: z.string().min(1, 'Password is required'),
 });
 

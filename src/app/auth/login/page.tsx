@@ -57,7 +57,7 @@ function LoginContent(): React.ReactElement {
     try {
       const res = await signIn('credentials', { username, password, redirect: false });
       if (!res || res.error) {
-        setFormError('Invalid username or password.');
+        setFormError('Invalid login or password.');
         return;
       }
       // Onboarded account → the middleware routes /onboarding/welcome to the
@@ -111,7 +111,7 @@ function LoginContent(): React.ReactElement {
           <div className="rounded-app-card border border-app-hairline bg-app-card p-6 sm:p-8">
             <h1 className="app-h1 mb-1 text-app-ink">Sign in to UmojaHub</h1>
             <p className="app-body mb-6 text-app-muted">
-              Use your username and password, or continue with your connected provider.
+              Use your username or email and password, or continue with your connected provider.
             </p>
 
             {error && (
@@ -122,7 +122,7 @@ function LoginContent(): React.ReactElement {
 
             <form onSubmit={handleCredentials} className="flex flex-col gap-4">
               <Input
-                label="Username"
+                label="Username or email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
