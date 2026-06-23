@@ -195,12 +195,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials): Promise<User | null> {
         const parsed = credentialsLoginSchema.safeParse(credentials);
         if (!parsed.success) return null;
-        const { username, password } = parsed.data;
+        // `identifier` is a username or an account email (normalized lowercase by
+        // the schema). The account is resolved by matching either field.
+        const { username: identifier, password } = parsed.data;
 
-        // Front-line throttle: cap attempt volume per username before any bcrypt
+        // Front-line throttle: cap attempt volume per identifier before any bcrypt
         // work (CPU-exhaustion / rapid brute-force mitigation).
         const throttle = await checkRateLimit(
-          `login:${username}`,
+          `login:${identifier}`,
           LOGIN_THROTTLE_MAX,
           LOGIN_THROTTLE_WINDOW_MS
         );
@@ -208,9 +210,9 @@ export const authOptions: NextAuthOptions = {
 
         await connectDB();
         const UserModel = (await import('@/lib/models/User.model')).default;
-        const dbUser = await UserModel.findOne({ username }).select(
-          '+hashedPassword +failedLoginAttempts +lockedUntil'
-        );
+        const dbUser = await UserModel.findOne({
+          $or: [{ username: identifier }, { email: identifier }],
+        }).select('+hashedPassword +failedLoginAttempts +lockedUntil');
         if (!dbUser?.hashedPassword || dbUser.status !== UserStatus.ACTIVE) return null;
 
         // Account lockout — a locked account is denied regardless of the
