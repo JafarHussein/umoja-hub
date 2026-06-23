@@ -96,6 +96,10 @@ SEED_DATA.md
 umojahub_all_documentation.md
 IMPLEMENTATION_PLAN.md
 
+# Local-only operator handbook + presentation cheat-sheet (personal, never commit)
+LOCAL_DEMO_OPERATIONS.md
+PRESENTATION_COMMANDS.md
+
 .vercel
 
 # Installed agent skills (taste-skill etc.) - local tooling
