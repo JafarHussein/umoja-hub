@@ -218,7 +218,7 @@ Every transition is real DB state, SMS-notified, and audit-logged.
 
 ## DELIVERABLE 9 — Demo Script
 
-Using seeded users (`npm run db:seed`; farmer wanjiku.kamau@gmail.com, buyer kamau.githinji@gmail.com, admin admin@umojahub.co.ke) and `PAYMENT_PROVIDER=simulation`, driven via the admin **Payment Lab** (`api/admin/payment-lab`):
+Using seeded users (`npm run db:seed`; farmer wanjiku.kamau@gmail.com, buyer kamau.githinji@gmail.com, admin umojahub16@gmail.com) and `PAYMENT_PROVIDER=simulation`, driven via the admin **Payment Lab** (`api/admin/payment-lab`):
 
 1. **Buyer** orders a listing → Payment Lab delivers a SUCCESS callback → buyer dashboard: *"Funds held in escrow."*
 2. **Farmer** dashboard: *"Buyer has paid; funds are waiting for successful fulfilment."* Farmer confirms handover.

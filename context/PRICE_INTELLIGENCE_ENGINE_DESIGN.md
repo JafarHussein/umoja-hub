@@ -392,7 +392,7 @@ Each phase ends with `npm run type-check && npm run lint && npm run test` green.
 
 1. **Farmer** signs in as `wanjiku.kamau@gmail.com` (Kiambu farmer), opens "New crop listing", selects **Tomatoes**, county **Kiambu**, quantity **200 kg** → panel fills: *Recommended KES 75/kg · Range 68–82 · Demand High · +12% (30d) · Confidence 89% · Expected KES 15,000* with the insight sentence. Taps **Use KES 75**, publishes.
 2. **Assistant**: farmer asks *"What should I charge for tomatoes in Kiambu?"* → answer quotes the engine's KES 75 (68–82) with the demand/trend rationale — no hallucinated figure.
-3. **Admin** signs in as `admin@umojahub.co.ke` → price-analytics shows tomatoes as a Kiambu demand hotspot with low volatility; a seeded outlier flagged as an anomaly.
+3. **Admin** signs in as `umojahub16@gmail.com` → price-analytics shows tomatoes as a Kiambu demand hotspot with low volatility; a seeded outlier flagged as an anomaly.
 
 *(Buyer-side fairness badge deferred — see Deliverable 10.)*
 
