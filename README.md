@@ -718,8 +718,6 @@ Realistic next steps, in rough priority order:
 
 **Knowledge sources referenced in the Knowledge Hub** — KALRO, FAO Kenya, KEBS, Kenya Veterinary Board, Kenya Markets Trust.
 
-**Engineering assistance** — built with [Claude Code](https://claude.com/claude-code).
-
 ---
 
 <p align="center">
