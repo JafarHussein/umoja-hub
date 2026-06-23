@@ -42,7 +42,7 @@ flowchart TB
   subgraph Edge["Next.js 15 — App Router"]
     MW["middleware.ts — RBAC guard"]
     PAGES["Server components / pages"]
-    API["81 API route handlers"]
+    API["86 API route modules"]
   end
   subgraph Domain["Domain services (src/lib)"]
     TRUST["Trust — recalculate()"]
