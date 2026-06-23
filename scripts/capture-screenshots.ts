@@ -44,7 +44,7 @@ const ROLE_EMAIL: Partial<Record<Role, string>> = {
   [Role.BUYER]: 'kamau.githinji@gmail.com',
   [Role.STUDENT]: 'brian.otieno@students.uonbi.ac.ke',
   [Role.LECTURER]: 'g.ndungu@uonbi.ac.ke',
-  [Role.ADMIN]: 'admin@umojahub.co.ke',
+  [Role.ADMIN]: 'umojahub16@gmail.com',
 };
 
 interface Shot {

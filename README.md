@@ -612,11 +612,11 @@ npm run dev          # http://localhost:3000
 | 2 | **A farmer's trust profile** | `wanjiku.kamau@gmail.com` | The score breaks into four explainable parts. |
 | 3 | **The farmer's escrow ledger** | same | Held vs. releasable vs. available — money with a story. |
 | 4 | **A buyer's orders** | `kamau.githinji@gmail.com` | Escrow + payment status, buyer's-eye view. |
-| 5 | **Admin escrow + mediation + payouts** | `admin@umojahub.co.ke` | The platform is *operated*, not assumed. |
+| 5 | **Admin escrow + mediation + payouts** | `umojahub16@gmail.com` | The platform is *operated*, not assumed. |
 | 6 | **A public verified portfolio** | (none) | The student credential, queryable by anyone. |
 | 7 | **Lecturer review rubric** | `g.ndungu@uonbi.ac.ke` | Verification has a defensible standard. |
 | 8 | **Employer talent search** | (seed:demo employer) | The credential closes the loop into hiring. |
-| 9 | **Admin impact analytics** | `admin@umojahub.co.ke` | The whole ecosystem, cron-aggregated. |
+| 9 | **Admin impact analytics** | `umojahub16@gmail.com` | The whole ecosystem, cron-aggregated. |
 
 ### Talking points
 

@@ -41,7 +41,7 @@ skipped, run `npm run seed:demo` again so the collections are populated, then re
 | Buyer | `kamau.githinji@gmail.com` | `db:seed` |
 | Student | `brian.otieno@students.uonbi.ac.ke` | `db:seed` |
 | Lecturer | `g.ndungu@uonbi.ac.ke` | `db:seed` |
-| Admin | `admin@umojahub.co.ke` | `db:seed` |
+| Admin | `umojahub16@gmail.com` | `db:seed` |
 | NGO / Employer / Institution | first user of each role | `seed:demo` (generated emails) |
 
 ## Checklist — exact filenames

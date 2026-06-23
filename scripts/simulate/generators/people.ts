@@ -451,7 +451,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       const user = ledger.track(
         'User',
         await createDoc(User, {
-          email: 'admin@umojahub.co.ke',
+          email: 'umojahub16@gmail.com',
           username: 'admin',
           firstName: 'Platform',
           lastName: 'Steward',

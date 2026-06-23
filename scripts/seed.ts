@@ -351,7 +351,7 @@ async function seed(): Promise<void> {
     {
       firstName: 'UmojaHub',
       lastName: 'Admin',
-      email: 'admin@umojahub.co.ke',
+      email: 'umojahub16@gmail.com',
       hashedPassword: adminPassword,
       role: Role.ADMIN,
       phoneNumber: '+254700000001',
@@ -399,7 +399,7 @@ async function seed(): Promise<void> {
   const brian = userByEmail.get('brian.otieno@students.uonbi.ac.ke')!;
   const amina = userByEmail.get('amina.waweru@strathmore.edu')!;
   const dennis = userByEmail.get('dennis.kariuki@jkuat.ac.ke')!;
-  const admin = userByEmail.get('admin@umojahub.co.ke')!;
+  const admin = userByEmail.get('umojahub16@gmail.com')!;
 
   log(`Inserted ${users.length} users.`);
 
