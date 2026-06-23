@@ -8,7 +8,14 @@
 import type { SimContext, World, PersonRef } from '../world';
 import { createDoc, pushNotification } from '../helpers';
 import { between, daysAgo, daysAfter, hoursAfter } from '../clock';
-import { CROPS, LISTING_TEMPLATES, FARMING_COUNTIES, type Crop } from '../dictionaries';
+import {
+  CROPS,
+  LISTING_TEMPLATES,
+  QUALITY_ADJECTIVES,
+  LISTING_HOOKS,
+  FARMING_COUNTIES,
+  type Crop,
+} from '../dictionaries';
 import { cropImageUrl } from '../images';
 import { recalculate } from '../../../src/lib/trust/farmerTrustCalculator';
 import {
@@ -16,6 +23,7 @@ import {
   OrderFulfillmentStatus,
   FulfillmentType,
   ListingStatus,
+  BuyerContactPreference,
   EscrowEventType,
   PriceHistorySource,
   WithdrawalRequestStatus,
@@ -40,6 +48,38 @@ function activityFor(archetype: string): ActivityProfile {
     case 'seasonal': return { listings: [1, 2], orders: [2, 4], onTimeP: 0.7, ratingP: 0.7 };
     default: return { listings: [1, 2], orders: [1, 3], onTimeP: 0.7, ratingP: 0.65 };
   }
+}
+
+// Relative likelihood a buyer places any given order. Resellers and restaurants
+// buy constantly (the platform's regulars / power buyers); individuals rarely.
+// Weighting order assignment this way makes a few buyers dominate the order book
+// and leaves some individuals with no orders at all — i.e. browse-leaning buyers
+// — which is how a real marketplace's demand actually distributes.
+function buyerWeight(archetype: string): number {
+  switch (archetype) {
+    case 'reseller': return 5;
+    case 'restaurant': return 4;
+    case 'ngo-procurement': return 2;
+    default: return 1; // individual — browse-leaning, occasional
+  }
+}
+
+// Listings tell a story rather than naming a crop. Trust-bearing farmers post
+// more "verified" listings; everyone gets a quality adjective + a hook.
+function listingTitle(rng: SimContext['rng'], crop: Crop): string {
+  return `${rng.pick(QUALITY_ADJECTIVES)} ${crop.name} — ${rng.pick(LISTING_HOOKS)}`;
+}
+
+// View counts that reflect standing, not noise: established farmers draw more
+// eyes, and recently-listed produce trends. Order interest adds to this later so
+// the "popular"/"trending" feel is consistent with actual activity.
+function baseViewsFor(rng: SimContext['rng'], archetype: string, listedAt: Date): number {
+  const byArchetype: Record<string, number> = {
+    commercial: 130, veteran: 110, cooperative: 80, seasonal: 55,
+  };
+  const ageDays = (Date.now() - listedAt.getTime()) / 86_400_000;
+  const trending = ageDays < 14 ? rng.int(40, 130) : ageDays < 45 ? rng.int(10, 40) : 0;
+  return Math.max(5, (byArchetype[archetype] ?? 35) + rng.int(-15, 35) + trending);
 }
 
 function clampPast(d: Date): Date {
@@ -67,6 +107,9 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
   let mpesa = rng.int(100000, 900000);
   const admin = world.admin;
 
+  // Demand is uneven: weight buyers so regulars dominate the order book.
+  const buyerPool: Array<[PersonRef, number]> = world.buyers.map((b) => [b, buyerWeight(b.archetype)]);
+
   for (const farmer of world.farmers) {
     if (farmer.archetype === 'new') continue; // unverified — cannot list legitimately
     const profile = activityFor(farmer.archetype);
@@ -82,12 +125,17 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
         .pick(LISTING_TEMPLATES)
         .replace('{crop}', crop.name)
         .replace('{county}', farmer.county);
+      const baseViews = baseViewsFor(rng, farmer.archetype, listedAt);
+      // Established farmers post verified listings far more often than newcomers.
+      const verifiedListing = rng.bool(
+        farmer.archetype === 'commercial' || farmer.archetype === 'veteran' ? 0.8 : 0.4
+      );
 
       const listing = ledger.track(
         'MarketplaceListing',
         await createDoc(MarketplaceListing, {
           farmerId: farmer.id,
-          title: `${crop.name} — ${farmer.county}`,
+          title: listingTitle(rng, crop),
           cropName: crop.name,
           description,
           quantityAvailable: initialQty,
@@ -97,12 +145,18 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
           pickupDescription: `Pickup at ${farmer.county} town, along the main road. Call ahead to arrange collection.`,
           imageUrls: [cropImageUrl(crop.imageKey, rng.int(1, 9999))],
           listingStatus: ListingStatus.AVAILABLE,
-          isVerifiedListing: rng.bool(0.5),
-          viewCount: rng.int(8, 240),
+          isVerifiedListing: verifiedListing,
+          buyerContactPreference: rng.bool(0.6)
+            ? [BuyerContactPreference.PHONE, BuyerContactPreference.PLATFORM_MESSAGE]
+            : [BuyerContactPreference.PHONE],
+          viewCount: baseViews,
           createdAt: listedAt,
           updatedAt: listedAt,
         })
       );
+      // Order interest adds views on top of the standing-based base so the
+      // "popular" feel stays consistent with the listing's actual demand.
+      let orderViews = 0;
 
       ledger.track(
         'PriceHistory',
@@ -120,7 +174,8 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
       let consumed = 0;
       const nOrders = rng.int(profile.orders[0], profile.orders[1]);
       for (let oi = 0; oi < nOrders; oi++) {
-        const buyer: PersonRef = rng.pick(world.buyers);
+        const buyer: PersonRef = rng.weighted(buyerPool);
+        orderViews += rng.int(2, 8);
         const qty = rng.int(1, Math.min(8, initialQty));
         const total = qty * price;
         const orderedAt = clampPast(between(rng, laterOf(listedAt, buyer.joinedAt), daysAgo(1)));
@@ -251,6 +306,7 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
         $set: {
           quantityAvailable: remaining,
           listingStatus: remaining === 0 ? ListingStatus.SOLD_OUT : ListingStatus.AVAILABLE,
+          viewCount: baseViews + orderViews,
         },
       });
     }

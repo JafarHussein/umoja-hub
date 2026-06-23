@@ -67,6 +67,32 @@ export const CROPS: Crop[] = [
   { name: 'Milk', unit: 'LITRE', priceMin: 45, priceMax: 70, imageKey: 'milk' },
 ];
 
+// Story-driven listing titles. Real farmers don't title a listing "Tomatoes" —
+// they lead with quality and a hook. A title is built as `${adjective} ${crop} —
+// ${hook}` (e.g. "Premium Onions — Bulk Available", "Fresh Tomatoes — Picked
+// This Week") so the marketplace feed reads like an active market, not a catalog.
+export const QUALITY_ADJECTIVES: string[] = [
+  'Fresh',
+  'Grade-1',
+  'Premium',
+  'Farm-Fresh',
+  'Hand-Picked',
+  'Sun-Ripened',
+  'Top-Grade',
+  'Well-Sorted',
+];
+
+export const LISTING_HOOKS: string[] = [
+  'Picked This Week',
+  'Bulk Available',
+  'Harvested Recently',
+  'Direct from Farm',
+  'Ready for Collection',
+  'Sorted & Graded',
+  'Hotel-Grade Quality',
+  'Limited Stock',
+];
+
 // Farmer-voice listing descriptions. {crop} and {county} are interpolated.
 export const LISTING_TEMPLATES: string[] = [
   'Fresh {crop} harvested this week from my farm in {county}. Grown without excess chemicals, picked at the right maturity. Serious buyers welcome, bulk available.',
