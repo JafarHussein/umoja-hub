@@ -4,8 +4,9 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { payoutRequestSchema } from '@/lib/validation/payoutSchema';
 import { computeEscrowBalance } from '@/lib/foodhub/escrow';
+import { notifyAdmins } from '@/lib/notifications/notify';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, UserStatus, WithdrawalRequestStatus } from '@/types';
+import { NotificationType, Role, UserStatus, WithdrawalRequestStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // POST /api/farmers/payout-requests — Farmer requests a manual payout
@@ -88,6 +89,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       farmerId,
       amountKES: parsed.data.amountKES,
       availableKES: balance.availableKES,
+    });
+
+    // A payout request needs an admin decision before any settlement — alert the
+    // admin queue so released escrow does not sit waiting on a manual check.
+    void notifyAdmins({
+      type: NotificationType.PAYOUT_UPDATE,
+      title: 'New payout request awaiting review',
+      body: `A farmer requested a payout of KES ${parsed.data.amountKES.toLocaleString()}. Open the payout queue to approve or decline it.`,
+      relatedEntity: { kind: 'WithdrawalRequest', id: String(request._id) },
     });
 
     return NextResponse.json(
