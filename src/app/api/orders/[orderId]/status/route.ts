@@ -126,6 +126,17 @@ export async function PATCH(
       });
 
       logger.info('orders', 'Order confirmed by farmer', { requestId, orderId, farmerId });
+
+      // The buyer's payment is already protected in escrow; closing the loop here
+      // means they learn the farmer has accepted and is handing over the produce,
+      // and that confirming receipt is the next step that releases the funds.
+      void notify({
+        userId: order.buyerId,
+        type: NotificationType.ORDER_UPDATE,
+        title: 'Your order is on the way',
+        body: `The farmer confirmed and is dispatching order ${order.orderReferenceId} (${order.cropName}). Confirm receipt once it arrives to release the escrow payment.`,
+        relatedEntity: { kind: 'Order', id: order._id },
+      });
     } else if (newStatus === OrderFulfillmentStatus.RECEIVED) {
       // Step 1: Update Order → COMPLETED
       await Order.findByIdAndUpdate(orderId, {
