@@ -241,6 +241,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
+    // Confirm back to the lecturer that their review was recorded — closes the
+    // review-completed silence so the reviewer gets closure on each assessment.
+    void notify({
+      userId: lecturerId,
+      type: NotificationType.REVIEW_UPDATE,
+      title: 'Review submitted',
+      body: 'Your assessment has been recorded and the student has been notified.',
+      relatedEntity: { kind: 'ProjectEngagement', id: engagementId },
+    });
+
     // 6. Reveal the peer review only now that the decision is irreversibly
     // recorded — the detail GET withholds it to keep assessments independent.
     const { default: PeerReview } = await import('@/lib/models/PeerReview.model');

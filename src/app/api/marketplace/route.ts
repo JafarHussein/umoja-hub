@@ -8,8 +8,9 @@ import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
 import User from '@/lib/models/User.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import { cropListingSchema } from '@/lib/validation/farmerSchema';
+import { notify } from '@/lib/notifications/notify';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
-import { Role, PriceHistorySource, ListingStatus, UserStatus } from '@/types';
+import { Role, PriceHistorySource, ListingStatus, UserStatus, NotificationType } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/marketplace — Public listing browse with filters
@@ -245,6 +246,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // Non-fatal: log but continue
       const err = priceError instanceof Error ? priceError.message : String(priceError);
       void err; // suppress unused var lint
+    }
+
+    // First-listing milestone — congratulate the farmer the first time they go
+    // live (engagement nudge, fire-and-forget like every other notify side effect).
+    const listingCount = await MarketplaceListing.countDocuments({
+      farmerId: session!.user.id,
+    });
+    if (listingCount === 1) {
+      void notify({
+        userId: session!.user.id,
+        type: NotificationType.SYSTEM,
+        title: 'Your first listing is live',
+        body: `"${title}" is now visible to buyers across the region. Verified listings sell faster — keep your details accurate.`,
+        relatedEntity: { kind: 'MarketplaceListing', id: String(listing._id) },
+      });
     }
 
     return NextResponse.json(

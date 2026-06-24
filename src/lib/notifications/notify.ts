@@ -24,6 +24,7 @@ export interface NotifyInput {
 // Per-type email policy. PORTFOLIO_VIEW is intentionally in-app only (a portfolio
 // can be viewed many times a day — emailing each view would be spam).
 const EMAIL_NEXT_STEP: Partial<Record<NotificationType, string>> = {
+  [NotificationType.WELCOME]: 'Open your dashboard to take your first step.',
   [NotificationType.ORDER_UPDATE]: 'Open your orders to see the latest status.',
   [NotificationType.ESCROW_UPDATE]: 'Open the order to track the escrow balance.',
   [NotificationType.VERIFICATION_UPDATE]: 'Open your dashboard to continue.',

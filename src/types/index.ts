@@ -318,6 +318,7 @@ export enum PortfolioVisibility {
 // Persisted in-app notification taxonomy. The channel records how it was also
 // delivered out-of-band (the existing fire-and-forget SMS/email), if at all.
 export enum NotificationType {
+  WELCOME = 'WELCOME',
   ORDER_UPDATE = 'ORDER_UPDATE',
   ESCROW_UPDATE = 'ESCROW_UPDATE',
   VERIFICATION_UPDATE = 'VERIFICATION_UPDATE',

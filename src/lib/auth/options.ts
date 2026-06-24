@@ -164,6 +164,40 @@ function deriveFirstName(profile: Profile | undefined, fallbackEmail: string): s
   return fallbackEmail.split('@')[0] ?? fallbackEmail;
 }
 
+// Role-aware welcome copy for the first email a brand-new account receives. Each
+// line names the concrete first step for that role so the welcome doubles as
+// onboarding guidance, not just a greeting.
+function welcomeBodyFor(role: Role): string {
+  switch (role) {
+    case Role.FARMER:
+      return 'Your account is ready. Get your farm verified, then create your first listing to reach buyers across the region.';
+    case Role.BUYER:
+      return 'Your account is ready. Browse verified produce and source directly from trusted farmers — every order is escrow-protected.';
+    case Role.STUDENT:
+      return 'Your account is ready. Verify your university email and start building the public portfolio employers can see.';
+    case Role.LECTURER:
+      return 'Your reviewer account is ready and pending verification. Once approved, student work will arrive in your review queue.';
+    case Role.ADMIN:
+      return 'Your admin console is ready. Verification requests, disputes and payout approvals will surface here for you to action.';
+    default:
+      return 'Your account is ready. Open your dashboard to take your first step.';
+  }
+}
+
+// Send the one-time welcome email/notification for a freshly created account.
+// Awaited (not fire-and-forget) so the welcome reliably dispatches within the
+// serverless signIn call before the OAuth redirect; notify() never throws.
+async function sendWelcome(userId: string, role: Role): Promise<void> {
+  const { notify } = await import('@/lib/notifications/notify');
+  const { NotificationType } = await import('@/types');
+  await notify({
+    userId,
+    type: NotificationType.WELCOME,
+    title: 'Welcome to UmojaHub',
+    body: welcomeBodyFor(role),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // authOptions — the single NextAuth configuration object
 // ---------------------------------------------------------------------------
@@ -302,7 +336,7 @@ export const authOptions: NextAuthOptions = {
       const githubLogin = (profile as { login?: string } | undefined)?.login;
 
       if (provider === OAuthProvider.GOOGLE && getAdminAllowlist().includes(email)) {
-        await UserModel.create({
+        const admin = await UserModel.create({
           email,
           firstName: deriveFirstName(profile, email),
           role: Role.ADMIN,
@@ -312,6 +346,7 @@ export const authOptions: NextAuthOptions = {
           status: UserStatus.ACTIVE,
         });
         logger.info('auth', 'Allowlisted admin provisioned via OAuth', { email });
+        await sendWelcome(String(admin._id), Role.ADMIN);
         return true;
       }
 
@@ -342,7 +377,7 @@ export const authOptions: NextAuthOptions = {
         return `${LOGIN_PATH}?error=AccountExists`;
       }
 
-      await UserModel.create({
+      const created = await UserModel.create({
         email,
         username: draft.username,
         hashedPassword: draft.hashedPassword,
@@ -369,6 +404,7 @@ export const authOptions: NextAuthOptions = {
         provider,
         role: draft.role,
       });
+      await sendWelcome(String(created._id), draft.role as Role);
       return true;
     },
 
