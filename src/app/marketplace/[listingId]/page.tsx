@@ -1,12 +1,19 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
-import { TrustScoreDisplay } from '@/components/foodhub/TrustScoreDisplay';
-import { CheckoutForm } from '@/components/foodhub/CheckoutForm';
-import { FarmerTrustTier, ListingUnit, BuyerContactPreference } from '@/types';
+import { ListingGallery } from '@/components/marketplace/ListingGallery';
+import { CheckoutPanel } from '@/components/marketplace/CheckoutPanel';
+import { PriceFairness } from '@/components/marketplace/PriceFairness';
+import { ListingCard, type IListingCardItem } from '@/components/marketplace/ListingCard';
+import { VerificationBadge, DeliveryConfidence } from '@/components/app';
+import {
+  FarmerTrustTier,
+  ListingUnit,
+  ListingCategory,
+  BuyerContactPreference,
+  LISTING_CATEGORY_LABEL,
+} from '@/types';
 
 export const revalidate = 60;
 
@@ -14,6 +21,7 @@ interface IListingDetail {
   _id: string;
   title: string;
   cropName: string;
+  category: ListingCategory | null;
   description: string;
   quantityAvailable: number;
   unit: ListingUnit;
@@ -24,23 +32,15 @@ interface IListingDetail {
   isVerifiedListing: boolean;
   buyerContactPreference: BuyerContactPreference[];
   createdAt: string;
-  farmer: {
-    firstName: string;
-    lastName: string;
-    county: string;
-  };
+  farmer: { firstName: string; lastName: string; county: string };
   trustScore: {
     compositeScore: number;
     tier: FarmerTrustTier;
-    ratingScore: {
-      averageRating: number;
-      totalRatings: number;
-    };
+    ratingScore: { averageRating: number; totalRatings: number };
   } | null;
+  similar: IListingCardItem[];
 }
 
-// GET /api/marketplace/[listingId] returns { data: { ...listing, farmer, trustScore } }
-// where farmer is null when the owning account no longer resolves.
 type IListingApiDetail = Omit<IListingDetail, 'farmer'> & {
   farmer: IListingDetail['farmer'] | null;
 };
@@ -50,7 +50,6 @@ async function fetchListing(listingId: string): Promise<IListingDetail | null> {
   const res = await fetch(`${baseUrl}/api/marketplace/${listingId}`, {
     next: { revalidate: 60 },
   });
-  if (res.status === 404) return null;
   if (!res.ok) return null;
   const body = (await res.json()) as { data: IListingApiDetail | null };
   if (!body.data) return null;
@@ -58,6 +57,7 @@ async function fetchListing(listingId: string): Promise<IListingDetail | null> {
   return {
     ...body.data,
     farmer: body.data.farmer ?? { firstName: '—', lastName: '', county: '' },
+    similar: body.data.similar ?? [],
   };
 }
 
@@ -71,223 +71,241 @@ export async function generateMetadata({ params }: IPageProps): Promise<Metadata
   if (!listing) return { title: 'Listing not found — UmojaHub' };
   return {
     title: `${listing.title} — UmojaHub Marketplace`,
-    description: `Buy ${listing.cropName} from ${listing.farmer.firstName} ${listing.farmer.lastName} in ${listing.pickupCounty}. KES ${listing.currentPricePerUnit} / ${listing.unit.toLowerCase()}.`,
+    description: `Buy ${listing.cropName} from ${listing.farmer.firstName} ${listing.farmer.lastName} in ${listing.pickupCounty}. KSh ${listing.currentPricePerUnit} / ${listing.unit.toLowerCase()}.`,
   };
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }): React.ReactElement {
+  return <p className="app-label text-app-muted">{children}</p>;
 }
 
 export default async function ListingDetailPage({ params }: IPageProps): Promise<React.ReactElement> {
   const { listingId } = await params;
   const listing = await fetchListing(listingId);
+  if (!listing) notFound();
 
-  if (!listing) {
-    notFound();
-  }
-
-  const farmerName = `${listing.farmer.firstName} ${listing.farmer.lastName}`;
-  const primaryImage = listing.imageUrls[0] ?? null;
+  const farmerName = `${listing.farmer.firstName} ${listing.farmer.lastName}`.trim();
+  const trust = listing.trustScore;
+  const hasRatings = Boolean(trust && trust.ratingScore.totalRatings >= 3);
 
   return (
-    <div className="h-screen overflow-hidden bg-background flex flex-col">
-
-      {/* ── Breadcrumb — fixed height ──────────────────────────────────────── */}
-      <div className="flex-shrink-0 border-b border-zinc-800/50 bg-background">
-        <div className="px-6 py-3">
-          <nav aria-label="Breadcrumb">
-            <ol className="flex items-center gap-2 text-t6 font-body text-fg-muted">
-              <li>
-                <Link
-                  href="/marketplace"
-                  className="hover:text-fg transition-colors duration-150"
-                >
-                  Marketplace
-                </Link>
-              </li>
-              <li aria-hidden="true" className="text-fg-disabled">/</li>
-              <li className="text-fg truncate max-w-xs">{listing.title}</li>
-            </ol>
-          </nav>
+    <div className="theme-app min-h-screen bg-app-canvas text-app-body">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-app-hairline bg-app-canvas/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <Link
+            href="/"
+            className="app-h2 text-app-ink transition-colors duration-150 hover:text-app-brand"
+          >
+            UmojaHub
+          </Link>
+          <Link
+            href="/marketplace"
+            className="app-nav inline-flex items-center gap-1.5 text-app-body transition-colors duration-150 hover:text-app-ink"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M9.5 6H2.5M5.5 9L2.5 6L5.5 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Marketplace
+          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* ── Asymmetric split — fills remaining viewport height ────────────── */}
-      <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-12">
-
-        {/* Left — scrollable listing detail (8 cols / ~70%) */}
-        <div className="md:col-span-8 overflow-y-auto px-6 py-8 space-y-6">
-
-          {/* Primary image */}
-          <div className="aspect-[4/3] bg-surface-raised rounded-[4px] border border-zinc-800/50 relative overflow-hidden">
-            {primaryImage ? (
-              <Image
-                src={primaryImage}
-                alt={`${listing.cropName} — ${listing.title}`}
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 768px) 100vw, 65vw"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                  <path
-                    d="M10 38L24 16L38 38H10Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                    className="text-fg-disabled"
-                  />
-                  <circle
-                    cx="33"
-                    cy="14"
-                    r="5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    className="text-fg-disabled"
-                  />
-                </svg>
-              </div>
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        {/* Breadcrumb */}
+        <nav aria-label="Breadcrumb">
+          <ol className="app-meta flex items-center gap-2 text-app-muted">
+            <li>
+              <Link href="/marketplace" className="transition-colors duration-150 hover:text-app-ink">
+                Marketplace
+              </Link>
+            </li>
+            {listing.category && (
+              <>
+                <li aria-hidden="true" className="text-app-faint">/</li>
+                <li>
+                  <Link
+                    href={`/marketplace?category=${listing.category}`}
+                    className="transition-colors duration-150 hover:text-app-ink"
+                  >
+                    {LISTING_CATEGORY_LABEL[listing.category]}
+                  </Link>
+                </li>
+              </>
             )}
-            {listing.isVerifiedListing && (
-              <div className="absolute top-3 right-3">
-                <span className="inline-flex items-center gap-1 bg-background/90 border border-zinc-800/50 rounded-[2px] px-2 py-1 text-t6 font-mono text-brand uppercase tracking-wide backdrop-blur-sm">
-                  <VerifiedBadge label="Verified listing" />
-                  Verified
-                </span>
-              </div>
-            )}
-          </div>
+            <li aria-hidden="true" className="text-app-faint">/</li>
+            <li className="max-w-xs truncate text-app-ink">{listing.title}</li>
+          </ol>
+        </nav>
 
-          {/* Crop identity */}
-          <div>
-            <p className="text-t6 font-mono text-fg-muted uppercase tracking-widest mb-1">
-              {listing.cropName}
-            </p>
-            <h1 className="text-t1 font-heading font-semibold text-fg tracking-tight">
-              {listing.title}
-            </h1>
-          </div>
+        <div className="mt-4 grid gap-8 lg:grid-cols-12">
+          {/* ── Left: listing detail ─────────────────────────────────────── */}
+          <div className="space-y-6 lg:col-span-7">
+            <ListingGallery images={listing.imageUrls} alt={`${listing.cropName} — ${listing.title}`} />
 
-          {/* Price */}
-          <div className="flex items-baseline gap-2">
-            <span className="text-t1 font-mono font-semibold text-fg tabular-nums">
-              KES {listing.currentPricePerUnit.toLocaleString()}
-            </span>
-            <span className="text-t4 font-body text-fg-muted">
-              / {listing.unit.toLowerCase()}
-            </span>
-          </div>
+            {/* Identity */}
+            <div>
+              <p className="app-label uppercase tracking-wide text-app-muted">{listing.cropName}</p>
+              <h1 className="app-h1 mt-1 text-app-ink">{listing.title}</h1>
+            </div>
 
-          {/* Farmer identity card */}
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-3">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Farmer
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-t4 font-body font-medium text-fg">
-                  {farmerName}
-                </span>
-                {listing.isVerifiedListing && (
-                  <VerifiedBadge label={`${farmerName} is verified`} />
+            {/* Price */}
+            <div className="flex items-baseline gap-2">
+              <span className="app-data-xl text-app-ink">
+                KSh {listing.currentPricePerUnit.toLocaleString()}
+              </span>
+              <span className="app-body text-app-muted">/ {listing.unit.toLowerCase()}</span>
+            </div>
+
+            {/* Price fairness (Price Intelligence) */}
+            <PriceFairness
+              cropName={listing.cropName}
+              county={listing.pickupCounty}
+              unit={listing.unit}
+              price={listing.currentPricePerUnit}
+            />
+
+            {/* Farmer trust panel */}
+            <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+              <SectionLabel>Farmer</SectionLabel>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="app-body-strong text-app-ink">{farmerName || '—'}</span>
+                  {listing.isVerifiedListing && <VerificationBadge state="verified" />}
+                </div>
+                {trust && trust.compositeScore > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-app-pill bg-app-brand-surface px-2.5 py-1">
+                    <span aria-hidden className="text-app-brand">◆</span>
+                    <span className="app-label text-app-muted">Trust</span>
+                    <span className="app-data-m text-app-brand">{trust.compositeScore}</span>
+                    <span className="app-meta text-app-muted">· {trust.tier}</span>
+                  </span>
                 )}
               </div>
-              {listing.trustScore && (
-                <TrustScoreDisplay
-                  compositeScore={listing.trustScore.compositeScore}
-                  tier={listing.trustScore.tier}
-                />
-              )}
-            </div>
-            <div className="flex items-center gap-4 text-t5 font-body text-fg-muted">
-              <span>{listing.farmer.county}</span>
-              {listing.trustScore && listing.trustScore.ratingScore.totalRatings >= 3 && (
-                <span>
-                  {listing.trustScore.ratingScore.averageRating.toFixed(1)} avg
-                  ({listing.trustScore.ratingScore.totalRatings} orders)
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              About this listing
-            </p>
-            <p className="text-t4 font-body text-fg-muted leading-relaxed">
-              {listing.description}
-            </p>
-          </div>
-
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                Stock
-              </p>
-              <p className="text-t4 font-body font-medium text-fg">
-                <span className="font-mono tabular-nums">
-                  {listing.quantityAvailable.toLocaleString()}
-                </span>{' '}
-                <span className="text-fg-muted font-normal">
-                  {listing.unit.toLowerCase()}
-                </span>
-              </p>
-            </div>
-            <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-3">
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-1">
-                Location
-              </p>
-              <p className="text-t4 font-body font-medium text-fg">
-                {listing.pickupCounty}
-              </p>
-            </div>
-          </div>
-
-          {/* Pickup details */}
-          <div className="bg-surface border border-zinc-800/50 rounded-[4px] p-4 space-y-1">
-            <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest">
-              Pickup details
-            </p>
-            <p className="text-t5 font-body text-fg-muted">{listing.pickupDescription}</p>
-          </div>
-
-          {/* Contact preference */}
-          {listing.buyerContactPreference.length > 0 && (
-            <div>
-              <p className="text-t6 font-mono text-fg-disabled uppercase tracking-widest mb-2">
-                Contact method
-              </p>
-              <div className="flex gap-2">
-                {listing.buyerContactPreference.map((pref) => (
-                  <span
-                    key={pref}
-                    className="text-t6 font-mono text-fg-muted bg-surface border border-zinc-800/50 rounded-[2px] px-2 py-1 uppercase"
-                  >
-                    {pref === BuyerContactPreference.PHONE ? 'Phone' : 'Platform message'}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <span className="app-meta text-app-muted">{listing.farmer.county || listing.pickupCounty}</span>
+                {trust && (
+                  <DeliveryConfidence completed={trust.ratingScore.totalRatings} />
+                )}
+                {hasRatings && trust && (
+                  <span className="app-meta text-app-muted">
+                    <span className="app-data-m text-app-ink">
+                      {trust.ratingScore.averageRating.toFixed(1)}
+                    </span>{' '}
+                    avg over {trust.ratingScore.totalRatings} orders
                   </span>
-                ))}
+                )}
               </div>
             </div>
-          )}
+
+            {/* Transaction protections */}
+            <div className="space-y-2.5 rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
+              <SectionLabel>Your protections</SectionLabel>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2.5">
+                  <span aria-hidden className="app-title leading-none text-app-brand">🔒</span>
+                  <p className="app-meta text-app-muted">
+                    <span className="app-body-strong text-app-ink">Escrow-protected payment.</span> Your
+                    money is held by the platform and released to the farmer only when you confirm you
+                    received your order.
+                  </p>
+                </li>
+                {listing.isVerifiedListing && (
+                  <li className="flex items-start gap-2.5">
+                    <span aria-hidden className="app-body-strong leading-none text-app-brand">✓</span>
+                    <p className="app-meta text-app-muted">
+                      <span className="app-body-strong text-app-ink">Verified farmer.</span> Identity
+                      reviewed and approved by UmojaHub administrators.
+                    </p>
+                  </li>
+                )}
+                <li className="flex items-start gap-2.5">
+                  <span aria-hidden className="app-body-strong leading-none text-app-brand">⚖</span>
+                  <p className="app-meta text-app-muted">
+                    <span className="app-body-strong text-app-ink">Platform mediation.</span> If
+                    something goes wrong, our team can step in to resolve it.
+                  </p>
+                </li>
+              </ul>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <SectionLabel>About this listing</SectionLabel>
+              <p className="app-body leading-relaxed text-app-body">{listing.description}</p>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-app-card border border-app-hairline bg-app-card p-3">
+                <SectionLabel>In stock</SectionLabel>
+                <p className="mt-1">
+                  <span className="app-data-m text-app-ink">
+                    {listing.quantityAvailable.toLocaleString()}
+                  </span>{' '}
+                  <span className="app-body text-app-muted">{listing.unit.toLowerCase()}</span>
+                </p>
+              </div>
+              <div className="rounded-app-card border border-app-hairline bg-app-card p-3">
+                <SectionLabel>Location</SectionLabel>
+                <p className="app-body mt-1 text-app-ink">{listing.pickupCounty}</p>
+              </div>
+            </div>
+
+            {/* Pickup */}
+            <div className="space-y-1 rounded-app-card border border-app-hairline bg-app-card p-4">
+              <SectionLabel>Pickup details</SectionLabel>
+              <p className="app-body text-app-muted">{listing.pickupDescription}</p>
+            </div>
+
+            {/* Contact method */}
+            {listing.buyerContactPreference.length > 0 && (
+              <div className="space-y-2">
+                <SectionLabel>Contact method</SectionLabel>
+                <div className="flex gap-2">
+                  {listing.buyerContactPreference.map((pref) => (
+                    <span
+                      key={pref}
+                      className="app-meta rounded-app-pill border border-app-hairline bg-app-card px-2.5 py-1 text-app-body"
+                    >
+                      {pref === BuyerContactPreference.PHONE ? 'Phone' : 'Platform message'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Right: checkout ──────────────────────────────────────────── */}
+          <aside className="lg:col-span-5">
+            <div className="rounded-app-card border border-app-hairline bg-app-card p-5 lg:sticky lg:top-24">
+              <CheckoutPanel
+                listingId={listing._id}
+                cropName={listing.cropName}
+                unit={listing.unit}
+                pricePerUnit={listing.currentPricePerUnit}
+                maxQuantity={listing.quantityAvailable}
+                pickupCounty={listing.pickupCounty}
+              />
+              <p className="app-meta mt-6 text-center text-app-faint">
+                Payments via M-Pesa · funds held in escrow until you confirm receipt · no platform fee.
+              </p>
+            </div>
+          </aside>
         </div>
 
-        {/* Right — fixed checkout workspace (4 cols / ~30%) */}
-        <div className="md:col-span-4 border-l border-zinc-800 bg-zinc-900/30 p-6 overflow-y-auto flex flex-col">
-          <CheckoutForm
-            listingId={listing._id}
-            cropName={listing.cropName}
-            unit={listing.unit}
-            pricePerUnit={listing.currentPricePerUnit}
-            maxQuantity={listing.quantityAvailable}
-            pickupCounty={listing.pickupCounty}
-          />
-          <p className="text-t6 font-body text-fg-disabled text-center mt-6">
-            Payments processed via M-Pesa. No platform fee.
-          </p>
-        </div>
-
-      </div>
+        {/* ── Similar listings ───────────────────────────────────────────── */}
+        {listing.similar.length > 0 && (
+          <section className="mt-12">
+            <h2 className="app-h2 text-app-ink">Similar produce</h2>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+              {listing.similar.map((item) => (
+                <ListingCard key={item.id} listing={item} />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 }
