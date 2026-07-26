@@ -302,7 +302,7 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
         {listing.similar.length > 0 && (
           <section className="mt-12">
             <h2 className="app-h2 text-app-ink">Similar produce</h2>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
               {listing.similar.map((item) => (
                 <ListingCard key={item.id} listing={item} />
               ))}

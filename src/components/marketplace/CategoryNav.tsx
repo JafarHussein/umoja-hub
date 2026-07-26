@@ -53,7 +53,7 @@ export function CategoryNav(): React.ReactElement {
             onClick={() => select(chip.value)}
             aria-pressed={isActive}
             className={cn(
-              'app-nav whitespace-nowrap rounded-app-pill border px-3.5 py-1.5 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-1 focus-visible:ring-offset-app-canvas',
+              'app-nav whitespace-nowrap rounded-app-pill border px-3.5 py-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-1 focus-visible:ring-offset-app-canvas',
               isActive
                 ? 'border-app-brand bg-app-brand text-app-on-brand'
                 : 'border-app-hairline bg-app-card text-app-body hover:border-app-border-strong'

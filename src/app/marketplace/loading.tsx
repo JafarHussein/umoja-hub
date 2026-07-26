@@ -35,7 +35,7 @@ export default function MarketplaceLoading(): React.ReactElement {
           {/* Grid skeleton */}
           <div className="min-w-0 flex-1 space-y-4" role="status" aria-label="Loading marketplace">
             <div className="skeleton h-3 w-28 rounded-app-cell" aria-hidden="true" />
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}

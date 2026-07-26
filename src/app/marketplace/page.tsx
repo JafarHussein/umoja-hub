@@ -124,7 +124,7 @@ async function ListingsGrid({
       <p className="app-meta text-app-muted" role="status" aria-live="polite">
         {total.toLocaleString()} listing{total !== 1 ? 's' : ''} available
       </p>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
         {listings.map((listing) => (
           <ListingCard key={listing.id} listing={listing} />
         ))}
@@ -172,6 +172,18 @@ export default async function MarketplacePage({
               Sign in
             </Link>
           </div>
+
+          {/* Compact account entry on mobile (full links hide below sm) */}
+          <Link
+            href="/auth/login"
+            aria-label="Sign in or sell produce"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-app-control border border-app-hairline text-app-body transition-colors duration-150 hover:border-app-border-strong sm:hidden"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M3.5 15a5.5 5.5 0 0111 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </Link>
         </div>
 
         {/* Category rail */}

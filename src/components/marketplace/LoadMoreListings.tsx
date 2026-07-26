@@ -11,7 +11,7 @@ import { ListingCard, type IListingCardItem } from './ListingCard';
 // Text search disables cursor paging server-side, so this only mounts for
 // browse — and it remounts (via key) whenever the active filters change.
 
-const GRID = 'grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4';
+const GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4';
 
 interface IMarketplaceApiResponse {
   data: IListingCardItem[];

@@ -363,7 +363,7 @@ export function CheckoutPanel({
             type="button"
             onClick={() => adjustQuantity(-1)}
             disabled={quantity <= 1}
-            className="flex h-9 w-9 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
+            className="flex h-10 w-10 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
             aria-label="Decrease quantity"
           >
             <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
@@ -377,13 +377,13 @@ export function CheckoutPanel({
             value={quantity}
             onChange={(e) => setQuantity(Math.min(maxQuantity, Math.max(1, parseInt(e.target.value, 10) || 1)))}
             aria-label="Quantity"
-            className="app-data-m h-9 w-16 rounded-app-control border border-app-hairline bg-app-card text-center text-app-ink focus:border-app-brand focus:outline-none focus:ring-1 focus:ring-app-brand"
+            className="app-data-m h-10 w-16 rounded-app-control border border-app-hairline bg-app-card text-center text-app-ink focus:border-app-brand focus:outline-none focus:ring-1 focus:ring-app-brand"
           />
           <button
             type="button"
             onClick={() => adjustQuantity(1)}
             disabled={quantity >= maxQuantity}
-            className="flex h-9 w-9 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
+            className="flex h-10 w-10 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
             aria-label="Increase quantity"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
