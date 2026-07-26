@@ -7,6 +7,7 @@ import { MarketplaceSearch } from '@/components/marketplace/MarketplaceSearch';
 import { FeedFilters } from '@/components/marketplace/FeedFilters';
 import { ActiveFilterChips } from '@/components/marketplace/ActiveFilterChips';
 import { MobileFilterButton } from '@/components/marketplace/MobileFilterButton';
+import { LoadMoreListings } from '@/components/marketplace/LoadMoreListings';
 
 export const revalidate = 60;
 
@@ -38,6 +39,7 @@ interface IMarketplaceApiResponse {
 
 interface IListingsResult {
   listings: IListingCardItem[];
+  nextCursor: string | null;
   total: number;
 }
 
@@ -60,10 +62,14 @@ async function fetchListings(params: IMarketplaceSearchParams): Promise<IListing
   const url = `${baseUrl}/api/marketplace${query ? `?${query}` : ''}`;
 
   const res = await fetch(url, { next: { revalidate: 60 } });
-  if (!res.ok) return { listings: [], total: 0 };
+  if (!res.ok) return { listings: [], nextCursor: null, total: 0 };
 
   const body = (await res.json()) as IMarketplaceApiResponse;
-  return { listings: body.data ?? [], total: body.total ?? 0 };
+  return {
+    listings: body.data ?? [],
+    nextCursor: body.nextCursor ?? null,
+    total: body.total ?? 0,
+  };
 }
 
 function ListingsSkeleton(): React.ReactElement {
@@ -88,7 +94,7 @@ async function ListingsGrid({
 }: {
   searchParams: IMarketplaceSearchParams;
 }): Promise<React.ReactElement> {
-  const { listings, total } = await fetchListings(searchParams);
+  const { listings, nextCursor, total } = await fetchListings(searchParams);
 
   if (listings.length === 0) {
     return (
@@ -123,6 +129,10 @@ async function ListingsGrid({
           <ListingCard key={listing.id} listing={listing} />
         ))}
       </div>
+      {nextCursor && (
+        // Keyed on the active filters so appended pages reset when the query changes.
+        <LoadMoreListings key={JSON.stringify(searchParams)} initialCursor={nextCursor} />
+      )}
     </div>
   );
 }
