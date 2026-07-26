@@ -26,6 +26,13 @@ export function MobileFilterButton({ className }: { className?: string }): React
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  const close = (): void => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
 
   // Count active facets — price (min and/or max) counts once.
   let activeCount = 0;
@@ -46,8 +53,30 @@ export function MobileFilterButton({ className }: { className?: string }): React
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
+
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        close();
+        return;
+      }
+      // Focus trap — keep Tab within the sheet (WCAG 2.4.3).
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+        );
+        const list = Array.from(focusable).filter((el) => !el.hasAttribute('disabled'));
+        if (list.length === 0) return;
+        const first = list[0]!;
+        const last = list[list.length - 1]!;
+        const activeEl = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && activeEl === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && activeEl === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
@@ -61,6 +90,7 @@ export function MobileFilterButton({ className }: { className?: string }): React
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
@@ -97,18 +127,21 @@ export function MobileFilterButton({ className }: { className?: string }): React
           <button
             type="button"
             aria-label="Close filters"
-            onClick={() => setOpen(false)}
+            onClick={close}
             className="absolute inset-0 bg-app-ink/40"
           />
 
           {/* Sheet */}
-          <div className="relative max-h-[85vh] overflow-y-auto rounded-t-app-card border-t border-app-hairline bg-app-canvas p-5 shadow-app-float">
+          <div
+            ref={dialogRef}
+            className="relative max-h-[85vh] overflow-y-auto rounded-t-app-card border-t border-app-hairline bg-app-canvas p-5 shadow-app-float"
+          >
             <div className="mb-4 flex items-center justify-between">
               <p className="app-h2 text-app-ink">Filter &amp; sort</p>
               <button
                 ref={closeRef}
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={close}
                 aria-label="Close filters"
                 className="rounded-app-pill p-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
               >
@@ -127,7 +160,7 @@ export function MobileFilterButton({ className }: { className?: string }): React
 
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={close}
               className="app-nav mt-6 w-full rounded-app-control bg-app-brand px-4 py-3 text-app-on-brand transition-colors duration-150 hover:bg-app-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
             >
               View results

@@ -174,11 +174,14 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
                   {listing.isVerifiedListing && <VerificationBadge state="verified" />}
                 </div>
                 {trust && trust.compositeScore > 0 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-app-pill bg-app-brand-surface px-2.5 py-1">
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-app-pill bg-app-brand-surface px-2.5 py-1"
+                    aria-label={`Trust score ${trust.compositeScore}, ${trust.tier} tier`}
+                  >
                     <span aria-hidden className="text-app-brand">◆</span>
-                    <span className="app-label text-app-muted">Trust</span>
-                    <span className="app-data-m text-app-brand">{trust.compositeScore}</span>
-                    <span className="app-meta text-app-muted">· {trust.tier}</span>
+                    <span aria-hidden className="app-label text-app-muted">Trust</span>
+                    <span aria-hidden className="app-data-m text-app-brand">{trust.compositeScore}</span>
+                    <span aria-hidden className="app-meta text-app-muted">· {trust.tier}</span>
                   </span>
                 )}
               </div>

@@ -128,9 +128,14 @@ export function ListingCard({ listing }: { listing: IListingCardItem }): React.R
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-app-hairline pt-2">
             <span className="app-meta truncate text-app-muted">{farmerName || '—'}</span>
             {hasTrust && (
-              <span className="app-meta inline-flex flex-shrink-0 items-center gap-1 text-app-brand">
+              <span
+                className="app-meta inline-flex flex-shrink-0 items-center gap-1 text-app-brand"
+                aria-label={`Farmer trust score ${listing.farmer.trustScore}`}
+              >
                 <span aria-hidden>◆</span>
-                <span className="app-data-m">{listing.farmer.trustScore}</span>
+                <span className="app-data-m" aria-hidden>
+                  {listing.farmer.trustScore}
+                </span>
               </span>
             )}
           </div>

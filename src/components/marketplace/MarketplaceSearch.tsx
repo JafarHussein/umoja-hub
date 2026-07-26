@@ -204,6 +204,13 @@ export function MarketplaceSearch(): React.ReactElement {
     []
   );
 
+  // Keep the keyboard-highlighted suggestion visible in the scrollable list.
+  useEffect(() => {
+    if (active < 0) return;
+    const domId = items[active]?.domId;
+    if (domId) document.getElementById(domId)?.scrollIntoView({ block: 'nearest' });
+  }, [active, items]);
+
   const activeId = active >= 0 && items[active] ? items[active].domId : undefined;
 
   // Precompute section boundaries so headers render once per group.

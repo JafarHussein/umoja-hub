@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
 
@@ -28,13 +28,21 @@ export function ListingGallery({
 }): React.ReactElement {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState(false);
+  const zoomTriggerRef = useRef<HTMLButtonElement>(null);
+  const zoomCloseRef = useRef<HTMLButtonElement>(null);
 
   const current = images[active] ?? null;
 
+  const closeZoom = (): void => {
+    setZoom(false);
+    zoomTriggerRef.current?.focus();
+  };
+
   useEffect(() => {
     if (!zoom) return;
+    zoomCloseRef.current?.focus();
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setZoom(false);
+      if (e.key === 'Escape') closeZoom();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -46,6 +54,7 @@ export function ListingGallery({
       <div className="relative aspect-[4/3] overflow-hidden rounded-app-card border border-app-hairline bg-app-sunken">
         {current ? (
           <button
+            ref={zoomTriggerRef}
             type="button"
             onClick={() => setZoom(true)}
             className="group block h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-ring"
@@ -100,14 +109,15 @@ export function ListingGallery({
           aria-modal="true"
           aria-label="Zoomed image"
           className="fixed inset-0 z-50 flex items-center justify-center bg-app-ink/80 p-4"
-          onClick={() => setZoom(false)}
+          onClick={closeZoom}
         >
           <div className="relative h-full max-h-[90vh] w-full max-w-5xl">
             <Image src={current} alt={alt} fill className="object-contain" sizes="100vw" />
           </div>
           <button
+            ref={zoomCloseRef}
             type="button"
-            onClick={() => setZoom(false)}
+            onClick={closeZoom}
             aria-label="Close zoom"
             className="absolute right-4 top-4 rounded-app-pill bg-app-card/90 p-2 text-app-ink transition-colors duration-150 hover:bg-app-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
           >
