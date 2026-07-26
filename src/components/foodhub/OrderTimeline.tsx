@@ -60,6 +60,15 @@ export function OrderTimeline({
     );
   }
 
+  if (paymentStatus === OrderPaymentStatus.REFUNDED) {
+    return (
+      <div className="flex items-center gap-2" role="status" aria-label="Payment refunded">
+        <div className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-info" aria-hidden="true" />
+        <span className="app-body text-app-info">Refunded</span>
+      </div>
+    );
+  }
+
   const steps: IStep[] = [
     {
       key: 'ordered',
@@ -69,7 +78,7 @@ export function OrderTimeline({
     },
     {
       key: 'paid',
-      label: 'Paid',
+      label: 'Paid — held in escrow',
       ...(paidAt ? { detail: formatDate(paidAt) } : {}),
       isComplete: isPaid,
       isActive: isPaid && !isInFulfillment,
@@ -90,7 +99,7 @@ export function OrderTimeline({
     },
     {
       key: 'completed',
-      label: 'Complete',
+      label: 'Payment released',
       isComplete: isCompleted,
       isActive: isCompleted,
     },
@@ -165,7 +174,7 @@ export function OrderTimelineDetailed({
     {
       key: 'paid',
       label: 'Payment confirmed',
-      detail: paidAt ? formatDate(paidAt) : 'Awaiting payment',
+      detail: paidAt ? `${formatDate(paidAt)} · held in escrow` : 'Awaiting payment',
       isComplete: isPaid,
       isActive: isPaid && !isInFulfillment,
     },
@@ -187,8 +196,10 @@ export function OrderTimelineDetailed({
     },
     {
       key: 'completed',
-      label: 'Order completed',
-      detail: isCompleted ? 'Transaction closed' : 'Pending receipt confirmation',
+      label: 'Payment released',
+      detail: isCompleted
+        ? 'Released to the farmer from escrow'
+        : 'Held in escrow until you confirm receipt',
       isComplete: isCompleted,
       isActive: isCompleted,
     },
@@ -202,6 +213,20 @@ export function OrderTimelineDetailed({
           <p className="app-body-strong text-app-danger">Dispute raised</p>
           <p className="app-body mt-0.5 text-app-muted">
             This order has an active dispute. The UmojaHub team has been notified.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === OrderPaymentStatus.REFUNDED) {
+    return (
+      <div className="flex items-start gap-3 rounded-app-control border border-app-info/30 bg-app-info-surface p-3">
+        <div className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill bg-app-info" />
+        <div>
+          <p className="app-body-strong text-app-info">Payment refunded</p>
+          <p className="app-body mt-0.5 text-app-muted">
+            Your payment was returned from escrow following the platform&apos;s mediation decision.
           </p>
         </div>
       </div>
