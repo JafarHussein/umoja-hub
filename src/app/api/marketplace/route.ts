@@ -10,7 +10,14 @@ import PriceHistory from '@/lib/models/PriceHistory.model';
 import { cropListingSchema } from '@/lib/validation/farmerSchema';
 import { notify } from '@/lib/notifications/notify';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
-import { Role, PriceHistorySource, ListingStatus, UserStatus, NotificationType } from '@/types';
+import {
+  Role,
+  PriceHistorySource,
+  ListingStatus,
+  UserStatus,
+  NotificationType,
+  FarmerTrustTier,
+} from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/marketplace — Public listing browse with filters
@@ -29,6 +36,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
+    const highTrust = searchParams.get('highTrust') === 'true';
+    const minQuantity = searchParams.get('minQuantity');
     const sort = searchParams.get('sort');
     const cursor = searchParams.get('cursor');
     const limit = Math.min(Number(searchParams.get('limit') ?? '20'), 100);
@@ -98,6 +107,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       if (minPrice) priceFilter['$gte'] = Number(minPrice);
       if (maxPrice) priceFilter['$lte'] = Number(maxPrice);
       filter['currentPricePerUnit'] = priceFilter;
+    }
+
+    if (minQuantity) {
+      const n = Number(minQuantity);
+      if (Number.isFinite(n) && n > 0) filter['quantityAvailable'] = { $gte: n };
+    }
+
+    // High-trust filter (Marketplace Rebuild, Stage 5). Trust lives in a
+    // separate collection, so this is a two-step query (approved: no schema
+    // change) — resolve the TRUSTED/PREMIUM farmers, then constrain the feed to
+    // their listings. An empty set correctly yields no results.
+    if (highTrust) {
+      const trusted = await FarmerTrustScore.find({
+        tier: { $in: [FarmerTrustTier.TRUSTED, FarmerTrustTier.PREMIUM] },
+      })
+        .select('farmerId')
+        .lean();
+      filter['farmerId'] = { $in: trusted.map((t) => t.farmerId) };
     }
 
     // Feed sort (Marketplace Rebuild, Stage 3). Text search always sorts by

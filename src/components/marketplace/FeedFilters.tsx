@@ -38,12 +38,16 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
   const county = searchParams.get('county') ?? '';
   const minPrice = searchParams.get('minPrice') ?? '';
   const maxPrice = searchParams.get('maxPrice') ?? '';
+  const minQuantity = searchParams.get('minQuantity') ?? '';
   const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
+  const highTrust = searchParams.get('highTrust') === 'true';
   const sort = searchParams.get('sort') ?? '';
 
   // The search term and category live in their own controls; "Clear all" here
   // resets only the filters this rail owns.
-  const hasActiveFilters = Boolean(county || minPrice || maxPrice || verifiedOnly);
+  const hasActiveFilters = Boolean(
+    county || minPrice || maxPrice || minQuantity || verifiedOnly || highTrust
+  );
 
   function updateParam(key: string, value: string): void {
     const params = new URLSearchParams(searchParams.toString());
@@ -57,7 +61,9 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
 
   function clearFilters(): void {
     const params = new URLSearchParams(searchParams.toString());
-    ['county', 'minPrice', 'maxPrice', 'verifiedOnly', 'cursor'].forEach((k) => params.delete(k));
+    ['county', 'minPrice', 'maxPrice', 'minQuantity', 'verifiedOnly', 'highTrust', 'cursor'].forEach(
+      (k) => params.delete(k)
+    );
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     });
@@ -154,23 +160,60 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
         </div>
       </div>
 
-      {/* Verified only */}
-      <label className="group flex cursor-pointer items-center gap-3">
-        <span className="relative flex-shrink-0">
-          <input
-            type="checkbox"
-            className="peer sr-only"
-            checked={verifiedOnly}
-            onChange={(e) => updateParam('verifiedOnly', e.target.checked ? 'true' : '')}
-            aria-label="Show verified farmers only"
-          />
-          <span className="block h-5 w-9 rounded-app-pill border border-app-hairline bg-app-sunken transition-colors duration-150 peer-checked:border-app-brand peer-checked:bg-app-brand peer-focus-visible:ring-2 peer-focus-visible:ring-app-ring peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-app-canvas" />
-          <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-app-pill bg-app-card shadow transition-transform duration-150 peer-checked:translate-x-4" />
-        </span>
-        <span className="app-body text-app-body transition-colors duration-150 group-hover:text-app-ink">
-          Verified farmers only
-        </span>
-      </label>
+      {/* Minimum quantity */}
+      <div className="space-y-1.5">
+        <label htmlFor="feed-min-qty" className="app-meta text-app-muted">
+          Minimum quantity
+        </label>
+        <input
+          id="feed-min-qty"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="Any amount"
+          value={minQuantity}
+          onChange={(e) => updateParam('minQuantity', e.target.value)}
+          aria-label="Minimum quantity available"
+          className={inputClass}
+        />
+      </div>
+
+      {/* Trust & verification toggles */}
+      <div className="space-y-3">
+        <label className="group flex cursor-pointer items-center gap-3">
+          <span className="relative flex-shrink-0">
+            <input
+              type="checkbox"
+              className="peer sr-only"
+              checked={verifiedOnly}
+              onChange={(e) => updateParam('verifiedOnly', e.target.checked ? 'true' : '')}
+              aria-label="Show verified farmers only"
+            />
+            <span className="block h-5 w-9 rounded-app-pill border border-app-hairline bg-app-sunken transition-colors duration-150 peer-checked:border-app-brand peer-checked:bg-app-brand peer-focus-visible:ring-2 peer-focus-visible:ring-app-ring peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-app-canvas" />
+            <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-app-pill bg-app-card shadow transition-transform duration-150 peer-checked:translate-x-4" />
+          </span>
+          <span className="app-body text-app-body transition-colors duration-150 group-hover:text-app-ink">
+            Verified farmers only
+          </span>
+        </label>
+
+        <label className="group flex cursor-pointer items-center gap-3">
+          <span className="relative flex-shrink-0">
+            <input
+              type="checkbox"
+              className="peer sr-only"
+              checked={highTrust}
+              onChange={(e) => updateParam('highTrust', e.target.checked ? 'true' : '')}
+              aria-label="Show high-trust farmers only"
+            />
+            <span className="block h-5 w-9 rounded-app-pill border border-app-hairline bg-app-sunken transition-colors duration-150 peer-checked:border-app-brand peer-checked:bg-app-brand peer-focus-visible:ring-2 peer-focus-visible:ring-app-ring peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-app-canvas" />
+            <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-app-pill bg-app-card shadow transition-transform duration-150 peer-checked:translate-x-4" />
+          </span>
+          <span className="app-body text-app-body transition-colors duration-150 group-hover:text-app-ink">
+            High-trust farmers only
+          </span>
+        </label>
+      </div>
     </aside>
   );
 }

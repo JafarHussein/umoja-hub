@@ -5,6 +5,8 @@ import { ListingCard, type IListingCardItem } from '@/components/marketplace/Lis
 import { CategoryNav } from '@/components/marketplace/CategoryNav';
 import { MarketplaceSearch } from '@/components/marketplace/MarketplaceSearch';
 import { FeedFilters } from '@/components/marketplace/FeedFilters';
+import { ActiveFilterChips } from '@/components/marketplace/ActiveFilterChips';
+import { MobileFilterButton } from '@/components/marketplace/MobileFilterButton';
 
 export const revalidate = 60;
 
@@ -20,7 +22,9 @@ interface IMarketplaceSearchParams {
   county?: string;
   minPrice?: string;
   maxPrice?: string;
+  minQuantity?: string;
   verifiedOnly?: string;
+  highTrust?: string;
   sort?: string;
   cursor?: string;
 }
@@ -46,7 +50,9 @@ async function fetchListings(params: IMarketplaceSearchParams): Promise<IListing
   if (params.county) searchParams.set('county', params.county);
   if (params.minPrice) searchParams.set('minPrice', params.minPrice);
   if (params.maxPrice) searchParams.set('maxPrice', params.maxPrice);
+  if (params.minQuantity) searchParams.set('minQuantity', params.minQuantity);
   if (params.verifiedOnly === 'true') searchParams.set('verifiedOnly', 'true');
+  if (params.highTrust === 'true') searchParams.set('highTrust', 'true');
   if (params.sort) searchParams.set('sort', params.sort);
   if (params.cursor) searchParams.set('cursor', params.cursor);
 
@@ -168,8 +174,14 @@ export default async function MarketplacePage({
 
       {/* ── Body: filter rail + feed ─────────────────────────────────────── */}
       <main className="mx-auto max-w-7xl px-4 py-6">
+        {/* Filter access + active-filter summary */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <MobileFilterButton className="lg:hidden" />
+          <ActiveFilterChips />
+        </div>
+
         <div className="lg:flex lg:gap-8">
-          <FeedFilters className="mb-6 lg:mb-0 lg:w-56 lg:flex-shrink-0 lg:sticky lg:top-32 lg:self-start" />
+          <FeedFilters className="hidden lg:sticky lg:top-32 lg:block lg:w-56 lg:flex-shrink-0 lg:self-start" />
           <section className="min-w-0 flex-1">
             <Suspense fallback={<ListingsSkeleton />}>
               <ListingsGrid searchParams={params} />
