@@ -49,7 +49,14 @@ function freshness(iso: string): { label: string; isNew: boolean } {
 // — creates the "act now" pull without inventing numbers.
 const LOW_STOCK_THRESHOLD = 10;
 
-export function ListingCard({ listing }: { listing: IListingCardItem }): React.ReactElement {
+export function ListingCard({
+  listing,
+  priority = false,
+}: {
+  listing: IListingCardItem;
+  /** Preload this image (set only for the first above-the-fold cards — LCP). */
+  priority?: boolean;
+}): React.ReactElement {
   const { label: freshLabel, isNew } = freshness(listing.createdAt);
   const farmerName = `${listing.farmer.firstName} ${listing.farmer.lastName}`.trim();
   const unit = listing.unit.toLowerCase();
@@ -59,6 +66,9 @@ export function ListingCard({ listing }: { listing: IListingCardItem }): React.R
   return (
     <Link
       href={`/marketplace/${listing.id}`}
+      // Bandwidth-conscious for low-connectivity users: navigate on demand
+      // rather than viewport-prefetching every detail page in a busy feed.
+      prefetch={false}
       className="group block rounded-app-card focus:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-2 focus-visible:ring-offset-app-canvas"
     >
       <article className="flex h-full flex-col overflow-hidden rounded-app-card border border-app-hairline bg-app-card transition-shadow duration-150 group-hover:shadow-app-float">
@@ -69,6 +79,7 @@ export function ListingCard({ listing }: { listing: IListingCardItem }): React.R
               src={listing.imageUrl}
               alt={`${listing.cropName} from ${listing.pickupCounty}`}
               fill
+              priority={priority}
               className="object-cover transition-transform duration-250 group-hover:scale-[1.03]"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />

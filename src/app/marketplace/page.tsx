@@ -125,8 +125,8 @@ async function ListingsGrid({
         {total.toLocaleString()} listing{total !== 1 ? 's' : ''} available
       </p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
-        {listings.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} />
+        {listings.map((listing, index) => (
+          <ListingCard key={listing.id} listing={listing} priority={index < 4} />
         ))}
       </div>
       {nextCursor && (
