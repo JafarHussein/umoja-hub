@@ -286,9 +286,13 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
                 pricePerUnit={listing.currentPricePerUnit}
                 maxQuantity={listing.quantityAvailable}
                 pickupCounty={listing.pickupCounty}
+                pickupDescription={listing.pickupDescription}
+                farmerName={farmerName}
+                farmerVerified={listing.isVerifiedListing}
+                {...(trust && trust.compositeScore > 0 ? { trustScore: trust.compositeScore } : {})}
               />
               <p className="app-meta mt-6 text-center text-app-faint">
-                Payments via M-Pesa · funds held in escrow until you confirm receipt · no platform fee.
+                Secure M-Pesa checkout · no platform fee.
               </p>
             </div>
           </aside>

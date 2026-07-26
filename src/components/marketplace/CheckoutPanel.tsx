@@ -19,6 +19,10 @@ export interface ICheckoutPanelProps {
   pricePerUnit: number;
   maxQuantity: number;
   pickupCounty: string;
+  pickupDescription: string;
+  farmerName: string;
+  farmerVerified: boolean;
+  trustScore?: number;
 }
 
 type CheckoutState =
@@ -51,6 +55,10 @@ export function CheckoutPanel({
   pricePerUnit,
   maxQuantity,
   pickupCounty,
+  pickupDescription,
+  farmerName,
+  farmerVerified,
+  trustScore,
 }: ICheckoutPanelProps): React.ReactElement {
   const [quantity, setQuantity] = useState(1);
   const [phoneSuffix, setPhoneSuffix] = useState('');
@@ -257,6 +265,14 @@ export function CheckoutPanel({
           ))}
         </div>
 
+        <div className="flex items-start gap-2.5 rounded-app-control border border-app-brand-border bg-app-brand-surface p-3">
+          <span aria-hidden className="app-title leading-none text-app-brand">🔒</span>
+          <p className="app-meta text-app-muted">
+            <span className="app-body-strong text-app-ink">Held in escrow.</span> Your payment is
+            protected until you confirm you received your order — then it is released to the farmer.
+          </p>
+        </div>
+
         <p className="app-meta text-app-faint">You will receive an M-Pesa SMS confirmation shortly.</p>
 
         <Link
@@ -290,6 +306,28 @@ export function CheckoutPanel({
       <div>
         <p className="app-label text-app-muted">Checkout</p>
         <h2 className="app-h2 text-app-ink">Pay with M-Pesa</h2>
+      </div>
+
+      {/* Who you're buying from */}
+      <div className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline bg-app-sunken px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="app-meta text-app-muted">Buying from</p>
+          <p className="app-body-strong flex items-center gap-1.5 truncate text-app-ink">
+            {farmerName || '—'}
+            {farmerVerified && (
+              <span className="app-label text-app-success" aria-label="Verified farmer">
+                ✓
+              </span>
+            )}
+          </p>
+        </div>
+        {trustScore != null && trustScore > 0 && (
+          <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-app-pill bg-app-brand-surface px-2 py-0.5">
+            <span aria-hidden className="text-app-brand">◆</span>
+            <span className="app-label text-app-muted">Trust</span>
+            <span className="app-data-m text-app-brand">{trustScore}</span>
+          </span>
+        )}
       </div>
 
       {showError && (
@@ -378,6 +416,11 @@ export function CheckoutPanel({
             </button>
           ))}
         </div>
+        <p className="app-meta text-app-faint">
+          {fulfillmentType === FulfillmentType.PICKUP
+            ? `Collect from ${pickupCounty}. ${pickupDescription}`
+            : 'Delivery is arranged directly with the farmer after payment.'}
+        </p>
       </div>
 
       {/* Phone */}
@@ -409,10 +452,22 @@ export function CheckoutPanel({
         <p className="app-meta text-app-faint">Number registered with your M-Pesa account</p>
       </div>
 
-      {/* Total */}
-      <div className="flex items-center justify-between rounded-app-control border border-app-hairline bg-app-sunken px-3 py-2.5">
-        <span className="app-body text-app-muted">Total</span>
-        <span className="app-data-l text-app-ink">KSh {totalKES.toLocaleString()}</span>
+      {/* Order summary */}
+      <div className="overflow-hidden rounded-app-control border border-app-hairline">
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <span className="app-body text-app-muted">
+            {quantity.toLocaleString()} {unit.toLowerCase()} × KSh {pricePerUnit.toLocaleString()}
+          </span>
+          <span className="app-data-m text-app-ink">KSh {totalKES.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-app-hairline px-3 py-2.5">
+          <span className="app-body text-app-muted">Platform fee</span>
+          <span className="app-body text-app-success">Free</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-app-hairline bg-app-sunken px-3 py-2.5">
+          <span className="app-body-strong text-app-ink">Total</span>
+          <span className="app-data-l text-app-ink">KSh {totalKES.toLocaleString()}</span>
+        </div>
       </div>
 
       <button
@@ -422,6 +477,28 @@ export function CheckoutPanel({
       >
         {state === 'submitting' ? 'Placing order…' : `Pay KSh ${totalKES.toLocaleString()} with M-Pesa`}
       </button>
+
+      {/* Escrow explainer — reduces uncertainty about when the farmer is paid */}
+      <div className="space-y-2 rounded-app-control border border-app-brand-border bg-app-brand-surface p-3">
+        <p className="app-label flex items-center gap-1.5 text-app-brand">
+          <span aria-hidden>🔒</span>
+          How your payment is protected
+        </p>
+        <ol className="space-y-1.5">
+          {[
+            'You pay now — the money is held safely in escrow, not sent to the farmer yet.',
+            'The farmer dispatches your order.',
+            'You confirm you received it — only then is the payment released to the farmer.',
+          ].map((step, i) => (
+            <li key={i} className="flex gap-2">
+              <span className="app-data-m flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-app-pill bg-app-brand text-app-on-brand">
+                {i + 1}
+              </span>
+              <span className="app-meta text-app-muted">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </form>
   );
 }
