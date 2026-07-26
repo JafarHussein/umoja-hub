@@ -1,11 +1,15 @@
 import mongoose, { Schema } from 'mongoose';
-import { ListingStatus, ListingUnit, BuyerContactPreference } from '@/types';
+import { ListingStatus, ListingUnit, ListingCategory, BuyerContactPreference } from '@/types';
 
 const marketplaceListingSchema = new Schema(
   {
     farmerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true },
     cropName: { type: String, required: true, trim: true },
+    // Produce taxonomy (Marketplace Rebuild, Stage 3). Optional at the schema
+    // level so pre-taxonomy listings stay valid; required for new listings via
+    // cropListingSchema. Powers category browse/filter on the feed.
+    category: { type: String, enum: Object.values(ListingCategory) },
     description: { type: String, required: true, minlength: 20 },
     quantityAvailable: { type: Number, required: true, min: 0 },
     unit: { type: String, enum: Object.values(ListingUnit), required: true },
@@ -27,6 +31,7 @@ const marketplaceListingSchema = new Schema(
 
 marketplaceListingSchema.index({ farmerId: 1 });
 marketplaceListingSchema.index({ cropName: 1, listingStatus: 1 });
+marketplaceListingSchema.index({ category: 1, listingStatus: 1 });
 marketplaceListingSchema.index({ pickupCounty: 1, listingStatus: 1 });
 marketplaceListingSchema.index({ currentPricePerUnit: 1 });
 marketplaceListingSchema.index({ isVerifiedListing: 1, listingStatus: 1 });

@@ -1,84 +1,40 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { FarmerListingCard, type IListingCardData } from '@/components/foodhub/FarmerListingCard';
-import { MarketplaceFilters } from '@/components/foodhub/MarketplaceFilters';
-import { CardSkeleton } from '@/components/ui/SkeletonLoader';
-import type { FarmerTrustTier, ListingUnit } from '@/types';
+import { ListingCard, type IListingCardItem } from '@/components/marketplace/ListingCard';
+import { CategoryNav } from '@/components/marketplace/CategoryNav';
+import { MarketplaceSearch } from '@/components/marketplace/MarketplaceSearch';
+import { FeedFilters } from '@/components/marketplace/FeedFilters';
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Marketplace — UmojaHub',
   description:
-    'Buy directly from verified Kenyan farmers. Fresh produce at fair prices with transparent trust scores.',
+    'Buy directly from verified Kenyan farmers. Fresh produce at fair prices with transparent trust scores and escrow-backed orders.',
 };
 
 interface IMarketplaceSearchParams {
   q?: string;
-  cropName?: string;
+  category?: string;
   county?: string;
   minPrice?: string;
   maxPrice?: string;
   verifiedOnly?: string;
+  sort?: string;
   cursor?: string;
 }
 
-// Shape of one item as returned by GET /api/marketplace — the API is the
-// stable contract; this page adapts it to the card component's props.
-interface IMarketplaceApiItem {
-  id: string;
-  title: string;
-  cropName: string;
-  quantityAvailable: number;
-  unit: string;
-  currentPricePerUnit: number;
-  pickupCounty: string;
-  imageUrl: string;
-  farmer: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    isVerified: boolean;
-    trustScore: number;
-    trustTier: string;
-  };
-  listingStatus: string;
-  createdAt: string;
-}
-
+// GET /api/marketplace is the stable contract; the card consumes an item as-is.
 interface IMarketplaceApiResponse {
-  data: IMarketplaceApiItem[];
+  data: IListingCardItem[];
   nextCursor: string | null;
   total: number;
 }
 
 interface IListingsResult {
-  listings: IListingCardData[];
-  nextCursor: string | null;
+  listings: IListingCardItem[];
   total: number;
-}
-
-function toCardData(item: IMarketplaceApiItem): IListingCardData {
-  return {
-    _id: item.id,
-    title: item.title,
-    cropName: item.cropName,
-    currentPricePerUnit: item.currentPricePerUnit,
-    unit: item.unit as ListingUnit,
-    quantityAvailable: item.quantityAvailable,
-    pickupCounty: item.pickupCounty,
-    imageUrls: item.imageUrl ? [item.imageUrl] : [],
-    isVerifiedListing: item.farmer.isVerified,
-    farmer: {
-      firstName: item.farmer.firstName,
-      lastName: item.farmer.lastName,
-    },
-    trustScore: {
-      compositeScore: item.farmer.trustScore,
-      tier: item.farmer.trustTier as FarmerTrustTier,
-    },
-  };
 }
 
 async function fetchListings(params: IMarketplaceSearchParams): Promise<IListingsResult> {
@@ -86,77 +42,66 @@ async function fetchListings(params: IMarketplaceSearchParams): Promise<IListing
   const searchParams = new URLSearchParams();
 
   if (params.q) searchParams.set('q', params.q);
-  if (params.cropName) searchParams.set('cropName', params.cropName);
+  if (params.category) searchParams.set('category', params.category);
   if (params.county) searchParams.set('county', params.county);
   if (params.minPrice) searchParams.set('minPrice', params.minPrice);
   if (params.maxPrice) searchParams.set('maxPrice', params.maxPrice);
   if (params.verifiedOnly === 'true') searchParams.set('verifiedOnly', 'true');
+  if (params.sort) searchParams.set('sort', params.sort);
   if (params.cursor) searchParams.set('cursor', params.cursor);
 
   const query = searchParams.toString();
   const url = `${baseUrl}/api/marketplace${query ? `?${query}` : ''}`;
 
   const res = await fetch(url, { next: { revalidate: 60 } });
-
-  if (!res.ok) {
-    return { listings: [], nextCursor: null, total: 0 };
-  }
+  if (!res.ok) return { listings: [], total: 0 };
 
   const body = (await res.json()) as IMarketplaceApiResponse;
-
-  return {
-    listings: (body.data ?? []).map(toCardData),
-    nextCursor: body.nextCursor ?? null,
-    total: body.total ?? 0,
-  };
+  return { listings: body.data ?? [], total: body.total ?? 0 };
 }
 
 function ListingsSkeleton(): React.ReactElement {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <CardSkeleton key={i} />
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
+          <div className="skeleton aspect-[4/3] w-full" />
+          <div className="space-y-2 p-3">
+            <div className="skeleton h-5 w-24 rounded-app-cell" />
+            <div className="skeleton h-4 w-full rounded-app-cell" />
+            <div className="skeleton h-3 w-20 rounded-app-cell" />
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
-interface IListingsGridProps {
+async function ListingsGrid({
+  searchParams,
+}: {
   searchParams: IMarketplaceSearchParams;
-}
-
-async function ListingsGrid({ searchParams }: IListingsGridProps): Promise<React.ReactElement> {
+}): Promise<React.ReactElement> {
   const { listings, total } = await fetchListings(searchParams);
 
   if (listings.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-12 h-12 rounded bg-surface-raised border border-white/5 flex items-center justify-center mb-4">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M10 3L17 16H3L10 3Z"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-              className="text-fg-disabled"
-            />
+      <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-20 text-center">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" className="text-app-faint" />
+            <path d="M14 14L19 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-app-faint" />
           </svg>
         </div>
-        <p className="text-t4 font-body font-medium text-fg mb-1">No listings found</p>
-        <p className="text-t5 font-body text-fg-muted">
-          Try adjusting your filters or check back soon for new produce.
+        <p className="app-title text-app-ink">No listings match your search</p>
+        <p className="app-body mt-1 text-app-muted">
+          Try a different category, widen your price range, or clear your filters.
         </p>
         <Link
           href="/marketplace"
-          className="mt-4 text-t5 font-body text-brand hover:underline underline-offset-2"
+          className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
         >
-          Clear filters
+          Clear everything
         </Link>
       </div>
     );
@@ -164,68 +109,74 @@ async function ListingsGrid({ searchParams }: IListingsGridProps): Promise<React
 
   return (
     <div className="space-y-4">
-      <p className="text-t6 font-body text-fg-disabled">
+      <p className="app-meta text-app-muted" role="status" aria-live="polite">
         {total.toLocaleString()} listing{total !== 1 ? 's' : ''} available
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
         {listings.map((listing) => (
-          <FarmerListingCard key={listing._id} listing={listing} />
+          <ListingCard key={listing.id} listing={listing} />
         ))}
       </div>
     </div>
   );
 }
 
-interface IPageProps {
+export default async function MarketplacePage({
+  searchParams,
+}: {
   searchParams: Promise<IMarketplaceSearchParams>;
-}
-
-export default async function MarketplacePage({ searchParams }: IPageProps): Promise<React.ReactElement> {
+}): Promise<React.ReactElement> {
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-white/5 bg-background sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-t5 font-body text-fg-muted hover:text-fg transition-colors duration-150">
-            ← Back
-          </Link>
-          <h1 className="text-t3 font-heading font-semibold text-fg">Marketplace</h1>
+    <div className="theme-app min-h-screen bg-app-canvas text-app-body">
+      {/* ── Header: brand · search · account ─────────────────────────────── */}
+      <header className="sticky top-0 z-20 border-b border-app-hairline bg-app-canvas/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-6">
           <Link
-            href="/auth/login"
-            className="text-t5 font-body text-brand hover:underline underline-offset-2"
+            href="/"
+            className="app-h2 flex-shrink-0 text-app-ink transition-colors duration-150 hover:text-app-brand"
           >
-            Sell produce
+            UmojaHub
           </Link>
+          <div className="min-w-0 flex-1 sm:max-w-2xl">
+            <MarketplaceSearch />
+          </div>
+          <div className="hidden flex-shrink-0 items-center gap-4 sm:flex">
+            <Link
+              href="/auth/login"
+              className="app-nav whitespace-nowrap text-app-body transition-colors duration-150 hover:text-app-ink"
+            >
+              Sell produce
+            </Link>
+            <Link
+              href="/auth/login"
+              className="app-nav whitespace-nowrap rounded-app-control bg-app-brand px-3.5 py-2 text-app-on-brand transition-colors duration-150 hover:bg-app-brand-hover"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
-      </div>
 
-      {/* Body */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex gap-8">
-          {/* Filter sidebar — client component inside Suspense */}
-          <Suspense
-            fallback={
-              <div className="w-52 flex-shrink-0 space-y-5">
-                <div className="skeleton h-4 w-20 rounded" />
-                <div className="skeleton h-11 w-full rounded-sm" />
-                <div className="skeleton h-11 w-full rounded-sm" />
-                <div className="skeleton h-11 w-full rounded-sm" />
-              </div>
-            }
-          >
-            <MarketplaceFilters />
-          </Suspense>
+        {/* Category rail */}
+        <div className="border-t border-app-hairline">
+          <div className="mx-auto max-w-7xl px-4 py-2">
+            <CategoryNav />
+          </div>
+        </div>
+      </header>
 
-          {/* Listings */}
-          <div className="flex-1 min-w-0">
+      {/* ── Body: filter rail + feed ─────────────────────────────────────── */}
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        <div className="lg:flex lg:gap-8">
+          <FeedFilters className="mb-6 lg:mb-0 lg:w-56 lg:flex-shrink-0 lg:sticky lg:top-32 lg:self-start" />
+          <section className="min-w-0 flex-1">
             <Suspense fallback={<ListingsSkeleton />}>
               <ListingsGrid searchParams={params} />
             </Suspense>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

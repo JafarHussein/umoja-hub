@@ -61,6 +61,7 @@ function makePostRequest(body: unknown): NextRequest {
 const validListingBody = {
   title: 'Fresh Tomatoes — Grade A Kiambu',
   cropName: 'Tomatoes',
+  category: 'VEGETABLES',
   description: 'Freshly harvested grade A tomatoes from certified farm in Kiambu, ready for immediate pickup.',
   quantityAvailable: 100,
   unit: 'KG',

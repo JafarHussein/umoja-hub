@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { KENYAN_COUNTIES, ListingUnit, ListingStatus, DocumentType } from '@/types';
+import { KENYAN_COUNTIES, ListingUnit, ListingCategory, ListingStatus, DocumentType } from '@/types';
 
 const kenyanPhoneRegex = /^(?:\+254|0)[17]\d{8}$/;
 const cloudinaryUrlRegex = /^https:\/\/res\.cloudinary\.com\//;
@@ -31,6 +31,18 @@ export const verificationDocSchema = z.object({
 export const cropListingSchema = z.object({
   title: z.string().trim().min(5, 'Title must be at least 5 characters').max(100),
   cropName: z.string().trim().min(1, 'Crop name is required').max(50),
+  category: z.enum([
+    ListingCategory.VEGETABLES,
+    ListingCategory.FRUITS,
+    ListingCategory.CEREALS,
+    ListingCategory.LEGUMES,
+    ListingCategory.LIVESTOCK,
+    ListingCategory.DAIRY,
+    ListingCategory.POULTRY,
+    ListingCategory.SEEDS,
+    ListingCategory.FARM_INPUTS,
+    ListingCategory.EQUIPMENT,
+  ]),
   description: z
     .string()
     .trim()

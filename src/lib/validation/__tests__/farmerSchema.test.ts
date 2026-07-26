@@ -191,6 +191,7 @@ describe('cropListingSchema', () => {
   const valid = {
     title: 'Fresh Kiambu Tomatoes',
     cropName: 'tomatoes',
+    category: 'VEGETABLES' as const,
     description: 'Grade-A tomatoes freshly harvested from Limuru highlands.',
     quantityAvailable: 100,
     unit: 'KG' as const,
@@ -211,6 +212,29 @@ describe('cropListingSchema', () => {
         cropListingSchema.safeParse({ ...valid, unit }).success
       ).toBe(true);
     }
+  });
+
+  it('accepts all valid categories', () => {
+    for (const category of [
+      'VEGETABLES',
+      'FRUITS',
+      'CEREALS',
+      'LEGUMES',
+      'LIVESTOCK',
+      'DAIRY',
+      'POULTRY',
+      'SEEDS',
+      'FARM_INPUTS',
+      'EQUIPMENT',
+    ] as const) {
+      expect(cropListingSchema.safeParse({ ...valid, category }).success).toBe(true);
+    }
+  });
+
+  it('rejects a missing or unknown category', () => {
+    const { category: _omit, ...withoutCategory } = valid;
+    expect(cropListingSchema.safeParse(withoutCategory).success).toBe(false);
+    expect(cropListingSchema.safeParse({ ...valid, category: 'FLOWERS' }).success).toBe(false);
   });
 
   it('rejects price less than 0', () => {

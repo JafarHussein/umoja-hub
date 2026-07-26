@@ -24,10 +24,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const { searchParams } = new URL(req.url);
     const q = searchParams.get('q')?.trim();
     const cropName = searchParams.get('cropName');
+    const category = searchParams.get('category');
     const county = searchParams.get('county');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
+    const sort = searchParams.get('sort');
     const cursor = searchParams.get('cursor');
     const limit = Math.min(Number(searchParams.get('limit') ?? '20'), 100);
 
@@ -54,7 +56,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         .sort({ _id: -1 })
         .limit(limit + 1)
         .select(
-          'title cropName currentPricePerUnit unit quantityAvailable pickupCounty listingStatus isVerifiedListing createdAt'
+          'title cropName category currentPricePerUnit unit quantityAvailable pickupCounty listingStatus isVerifiedListing createdAt'
         )
         .lean();
 
@@ -88,6 +90,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    if (category) filter['category'] = category;
     if (county) filter['pickupCounty'] = county;
     if (verifiedOnly) filter['isVerifiedListing'] = true;
     if (minPrice || maxPrice) {
@@ -97,6 +100,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       filter['currentPricePerUnit'] = priceFilter;
     }
 
+    // Feed sort (Marketplace Rebuild, Stage 3). Text search always sorts by
+    // relevance; otherwise the buyer's chosen order, defaulting to verified-first
+    // then newest. The `_id` tiebreaker keeps cursor pagination stable.
+    const sortSpec: Record<string, 1 | -1> =
+      sort === 'price-asc'
+        ? { currentPricePerUnit: 1, _id: -1 }
+        : sort === 'price-desc'
+          ? { currentPricePerUnit: -1, _id: -1 }
+          : sort === 'recent'
+            ? { createdAt: -1, _id: -1 }
+            : { isVerifiedListing: -1, createdAt: -1 };
+
     const listings = await (q
       ? MarketplaceListing.find(filter)
           .select({ score: { $meta: 'textScore' } })
@@ -104,7 +119,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           .limit(limit + 1)
           .lean()
       : MarketplaceListing.find(filter)
-          .sort({ isVerifiedListing: -1, createdAt: -1 })
+          .sort(sortSpec)
           .limit(limit + 1)
           .lean());
 
@@ -136,6 +151,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         id: String(listing._id),
         title: listing.title,
         cropName: listing.cropName,
+        category: listing.category ?? null,
         quantityAvailable: listing.quantityAvailable,
         unit: listing.unit,
         currentPricePerUnit: listing.currentPricePerUnit,
@@ -203,6 +219,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const {
       title,
       cropName,
+      category,
       description,
       quantityAvailable,
       unit,
@@ -217,6 +234,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       farmerId: session!.user.id,
       title,
       cropName,
+      category,
       description,
       quantityAvailable,
       unit,

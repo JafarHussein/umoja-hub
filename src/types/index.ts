@@ -75,6 +75,51 @@ export enum ListingUnit {
   PIECE = 'PIECE',
 }
 
+// Marketplace produce taxonomy (Marketplace Rebuild, Stage 3). Powers the feed
+// category nav, filters, and the create-listing form. Extensible by design:
+// adding a category is a one-line change to the enum + the two constants below —
+// no schema migration and no admin UI required.
+export enum ListingCategory {
+  VEGETABLES = 'VEGETABLES',
+  FRUITS = 'FRUITS',
+  CEREALS = 'CEREALS',
+  LEGUMES = 'LEGUMES',
+  LIVESTOCK = 'LIVESTOCK',
+  DAIRY = 'DAIRY',
+  POULTRY = 'POULTRY',
+  SEEDS = 'SEEDS',
+  FARM_INPUTS = 'FARM_INPUTS',
+  EQUIPMENT = 'EQUIPMENT',
+}
+
+// Display order for the category nav and pickers — one source of truth so the
+// feed, filters, and listing form never drift.
+export const LISTING_CATEGORY_ORDER: ListingCategory[] = [
+  ListingCategory.VEGETABLES,
+  ListingCategory.FRUITS,
+  ListingCategory.CEREALS,
+  ListingCategory.LEGUMES,
+  ListingCategory.LIVESTOCK,
+  ListingCategory.DAIRY,
+  ListingCategory.POULTRY,
+  ListingCategory.SEEDS,
+  ListingCategory.FARM_INPUTS,
+  ListingCategory.EQUIPMENT,
+];
+
+export const LISTING_CATEGORY_LABEL: Record<ListingCategory, string> = {
+  [ListingCategory.VEGETABLES]: 'Vegetables',
+  [ListingCategory.FRUITS]: 'Fruits',
+  [ListingCategory.CEREALS]: 'Cereals & Grains',
+  [ListingCategory.LEGUMES]: 'Legumes',
+  [ListingCategory.LIVESTOCK]: 'Livestock',
+  [ListingCategory.DAIRY]: 'Dairy',
+  [ListingCategory.POULTRY]: 'Poultry',
+  [ListingCategory.SEEDS]: 'Seeds',
+  [ListingCategory.FARM_INPUTS]: 'Farm Inputs',
+  [ListingCategory.EQUIPMENT]: 'Equipment',
+};
+
 export enum DocumentType {
   NATIONAL_ID = 'NATIONAL_ID',
   COOPERATIVE_CARD = 'COOPERATIVE_CARD',
