@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useTransition } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/cn';
 import { KENYAN_COUNTIES } from '@/types';
 
@@ -33,7 +34,31 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { status } = useSession();
   const [isPending, startTransition] = useTransition();
+
+  // "Near me" resolves the signed-in user's home county (GET /api/buyers/me) so
+  // the toggle can scope the feed to their locality — no county lives in the
+  // auth session, so we fetch it lazily and fall back to a disabled toggle.
+  const [userCounty, setUserCounty] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/buyers/me');
+        if (!res.ok) return;
+        const body = (await res.json()) as { data: { county: string | null } };
+        if (!cancelled) setUserCounty(body.data.county);
+      } catch {
+        // network error — the toggle stays disabled
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
 
   const county = searchParams.get('county') ?? '';
   const minPrice = searchParams.get('minPrice') ?? '';
@@ -57,6 +82,13 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     });
+  }
+
+  const nearbyAvailable = status === 'authenticated' && Boolean(userCounty);
+  const nearbyOn = Boolean(userCounty && county === userCounty);
+
+  function toggleNearby(on: boolean): void {
+    updateParam('county', on && userCounty ? userCounty : '');
   }
 
   function clearFilters(): void {
@@ -128,6 +160,33 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
             </option>
           ))}
         </select>
+
+        {/* Near me — scopes to the signed-in user's home county */}
+        <label
+          className={cn(
+            'group flex items-center gap-3 pt-1.5',
+            nearbyAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+          )}
+        >
+          <span className="relative flex-shrink-0">
+            <input
+              type="checkbox"
+              className="peer sr-only"
+              checked={nearbyOn}
+              disabled={!nearbyAvailable}
+              onChange={(e) => toggleNearby(e.target.checked)}
+              aria-label="Show produce in my county only"
+            />
+            <span className="block h-5 w-9 rounded-app-pill border border-app-hairline bg-app-sunken transition-colors duration-150 peer-checked:border-app-brand peer-checked:bg-app-brand peer-focus-visible:ring-2 peer-focus-visible:ring-app-ring peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-app-canvas" />
+            <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-app-pill bg-app-card shadow transition-transform duration-150 peer-checked:translate-x-4" />
+          </span>
+          <span className="app-body text-app-body transition-colors duration-150 group-hover:text-app-ink">
+            Near me{nearbyAvailable ? ` · ${userCounty}` : ''}
+          </span>
+        </label>
+        {status === 'unauthenticated' && (
+          <p className="app-meta text-app-faint">Sign in to shop produce near you.</p>
+        )}
       </div>
 
       {/* Price range */}
