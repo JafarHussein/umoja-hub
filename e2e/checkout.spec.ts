@@ -18,7 +18,7 @@ test.use({ storageState: authFile('buyer') });
 
 async function fillPhoneAndPay(page: import('@playwright/test').Page): Promise<void> {
   await page.getByLabel(/M-Pesa phone number/i).fill('700000000');
-  await page.getByRole('button', { name: /pay kes/i }).click();
+  await page.getByRole('button', { name: /pay ksh/i }).click();
 }
 
 test('checkout shows the quantity lock bound to available stock', async ({ page }) => {

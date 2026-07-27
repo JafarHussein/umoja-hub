@@ -14,7 +14,9 @@ test('a matching query returns the listing and reflects the term', async ({ page
   await page.goto('/marketplace?q=sukuma');
 
   // The search box mirrors the active query.
-  await expect(page.getByLabel('Search')).toHaveValue('sukuma');
+  await expect(page.getByRole('combobox', { name: /search the marketplace/i })).toHaveValue(
+    'sukuma'
+  );
 
   // The seeded listing matches the full-text query.
   await expect(page.getByText(/sukuma wiki/i).first()).toBeVisible({ timeout: 30_000 });
@@ -22,5 +24,7 @@ test('a matching query returns the listing and reflects the term', async ({ page
 
 test('a non-matching query shows the empty state', async ({ page }) => {
   await page.goto('/marketplace?q=zzqnomatchxyz');
-  await expect(page.getByText('No listings found').first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('No produce matches your search').first()).toBeVisible({
+    timeout: 30_000,
+  });
 });
