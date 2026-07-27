@@ -92,7 +92,7 @@ export default function LecturerVerificationPage(): React.ReactElement {
 
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
-        setActionError(body.error ?? 'Failed to verify lecturer.');
+        setActionError(body.error ?? 'Could not verify the lecturer.');
         setVerifying(null);
         return;
       }
@@ -118,7 +118,7 @@ export default function LecturerVerificationPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load lecturers</p>
+        <p className="app-title mb-2 text-app-ink">Could not load lecturers</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button
           variant="secondary"

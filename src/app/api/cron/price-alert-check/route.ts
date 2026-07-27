@@ -78,7 +78,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const farmer = await User.findById(alert.farmerId).select('firstName phoneNumber email').lean();
 
       if (farmer) {
-        const message = `UmojaHub Alert: ${alert.cropName} in ${alert.county} has reached KES ${Math.round(currentAvg)}/unit, above your target of KES ${alert.targetPricePerUnit}. Visit the marketplace now.`;
+        const message = `UmojaHub Alert: ${alert.cropName} in ${alert.county} has reached KSh ${Math.round(currentAvg)}/unit, above your target of KSh ${alert.targetPricePerUnit}. Visit the marketplace now.`;
 
         if (
           alert.notificationMethod === 'SMS' ||

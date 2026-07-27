@@ -73,7 +73,7 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load impact summary</p>
+        <p className="app-title mb-2 text-app-ink">Could not load impact summary</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchSummary()}>
           Retry
@@ -99,7 +99,7 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
     { label: 'Total buyers', value: summary.totalBuyers.toLocaleString() },
     { label: 'Total orders placed', value: summary.totalOrders.toLocaleString() },
     { label: 'Completed orders', value: summary.completedOrders.toLocaleString() },
-    { label: 'Revenue facilitated', value: `KES ${summary.totalRevenueKES.toLocaleString()}` },
+    { label: 'Revenue facilitated', value: `KSh ${summary.totalRevenueKES.toLocaleString()}` },
     { label: 'Counties active', value: summary.countiesCovered.toLocaleString() },
   ];
 

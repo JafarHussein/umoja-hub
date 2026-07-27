@@ -63,7 +63,7 @@ export function AIUsageTab({
       const body = (await res.json()) as { data?: IAIUsageEntry; error?: string };
 
       if (!res.ok) {
-        setErrorMsg(body.error ?? 'Failed to log entry. Try again.');
+        setErrorMsg(body.error ?? 'Could not save your entry. Try again.');
         setFormState('error');
         return;
       }

@@ -218,7 +218,7 @@ async function applyEscrowOutcome(
       if (buyer?.phoneNumber) {
         await sendSMS(
           buyer.phoneNumber,
-          `UmojaHub: Following mediation, your KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`
+          `UmojaHub: Following mediation, your KSh ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`
         );
       }
     })().catch(() => {});
@@ -227,7 +227,7 @@ async function applyEscrowOutcome(
       userId: String(order.buyerId),
       type: NotificationType.ESCROW_UPDATE,
       title: 'Dispute resolved — funds refunded',
-      body: `Following mediation, your KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`,
+      body: `Following mediation, your KSh ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been refunded from escrow.`,
       relatedEntity: { kind: 'Order', id: String(order._id) },
     });
     void notify({
@@ -281,7 +281,7 @@ async function applyEscrowOutcome(
       if (farmer?.phoneNumber) {
         await sendSMS(
           farmer.phoneNumber,
-          `UmojaHub: Following mediation, KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`
+          `UmojaHub: Following mediation, KSh ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`
         );
       }
     })().catch(() => {});
@@ -290,7 +290,7 @@ async function applyEscrowOutcome(
       userId: String(order.farmerId),
       type: NotificationType.ESCROW_UPDATE,
       title: 'Dispute resolved — funds released',
-      body: `Following mediation, KES ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`,
+      body: `Following mediation, KSh ${order.totalAmountKES.toLocaleString()} for order ${order.orderReferenceId} has been released from escrow and is available to request as a payout.`,
       relatedEntity: { kind: 'Order', id: String(order._id) },
     });
     void notify({

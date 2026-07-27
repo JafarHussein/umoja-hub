@@ -283,7 +283,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
-        setSubmitError(body.error ?? 'Failed to submit review. Please try again.');
+        setSubmitError(body.error ?? 'Could not submit your review. Please try again.');
         setSubmitState('idle');
         return;
       }

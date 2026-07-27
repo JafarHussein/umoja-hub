@@ -228,7 +228,7 @@ describe('insight', () => {
     });
     expect(text).toContain('Tomatoes');
     expect(text).toContain('Kiambu');
-    expect(text).toContain('KES 68–82');
+    expect(text).toContain('KSh 68–82');
     expect(text).toMatch(/\+12%/);
   });
 });

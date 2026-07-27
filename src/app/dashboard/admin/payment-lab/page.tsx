@@ -90,7 +90,7 @@ const SELECT_CLASS =
   'app-body min-h-[36px] rounded-app-control border border-app-border-strong bg-app-card px-2 text-app-ink transition-colors duration-150 focus:border-app-brand focus:outline-none focus:ring-2 focus:ring-app-brand/30';
 
 function formatKES(amount?: number | null): string {
-  return amount != null ? `KES ${amount.toLocaleString()}` : '—';
+  return amount != null ? `KSh ${amount.toLocaleString()}` : '—';
 }
 
 function formatTime(iso: string): string {

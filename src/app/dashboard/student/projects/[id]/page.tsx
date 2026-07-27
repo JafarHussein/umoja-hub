@@ -378,7 +378,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
-        setActionError(body.error ?? 'Failed to start project. Please try again.');
+        setActionError(body.error ?? 'Could not start the project. Please try again.');
         setActionState('idle');
         return;
       }
@@ -404,7 +404,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
-        setSubmitError(body.error ?? 'Failed to submit. Please try again.');
+        setSubmitError(body.error ?? 'Could not submit. Please try again.');
         setSubmitState('idle');
         return;
       }

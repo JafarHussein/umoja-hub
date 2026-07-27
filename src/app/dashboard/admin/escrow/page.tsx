@@ -63,7 +63,7 @@ const ESCROW_PILL: Record<EscrowState, { state: StatusState; label: string }> = 
 };
 
 function formatKES(amount: number): string {
-  return `KES ${amount.toLocaleString()}`;
+  return `KSh ${amount.toLocaleString()}`;
 }
 
 function formatDate(iso: string | null): string {

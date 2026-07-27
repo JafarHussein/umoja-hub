@@ -135,7 +135,7 @@ export default function NgoMarketHealthPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load market health</p>
+        <p className="app-title mb-2 text-app-ink">Could not load market health</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchHealth()}>
           Retry
@@ -253,7 +253,7 @@ export default function NgoMarketHealthPage(): React.ReactElement {
                 <TR key={r.crop}>
                   <TD className="capitalize text-app-ink">{r.crop}</TD>
                   <TD className="app-data-m text-right">
-                    {r.medianPrice !== null ? `KES ${r.medianPrice.toLocaleString()}/${r.unit.toLowerCase()}` : '—'}
+                    {r.medianPrice !== null ? `KSh ${r.medianPrice.toLocaleString()}/${r.unit.toLowerCase()}` : '—'}
                   </TD>
                   <TD className="app-data-m text-right">
                     {r.volatilityPct !== null ? `${r.volatilityPct}%` : '—'}

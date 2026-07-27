@@ -71,7 +71,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (parsed.data.amountKES > balance.availableKES) {
       throw new AppError(
-        `Requested amount exceeds your available balance of KES ${balance.availableKES.toLocaleString()}.`,
+        `Requested amount exceeds your available balance of KSh ${balance.availableKES.toLocaleString()}.`,
         409,
         'PAYOUT_INSUFFICIENT_BALANCE'
       );
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     void notifyAdmins({
       type: NotificationType.PAYOUT_UPDATE,
       title: 'New payout request awaiting review',
-      body: `A farmer requested a payout of KES ${parsed.data.amountKES.toLocaleString()}. Open the payout queue to approve or decline it.`,
+      body: `A farmer requested a payout of KSh ${parsed.data.amountKES.toLocaleString()}. Open the payout queue to approve or decline it.`,
       relatedEntity: { kind: 'WithdrawalRequest', id: String(request._id) },
     });
 

@@ -197,7 +197,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
         .lean();
       if (!farmer) return;
 
-      const amount = `KES ${updated.amountKES.toLocaleString()}`;
+      const amount = `KSh ${updated.amountKES.toLocaleString()}`;
       const message =
         decision === 'APPROVED'
           ? `UmojaHub: Your payout request for ${amount} has been approved and is being processed.`
