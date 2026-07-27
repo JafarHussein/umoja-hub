@@ -1,9 +1,12 @@
 # UmojaHub — Kenyan-English Localization Audit
 
-**Scope of this pass (Pass 1): the commerce hot-path** — the marketplace (buyer-facing
-browse + checkout), the farmer surfaces, the buyer surfaces, and the emails/notifications
-on the ordering path. Student, lecturer, admin, NGO, institution, employer, and the
-AI-assistant prompts are documented here but **deferred to Pass 2** (see backlog at the end).
+**Pass 1 scope: the commerce hot-path** — the marketplace (buyer-facing browse + checkout),
+the farmer surfaces, the buyer surfaces, and the emails/notifications on the ordering path.
+
+**Pass 2 scope (delivered — see the "Pass 2 — Delivered" section at the end):** the remaining
+roles (student, lecturer, admin, NGO, institution, employer), a whole-app currency
+standardization, and an error-copy sweep. The AI-assistant prompts were reviewed and
+intentionally left as-is (already strongly Kenya-grounded).
 
 **Why this exists.** Project review flagged that parts of UmojaHub used terminology that
 does not read as natural to Kenyan users (*Listing*, *Fulfill Order*, *Settlement*,
@@ -189,15 +192,38 @@ any refinement is deferred to Pass 2 to keep this pass's diff commerce-scoped.
 
 ---
 
-## Pass 2 backlog
+## Pass 2 — Delivered
 
-1. **Roles:** student, lecturer, admin, NGO, institution, employer surfaces + their shells,
-   empty states, tables, and status pills.
-2. **Non-commerce emails:** student verification code, password reset, verification
-   approved/rejected, payout lifecycle, group/portfolio notifications.
-3. **AI prompts:** optional naturalness refinement of Farm Assistant / Mentor / brief copy.
-4. **Currency consistency:** decide `KSh` vs `KES` for visible UI and apply once.
-5. **Buyer "Suppliers":** consider "My Farmers" if a warmer, shopping-oriented register is
-   preferred over enterprise procurement language.
-6. **Validation & generic API errors:** sweep `src/lib/validation/*` and `handleApiError`
-   strings for any remaining stiff phrasing (most already read cleanly).
+Owner decisions for this pass: **standardize visible UI currency to `KSh`**; **keep buyer
+"Suppliers"** (legitimate enterprise-procurement register); **leave AI prompts as-is**.
+
+1. **Roles (student, lecturer, admin, NGO, institution, employer).** The shells and page
+   vocabulary were already role-appropriate and natural (My Project, Peer Review, AI Mentor,
+   Portfolio, Review Queue, Pending Reviews; admin Verification/Escrow/Mediation/Payouts;
+   NGO Cooperatives; Employer Discover talent; Institution Members). **No jargon found** —
+   no *Vendor / Inventory / Fulfill / Portfolio Submission* on these surfaces. Only change:
+   admin nav **"Lecturer Verify" → "Lecturer Verification"** (consistency with siblings).
+2. **Currency → `KSh` everywhere in visible UI.** Swept `KES` → `KSh` in every user-facing
+   string: farmer/coop/NGO/admin price panels and `formatKES` helpers, admin
+   escrow/mediation/payouts/payment-lab/price-analytics/impact-summary, the ledger amount
+   field + listing-form price label, the payout validation message, and the SMS/notification
+   bodies (payment confirmed/failed, escrow release, payout request, mediation refund/release,
+   price alerts). The farmer price-insight sentence became *"Produce priced around KSh … is
+   selling fastest"* (was *"Listings around KES …"*). **Untouched:** code identifiers
+   (`totalAmountKES`, `amountKES`, `formatKES`, `roundKES`, …), enum values, DB fields, and
+   the AI-prompt grounding in `assistantPrompt.ts` (per the leave-AI decision).
+3. **Error-copy sweep.** Standardized user-visible **"Failed to X" → "Could not X"** across
+   farmer/student/lecturer/admin/NGO surfaces and checkout (e.g. "Failed to load profile" →
+   "Could not load your profile"; "Failed to place order" → "Could not place your order").
+   Internal `logger.error(...)` and thrown `Error('Failed to fetch')` strings (developer-only)
+   were left as-is. Replaced the internal term **"engagement" → "submission"** in the lecturer
+   review error.
+4. **Emails.** The lifecycle wrapper and the static student-code / password-reset templates
+   already read as trustworthy, institution-quality copy — **reviewed, no change needed**.
+5. **AI prompts.** Reviewed; already strongly Kenya-grounded — **left as-is** per owner call.
+
+### Not done (intentional / future)
+- **Buyer "Suppliers"** kept (owner decision) — revisit only if a warmer register is wanted.
+- **Admin-internal labels** "Payment Lab" and "Brief Contexts" kept — operator-only tooling,
+  renaming risks confusion; out of scope.
+- The currency split noted in §10 is now **resolved** (visible UI standardized on `KSh`).
