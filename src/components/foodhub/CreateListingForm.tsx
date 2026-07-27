@@ -136,7 +136,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
         const msg =
           typeof data['error'] === 'string'
             ? data['error']
-            : 'Failed to create listing. Please try again.';
+            : 'Could not post your produce. Please try again.';
         setSubmitError(msg);
         return;
       }
@@ -165,14 +165,14 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="New crop listing"
-      description="Your listing will be visible to buyers across Kenya once submitted."
+      title="Add your produce"
+      description="Your produce will be visible to buyers across Kenya once you post it."
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Title */}
         <Input
-          label="Listing title"
+          label="Produce title"
           placeholder="e.g. Fresh Nakuru Tomatoes — Grade A"
           value={form.title}
           onChange={(e) => set('title', e.target.value)}
@@ -387,7 +387,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
             Cancel
           </Button>
           <Button type="submit" variant="primary" isLoading={isSubmitting}>
-            Create listing
+            Publish produce
           </Button>
         </div>
       </form>

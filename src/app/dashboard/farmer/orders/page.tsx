@@ -97,7 +97,7 @@ function handoverState(
   const deadline = new Date(paidAt).getTime() + HANDOVER_WINDOW_HOURS * 60 * 60 * 1000;
   const remainingMs = deadline - now;
   if (remainingMs <= 0) {
-    return { urgency: 'elapsed', label: 'Handover window elapsed' };
+    return { urgency: 'elapsed', label: 'Dispatch window closed' };
   }
   const totalMinutes = Math.floor(remainingMs / 60_000);
   const hours = Math.floor(totalMinutes / 60);
@@ -294,7 +294,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
           </div>
           <p className="app-title mb-1 text-app-ink">No orders yet</p>
           <p className="app-body text-app-muted">
-            Orders will appear here once buyers purchase from your listings.
+            Orders will appear here once buyers order your produce.
           </p>
         </div>
       ) : (
@@ -363,9 +363,9 @@ export default function FarmerOrdersPage(): React.ReactElement {
                           size="sm"
                           isLoading={confirmingId === order._id}
                           onClick={() => void confirmDispatch(order._id)}
-                          aria-label={`Confirm carrier handover for order ${order.orderReferenceId}`}
+                          aria-label={`Confirm dispatch for order ${order.orderReferenceId}`}
                         >
-                          Confirm handover
+                          Confirm dispatch
                         </Button>
                       )}
                       <Button
@@ -486,7 +486,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
                   isLoading={confirmingId === selectedOrder._id}
                   onClick={() => void confirmDispatch(selectedOrder._id)}
                 >
-                  Confirm Carrier Handover
+                  Confirm dispatch
                 </Button>
               </div>
             )}
