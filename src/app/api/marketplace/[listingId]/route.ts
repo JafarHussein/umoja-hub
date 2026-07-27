@@ -45,9 +45,71 @@ export async function GET(
         .lean(),
     ]);
 
+    // Similar listings (Marketplace Rebuild, Stage 7). Same category (or crop,
+    // for pre-taxonomy listings), excluding this one, enriched to the feed card
+    // shape so the detail page can reuse the ListingCard grid.
+    const affinity = listing.category
+      ? { category: listing.category }
+      : { cropName: listing.cropName };
+    const similarRaw = await MarketplaceListing.find({
+      _id: { $ne: listing._id },
+      listingStatus: ListingStatus.AVAILABLE,
+      ...affinity,
+    })
+      .sort({ isVerifiedListing: -1, createdAt: -1 })
+      .limit(6)
+      .select(
+        'title cropName category quantityAvailable unit currentPricePerUnit pickupCounty imageUrls farmerId listingStatus createdAt'
+      )
+      .lean();
+
+    const simFarmerIds = [...new Set(similarRaw.map((l) => String(l.farmerId)))];
+    const [simFarmers, simTrust] = await Promise.all([
+      User.find({ _id: { $in: simFarmerIds } })
+        .select('firstName lastName farmerData.isVerified')
+        .lean(),
+      FarmerTrustScore.find({ farmerId: { $in: simFarmerIds } })
+        .select('farmerId compositeScore tier')
+        .lean(),
+    ]);
+    const simFarmerMap = new Map(simFarmers.map((f) => [String(f._id), f]));
+    const simTrustMap = new Map(simTrust.map((t) => [String(t.farmerId), t]));
+
+    const similar = similarRaw.map((l) => {
+      const fId = String(l.farmerId);
+      const f = simFarmerMap.get(fId) as
+        | { firstName?: string; lastName?: string; farmerData?: { isVerified?: boolean } }
+        | undefined;
+      const t = simTrustMap.get(fId) as
+        | { compositeScore?: number; tier?: string }
+        | undefined;
+      return {
+        id: String(l._id),
+        title: l.title,
+        cropName: l.cropName,
+        category: l.category ?? null,
+        quantityAvailable: l.quantityAvailable,
+        unit: l.unit,
+        currentPricePerUnit: l.currentPricePerUnit,
+        pickupCounty: l.pickupCounty,
+        imageUrl: l.imageUrls[0] ?? '',
+        farmer: {
+          id: fId,
+          firstName: f?.firstName ?? '',
+          lastName: f?.lastName ?? '',
+          isVerified: f?.farmerData?.isVerified ?? false,
+          trustScore: t?.compositeScore ?? 0,
+          trustTier: t?.tier ?? 'NEW',
+        },
+        listingStatus: l.listingStatus,
+        createdAt: (l.createdAt as Date).toISOString(),
+      };
+    });
+
     return NextResponse.json({
       data: {
         ...listing,
+        similar,
         farmer: farmer
           ? {
               firstName: (farmer as { firstName?: string }).firstName ?? '—',

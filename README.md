@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/React-19-149ECA?logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript" alt="TypeScript strict" />
   <img src="https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/tests-719%20passing-success?logo=jest" alt="719 tests" />
+  <img src="https://img.shields.io/badge/tests-777%20passing-success?logo=jest" alt="777 tests" />
   <img src="https://img.shields.io/badge/deploy-Vercel-000000?logo=vercel" alt="Vercel" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
 </p>
@@ -48,9 +48,9 @@ Both are **infrastructure**, not a directory and not a learning app. What ties t
 | | |
 |---|---|
 | **8** user roles | **37** database models |
-| **81** API route handlers | **58** application pages |
-| **60** React components | **41** domain enums |
-| **66** test suites · **719** tests | **~48,600** lines of TypeScript |
+| **86** API route modules | **60** application pages |
+| **62** React components | **41** domain enums |
+| **71** test suites · **777** tests | **~52,900** lines of TypeScript |
 
 </div>
 
@@ -325,7 +325,7 @@ flowchart TB
   subgraph Edge["Next.js 15 — App Router"]
     MW["middleware.ts<br/>RBAC route guard"]
     PAGES["Server components / pages"]
-    API["81 API route handlers<br/>connectDB → session → requireRole → Zod → DB"]
+    API["86 API route modules<br/>connectDB → session → requireRole → Zod → DB"]
   end
 
   subgraph Domain["Domain services (src/lib)"]
@@ -366,7 +366,7 @@ flowchart TB
 
 ### The non-negotiable API pattern
 
-Every one of the 81 route handlers follows the same sequence — there are no exceptions:
+Every one of the 86 route modules follows the same sequence — there are no exceptions:
 
 ```
 connectDB() → getServerSession(authOptions) → requireRole(session, …) → schema.safeParse(input) → DB operation
@@ -566,7 +566,7 @@ Technologies are chosen for a specific reason, not for novelty.
 | **Motion / 3D** | GSAP · React Three Fiber | Research-backed motion; 3D accents on the website. |
 | **State** | Zustand | Minimal client state where server state isn't enough. |
 | **Media / comms** | Cloudinary · Resend/Nodemailer · Africa's Talking · OpenWeatherMap | Images, email, SMS, and weather grounding for the assistant. |
-| **Testing** | Jest + Testing Library · Playwright | 719 unit/integration tests + e2e capability. |
+| **Testing** | Jest + Testing Library · Playwright | 777 unit/integration tests + e2e capability. |
 | **CI/CD** | GitHub Actions → Vercel | type-check · lint · test · build on every PR; deploy on merge to `main`. |
 
 ---
@@ -580,15 +580,15 @@ All figures are measured from the repository, not estimated.
 | User roles | **8** |
 | Database models (Mongoose) | **37** |
 | Domain enums | **41** |
-| API route handlers | **81** |
-| Application pages | **58** |
-| React components | **60** |
-| Domain library modules (`src/lib`) | **102** |
+| API route modules (HTTP handlers) | **86 (103)** |
+| Application pages | **60** |
+| React components | **62** |
+| Domain library modules (`src/lib`) | **95** |
 | Zod validation schema domains | **11** |
 | Integration services | **8** |
 | Scheduled cron jobs | **5** |
-| Test suites / tests | **66 / 719** |
-| Lines of TypeScript/TSX (`src`) | **~48,600** |
+| Test suites / tests | **71 / 777** |
+| Lines of TypeScript/TSX (`src`) | **~52,900** |
 
 ---
 
@@ -647,7 +647,7 @@ npm run dev                        # http://localhost:3000
 
 ### Environment variables
 
-Every required variable is validated at startup by `src/lib/env.ts` (the app **throws** if any is missing). Set: `MONGODB_URI`, `NEXTAUTH_SECRET`/`NEXTAUTH_URL`, `GROQ_API_KEY`, `OPENAI_API_KEY`, GitHub App keys, the `MPESA_*` set (sandbox shortcode `174379`), `SENDGRID_*`, `AFRICASTALKING_*`, `OPEN_WEATHER_MAP_API_KEY`, `CLOUDINARY_*`, and `CRON_SECRET`. Never commit `.env.local`.
+Every required variable is validated at startup by `src/lib/env.ts` (the app **throws** if any is missing). Set: `MONGODB_URI`, `NEXTAUTH_SECRET`/`NEXTAUTH_URL`, `GROQ_API_KEY`, `OPENAI_API_KEY`, GitHub App keys, the `MPESA_*` set (sandbox shortcode `174379`), the `SMTP_*` set (`SMTP_FROM` optional, falls back to `SMTP_USER`), `AFRICASTALKING_*`, `OPEN_WEATHER_MAP_API_KEY`, `CLOUDINARY_*`, and `CRON_SECRET`. Never commit `.env.local`.
 
 ### Data commands
 
@@ -676,7 +676,7 @@ npm run seed:rebuild   # reset + regenerate a fresh, different ecosystem
 ```bash
 npm run type-check     # tsc --noEmit (strict, zero any)
 npm run lint           # ESLint
-npm run test           # Jest — 66 suites, 719 tests
+npm run test           # Jest — 71 suites, 777 tests
 npm run test:coverage  # coverage gates (validation 95%, trust 90%)
 npm run test:e2e       # Playwright
 npm run seed:validate  # runtime invariant checks on a seeded ecosystem
@@ -717,8 +717,6 @@ Realistic next steps, in rough priority order:
 **Built with** — Next.js · React · TypeScript · MongoDB & Mongoose · NextAuth · Zod · Tailwind CSS · Recharts · GSAP · React Three Fiber · Groq · OpenAI · Safaricom Daraja (M-Pesa) · Cloudinary · Africa's Talking · OpenWeatherMap · Jest · Playwright · Vercel.
 
 **Knowledge sources referenced in the Knowledge Hub** — KALRO, FAO Kenya, KEBS, Kenya Veterinary Board, Kenya Markets Trust.
-
-**Engineering assistance** — built with [Claude Code](https://claude.com/claude-code).
 
 ---
 

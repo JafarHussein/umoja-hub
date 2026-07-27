@@ -24,7 +24,7 @@ test('settlement ledger shows the escrow balance, line item, and held state', as
   await page.goto('/dashboard/farmer/ledger');
 
   // Absorb the dev server's on-demand route compile on first hit (pre-built in CI).
-  await expect(page.getByRole('heading', { name: 'Settlement' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: 'Payments', exact: true })).toBeVisible({ timeout: 30_000 });
 
   // The single PAID fixture order is IN_FULFILLMENT — its KSh 4,000 is held in
   // escrow, surfaced both on the Held card and as a ledger line item.
@@ -32,7 +32,7 @@ test('settlement ledger shows the escrow balance, line item, and held state', as
 
   // Escrow is now the mandated framing (the old "no escrow" copy rule is retired).
   await expect(page.getByText('Held in escrow').first()).toBeVisible();
-  await expect(page.getByText('Releasable').first()).toBeVisible();
+  await expect(page.getByText('Cleared').first()).toBeVisible();
 
   // The PAID fixture order surfaces as a settlement line item.
   await expect(page.getByText('E2E-FAR-0001')).toBeVisible();
@@ -43,7 +43,7 @@ test('held funds are not releasable: available is zero and the payout CTA is dis
 }) => {
   await page.goto('/dashboard/farmer/ledger');
 
-  await expect(page.getByRole('heading', { name: 'Settlement' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: 'Payments', exact: true })).toBeVisible({ timeout: 30_000 });
 
   // Held funds are not releasable until the buyer confirms receipt, so the
   // available-to-request balance is zero and the payout CTA is disabled.
@@ -51,5 +51,5 @@ test('held funds are not releasable: available is zero and the payout CTA is dis
   await expect(cta).toBeDisabled();
 
   // The escrow framing explains why funds are not yet releasable.
-  await expect(page.getByText(/becomes releasable once the buyer confirms/i)).toBeVisible();
+  await expect(page.getByText(/clears once the buyer confirms/i)).toBeVisible();
 });

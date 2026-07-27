@@ -100,7 +100,7 @@ function EscrowPill({ status }: { status: OrderFulfillmentStatus }): React.React
       )}
     >
       <span aria-hidden>{releasable ? '✓' : '🔒'}</span>
-      {releasable ? 'Releasable' : 'Held in escrow'}
+      {releasable ? 'Cleared' : 'Held in escrow'}
     </span>
   );
 }
@@ -227,7 +227,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your settlement ledger</p>
+        <p className="app-title mb-2 text-app-ink">Could not load your payments</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchData()}>
           Retry
@@ -241,10 +241,10 @@ export default function FarmerLedgerPage(): React.ReactElement {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="app-h1 text-app-ink">Settlement</h1>
+          <h1 className="app-h1 text-app-ink">Payments</h1>
           <p className="app-meta mt-0.5 max-w-prose text-app-muted">
-            When a buyer pays, the money is held in escrow by the platform. It becomes releasable
-            once the buyer confirms they received your produce — then you can request a payout.
+            When a buyer pays, the money is held safely in escrow by the platform. It clears once the
+            buyer confirms they received your produce — then you can request a payout.
           </p>
         </div>
         <Button size="sm" disabled={!canRequest} onClick={openForm} aria-label="Request a payout">
@@ -260,7 +260,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
           <p className="app-meta mt-1 text-app-faint">awaiting buyer confirmation</p>
         </div>
         <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-label mb-2 text-app-muted">Releasable</p>
+          <p className="app-label mb-2 text-app-muted">Cleared</p>
           <p className="app-data-l text-app-ink">{formatKES(balance?.releasableKES ?? 0)}</p>
           <p className="app-meta mt-1 text-app-faint">
             confirmed received
@@ -270,7 +270,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
           </p>
         </div>
         <div className="rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
-          <p className="app-label mb-2 text-app-muted">Available to request</p>
+          <p className="app-label mb-2 text-app-muted">Available to withdraw</p>
           <p className="app-data-l text-app-brand">{formatKES(availableKES)}</p>
           {balance && balance.inDisputeKES > 0 && (
             <p className="app-meta mt-1 text-app-faint">
@@ -327,8 +327,8 @@ export default function FarmerLedgerPage(): React.ReactElement {
       <section className="space-y-3">
         <h2 className="app-h2 text-app-ink">Payments received</h2>
         <p className="app-meta text-app-muted">
-          Each payment is held in escrow until the buyer confirms receipt, at which point it becomes
-          releasable. You can then request a payout, which an administrator releases.
+          Each payment is held in escrow until the buyer confirms receipt, at which point it clears.
+          You can then request a payout, which an administrator releases.
         </p>
         {lineItems.length === 0 ? (
           <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">

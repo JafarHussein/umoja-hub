@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { PriceRecommendationPanel, usePriceRecommendation } from './PriceRecommendationPanel';
-import { ListingUnit, BuyerContactPreference, KENYAN_COUNTIES } from '@/types';
+import {
+  ListingUnit,
+  ListingCategory,
+  LISTING_CATEGORY_ORDER,
+  LISTING_CATEGORY_LABEL,
+  BuyerContactPreference,
+  KENYAN_COUNTIES,
+} from '@/types';
 
 export interface ICreateListingFormProps {
   isOpen: boolean;
@@ -16,6 +23,7 @@ export interface ICreateListingFormProps {
 interface IFormState {
   title: string;
   cropName: string;
+  category: ListingCategory | '';
   description: string;
   quantityAvailable: string;
   unit: ListingUnit;
@@ -29,6 +37,7 @@ interface IFormState {
 const INITIAL_STATE: IFormState = {
   title: '',
   cropName: '',
+  category: '',
   description: '',
   quantityAvailable: '',
   unit: ListingUnit.KG,
@@ -78,6 +87,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
 
     if (form.title.length < 5) newErrors.title = 'Title must be at least 5 characters';
     if (!form.cropName) newErrors.cropName = 'Select a crop';
+    if (!form.category) newErrors.category = 'Select a category';
     if (form.description.length < 20) newErrors.description = 'Description must be at least 20 characters';
     if (!form.quantityAvailable || parseInt(form.quantityAvailable, 10) < 1)
       newErrors.quantityAvailable = 'Enter a valid quantity';
@@ -108,6 +118,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
         body: JSON.stringify({
           title: form.title,
           cropName: form.cropName,
+          category: form.category,
           description: form.description,
           quantityAvailable: parseInt(form.quantityAvailable, 10),
           unit: form.unit,
@@ -125,7 +136,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
         const msg =
           typeof data['error'] === 'string'
             ? data['error']
-            : 'Failed to create listing. Please try again.';
+            : 'Could not post your produce. Please try again.';
         setSubmitError(msg);
         return;
       }
@@ -154,14 +165,14 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="New crop listing"
-      description="Your listing will be visible to buyers across Kenya once submitted."
+      title="Add your produce"
+      description="Your produce will be visible to buyers across Kenya once you post it."
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Title */}
         <Input
-          label="Listing title"
+          label="Produce title"
           placeholder="e.g. Fresh Nakuru Tomatoes — Grade A"
           value={form.title}
           onChange={(e) => set('title', e.target.value)}
@@ -194,6 +205,34 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
           {errors.cropName && (
             <p className="font-body text-t6 text-red-400" role="alert">
               {errors.cropName}
+            </p>
+          )}
+        </div>
+
+        {/* Category */}
+        <div className="space-y-1.5">
+          <label htmlFor="listing-category" className="font-body text-t6 text-fg-muted">
+            Category
+          </label>
+          <select
+            id="listing-category"
+            value={form.category}
+            onChange={(e) => set('category', e.target.value as ListingCategory)}
+            className={[
+              'w-full min-h-[44px] bg-surface-raised border rounded-sm font-body text-t5 text-fg px-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-150',
+              errors.category ? 'border-red-700/60' : 'border-white/10',
+            ].join(' ')}
+          >
+            <option value="">Select a category</option>
+            {LISTING_CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>
+                {LISTING_CATEGORY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+          {errors.category && (
+            <p className="font-body text-t6 text-red-400" role="alert">
+              {errors.category}
             </p>
           )}
         </div>
@@ -348,7 +387,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
             Cancel
           </Button>
           <Button type="submit" variant="primary" isLoading={isSubmitting}>
-            Create listing
+            Publish produce
           </Button>
         </div>
       </form>

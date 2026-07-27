@@ -28,7 +28,7 @@ test('escalation is available 48h after payment', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-01-05T00:00:00.000Z'));
   await openOrderByRef(page, 'E2E-FAR-0001');
 
-  const escalateBtn = page.getByRole('button', { name: 'Escalate to Platform Mediation' });
+  const escalateBtn = page.getByRole('button', { name: 'Ask UmojaHub to step in' });
   await expect(escalateBtn).toBeVisible();
   await escalateBtn.click();
 
@@ -42,18 +42,18 @@ test('escalation is gated before the 48-h window', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-01-02T00:00:00.000Z'));
   await openOrderByRef(page, 'E2E-FAR-0001');
 
-  await expect(page.getByText(/escalate to platform mediation from/i)).toBeVisible();
+  await expect(page.getByText(/ask umojahub to step in from/i)).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Escalate to Platform Mediation' })
+    page.getByRole('button', { name: 'Ask UmojaHub to step in' })
   ).toHaveCount(0);
 });
 
 test('UNDER_MEDIATION bar shows for an escalated order', async ({ page }) => {
   await openOrderByRef(page, 'E2E-FAR-0002');
 
-  await expect(page.getByText('Under platform mediation')).toBeVisible();
+  await expect(page.getByText('UmojaHub is stepping in')).toBeVisible();
   // While escalated, the escalate affordance is not offered.
   await expect(
-    page.getByRole('button', { name: 'Escalate to Platform Mediation' })
+    page.getByRole('button', { name: 'Ask UmojaHub to step in' })
   ).toHaveCount(0);
 });

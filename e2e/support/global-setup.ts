@@ -46,7 +46,7 @@ import {
 } from './auth';
 
 // Deterministic fixture order for UI-01 (Farmer Fulfillment Pipeline). It sits
-// in the only state the "Confirm Carrier Handover" prompt acts on — PAID +
+// in the only state the "Confirm dispatch" prompt acts on — PAID +
 // IN_FULFILLMENT + not yet confirmed — so the FIX-01 `canConfirmDispatch` flag
 // is true. `paidAt` is a fixed instant; specs freeze the clock relative to it so
 // the 24-h countdown text is stable across runs.

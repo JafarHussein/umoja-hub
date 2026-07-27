@@ -47,6 +47,7 @@ import {
   VerificationStatus,
   ListingStatus,
   ListingUnit,
+  ListingCategory,
   FarmerTrustTier,
   KnowledgeCategory,
   SupplierInputCategory,
@@ -542,6 +543,7 @@ async function seed(): Promise<void> {
       farmerId: wanjiku._id,
       title: 'Grade A Tomatoes — Kirinyaga Central',
       cropName: 'Tomatoes',
+      category: ListingCategory.VEGETABLES,
       description:
         'Fresh tomatoes harvested this week from well-irrigated farm in Kirinyaga. Grade A — firm, red, uniform size. Available for pickup at Kerugoya town.',
       quantityAvailable: 200,
@@ -559,6 +561,7 @@ async function seed(): Promise<void> {
       farmerId: wanjiku._id,
       title: 'Green and Red Capsicum — Kirinyaga',
       cropName: 'Capsicum',
+      category: ListingCategory.VEGETABLES,
       description:
         'Mixed green and red capsicum, 2-3 weeks post-harvest. Well-suited for restaurants and hotels. No pesticide residue — last spray was 3 weeks ago.',
       quantityAvailable: 80,
@@ -575,6 +578,7 @@ async function seed(): Promise<void> {
       farmerId: kipchoge._id,
       title: 'Dry Maize — H614D Variety, Uasin Gishu',
       cropName: 'Maize',
+      category: ListingCategory.CEREALS,
       description:
         'H614D hybrid maize, well dried to 13.5% moisture content. 90kg bags. Grown in Uasin Gishu highland. No aflatoxin issues — stored in certified grain store.',
       quantityAvailable: 50,
@@ -591,6 +595,7 @@ async function seed(): Promise<void> {
       farmerId: kipchoge._id,
       title: 'Rose Coco Beans — Uasin Gishu',
       cropName: 'Beans',
+      category: ListingCategory.LEGUMES,
       description:
         'Rose coco beans, clean and well dried. 90kg bags. This season harvest — no storage treatment used.',
       quantityAvailable: 20,
@@ -607,6 +612,7 @@ async function seed(): Promise<void> {
       farmerId: achieng._id,
       title: 'Sukuma Wiki (Kale) — Kisumu West',
       cropName: 'Kale',
+      category: ListingCategory.VEGETABLES,
       description:
         'Fresh sukuma wiki harvested twice weekly. Large bunches, dark green. Grown without chemical fertilizer — only organic compost. Consistent supply available.',
       quantityAvailable: 300,
@@ -623,6 +629,7 @@ async function seed(): Promise<void> {
       farmerId: achieng._id,
       title: 'Orange-Fleshed Sweet Potatoes — Kisumu',
       cropName: 'Sweet Potatoes',
+      category: ListingCategory.VEGETABLES,
       description:
         'Vita-rich orange-fleshed variety. Good for direct consumption and processing. 50kg bags. High demand from nutrition programs — selling direct to reduce middleman cut.',
       quantityAvailable: 30,
@@ -639,6 +646,7 @@ async function seed(): Promise<void> {
       farmerId: njoroge._id,
       title: 'Shangi Potatoes — Nyandarua',
       cropName: 'Potatoes',
+      category: ListingCategory.VEGETABLES,
       description:
         'Shangi variety potatoes from Nyandarua highlands. Consistent size, no green spots. 110kg bags. Grown at 2,500m altitude — natural cold storage effect, longer shelf life.',
       quantityAvailable: 40,
@@ -655,6 +663,7 @@ async function seed(): Promise<void> {
       farmerId: njoroge._id,
       title: 'Snow Peas (Minji) — Nyandarua Export Grade',
       cropName: 'Snow Peas',
+      category: ListingCategory.LEGUMES,
       description:
         'Export-grade snow peas, GlobalGAP farming practices applied. Suitable for export and high-end hotels. Harvested twice per week for freshness.',
       quantityAvailable: 50,
@@ -671,6 +680,7 @@ async function seed(): Promise<void> {
       farmerId: njoroge._id,
       title: 'Nantes Carrots — Nyandarua',
       cropName: 'Carrots',
+      category: ListingCategory.VEGETABLES,
       description:
         'Nantes variety carrots. Uniform orange colour, no forking. Washed and ready. 50kg bags.',
       quantityAvailable: 25,
@@ -687,6 +697,7 @@ async function seed(): Promise<void> {
       farmerId: wanjiku._id,
       title: 'Pishori Rice — Mwea, Kirinyaga',
       cropName: 'Rice',
+      category: ListingCategory.CEREALS,
       description:
         'Authentic Mwea Pishori rice. 50kg bags. Directly from our family farm in Mwea irrigation scheme. No blending with imported rice. Certificate of origin available.',
       quantityAvailable: 60,

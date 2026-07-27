@@ -15,9 +15,9 @@ export default async function FarmerPricesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="app-h1 text-app-ink">Price Intelligence</h1>
+        <h1 className="app-h1 text-app-ink">Market Prices</h1>
         <p className="app-meta mt-0.5 max-w-prose text-app-muted">
-          Track crop price trends in your county and get notified when prices reach your target.
+          Track produce price trends in your county and get notified when prices reach your target.
         </p>
       </div>
 

@@ -17,13 +17,13 @@ test.describe('farmer listings lockout', () => {
     test('is locked out of listing creation', async ({ page }) => {
       await page.goto('/dashboard/farmer/listings');
 
-      await expect(page.getByRole('heading', { name: 'My Listings' })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'My Produce' })).toBeVisible({
         timeout: 30_000,
       });
       // PENDING lockout copy is shown in place of the create surface.
       await expect(page.getByText('Verification under review')).toBeVisible();
       // The create affordance is gone — a PENDING farmer cannot list.
-      await expect(page.getByRole('button', { name: 'New listing' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Add produce' })).toHaveCount(0);
     });
   });
 
@@ -33,10 +33,10 @@ test.describe('farmer listings lockout', () => {
     test('can reach the create-listing affordance', async ({ page }) => {
       await page.goto('/dashboard/farmer/listings');
 
-      await expect(page.getByRole('heading', { name: 'My Listings' })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'My Produce' })).toBeVisible({
         timeout: 30_000,
       });
-      await expect(page.getByRole('button', { name: 'New listing' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add produce' })).toBeVisible();
       await expect(page.getByText('Verification under review')).toHaveCount(0);
       await expect(page.getByText('Verification required')).toHaveCount(0);
     });

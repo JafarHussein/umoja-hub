@@ -4,7 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Role, OrderPaymentStatus, OrderFulfillmentStatus } from '@/types';
+import {
+  Role,
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+  ORDER_FULFILLMENT_LABEL,
+} from '@/types';
 import { Button, StatusPill, type StatusState } from '@/components/app';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 
@@ -27,14 +32,6 @@ interface IOrdersResponse {
 }
 
 type PageState = 'loading' | 'ready' | 'error';
-
-const FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
-  [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
-  [OrderFulfillmentStatus.IN_FULFILLMENT]: 'In fulfillment',
-  [OrderFulfillmentStatus.RECEIVED]: 'Received',
-  [OrderFulfillmentStatus.COMPLETED]: 'Completed',
-  [OrderFulfillmentStatus.DISPUTED]: 'Disputed',
-};
 
 // Maps the order lifecycle to a trust StatusPill state — status is conveyed by
 // icon + shape + text, never colour alone.
@@ -94,7 +91,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load orders</p>
+        <p className="app-title mb-2 text-app-ink">Could not load your orders</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchOrders()}>
           Retry
@@ -113,7 +110,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
           href="/marketplace"
           className="app-body text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
         >
-          Browse marketplace →
+          Browse produce →
         </Link>
       </div>
 
@@ -163,7 +160,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
                   </span>
                   <StatusPill
                     state={resolvePillState(order)}
-                    label={FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus}
+                    label={ORDER_FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus}
                   />
                 </div>
               </div>

@@ -61,6 +61,24 @@ export enum OrderFulfillmentStatus {
   DISPUTED = 'DISPUTED',
 }
 
+// Buyer-facing display labels for the order lifecycle. One source of truth so
+// the orders list and the order detail screen never drift (Kenyan localization
+// pass — display text only; the enum values above are the API/DB contract).
+export const ORDER_FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
+  [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
+  [OrderFulfillmentStatus.IN_FULFILLMENT]: 'Being prepared',
+  [OrderFulfillmentStatus.RECEIVED]: 'Received',
+  [OrderFulfillmentStatus.COMPLETED]: 'Completed',
+  [OrderFulfillmentStatus.DISPUTED]: 'Disputed',
+};
+
+export const ORDER_PAYMENT_LABEL: Record<OrderPaymentStatus, string> = {
+  [OrderPaymentStatus.PENDING_PAYMENT]: 'Awaiting payment',
+  [OrderPaymentStatus.PAID]: 'Paid',
+  [OrderPaymentStatus.FAILED]: 'Payment failed',
+  [OrderPaymentStatus.REFUNDED]: 'Refunded',
+};
+
 export enum ListingStatus {
   AVAILABLE = 'AVAILABLE',
   SOLD_OUT = 'SOLD_OUT',
@@ -74,6 +92,51 @@ export enum ListingUnit {
   LITRE = 'LITRE',
   PIECE = 'PIECE',
 }
+
+// Marketplace produce taxonomy (Marketplace Rebuild, Stage 3). Powers the feed
+// category nav, filters, and the create-listing form. Extensible by design:
+// adding a category is a one-line change to the enum + the two constants below —
+// no schema migration and no admin UI required.
+export enum ListingCategory {
+  VEGETABLES = 'VEGETABLES',
+  FRUITS = 'FRUITS',
+  CEREALS = 'CEREALS',
+  LEGUMES = 'LEGUMES',
+  LIVESTOCK = 'LIVESTOCK',
+  DAIRY = 'DAIRY',
+  POULTRY = 'POULTRY',
+  SEEDS = 'SEEDS',
+  FARM_INPUTS = 'FARM_INPUTS',
+  EQUIPMENT = 'EQUIPMENT',
+}
+
+// Display order for the category nav and pickers — one source of truth so the
+// feed, filters, and listing form never drift.
+export const LISTING_CATEGORY_ORDER: ListingCategory[] = [
+  ListingCategory.VEGETABLES,
+  ListingCategory.FRUITS,
+  ListingCategory.CEREALS,
+  ListingCategory.LEGUMES,
+  ListingCategory.LIVESTOCK,
+  ListingCategory.DAIRY,
+  ListingCategory.POULTRY,
+  ListingCategory.SEEDS,
+  ListingCategory.FARM_INPUTS,
+  ListingCategory.EQUIPMENT,
+];
+
+export const LISTING_CATEGORY_LABEL: Record<ListingCategory, string> = {
+  [ListingCategory.VEGETABLES]: 'Vegetables',
+  [ListingCategory.FRUITS]: 'Fruits',
+  [ListingCategory.CEREALS]: 'Cereals & Grains',
+  [ListingCategory.LEGUMES]: 'Legumes',
+  [ListingCategory.LIVESTOCK]: 'Livestock',
+  [ListingCategory.DAIRY]: 'Dairy',
+  [ListingCategory.POULTRY]: 'Poultry',
+  [ListingCategory.SEEDS]: 'Seeds',
+  [ListingCategory.FARM_INPUTS]: 'Farm Inputs',
+  [ListingCategory.EQUIPMENT]: 'Equipment',
+};
 
 export enum DocumentType {
   NATIONAL_ID = 'NATIONAL_ID',
@@ -318,6 +381,7 @@ export enum PortfolioVisibility {
 // Persisted in-app notification taxonomy. The channel records how it was also
 // delivered out-of-band (the existing fire-and-forget SMS/email), if at all.
 export enum NotificationType {
+  WELCOME = 'WELCOME',
   ORDER_UPDATE = 'ORDER_UPDATE',
   ESCROW_UPDATE = 'ESCROW_UPDATE',
   VERIFICATION_UPDATE = 'VERIFICATION_UPDATE',

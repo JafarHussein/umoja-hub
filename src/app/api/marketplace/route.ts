@@ -8,8 +8,16 @@ import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
 import User from '@/lib/models/User.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import { cropListingSchema } from '@/lib/validation/farmerSchema';
+import { notify } from '@/lib/notifications/notify';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
-import { Role, PriceHistorySource, ListingStatus, UserStatus } from '@/types';
+import {
+  Role,
+  PriceHistorySource,
+  ListingStatus,
+  UserStatus,
+  NotificationType,
+  FarmerTrustTier,
+} from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/marketplace — Public listing browse with filters
@@ -23,10 +31,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const { searchParams } = new URL(req.url);
     const q = searchParams.get('q')?.trim();
     const cropName = searchParams.get('cropName');
+    const category = searchParams.get('category');
     const county = searchParams.get('county');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
+    const highTrust = searchParams.get('highTrust') === 'true';
+    const minQuantity = searchParams.get('minQuantity');
+    const sort = searchParams.get('sort');
     const cursor = searchParams.get('cursor');
     const limit = Math.min(Number(searchParams.get('limit') ?? '20'), 100);
 
@@ -53,7 +65,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         .sort({ _id: -1 })
         .limit(limit + 1)
         .select(
-          'title cropName currentPricePerUnit unit quantityAvailable pickupCounty listingStatus isVerifiedListing createdAt'
+          'title cropName category currentPricePerUnit unit quantityAvailable pickupCounty listingStatus isVerifiedListing createdAt'
         )
         .lean();
 
@@ -87,6 +99,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    if (category) filter['category'] = category;
     if (county) filter['pickupCounty'] = county;
     if (verifiedOnly) filter['isVerifiedListing'] = true;
     if (minPrice || maxPrice) {
@@ -96,6 +109,36 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       filter['currentPricePerUnit'] = priceFilter;
     }
 
+    if (minQuantity) {
+      const n = Number(minQuantity);
+      if (Number.isFinite(n) && n > 0) filter['quantityAvailable'] = { $gte: n };
+    }
+
+    // High-trust filter (Marketplace Rebuild, Stage 5). Trust lives in a
+    // separate collection, so this is a two-step query (approved: no schema
+    // change) — resolve the TRUSTED/PREMIUM farmers, then constrain the feed to
+    // their listings. An empty set correctly yields no results.
+    if (highTrust) {
+      const trusted = await FarmerTrustScore.find({
+        tier: { $in: [FarmerTrustTier.TRUSTED, FarmerTrustTier.PREMIUM] },
+      })
+        .select('farmerId')
+        .lean();
+      filter['farmerId'] = { $in: trusted.map((t) => t.farmerId) };
+    }
+
+    // Feed sort (Marketplace Rebuild, Stage 3). Text search always sorts by
+    // relevance; otherwise the buyer's chosen order, defaulting to verified-first
+    // then newest. The `_id` tiebreaker keeps cursor pagination stable.
+    const sortSpec: Record<string, 1 | -1> =
+      sort === 'price-asc'
+        ? { currentPricePerUnit: 1, _id: -1 }
+        : sort === 'price-desc'
+          ? { currentPricePerUnit: -1, _id: -1 }
+          : sort === 'recent'
+            ? { createdAt: -1, _id: -1 }
+            : { isVerifiedListing: -1, createdAt: -1 };
+
     const listings = await (q
       ? MarketplaceListing.find(filter)
           .select({ score: { $meta: 'textScore' } })
@@ -103,7 +146,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           .limit(limit + 1)
           .lean()
       : MarketplaceListing.find(filter)
-          .sort({ isVerifiedListing: -1, createdAt: -1 })
+          .sort(sortSpec)
           .limit(limit + 1)
           .lean());
 
@@ -135,6 +178,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         id: String(listing._id),
         title: listing.title,
         cropName: listing.cropName,
+        category: listing.category ?? null,
         quantityAvailable: listing.quantityAvailable,
         unit: listing.unit,
         currentPricePerUnit: listing.currentPricePerUnit,
@@ -202,6 +246,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const {
       title,
       cropName,
+      category,
       description,
       quantityAvailable,
       unit,
@@ -216,6 +261,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       farmerId: session!.user.id,
       title,
       cropName,
+      category,
       description,
       quantityAvailable,
       unit,
@@ -245,6 +291,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // Non-fatal: log but continue
       const err = priceError instanceof Error ? priceError.message : String(priceError);
       void err; // suppress unused var lint
+    }
+
+    // First-listing milestone — congratulate the farmer the first time they go
+    // live (engagement nudge, fire-and-forget like every other notify side effect).
+    const listingCount = await MarketplaceListing.countDocuments({
+      farmerId: session!.user.id,
+    });
+    if (listingCount === 1) {
+      void notify({
+        userId: session!.user.id,
+        type: NotificationType.SYSTEM,
+        title: 'Your first listing is live',
+        body: `"${title}" is now visible to buyers across the region. Verified listings sell faster — keep your details accurate.`,
+        relatedEntity: { kind: 'MarketplaceListing', id: String(listing._id) },
+      });
     }
 
     return NextResponse.json(

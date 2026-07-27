@@ -133,8 +133,8 @@ export async function POST(req: NextRequest, { params }: Params): Promise<NextRe
     void notify({
       userId: session.user.id,
       type: NotificationType.ORDER_UPDATE,
-      title: 'Your mediation request was received',
-      body: 'Our team will review your report and the order. Your funds remain protected in escrow until this dispute is resolved.',
+      title: 'We received your report',
+      body: 'Our team will review your report and the order. Your payment stays protected in escrow until this is resolved.',
       relatedEntity: { kind: 'Order', id: orderId },
     });
     void notify({

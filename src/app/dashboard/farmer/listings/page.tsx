@@ -49,7 +49,7 @@ function lockoutForStatus(status: VerificationStatus | null): IVerificationLocko
         tone: 'pending',
         title: 'Verification under review',
         message:
-          'An administrator is reviewing your verification documents. You can create listings once your account is approved.',
+          'An administrator is reviewing your verification documents. You can add produce once your account is approved.',
       };
     case VerificationStatus.REJECTED:
       return {
@@ -64,7 +64,7 @@ function lockoutForStatus(status: VerificationStatus | null): IVerificationLocko
         tone: 'action',
         title: 'Verification required',
         message:
-          'You must be a verified farmer before you can create listings. Submit your verification documents to get started.',
+          'You must be a verified farmer before you can add produce. Submit your verification documents to get started.',
         cta: { label: 'Submit verification', href: '/dashboard/farmer/profile' },
       };
   }
@@ -160,7 +160,7 @@ export default function FarmerListingsPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load listings</p>
+        <p className="app-title mb-2 text-app-ink">Could not load your produce</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button variant="secondary" onClick={() => void fetchData()}>
           Retry
@@ -175,7 +175,7 @@ export default function FarmerListingsPage(): React.ReactElement {
   if (verification !== VerificationStatus.APPROVED) {
     return (
       <div className="space-y-6">
-        <h1 className="app-h1 text-app-ink">My Listings</h1>
+        <h1 className="app-h1 text-app-ink">My Produce</h1>
         <VerificationLockout {...lockoutForStatus(verification)} />
       </div>
     );
@@ -186,9 +186,9 @@ export default function FarmerListingsPage(): React.ReactElement {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="app-h1 text-app-ink">My Listings</h1>
+          <h1 className="app-h1 text-app-ink">My Produce</h1>
           <p className="app-meta mt-0.5 text-app-muted">
-            {listings.length} listing{listings.length !== 1 ? 's' : ''}
+            {listings.length} item{listings.length !== 1 ? 's' : ''}
           </p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}>
@@ -202,7 +202,7 @@ export default function FarmerListingsPage(): React.ReactElement {
             <rect y="6" width="14" height="2" rx="1" />
             <rect x="6" width="2" height="14" rx="1" />
           </svg>
-          New listing
+          Add produce
         </Button>
       </div>
 
@@ -226,19 +226,19 @@ export default function FarmerListingsPage(): React.ReactElement {
               />
             </svg>
           </div>
-          <p className="app-title mb-1 text-app-ink">No listings yet</p>
+          <p className="app-title mb-1 text-app-ink">No produce yet</p>
           <p className="app-body mb-4 text-app-muted">
-            Create your first listing to start receiving orders from buyers across Kenya.
+            Add your first produce to start receiving orders from buyers across Kenya.
           </p>
-          <Button onClick={() => setIsCreateOpen(true)}>Create first listing</Button>
+          <Button onClick={() => setIsCreateOpen(true)}>Add produce</Button>
         </div>
       ) : (
         /* Listings table */
         <Table>
           <THead>
-            <TH>Listing</TH>
+            <TH>Produce</TH>
             <TH className="text-right">Price</TH>
-            <TH className="text-right">Stock</TH>
+            <TH className="text-right">Available</TH>
             <TH>Status</TH>
             <TH className="text-right">
               <span className="sr-only">Actions</span>
@@ -281,7 +281,7 @@ export default function FarmerListingsPage(): React.ReactElement {
                       )}
                     >
                       <span aria-hidden>{available ? '✓' : '◌'}</span>
-                      {available ? 'Available' : 'Inactive'}
+                      {available ? 'Available' : 'Paused'}
                     </span>
                   </TD>
                   <TD className="text-right">

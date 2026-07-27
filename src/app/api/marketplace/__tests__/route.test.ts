@@ -61,6 +61,7 @@ function makePostRequest(body: unknown): NextRequest {
 const validListingBody = {
   title: 'Fresh Tomatoes — Grade A Kiambu',
   cropName: 'Tomatoes',
+  category: 'VEGETABLES',
   description: 'Freshly harvested grade A tomatoes from certified farm in Kiambu, ready for immediate pickup.',
   quantityAvailable: 100,
   unit: 'KG',
@@ -229,5 +230,58 @@ describe('GET /api/marketplace', () => {
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(0);
     expect(body.total).toBe(0);
+  });
+
+  it('applies the high-trust two-step filter', async () => {
+    // FarmerTrustScore.find resolves the TRUSTED/PREMIUM farmer ids; the same
+    // mock also backs the later enrichment query.
+    mockTrustFind.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest
+          .fn()
+          .mockResolvedValue([{ farmerId: 'farmer1', compositeScore: 88, tier: 'TRUSTED' }]),
+      }),
+    });
+    mockListingFind.mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            {
+              _id: 'listing1',
+              title: 'Trusted Tomatoes',
+              cropName: 'Tomatoes',
+              category: 'VEGETABLES',
+              quantityAvailable: 100,
+              unit: 'KG',
+              currentPricePerUnit: 55,
+              pickupCounty: 'Kirinyaga',
+              imageUrls: [],
+              farmerId: 'farmer1',
+              listingStatus: 'AVAILABLE',
+              createdAt: new Date('2026-01-01'),
+            },
+          ]),
+        }),
+      }),
+    });
+    mockListingCountDocuments.mockResolvedValue(1);
+    mockUserFind.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          { _id: 'farmer1', firstName: 'Wanjiku', lastName: 'Kamau', farmerData: { isVerified: true } },
+        ]),
+      }),
+    });
+
+    const req = new NextRequest('http://localhost/api/marketplace?highTrust=true');
+    const res = await GET(req);
+    const body = (await res.json()) as { data: { id: string }[]; total: number };
+
+    expect(res.status).toBe(200);
+    expect(mockTrustFind).toHaveBeenCalledWith(
+      expect.objectContaining({ tier: { $in: ['TRUSTED', 'PREMIUM'] } })
+    );
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0]?.id).toBe('listing1');
   });
 });
