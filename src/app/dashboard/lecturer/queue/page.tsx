@@ -120,7 +120,7 @@ export default function LecturerQueuePage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load review queue</p>
+        <p className="app-title mb-2 text-app-ink">Could not load the review queue</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button
           variant="secondary"

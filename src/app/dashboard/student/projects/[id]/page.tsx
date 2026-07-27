@@ -427,7 +427,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
     return (
       <div className="max-w-5xl">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">Failed to load project.</p>
+          <p className="app-body text-app-muted">Could not load this project.</p>
           <Link
             href="/dashboard/student"
             className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
