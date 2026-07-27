@@ -340,7 +340,7 @@ export function CheckoutPanel({
                 onClick={() => window.location.reload()}
                 className="app-body-strong flex-shrink-0 underline underline-offset-2"
               >
-                Refresh
+                Refresh stock
               </button>
             ) : (
               <button
