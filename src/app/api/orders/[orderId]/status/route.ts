@@ -134,7 +134,7 @@ export async function PATCH(
         userId: order.buyerId,
         type: NotificationType.ORDER_UPDATE,
         title: 'Your order is on the way',
-        body: `The farmer confirmed and is dispatching order ${order.orderReferenceId} (${order.cropName}). Confirm receipt once it arrives to release the escrow payment.`,
+        body: `The farmer has confirmed your order ${order.orderReferenceId} (${order.cropName}) and is sending it. Once it arrives, confirm you have received it to release the payment held in escrow.`,
         relatedEntity: { kind: 'Order', id: order._id },
       });
     } else if (newStatus === OrderFulfillmentStatus.RECEIVED) {
@@ -178,8 +178,8 @@ export async function PATCH(
           void notify({
             userId: order.farmerId,
             type: NotificationType.ESCROW_UPDATE,
-            title: 'Funds released from escrow',
-            body: `Order ${order.orderReferenceId} was confirmed received. KES ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`,
+            title: 'Payment released to you',
+            body: `The buyer confirmed they received order ${order.orderReferenceId}. KES ${order.totalAmountKES.toLocaleString()} has been released from escrow and is now available to request as a payout.`,
             relatedEntity: { kind: 'Order', id: order._id },
           });
         } catch (err) {
