@@ -103,7 +103,7 @@ export function FeedFilters({ className }: { className?: string }): React.ReactE
 
   return (
     <aside
-      aria-label="Filter and sort listings"
+      aria-label="Filter and sort produce"
       className={cn(
         'space-y-5 transition-opacity duration-150',
         isPending && 'opacity-60',

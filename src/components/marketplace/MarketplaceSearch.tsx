@@ -40,7 +40,7 @@ const SECTION_LABEL: Record<FlatItem['kind'], string> = {
   crop: 'Produce',
   category: 'Categories',
   county: 'Counties',
-  listing: 'Listings',
+  listing: 'Available now',
 };
 
 function flatten(data: ISuggestResponse['data']): FlatItem[] {
@@ -316,7 +316,7 @@ export function MarketplaceSearch(): React.ReactElement {
                 </span>
                 <span className="app-meta flex-shrink-0 text-app-muted">
                   {item.kind === 'crop' || item.kind === 'county'
-                    ? `${item.count} listing${item.count !== 1 ? 's' : ''}`
+                    ? `${item.count} available`
                     : item.kind === 'listing'
                       ? item.meta
                       : 'Category'}

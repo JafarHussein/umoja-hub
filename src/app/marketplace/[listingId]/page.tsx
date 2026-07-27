@@ -68,7 +68,7 @@ interface IPageProps {
 export async function generateMetadata({ params }: IPageProps): Promise<Metadata> {
   const { listingId } = await params;
   const listing = await fetchListing(listingId);
-  if (!listing) return { title: 'Listing not found — UmojaHub' };
+  if (!listing) return { title: 'Produce not found — UmojaHub' };
   return {
     title: `${listing.title} — UmojaHub Marketplace`,
     description: `Buy ${listing.cropName} from ${listing.farmer.firstName} ${listing.farmer.lastName} in ${listing.pickupCounty}. KSh ${listing.currentPricePerUnit} / ${listing.unit.toLowerCase()}.`,
@@ -234,14 +234,14 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
 
             {/* Description */}
             <div className="space-y-2">
-              <SectionLabel>About this listing</SectionLabel>
+              <SectionLabel>About this produce</SectionLabel>
               <p className="app-body leading-relaxed text-app-body">{listing.description}</p>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-app-card border border-app-hairline bg-app-card p-3">
-                <SectionLabel>In stock</SectionLabel>
+                <SectionLabel>Available</SectionLabel>
                 <p className="mt-1">
                   <span className="app-data-m text-app-ink">
                     {listing.quantityAvailable.toLocaleString()}

@@ -240,7 +240,7 @@ export function CheckoutPanel({
       { label: 'Crop', value: cropName, mono: false },
       {
         label: 'Collection',
-        value: fulfillmentType === FulfillmentType.PICKUP ? `Pickup · ${pickupCounty}` : 'Delivery',
+        value: fulfillmentType === FulfillmentType.PICKUP ? `Collect · ${pickupCounty}` : 'Delivery',
         mono: false,
       },
     ];
@@ -397,8 +397,8 @@ export function CheckoutPanel({
 
       {/* Fulfillment */}
       <div className="space-y-1.5">
-        <p className="app-meta text-app-muted">Collection method</p>
-        <div className="flex gap-2" role="group" aria-label="Collection method">
+        <p className="app-meta text-app-muted">How you&apos;ll get it</p>
+        <div className="flex gap-2" role="group" aria-label="How you'll get it">
           {(Object.values(FulfillmentType) as FulfillmentType[]).map((type) => (
             <button
               key={type}
@@ -412,7 +412,7 @@ export function CheckoutPanel({
                   : 'border-app-hairline bg-app-card text-app-body hover:border-app-border-strong'
               )}
             >
-              {type === FulfillmentType.PICKUP ? `Pickup · ${pickupCounty}` : 'Delivery'}
+              {type === FulfillmentType.PICKUP ? `Collect · ${pickupCounty}` : 'Delivery'}
             </button>
           ))}
         </div>

@@ -114,7 +114,7 @@ export function ListingCard({
             </span>
           ) : lowStock ? (
             <span className="app-label absolute bottom-2 left-2 rounded-app-pill bg-app-warning-surface px-2 py-0.5 text-app-warning">
-              Low stock
+              Almost gone
             </span>
           ) : null}
         </div>

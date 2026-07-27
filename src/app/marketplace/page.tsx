@@ -105,7 +105,7 @@ async function ListingsGrid({
             <path d="M14 14L19 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-app-faint" />
           </svg>
         </div>
-        <p className="app-title text-app-ink">No listings match your search</p>
+        <p className="app-title text-app-ink">No produce matches your search</p>
         <p className="app-body mt-1 text-app-muted">
           Try a different category, widen your price range, or clear your filters.
         </p>
@@ -122,7 +122,7 @@ async function ListingsGrid({
   return (
     <div className="space-y-4">
       <p className="app-meta text-app-muted" role="status" aria-live="polite">
-        {total.toLocaleString()} listing{total !== 1 ? 's' : ''} available
+        {total.toLocaleString()} produce available
       </p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
         {listings.map((listing, index) => (
