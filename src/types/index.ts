@@ -61,6 +61,24 @@ export enum OrderFulfillmentStatus {
   DISPUTED = 'DISPUTED',
 }
 
+// Buyer-facing display labels for the order lifecycle. One source of truth so
+// the orders list and the order detail screen never drift (Kenyan localization
+// pass — display text only; the enum values above are the API/DB contract).
+export const ORDER_FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
+  [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
+  [OrderFulfillmentStatus.IN_FULFILLMENT]: 'Being prepared',
+  [OrderFulfillmentStatus.RECEIVED]: 'Received',
+  [OrderFulfillmentStatus.COMPLETED]: 'Completed',
+  [OrderFulfillmentStatus.DISPUTED]: 'Disputed',
+};
+
+export const ORDER_PAYMENT_LABEL: Record<OrderPaymentStatus, string> = {
+  [OrderPaymentStatus.PENDING_PAYMENT]: 'Awaiting payment',
+  [OrderPaymentStatus.PAID]: 'Paid',
+  [OrderPaymentStatus.FAILED]: 'Payment failed',
+  [OrderPaymentStatus.REFUNDED]: 'Refunded',
+};
+
 export enum ListingStatus {
   AVAILABLE = 'AVAILABLE',
   SOLD_OUT = 'SOLD_OUT',

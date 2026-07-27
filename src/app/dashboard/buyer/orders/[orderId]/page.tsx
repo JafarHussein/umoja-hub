@@ -11,6 +11,8 @@ import {
   MediationCategory,
   MediationRequestStatus,
   MEDIATION_ESCALATION_HOURS,
+  ORDER_PAYMENT_LABEL,
+  ORDER_FULFILLMENT_LABEL,
 } from '@/types';
 import {
   Button,
@@ -81,21 +83,6 @@ function fulfillmentPillState(status: OrderFulfillmentStatus): StatusState {
   if (status === OrderFulfillmentStatus.IN_FULFILLMENT) return 'in-transit';
   return 'pending';
 }
-
-const PAYMENT_LABEL: Record<OrderPaymentStatus, string> = {
-  [OrderPaymentStatus.PENDING_PAYMENT]: 'Awaiting payment',
-  [OrderPaymentStatus.PAID]: 'Paid',
-  [OrderPaymentStatus.FAILED]: 'Payment failed',
-  [OrderPaymentStatus.REFUNDED]: 'Refunded',
-};
-
-const FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
-  [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
-  [OrderFulfillmentStatus.IN_FULFILLMENT]: 'In fulfillment',
-  [OrderFulfillmentStatus.RECEIVED]: 'Received',
-  [OrderFulfillmentStatus.COMPLETED]: 'Completed',
-  [OrderFulfillmentStatus.DISPUTED]: 'Disputed',
-};
 
 export default function BuyerOrderDetailPage(): React.ReactElement {
   const params = useParams<{ orderId: string }>();
@@ -291,7 +278,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       });
       const body = (await res.json()) as { data?: IMediation; error?: string };
       if (!res.ok) {
-        setMediationError(body.error ?? 'Could not file your escalation.');
+        setMediationError(body.error ?? 'Could not send your report. Please try again.');
         setMediationState('error');
         return;
       }
@@ -340,7 +327,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     return (
       <div className="max-w-2xl">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body mb-3 text-app-muted">Failed to load order.</p>
+          <p className="app-body mb-3 text-app-muted">Could not load this order.</p>
           <Button variant="secondary" onClick={() => void fetchOrder()}>
             Retry
           </Button>
@@ -419,11 +406,11 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         <div className="mt-2 flex items-center gap-2">
           <StatusPill
             state={paymentPillState(order.paymentStatus)}
-            label={PAYMENT_LABEL[order.paymentStatus]}
+            label={ORDER_PAYMENT_LABEL[order.paymentStatus]}
           />
           <StatusPill
             state={fulfillmentPillState(order.fulfillmentStatus)}
-            label={FULFILLMENT_LABEL[order.fulfillmentStatus]}
+            label={ORDER_FULFILLMENT_LABEL[order.fulfillmentStatus]}
           />
         </div>
       </div>
@@ -431,12 +418,12 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       {/* UNDER_MEDIATION alert bar — decoupled from order state */}
       {activeMediation && (
         <Alert tone="warning">
-          <span className="app-body-strong">Under platform mediation.</span> Our mediation team{' '}
+          <span className="app-body-strong">UmojaHub is stepping in.</span> Our team{' '}
           {activeMediation.status === MediationRequestStatus.IN_REVIEW
             ? 'is reviewing'
             : 'has received'}{' '}
-          your escalation ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status
-          is unchanged while this is resolved.
+          your report ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status is
+          unchanged while this is resolved.
         </Alert>
       )}
 
@@ -560,7 +547,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                 Haven&apos;t received your order? Our team can step in to help resolve it.
               </p>
               <Button variant="secondary" onClick={() => setEscalateOpen(true)} className="w-full">
-                Escalate to Platform Mediation
+                Ask UmojaHub to step in
               </Button>
             </>
           ) : (
@@ -610,7 +597,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                   isLoading={mediationState === 'submitting'}
                   className="flex-1"
                 >
-                  Submit escalation
+                  Send to UmojaHub
                 </Button>
               </div>
             </form>
