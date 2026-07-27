@@ -539,7 +539,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           {!canEscalate ? (
             <p className="app-body text-app-muted">
               Give {order.farmer.firstName} time to fulfil your order. If it still hasn&apos;t
-              arrived, you can escalate to platform mediation from {eligibleDate}.
+              arrived, you can ask UmojaHub to step in from {eligibleDate}.
             </p>
           ) : !escalateOpen ? (
             <>
