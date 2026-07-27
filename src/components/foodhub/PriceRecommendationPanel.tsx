@@ -81,7 +81,7 @@ const DEMAND_LABEL: Record<PriceRecommendation['demand']['level'], string> = {
 };
 
 function formatKES(value: number | null): string {
-  return value !== null ? `KES ${value.toLocaleString()}` : '—';
+  return value !== null ? `KSh ${value.toLocaleString()}` : '—';
 }
 
 function TrendBadge({ trend }: { trend: PriceRecommendation['trend'] }) {

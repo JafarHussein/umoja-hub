@@ -283,7 +283,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
-        setSubmitError(body.error ?? 'Failed to submit review. Please try again.');
+        setSubmitError(body.error ?? 'Could not submit your review. Please try again.');
         setSubmitState('idle');
         return;
       }
@@ -329,7 +329,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
     return (
       <div className="max-w-5xl">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">Failed to load review.</p>
+          <p className="app-body text-app-muted">Could not load this review.</p>
           <Link
             href="/dashboard/student/peer-review"
             className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"

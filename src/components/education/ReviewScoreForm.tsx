@@ -176,7 +176,7 @@ export function ReviewScoreForm({
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        setSubmitError(data.error ?? 'Failed to submit review. Please try again.');
+        setSubmitError(data.error ?? 'Could not submit your review. Please try again.');
         setSubmitState('idle');
         return;
       }

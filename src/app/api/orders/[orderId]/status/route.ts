@@ -172,14 +172,14 @@ export async function PATCH(
           if (farmer?.phoneNumber) {
             await sendSMS(
               farmer.phoneNumber,
-              `UmojaHub: ${order.orderReferenceId} confirmed received. KES ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`
+              `UmojaHub: ${order.orderReferenceId} confirmed received. KSh ${order.totalAmountKES.toLocaleString()} is now released from escrow and available to request as a payout.`
             );
           }
           void notify({
             userId: order.farmerId,
             type: NotificationType.ESCROW_UPDATE,
             title: 'Payment released to you',
-            body: `The buyer confirmed they received order ${order.orderReferenceId}. KES ${order.totalAmountKES.toLocaleString()} has been released from escrow and is now available to request as a payout.`,
+            body: `The buyer confirmed they received order ${order.orderReferenceId}. KSh ${order.totalAmountKES.toLocaleString()} has been released from escrow and is now available to request as a payout.`,
             relatedEntity: { kind: 'Order', id: order._id },
           });
         } catch (err) {
@@ -235,7 +235,7 @@ export async function PATCH(
               try {
                 const alertFarmer = await User.findById(alert.farmerId).lean();
                 if (alertFarmer) {
-                  const msg = `UmojaHub Alert: ${alert.cropName} in ${alert.county} has reached your target price of KES ${alert.targetPricePerUnit}/unit.`;
+                  const msg = `UmojaHub Alert: ${alert.cropName} in ${alert.county} has reached your target price of KSh ${alert.targetPricePerUnit}/unit.`;
                   await sendSMS(alertFarmer.phoneNumber, msg);
                 }
                 await PriceAlert.findByIdAndUpdate(alert._id, { lastTriggeredAt: now });

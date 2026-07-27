@@ -9,7 +9,7 @@ export const payoutRequestSchema = z.object({
     .number()
     .positive('Amount must be greater than zero')
     .finite()
-    .max(MAX_PAYOUT_KES, `Amount cannot exceed KES ${MAX_PAYOUT_KES.toLocaleString()}`),
+    .max(MAX_PAYOUT_KES, `Amount cannot exceed KSh ${MAX_PAYOUT_KES.toLocaleString()}`),
 });
 
 export type PayoutRequestInput = z.infer<typeof payoutRequestSchema>;

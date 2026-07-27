@@ -130,7 +130,7 @@ export function DocumentsTab({
         if (!res.ok || !body.data) {
           updateEditor(docType, {
             saveState: 'error',
-            errorMsg: body.error ?? 'Failed to save. Try again.',
+            errorMsg: body.error ?? 'Could not save. Try again.',
           });
           return;
         }

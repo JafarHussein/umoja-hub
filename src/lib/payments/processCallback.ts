@@ -116,7 +116,7 @@ export async function processStkCallback(
 
     sendSMS(
       env('ADMIN_PHONE_NUMBER'),
-      `UmojaHub: Payment FAILED. Order ${order.orderReferenceId} (${order.cropName}, KES ${order.totalAmountKES}). Result code: ${ResultCode}.`
+      `UmojaHub: Payment FAILED. Order ${order.orderReferenceId} (${order.cropName}, KSh ${order.totalAmountKES}). Result code: ${ResultCode}.`
     ).catch(() => {});
 
     await recordEvent({
@@ -242,13 +242,13 @@ export async function processStkCallback(
       if (buyer) {
         await sendSMS(
           buyer.phoneNumber,
-          `UmojaHub: Payment confirmed! Your KES ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`
+          `UmojaHub: Payment confirmed! Your KSh ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`
         );
         void notify({
           userId: order.buyerId,
           type: NotificationType.ORDER_UPDATE,
           title: 'Payment confirmed — protected in escrow',
-          body: `Your KES ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`,
+          body: `Your KSh ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`,
           relatedEntity: { kind: 'Order', id: order._id },
         });
       }

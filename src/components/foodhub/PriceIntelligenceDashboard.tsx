@@ -103,7 +103,7 @@ export default function PriceIntelligenceDashboard() {
         setTimeout(() => setAlertSuccess(false), 3000);
       } else {
         const err = await res.json() as { error: string };
-        setAlertError(err.error ?? 'Failed to create alert');
+        setAlertError(err.error ?? 'Could not create the alert');
       }
     } catch {
       setAlertError('Connection failed. Please try again.');
@@ -246,7 +246,7 @@ export default function PriceIntelligenceDashboard() {
             </Select>
             <Input
               type="number"
-              label="Target Price (KES)"
+              label="Target Price (KSh)"
               min="1"
               step="0.01"
               value={alertForm.targetPricePerUnit}

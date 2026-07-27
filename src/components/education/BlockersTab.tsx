@@ -61,7 +61,7 @@ export function BlockersTab({
       const body = (await res.json()) as { data?: IBlockerEntry; error?: string };
 
       if (!res.ok) {
-        setErrorMsg(body.error ?? 'Failed to log blocker. Try again.');
+        setErrorMsg(body.error ?? 'Could not save the blocker. Try again.');
         setFormState('error');
         return;
       }

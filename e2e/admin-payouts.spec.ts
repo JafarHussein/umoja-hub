@@ -41,7 +41,7 @@ test('payout queue: render, reject validation, intercepted decision', async ({ p
 
   // Seeded REQUESTED row — farmer identity + amount + decision actions.
   await expect(page.getByText('E2E Unverified Farmer')).toBeVisible();
-  await expect(page.getByText('KES 2,500')).toBeVisible();
+  await expect(page.getByText('KSh 2,500')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
 
   // Reject requires a reason — confirming with an empty note is blocked

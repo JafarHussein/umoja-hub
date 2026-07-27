@@ -71,7 +71,7 @@ export default function MentorPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load mentor</p>
+        <p className="app-title mb-2 text-app-ink">Could not load your mentor</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button
           variant="secondary"

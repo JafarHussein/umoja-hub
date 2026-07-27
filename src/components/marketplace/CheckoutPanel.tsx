@@ -161,7 +161,7 @@ export function CheckoutPanel({
           setState('inventory_unavailable');
           return;
         }
-        setErrorMessage(body.error ?? 'Failed to place order. Please try again.');
+        setErrorMessage(body.error ?? 'Could not place your order. Please try again.');
         setState('error');
         return;
       }

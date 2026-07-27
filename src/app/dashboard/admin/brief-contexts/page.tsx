@@ -124,7 +124,7 @@ export default function BriefContextsPage(): React.ReactElement {
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
         setPublishError(
-          body.error ?? 'Failed to publish. Check the JSON matches the required schema.'
+          body.error ?? 'Could not publish. Check the JSON matches the required schema.'
         );
         setPublishState('idle');
         return;
@@ -148,7 +148,7 @@ export default function BriefContextsPage(): React.ReactElement {
   if (pageState === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Failed to load brief context library</p>
+        <p className="app-title mb-2 text-app-ink">Could not load the brief context library</p>
         <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
         <Button
           variant="secondary"

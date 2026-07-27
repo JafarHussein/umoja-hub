@@ -62,7 +62,7 @@ const STATUS_TABS: WithdrawalRequestStatus[] = [
 ];
 
 function formatKES(amount: number): string {
-  return `KES ${amount.toLocaleString()}`;
+  return `KSh ${amount.toLocaleString()}`;
 }
 
 function formatDate(iso?: string | null): string {

@@ -69,7 +69,7 @@ const STATUS_TABS: MediationRequestStatus[] = [
 ];
 
 function formatKES(amount?: number): string {
-  return amount != null ? `KES ${amount.toLocaleString()}` : '—';
+  return amount != null ? `KSh ${amount.toLocaleString()}` : '—';
 }
 
 function formatDate(iso: string): string {

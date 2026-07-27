@@ -397,7 +397,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
           </p>
           <Input
             type="number"
-            label="Amount (KES)"
+            label="Amount (KSh)"
             inputMode="numeric"
             min={1}
             max={availableKES}
@@ -405,7 +405,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
             onChange={(e) => setAmountInput(e.target.value)}
             error={formError ?? undefined}
             hint={`Available: ${formatKES(availableKES)}`}
-            aria-label="Payout amount in KES"
+            aria-label="Payout amount in KSh"
           />
         </div>
       </Modal>

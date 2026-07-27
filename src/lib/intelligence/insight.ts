@@ -76,7 +76,7 @@ export function buildInsight(input: InsightInput): string {
   }
 
   const demandSentence = `${capitalize(crop)} demand is ${DEMAND_WORD[demand]} in ${county} and prices are ${trendClause(trend)}.`;
-  const rangeSentence = ` Listings around KES ${range.low}–${range.high}/${unit.toLowerCase()} are completing fastest.`;
+  const rangeSentence = ` Produce priced around KSh ${range.low}–${range.high}/${unit.toLowerCase()} is selling fastest.`;
 
   return `${demandSentence}${rangeSentence}${seasonClause(crop, season)}${scopeClause(county, geoScope)}`.trim();
 }

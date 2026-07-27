@@ -10,7 +10,7 @@ import type { CooperativeInsights } from '@/lib/intelligence/cooperativeInsights
 export type { CooperativeInsights };
 
 function formatKES(value: number | null): string {
-  return value !== null ? `KES ${value.toLocaleString()}` : '—';
+  return value !== null ? `KSh ${value.toLocaleString()}` : '—';
 }
 
 function Trend({ direction }: { direction: string }): React.ReactElement {

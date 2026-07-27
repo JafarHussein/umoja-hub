@@ -103,7 +103,7 @@ export default function NewProjectPage(): React.ReactElement {
       const body = (await res.json()) as { data?: IEngagementResult; error?: string };
 
       if (!res.ok) {
-        setErrorMessage(body.error ?? 'Failed to generate brief. Please try again.');
+        setErrorMessage(body.error ?? 'Could not generate the brief. Please try again.');
         setFormState('error');
         return;
       }

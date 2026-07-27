@@ -279,7 +279,7 @@ export function CreateListingForm({ isOpen, onClose }: ICreateListingFormProps):
 
         {/* Price */}
         <Input
-          label="Price per unit (KES)"
+          label="Price per unit (KSh)"
           type="number"
           placeholder="65"
           value={form.currentPricePerUnit}
