@@ -16,6 +16,7 @@ const NOW = new Date('2026-06-22T00:00:00Z');
 
 function point(overrides: Partial<EnginePoint> & { pricePerUnit: number; county: string }): EnginePoint {
   return {
+    unit: 'KG',
     source: PriceHistorySource.ORDER_COMPLETED,
     recordedAt: new Date(NOW.getTime() - 3 * 86400000),
     tier: FarmerTrustTier.TRUSTED,
@@ -125,6 +126,78 @@ describe('assembleRecommendation', () => {
 
     expect(rec.basis.geoScope).toBe('NATIONAL');
     expect(rec.confidence).toBeLessThanOrEqual(60);
+  });
+
+  // Regression: PriceHistory holds maize both per 90kg BAG (~KES 3,600) and per
+  // KG (~KES 40). The engine used to query by cropName + date only and echo the
+  // requested unit back without ever filtering on it, so both clusters entered
+  // the same weighted median. Conversion is NOT the fix — a Kenyan "bag" has no
+  // single legal weight (see src/lib/taxonomy/units.ts) — filtering is.
+  it('never mixes units — a KG request ignores BAG points for the same crop', () => {
+    const points: EnginePoint[] = [
+      ...[38, 40, 42].map((p) => point({ pricePerUnit: p, county: 'Uasin Gishu', unit: 'KG' })),
+      ...[3500, 3600, 3700, 3800].map((p) =>
+        point({ pricePerUnit: p, county: 'Uasin Gishu', unit: 'BAG' })
+      ),
+    ];
+
+    const rec = assembleRecommendation({
+      crop: 'maize',
+      county: 'Uasin Gishu',
+      unit: 'KG',
+      points,
+      demandInputs: ZERO_DEMAND,
+      now: NOW,
+    });
+
+    expect(rec.basis.dataPointCount).toBe(3);
+    expect(rec.recommendedPricePerUnit as number).toBeLessThan(100);
+    expect((rec.range as { low: number; high: number }).high).toBeLessThan(100);
+    expect(rec.nationalAveragePerUnit as number).toBeLessThan(100);
+  });
+
+  it('never mixes units — a BAG request ignores KG points for the same crop', () => {
+    const points: EnginePoint[] = [
+      ...[38, 40, 42, 44].map((p) => point({ pricePerUnit: p, county: 'Uasin Gishu', unit: 'KG' })),
+      ...[3500, 3600, 3700].map((p) =>
+        point({ pricePerUnit: p, county: 'Uasin Gishu', unit: 'BAG' })
+      ),
+    ];
+
+    const rec = assembleRecommendation({
+      crop: 'maize',
+      county: 'Uasin Gishu',
+      unit: 'BAG',
+      points,
+      demandInputs: ZERO_DEMAND,
+      now: NOW,
+    });
+
+    expect(rec.basis.dataPointCount).toBe(3);
+    expect(rec.recommendedPricePerUnit as number).toBeGreaterThan(1000);
+  });
+
+  it('reports no recommendation when the requested unit has too few points', () => {
+    const points: EnginePoint[] = [
+      point({ pricePerUnit: 40, county: 'Uasin Gishu', unit: 'KG' }),
+      ...[3500, 3600, 3700].map((p) =>
+        point({ pricePerUnit: p, county: 'Uasin Gishu', unit: 'BAG' })
+      ),
+    ];
+
+    const rec = assembleRecommendation({
+      crop: 'maize',
+      county: 'Uasin Gishu',
+      unit: 'KG',
+      points,
+      demandInputs: ZERO_DEMAND,
+      now: NOW,
+    });
+
+    // One KG point is below MIN_POINTS, and BAG points must not pad it out.
+    expect(rec.recommendedPricePerUnit).toBeNull();
+    expect(rec.confidence).toBe(0);
+    expect(rec.insight).toMatch(/Not enough/i);
   });
 
   it('down-weights disputed points out of the headline', () => {

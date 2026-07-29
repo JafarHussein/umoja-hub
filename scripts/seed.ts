@@ -108,6 +108,60 @@ function docDate(daysAgo: number): Date {
   return d;
 }
 
+interface IPriceSeriesOptions {
+  cropName: string;
+  county: string;
+  unit: ListingUnit;
+  farmerId: mongoose.Types.ObjectId;
+  /** Price at the most recent point in the series. */
+  endPrice: number;
+  /** Percent change across the whole span; positive means rising. */
+  driftPct: number;
+  /** Number of observations. Must clear MIN_POINTS (3) after unit filtering. */
+  points: number;
+  /** Age in days of the oldest observation. */
+  spanDays: number;
+  /** Attached to the most recent ORDER_COMPLETED point, when supplied. */
+  orderId?: mongoose.Types.ObjectId;
+}
+
+/**
+ * Builds a back-dated price series for one crop/county/unit.
+ *
+ * Dates are relative to the seed run, not absolute. The Price Intelligence
+ * Engine weights points on a 21-day half-life inside a 90-day window, so the
+ * previous hard-coded 2024 timestamps put every row outside the window and the
+ * recommendation panel rendered its empty state on a freshly seeded database.
+ *
+ * Sources alternate so the engine sees both aspirational asking prices and
+ * settled sales — the split that drives its confidence score.
+ */
+function priceSeries(options: IPriceSeriesOptions): Record<string, unknown>[] {
+  const { cropName, county, unit, farmerId, endPrice, driftPct, points, spanDays } = options;
+  const startPrice = endPrice / (1 + driftPct / 100);
+
+  return Array.from({ length: points }, (_, i) => {
+    const progress = points === 1 ? 1 : i / (points - 1);
+    const daysAgo = Math.round(spanDays * (1 - progress));
+    // Alternating jitter keeps the series from looking synthetic without
+    // introducing outliers that would distort the weighted median.
+    const jitter = i % 2 === 0 ? 1 : -1;
+    const price = Math.round(startPrice + (endPrice - startPrice) * progress + jitter * endPrice * 0.01);
+    const isSale = i % 2 === 1;
+
+    return {
+      cropName,
+      county,
+      pricePerUnit: price,
+      unit,
+      source: isSale ? PriceHistorySource.ORDER_COMPLETED : PriceHistorySource.LISTING_CREATED,
+      farmerId,
+      ...(isSale && i === points - 1 && options.orderId ? { orderId: options.orderId } : {}),
+      recordedAt: docDate(daysAgo),
+    };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -2015,71 +2069,54 @@ If deployed, this could improve income predictability for Nairobi's estimated 30
   log('Inserted 3 Orders and 2 Ratings.');
 
   // -------------------------------------------------------------------------
-  // 15. PriceHistory (2 records per major crop — creates visible chart data)
+  // 15. PriceHistory — back-dated series the Price Intelligence Engine can use
+  //
+  // Each series clears MIN_POINTS (3) on its own crop + county + unit, since the
+  // engine compares like with like and never mixes units. Tomatoes rise, maize
+  // is roughly flat and potatoes fall, so the trend classifier has all three
+  // directions to show.
   // -------------------------------------------------------------------------
 
   log('Inserting PriceHistory records...');
 
-  await PriceHistory.insertMany([
-    {
+  const priceHistoryDocs = [
+    ...priceSeries({
       cropName: 'Tomatoes',
       county: 'Kirinyaga',
-      pricePerUnit: 48,
       unit: ListingUnit.KG,
-      source: PriceHistorySource.LISTING_CREATED,
-      farmerId: wanjiku._id,
-      recordedAt: new Date('2024-01-15T08:00:00Z'),
-    },
-    {
-      cropName: 'Tomatoes',
-      county: 'Kirinyaga',
-      pricePerUnit: 55,
-      unit: ListingUnit.KG,
-      source: PriceHistorySource.ORDER_COMPLETED,
-      farmerId: wanjiku._id,
-      orderId: insertedOrders[0]!._id,
-      recordedAt: new Date('2024-02-10T14:00:00Z'),
-    },
-    {
+      farmerId: wanjiku._id as mongoose.Types.ObjectId,
+      endPrice: 80,
+      driftPct: 18,
+      points: 12,
+      spanDays: 55,
+      orderId: insertedOrders[0]!._id as mongoose.Types.ObjectId,
+    }),
+    ...priceSeries({
       cropName: 'Maize',
       county: 'Uasin Gishu',
-      pricePerUnit: 3600,
       unit: ListingUnit.BAG,
-      source: PriceHistorySource.LISTING_CREATED,
-      farmerId: kipchoge._id,
-      recordedAt: new Date('2024-01-20T08:00:00Z'),
-    },
-    {
-      cropName: 'Maize',
-      county: 'Uasin Gishu',
-      pricePerUnit: 3800,
-      unit: ListingUnit.BAG,
-      source: PriceHistorySource.ORDER_COMPLETED,
-      farmerId: kipchoge._id,
-      orderId: insertedOrders[1]!._id,
-      recordedAt: new Date('2024-02-13T14:00:00Z'),
-    },
-    {
+      farmerId: kipchoge._id as mongoose.Types.ObjectId,
+      endPrice: 3800,
+      driftPct: 3,
+      points: 10,
+      spanDays: 70,
+      orderId: insertedOrders[1]!._id as mongoose.Types.ObjectId,
+    }),
+    ...priceSeries({
       cropName: 'Potatoes',
       county: 'Nyandarua',
-      pricePerUnit: 2600,
       unit: ListingUnit.BAG,
-      source: PriceHistorySource.LISTING_CREATED,
-      farmerId: njoroge._id,
-      recordedAt: new Date('2024-01-18T08:00:00Z'),
-    },
-    {
-      cropName: 'Potatoes',
-      county: 'Nyandarua',
-      pricePerUnit: 2800,
-      unit: ListingUnit.BAG,
-      source: PriceHistorySource.LISTING_CREATED,
-      farmerId: njoroge._id,
-      recordedAt: new Date('2024-02-01T08:00:00Z'),
-    },
-  ]);
+      farmerId: njoroge._id as mongoose.Types.ObjectId,
+      endPrice: 2400,
+      driftPct: -12,
+      points: 10,
+      spanDays: 60,
+    }),
+  ];
 
-  log('Inserted 6 PriceHistory records.');
+  await PriceHistory.insertMany(priceHistoryDocs);
+
+  log(`Inserted ${priceHistoryDocs.length} PriceHistory records.`);
 
   // -------------------------------------------------------------------------
   // 16. Orders (moved — inserted above with Ratings)

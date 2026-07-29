@@ -9,7 +9,12 @@ import { sendSMS } from '@/lib/integrations/smsService';
 import { logger } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
 import { dispatchDuePayments } from '@/lib/payments/dispatcher';
+import { cropNamePattern, matchesCrop, resolveCrop } from '@/lib/taxonomy/crops';
 import { PRICE_ALERT_COOLDOWN_HOURS, OrderPaymentStatus, ListingStatus } from '@/types';
+
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // ---------------------------------------------------------------------------
 // POST /api/cron/price-alert-check — Check active price alerts (every 15 min)
@@ -54,24 +59,36 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       continue;
     }
 
-    // Compute average UmojaHub price from last 7 days
-    const [agg] = await PriceHistory.aggregate([
-      {
-        $match: {
-          cropName: alert.cropName,
-          county: alert.county,
-          recordedAt: { $gte: sevenDaysAgo },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          avgPrice: { $avg: '$pricePerUnit' },
-        },
-      },
-    ]);
+    // `unit` is required by the PriceAlert schema, so an alert without one is
+    // malformed. Skip it rather than averaging across units — and skip rather
+    // than throw, so one bad row cannot kill the rest of the batch.
+    if (!alert.unit) {
+      logger.warn('cron/price-alert-check', 'Alert has no unit; skipping', {
+        alertId: String(alert._id),
+        cropName: alert.cropName,
+      });
+      continue;
+    }
 
-    const currentAvg = agg?.avgPrice ?? null;
+    // Average UmojaHub price over the last 7 days for the alert's own crop AND
+    // unit. Both matter: the crop name previously had to match exactly (so an
+    // alert on "Milk" saw none of the engine's "dairy" data), and with no unit
+    // filter a KES 3,600/BAG maize row was averaged against KES 40/KG rows
+    // before being compared to a target quoted in one of them.
+    const alertCropId = resolveCrop(alert.cropName);
+    const rows = (
+      await PriceHistory.find({
+        cropName: alertCropId ? cropNamePattern(alertCropId) : alert.cropName,
+        county: alert.county,
+        unit: new RegExp('^' + escapeRegex(alert.unit.trim()) + '$', 'i'),
+        recordedAt: { $gte: sevenDaysAgo },
+      })
+        .select('cropName pricePerUnit')
+        .lean()
+    ).filter((p) => (alertCropId ? matchesCrop(p.cropName, alertCropId) : true));
+
+    const currentAvg =
+      rows.length > 0 ? rows.reduce((sum, p) => sum + p.pricePerUnit, 0) / rows.length : null;
 
     if (currentAvg !== null && currentAvg >= alert.targetPricePerUnit) {
       // Trigger: send notification
@@ -165,4 +182,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json({ data: { checked, triggered, simDelivered, reconciled } });
+}
+
+// ---------------------------------------------------------------------------
+// Vercel Cron invokes scheduled paths with GET. Only POST was exported, so the
+// entries in vercel.json silently never ran. Both verbs execute the same job
+// behind the same Bearer CRON_SECRET check.
+// ---------------------------------------------------------------------------
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  return POST(req);
 }

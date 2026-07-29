@@ -13,6 +13,9 @@ const priceHistorySchema = new Schema({
 });
 
 priceHistorySchema.index({ cropName: 1, county: 1, recordedAt: -1 });
+// The Price Intelligence Engine windows by crop + unit + date; prices in
+// different units are never comparable, so unit is part of every lookup.
+priceHistorySchema.index({ cropName: 1, unit: 1, recordedAt: -1 });
 priceHistorySchema.index({ source: 1 });
 priceHistorySchema.index({ farmerId: 1 });
 

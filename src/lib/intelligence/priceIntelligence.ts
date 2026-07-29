@@ -25,7 +25,6 @@ import {
   weightedMedian,
   weightedPercentile,
   weightedMean,
-  mean,
   roundKES,
 } from './weighting';
 import type { WeightedValue } from './weighting';
@@ -36,6 +35,8 @@ import type { DemandInputs, DemandResult } from './demand';
 import { getSeasonPhase, normalizeCrop } from './seasonality';
 import type { SeasonPhase } from './seasonality';
 import { buildInsight } from './insight';
+import { cropNamePattern, matchesCrop, resolveCrop } from '@/lib/taxonomy/crops';
+import { cacheKey, cached } from '@/lib/cache';
 
 /** Span used for the recommendation statistic (weighted median + range). */
 export const RECO_WINDOW_DAYS = 90;
@@ -72,11 +73,31 @@ export interface PriceRecommendation {
 /** A price observation enriched with everything weighting needs. */
 export interface EnginePoint {
   pricePerUnit: number;
+  /**
+   * The unit the price was quoted in. Only points matching the caller's unit are
+   * comparable — see `sameUnit` below for why we filter rather than convert.
+   */
+  unit: string;
   county: string;
   source: string;
   recordedAt: Date;
   tier: FarmerTrustTier | null;
   isDisputed: boolean;
+}
+
+/**
+ * Unit equality, tolerant of casing and padding since `PriceHistory.unit` is a
+ * plain String rather than an enum at the schema level.
+ *
+ * We compare like with like instead of converting to a common basis. A Kenyan
+ * "bag" has no single weight — maize trades at 90 kg/bag while the Crops (Food
+ * Crops) Regulations 2019 cap a package at 50 kg, and potatoes are capped at
+ * 50 kg while 110 kg extended bags persist. Converting with the wrong constant
+ * would introduce a ~44% error, which is worse than the mixed-unit defect this
+ * filtering fixes. See src/lib/taxonomy/units.ts for the full reasoning.
+ */
+function sameUnit(a: string, b: string): boolean {
+  return a.trim().toUpperCase() === b.trim().toUpperCase();
 }
 
 export interface AssembleInput {
@@ -113,7 +134,8 @@ export function assembleRecommendation(input: AssembleInput): PriceRecommendatio
   const { county, unit } = input;
 
   const windowCutoff = now.getTime() - RECO_WINDOW_DAYS * DAY_MS;
-  const scoped = input.points
+  const comparable = input.points.filter((p) => sameUnit(p.unit, unit));
+  const scoped = comparable
     .map((p) => ({ ...p, scope: scopeOf(county, p.county) }))
     .filter((p) => p.recordedAt.getTime() >= windowCutoff);
 
@@ -153,7 +175,24 @@ export function assembleRecommendation(input: AssembleInput): PriceRecommendatio
       ? { low: roundKES(p25), high: roundKES(p75) }
       : null;
   const regionalAverage = hasEnough ? weightedMean(weighted) : null;
-  const nationalAverage = mean(scoped.map((p) => p.pricePerUnit));
+
+  // The national average was the one unweighted figure on the card, so a stale
+  // asking price from an untrusted farmer counted as much as yesterday's settled
+  // sale. It is now weighted by the same data-quality terms as everything else
+  // — recency, source, trust tier and dispute status — but with the geographic
+  // term held neutral: distance from the farmer governs how RELEVANT a point is
+  // to a local estimate, not how true it is of the country as a whole.
+  const nationalWeighted: WeightedValue[] = scoped.map((p) => ({
+    value: p.pricePerUnit,
+    weight: pointWeight({
+      ageDays: (now.getTime() - p.recordedAt.getTime()) / DAY_MS,
+      source: p.source,
+      tier: p.tier,
+      scope: 'COUNTY',
+      isDisputed: p.isDisputed,
+    }),
+  }));
+  const nationalAverage = weightedMean(nationalWeighted);
 
   const recommendedRounded = recommended !== null ? roundKES(recommended) : null;
   const expectedEarnings =
@@ -161,8 +200,10 @@ export function assembleRecommendation(input: AssembleInput): PriceRecommendatio
       ? roundKES(recommendedRounded * input.quantity)
       : null;
 
-  // Trend uses the full lookback (not just the 90-day window) for the chosen tier.
-  const trendPoints: TrendPoint[] = input.points
+  // Trend uses the full lookback (not just the 90-day window) for the chosen
+  // tier — still restricted to the requested unit, or it would compare a BAG
+  // series against a KG one and report a meaningless percentage change.
+  const trendPoints: TrendPoint[] = comparable
     .filter((p) => tierMatch(scopeOf(county, p.county)))
     .map((p) => ({ pricePerUnit: p.pricePerUnit, recordedAt: p.recordedAt }));
   const trend = classifyTrend(trendPoints, now);
@@ -239,11 +280,22 @@ interface ComposeInput {
 }
 
 /**
- * Reads the platform's existing collections and produces a recommendation.
- * Degrades gracefully: any failure returns an empty (null-price, zero-confidence)
- * recommendation rather than throwing.
+ * The market view moves slowly relative to how often callers ask for it — the
+ * listing form fires on every debounced keystroke, and cooperative insights ask
+ * for up to eight crops in a row — so a few minutes of staleness is invisible
+ * while removing almost all of the query load.
  */
-export async function composeRecommendation(input: ComposeInput): Promise<PriceRecommendation> {
+const RECOMMENDATION_TTL_SECONDS = 600;
+
+/**
+ * Reads the platform's existing collections and produces a recommendation for a
+ * crop/county/unit, ignoring quantity. Wrapped by `composeRecommendation`, which
+ * adds caching and applies the caller's quantity.
+ *
+ * Degrades gracefully: any failure returns an empty (null-price,
+ * zero-confidence) recommendation rather than throwing.
+ */
+async function computeRecommendation(input: ComposeInput): Promise<PriceRecommendation> {
   const now = new Date();
   const emptyDemand: DemandInputs = {
     completedOrders30d: 0,
@@ -260,15 +312,28 @@ export async function composeRecommendation(input: ComposeInput): Promise<PriceR
     const { default: Order } = await import('@/lib/models/Order.model');
     const { default: MarketplaceListing } = await import('@/lib/models/MarketplaceListing.model');
 
-    const normCrop = normalizeCrop(input.crop);
-    const cropMatch = new RegExp('^' + escapeRegex(normCrop), 'i');
+    // Crop identity comes from the canonical taxonomy so the engine, /api/prices
+    // and the price-alert cron all agree on what "maize" matches. Unregistered
+    // crops keep the previous anchored-prefix behaviour rather than returning
+    // nothing.
+    const cropId = resolveCrop(input.crop);
+    const cropMatch = cropId
+      ? cropNamePattern(cropId)
+      : new RegExp('^' + escapeRegex(normalizeCrop(input.crop)), 'i');
     const lookbackCutoff = new Date(now.getTime() - TREND_LOOKBACK_DAYS * DAY_MS);
+
+    // Filter the unit at the database rather than only in memory: the 3,000-row
+    // cap is shared across every unit for a crop, so BAG rows would otherwise
+    // crowd out the KG rows the caller actually asked for. Anchored and
+    // case-insensitive because `unit` is a plain String on the schema.
+    const unitMatch = new RegExp('^' + escapeRegex(input.unit.trim()) + '$', 'i');
 
     const rawPoints = await PriceHistory.find({
       cropName: cropMatch,
+      unit: unitMatch,
       recordedAt: { $gte: lookbackCutoff },
     })
-      .select('pricePerUnit county source recordedAt farmerId orderId')
+      .select('cropName pricePerUnit unit county source recordedAt farmerId orderId')
       .sort({ recordedAt: -1 })
       .limit(3000)
       .lean();
@@ -294,26 +359,33 @@ export async function composeRecommendation(input: ComposeInput): Promise<PriceR
       .lean();
     const disputedSet = new Set(disputedOrders.map((o) => String(o._id)));
 
-    const points: EnginePoint[] = rawPoints.map((p) => ({
-      pricePerUnit: p.pricePerUnit,
-      county: p.county,
-      source: p.source,
-      recordedAt: new Date(p.recordedAt),
-      tier: tierMap.get(String(p.farmerId)) ?? null,
-      isDisputed: p.orderId ? disputedSet.has(String(p.orderId)) : false,
-    }));
+    const points: EnginePoint[] = rawPoints
+      // `cropNamePattern` is a superset match — "beans" also hits "French Beans".
+      // Narrow it here, where alias precedence can be applied properly.
+      .filter((p) => (cropId ? matchesCrop(p.cropName, cropId) : true))
+      .map((p) => ({
+        pricePerUnit: p.pricePerUnit,
+        unit: p.unit,
+        county: p.county,
+        source: p.source,
+        recordedAt: new Date(p.recordedAt),
+        tier: tierMap.get(String(p.farmerId)) ?? null,
+        isDisputed: p.orderId ? disputedSet.has(String(p.orderId)) : false,
+      }));
 
     // Demand metrics, scoped to crop + county. Best-effort; zeros on any failure.
     let demandInputs = emptyDemand;
     try {
       const recentListingCutoff = new Date(now.getTime() - RECO_WINDOW_DAYS * DAY_MS);
-      const listings = await MarketplaceListing.find({
-        cropName: cropMatch,
-        pickupCounty: input.county,
-        createdAt: { $gte: recentListingCutoff },
-      })
-        .select('_id quantityAvailable viewCount listingStatus')
-        .lean();
+      const listings = (
+        await MarketplaceListing.find({
+          cropName: cropMatch,
+          pickupCounty: input.county,
+          createdAt: { $gte: recentListingCutoff },
+        })
+          .select('_id cropName quantityAvailable viewCount listingStatus')
+          .lean()
+      ).filter((l) => (cropId ? matchesCrop(l.cropName, cropId) : true));
 
       const activeListings = listings.filter(
         (l) => l.listingStatus === ListingStatus.AVAILABLE
@@ -368,7 +440,7 @@ export async function composeRecommendation(input: ComposeInput): Promise<PriceR
       now,
     });
   } catch (error) {
-    logger.error('priceIntelligence', 'composeRecommendation failed; returning empty', {
+    logger.error('priceIntelligence', 'computeRecommendation failed; returning empty', {
       crop: input.crop,
       county: input.county,
       error,
@@ -383,4 +455,42 @@ export async function composeRecommendation(input: ComposeInput): Promise<PriceR
       now,
     });
   }
+}
+
+/**
+ * Cached entry point. Every consumer — the farmer listing form, the standalone
+ * prices page, buyer fairness, cooperative insights and the AI assistant — goes
+ * through here.
+ *
+ * Quantity is deliberately NOT part of the cache key: it only scales
+ * `expectedEarningsKES`, a plain multiple of the recommended price, so including
+ * it would mint a fresh entry on every keystroke in the quantity field and
+ * defeat the cache. The market view is computed once and the caller's quantity
+ * applied to it afterwards.
+ */
+export async function composeRecommendation(input: ComposeInput): Promise<PriceRecommendation> {
+  const recommendation = await cached(
+    cacheKey('price-reco', input.crop, input.county, input.unit),
+    RECOMMENDATION_TTL_SECONDS,
+    () =>
+      computeRecommendation({
+        crop: input.crop,
+        county: input.county,
+        unit: input.unit,
+      }),
+    {
+      // A zero-confidence result is indistinguishable from one produced while
+      // the database was unreachable. Pinning that for ten minutes would turn a
+      // blip into an outage, so only evidenced recommendations are stored.
+      shouldCache: (result) => result.confidence > 0,
+    }
+  );
+
+  if (input.quantity && input.quantity > 0 && recommendation.recommendedPricePerUnit !== null) {
+    return {
+      ...recommendation,
+      expectedEarningsKES: roundKES(recommendation.recommendedPricePerUnit * input.quantity),
+    };
+  }
+  return recommendation;
 }

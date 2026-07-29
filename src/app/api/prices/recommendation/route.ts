@@ -41,6 +41,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const { cropName, county, unit, quantity } = parsed.data;
 
+    // composeRecommendation is itself cached (see priceIntelligence.ts), so this
+    // route stays a thin validate-and-delegate.
     const recommendation = await composeRecommendation({
       crop: cropName,
       county,
