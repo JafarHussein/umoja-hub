@@ -31,12 +31,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const weekOf = new Date();
   weekOf.setUTCHours(0, 0, 0, 0);
 
-  // Aggregate PriceHistory by crop + county for last 7 days
+  // Aggregate PriceHistory by crop + county + UNIT for last 7 days.
+  //
+  // D17 — `unit` was not in this group key, so every statistic below was computed
+  // across a bimodal set: maize trades at ~KES 40/KG and ~KES 3,600/BAG, and
+  // `lowestPrice`/`highestPrice` were therefore guaranteed to come from different
+  // units. This is D1, in the cron layer, surviving the fix to the engine.
   const aggregations = await PriceHistory.aggregate([
     { $match: { recordedAt: { $gte: sevenDaysAgo } } },
     {
       $group: {
-        _id: { cropName: '$cropName', county: '$county' },
+        _id: { cropName: '$cropName', county: '$county', unit: '$unit' },
         averageListingPrice: {
           $avg: { $cond: [{ $eq: ['$source', 'LISTING_CREATED'] }, '$pricePerUnit', null] },
         },
@@ -56,19 +61,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let updated = 0;
 
   for (const agg of aggregations) {
-    const { cropName, county } = agg._id;
+    const { cropName, county, unit } = agg._id;
     const avgPrice = agg.averageTransactionPrice ?? agg.averageListingPrice;
-    const middlemanBenchmark = getMiddlemanBenchmark(cropName);
+    // Null for any unit the benchmark table is not authored in — it is a per-kg
+    // table, and no bag figure is derived from it. See getMiddlemanBenchmark.
+    const middlemanBenchmark = getMiddlemanBenchmark(cropName, unit);
     const platformPremium =
       avgPrice !== null && middlemanBenchmark !== null
         ? calculatePlatformPremium(avgPrice, middlemanBenchmark)
         : null;
 
+    // `unit` MUST be in this filter. Without it the KG and BAG aggregations for
+    // the same crop, county and week resolve to one document and clobber each
+    // other, leaving whichever unit the pipeline happened to emit last.
     await MarketInsight.findOneAndUpdate(
-      { cropName, county, weekOf } as object,
+      { cropName, county, unit, weekOf } as object,
       {
         cropName,
         county,
+        unit,
         weekOf,
         pricing: {
           averageListingPrice: agg.averageListingPrice,
@@ -88,7 +99,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   logger.info('cron/market-insight', 'Market insight update complete', {
     requestId,
-    cropCountyCombinationsUpdated: updated,
+    cropCountyUnitCombinationsUpdated: updated,
     weekOf: weekOf.toISOString(),
   });
 

@@ -144,6 +144,16 @@ D11, D12 and D13 are **closed** (2026-08-01), each shipping with its tests: weig
 
 D4's remaining half was presentational (`09` §5.3) and carries no test: the assertion "these two blocks do not read as rival price systems" is not one a test runner can make. It was verified in the browser instead, which is the honest instrument for it.
 
+**D17 closed 2026-08-01, and it is the strongest argument in this document.** It was found by *looking at the rendered page* while all 927 tests were green — `MarketInsight` carried no `unit`, so the seeded Nairobi maize benchmark of 3,400 (a 90 kg BAG price) rendered against a KG selector as "Middlemen are benchmarked at KSh 3400/kg". Nothing in the suite asserted what a farmer reads, so nothing failed.
+
+Its regression corpus is now the largest of any single defect here, because the defect had three independent parts:
+
+- `priceDataService.test.ts` — the per-kg table returns null for BAG/CRATE/LITRE/PIECE, and **explicitly asserts that 35 × 90 = 3,150 never appears**, naming the specific temptation rather than the general property.
+- `cron/market-insight/__tests__/route.test.ts` — the aggregation groups by unit, and the two upsert filters for one crop/county/week **differ from each other**. That second assertion is the one worth keeping: a shared upsert key fails silently, leaving whichever unit the pipeline emitted last, with no error anywhere to notice.
+- Three D17 cases on the `/api/prices` route — the lookup is unit-filtered in both directions, and a missing record on the requested basis yields a null benchmark rather than a figure on an unknown one.
+
+**The lesson for §3 generally:** every test in this corpus asserts something about a value. None of them asserted anything about a sentence. A defect that lives entirely in the gap between a correct number and a false label is invisible to all of them, and the only instrument that catches it is a person looking at the screen.
+
 **Name the test after the defect.** `'D1 — a KG request never draws on BAG rows'` survives refactoring in a way that `'filters units correctly'` does not, because six months from now the second one looks like a redundant test of an obvious property and gets deleted.
 
 ---

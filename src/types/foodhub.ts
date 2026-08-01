@@ -269,6 +269,8 @@ export interface IMarketInsight {
   _id: string;
   cropName: string;
   county: string;
+  /** The unit every figure under `pricing` is quoted in (D17). Part of the key. */
+  unit: string;
   weekOf: Date;
   pricing: {
     averageListingPrice: number;
