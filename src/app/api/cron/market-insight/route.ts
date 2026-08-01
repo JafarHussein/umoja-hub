@@ -96,3 +96,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     data: { updated, weekOf: weekOf.toISOString() },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Vercel Cron invokes scheduled paths with GET. Only POST was exported, so the
+// entries in vercel.json silently never ran. Both verbs execute the same job
+// behind the same Bearer CRON_SECRET check.
+// ---------------------------------------------------------------------------
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  return POST(req);
+}

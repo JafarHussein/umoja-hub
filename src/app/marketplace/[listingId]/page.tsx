@@ -158,12 +158,7 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
             </div>
 
             {/* Price fairness (Price Intelligence) */}
-            <PriceFairness
-              cropName={listing.cropName}
-              county={listing.pickupCounty}
-              unit={listing.unit}
-              price={listing.currentPricePerUnit}
-            />
+            <PriceFairness listingId={listing._id} county={listing.pickupCounty} />
 
             {/* Farmer trust panel */}
             <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">

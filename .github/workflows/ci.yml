@@ -103,3 +103,62 @@ jobs:
           NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test
           CRON_SECRET: test-cron-secret
           WEBHOOK_SECRET: test-webhook-secret
+
+  # Integration tests (`12_TESTING_STRATEGY.md` §3.2) exercise the engine's
+  # database layer against a real MongoDB. They are excluded from `npm test`,
+  # so without this job they would never run — and D1 lived precisely in the
+  # code they cover.
+  #
+  # A separate job, not a step in `quality`: it needs a service container the
+  # other steps have no use for, and running in parallel keeps the fast gate
+  # fast. `INTEGRATION_MONGODB_URI` points the suite at that container instead
+  # of `mongodb-memory-server`, so no ~400 MB binary is downloaded on a runner.
+  integration:
+    name: Integration (MongoDB)
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          INTEGRATION_MONGODB_URI: mongodb://localhost:27017/umojahub-integration
+          MONGODB_URI: mongodb://localhost:27017/umojahub-integration
+          NEXTAUTH_SECRET: test-secret-for-ci-only
+          NEXTAUTH_URL: http://localhost:3000
+          GROQ_API_KEY: test
+          OPENAI_API_KEY: test
+          MPESA_CONSUMER_KEY: test
+          MPESA_CONSUMER_SECRET: test
+          MPESA_SHORTCODE: '174379'
+          MPESA_PASSKEY: test
+          MPESA_CALLBACK_URL: http://localhost:3000/api/webhooks/daraja
+          AFRICASTALKING_API_KEY: test
+          AFRICASTALKING_USERNAME: sandbox
+          OPEN_WEATHER_MAP_API_KEY: test
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY: test
+          CLOUDINARY_API_SECRET: test
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: test
+          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: test
+          CRON_SECRET: test-cron-secret
+          WEBHOOK_SECRET: test-webhook-secret

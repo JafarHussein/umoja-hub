@@ -6,6 +6,7 @@ import PriceHistory from '@/lib/models/PriceHistory.model';
 import MarketInsight from '@/lib/models/MarketInsight.model';
 import { handleApiError, requireRole } from '@/lib/utils';
 import { calculatePlatformPremium } from '@/lib/integrations/priceDataService';
+import { cropNamePattern, matchesCrop, resolveCrop } from '@/lib/taxonomy/crops';
 import { Role } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -37,15 +38,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     await connectDB();
 
+    // Crop identity comes from the canonical taxonomy, so this endpoint, the
+    // recommendation engine and the price-alert cron all agree on what a crop
+    // name matches. Exact string equality used to mean "Milk" and "dairy" were
+    // different crops here but the same crop in the engine.
+    const cropId = resolveCrop(cropName);
+    const cropFilter = cropId ? cropNamePattern(cropId) : cropName;
+
     // Fetch price history data points
-    const priceHistory = await PriceHistory.find({
-      cropName,
-      county,
-      recordedAt: { $gte: since },
-    })
-      .sort({ recordedAt: 1 })
-      .select('pricePerUnit unit source recordedAt farmerId')
-      .lean();
+    const priceHistory = (
+      await PriceHistory.find({
+        cropName: cropFilter,
+        county,
+        recordedAt: { $gte: since },
+      })
+        .sort({ recordedAt: 1 })
+        .select('cropName pricePerUnit unit source recordedAt farmerId')
+        .lean()
+      // `cropNamePattern` is a superset match — narrow it with alias precedence.
+    ).filter((p) => (cropId ? matchesCrop(p.cropName, cropId) : true));
 
     // Get latest market insight for middleman benchmark
     const marketInsight = await MarketInsight.findOne({ cropName, county } as object)

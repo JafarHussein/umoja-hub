@@ -24,7 +24,7 @@ jest.mock('@/lib/models/PriceAlert.model', () => ({
 jest.mock('@/lib/models/PriceHistory.model', () => ({
   __esModule: true,
   default: {
-    aggregate: jest.fn(),
+    find: jest.fn(),
   },
 }));
 
@@ -74,6 +74,18 @@ import User from '@/lib/models/User.model';
 import { POST } from '../route';
 
 const VALID_CRON_SECRET = 'test-cron-secret-123';
+
+/**
+ * The cron now averages PriceHistory rows in memory — filtered by crop alias
+ * AND by the alert's unit — rather than with a $avg aggregate that mixed units.
+ */
+function mockPriceRows(prices: number[], cropName: string): void {
+  (PriceHistory.find as jest.Mock).mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      lean: jest.fn().mockResolvedValue(prices.map((pricePerUnit) => ({ cropName, pricePerUnit }))),
+    }),
+  });
+}
 
 function makeRequest(body: unknown = {}, token?: string): NextRequest {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -142,6 +154,7 @@ describe('POST /api/cron/price-alert-check', () => {
             farmerId,
             cropName: 'maize',
             county: 'Kiambu',
+            unit: 'KG',
             targetPricePerUnit: 40,
             notificationMethod: 'SMS',
             isActive: true,
@@ -152,7 +165,7 @@ describe('POST /api/cron/price-alert-check', () => {
     });
 
     // Current average: KES 45/kg — above target of KES 40
-    (PriceHistory.aggregate as jest.Mock).mockResolvedValue([{ avgPrice: 45 }]);
+    mockPriceRows([44, 46], 'maize');
 
     (User.findById as jest.Mock).mockReturnValue({
       select: jest.fn().mockReturnValue({
@@ -187,6 +200,7 @@ describe('POST /api/cron/price-alert-check', () => {
             farmerId,
             cropName: 'beans',
             county: 'Nakuru',
+            unit: 'KG',
             targetPricePerUnit: 100,
             notificationMethod: 'SMS',
             isActive: true,
@@ -196,7 +210,7 @@ describe('POST /api/cron/price-alert-check', () => {
       }),
     });
 
-    (PriceHistory.aggregate as jest.Mock).mockResolvedValue([{ avgPrice: 120 }]);
+    mockPriceRows([118, 122], 'beans');
 
     const req = makeRequest({}, VALID_CRON_SECRET);
     const res = await POST(req);
@@ -216,6 +230,7 @@ describe('POST /api/cron/price-alert-check', () => {
             farmerId: 'farmer-999',
             cropName: 'tomatoes',
             county: 'Meru',
+            unit: 'KG',
             targetPricePerUnit: 80,
             notificationMethod: 'SMS',
             isActive: true,
@@ -226,7 +241,7 @@ describe('POST /api/cron/price-alert-check', () => {
     });
 
     // Current average: KES 60/kg — BELOW target of KES 80
-    (PriceHistory.aggregate as jest.Mock).mockResolvedValue([{ avgPrice: 60 }]);
+    mockPriceRows([58, 62], 'tomatoes');
 
     const req = makeRequest({}, VALID_CRON_SECRET);
     const res = await POST(req);
