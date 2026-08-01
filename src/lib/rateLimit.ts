@@ -1,5 +1,5 @@
-import { Redis } from '@upstash/redis';
 import { logger } from '@/lib/utils';
+import { createRedisClient } from '@/lib/redisClient';
 
 // ---------------------------------------------------------------------------
 // In-memory fallback — used in local dev when Upstash env vars are not set,
@@ -29,18 +29,12 @@ function checkMemory(key: string, maxRequests: number, windowMs: number): { allo
 }
 
 // ---------------------------------------------------------------------------
-// Upstash Redis client — initialised once if env vars are present.
+// Upstash Redis client — initialised once if env vars are present and valid.
 // Falls back to in-memory when UPSTASH_REDIS_REST_URL / _TOKEN are not set
-// (local dev) or on Redis errors (fail-open).
+// (local dev), when they are malformed, or on Redis errors (fail-open).
 // ---------------------------------------------------------------------------
 
-const redis =
-  process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_REST_TOKEN']
-    ? new Redis({
-        url: process.env['UPSTASH_REDIS_REST_URL'],
-        token: process.env['UPSTASH_REDIS_REST_TOKEN'],
-      })
-    : null;
+const redis = createRedisClient('rateLimit');
 
 /**
  * Check and increment the rate limit for a given key.
