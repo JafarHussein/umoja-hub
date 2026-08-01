@@ -81,7 +81,12 @@ The gap should be closed with **a small number of real integration tests against
 - The cache returns a stored result on the second call and does not store a zero-confidence one (`shouldCache`).
 - `excludeFarmerId` removes the requesting farmer's own `LISTING_CREATED` points (D12, when built).
 
-That is five tests, not a coverage percentage. Adding `mongodb-memory-server` is the one new dependency this document asks for.
+That is five tests, not a coverage percentage. One new dependency, with two constraints on how it is taken:
+
+- **`mongodb-memory-server-core`, not `mongodb-memory-server`.** The latter runs a `postinstall` that downloads a ~400 MB MongoDB binary during `npm install`, which every developer and every CI job would pay for whether or not they run these tests. The `-core` package is the same library without that hook; the binary is fetched lazily on first use and cached.
+- **Gated behind `npm run test:integration`** (`jest.integration.config.ts`), excluded from `npm test` by a `testPathIgnorePatterns` entry on `*.integration.test.ts`. The ordinary gate stays fast and binary-free; CI opts in deliberately or not at all. A separate config rather than an env-var switch, because npm scripts that set env vars inline are not portable to Windows.
+
+The cost is that these tests do not run by default, so they can rot unnoticed. That is the accepted trade, and it is the reason the *contract* tests of §3.1 — which need nothing — carry the invariants that must never regress.
 
 ### 3.3 The backtest harness
 
@@ -165,7 +170,7 @@ Global thresholds stay empty. A global number over 344 files drives coverage-cha
 
 1. **Contract tests (§3.1)** — no new dependency, catches the two defect classes that already shipped. Do first.
 2. **Regression corpus gaps (§5)** — D5, D6, D8, D1-at-query-layer.
-3. **Integration harness (§3.2)** — adds `mongodb-memory-server`; unblocks honest wrapper testing.
+3. **Integration harness (§3.2)** — adds `mongodb-memory-server-core` behind `npm run test:integration`; unblocks honest wrapper testing without slowing the default gate.
 4. **Measurement (§4.2, §4.3)** — coverage and evidence-quality metrics are pure aggregations over data that exists today. **These can and should ship before any V2 feature**, because they are the instruments that will tell us whether V2 helped.
 5. **Backtest harness + weight calibration (§4.1, §4.4)** — needs external data, so it follows `11` §7.
 

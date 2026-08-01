@@ -338,7 +338,15 @@ async function computeRecommendation(input: ComposeInput): Promise<PriceRecommen
       .limit(3000)
       .lean();
 
-    const farmerIds = [...new Set(rawPoints.map((p) => String(p.farmerId)).filter(Boolean))];
+    // Drop rows without a farmerId *before* stringifying: `String(undefined)` is
+    // the truthy string "undefined", which survives `filter(Boolean)` and reaches
+    // the `$in` as a non-castable ObjectId. That throws the whole query, and the
+    // catch below turns it into an empty recommendation — so a single row with no
+    // farmerId would silently blank the price for that crop. `farmerId` is
+    // optional on the schema, so such a row is legal.
+    const farmerIds = [
+      ...new Set(rawPoints.filter((p) => p.farmerId).map((p) => String(p.farmerId))),
+    ];
     const trustScores = farmerIds.length
       ? await FarmerTrustScore.find({ farmerId: { $in: farmerIds } })
           .select('farmerId tier')

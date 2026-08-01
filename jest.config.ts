@@ -9,7 +9,16 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   // Playwright specs live under e2e/ and use `.spec.ts`, which Jest's default
   // testMatch would otherwise pick up and fail on. They run via `npm run test:e2e`.
-  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/e2e/'],
+  //
+  // `*.integration.test.ts` needs a real MongoDB and downloads a ~400 MB binary
+  // on first run, so it is excluded here and runs via `npm run test:integration`
+  // (jest.integration.config.ts). Keeping it out of the default gate is what
+  // lets `npm test` stay fast and dependency-free in CI.
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/e2e/',
+    '\\.integration\\.test\\.ts$',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
