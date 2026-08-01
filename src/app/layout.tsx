@@ -9,6 +9,7 @@ import {
 import { Providers } from '@/components/shared/Providers';
 import '@/styles/globals.css';
 import { cn } from "@/lib/utils";
+import { siteUrl } from '@/lib/env';
 
 // Platform typefaces (foundation §8): Sora (headings) / IBM Plex Sans (body) /
 // JetBrains Mono (data). Latin-subset, weights trimmed to those in use.
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
   description:
     'Infrastructure for food security and technical talent in Kenya. A verified farmer marketplace and hands-on education platform for CS students.',
   keywords: ['Kenya', 'farmers', 'food security', 'education', 'marketplace', 'M-Pesa'],
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
   openGraph: {
     type: 'website',
     locale: 'en_KE',
