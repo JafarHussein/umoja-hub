@@ -338,7 +338,7 @@ Covered in the MongoDB Atlas M0 section above. GitHub Actions free tier: unlimit
 
 ### CI/CD: GitHub Actions (Free)
 
-**Assessment**: Already in place (`ci.yml`, `deploy.yml`). No changes. The current CI pipeline (type-check → lint → test → build → deploy) runs within GitHub Actions free tier with significant headroom.
+**Assessment**: Already in place (`ci.yml`, `e2e.yml`). No changes. The current CI pipeline (type-check → lint → test → integration → build, plus Playwright) runs within GitHub Actions free tier with significant headroom. Deployment itself is handled by Vercel's Git integration, not by Actions.
 
 ---
 
@@ -613,7 +613,7 @@ Validation schemas, trust calculator, auth register, and ratings have tests. Pay
 **Effort**: 30 minutes for limit fix; 1 day for signed URLs
 
 ### CI/CD
-**Current state**: `ci.yml` runs type-check → lint → test → build on push and PRs. `deploy.yml` deploys to production on push to `main`. Vercel preview deployments on PRs act as staging.  
+**Current state**: `ci.yml` runs type-check → lint → test → build on push and PRs, plus an `integration` job against a MongoDB service container. Production deploys are made by **Vercel's Git integration** on push to `main`; Vercel preview deployments on PRs act as staging. A second, redundant `deploy.yml` that re-built via `vercel pull` + `vercel build` was removed 2026-08-01 — it duplicated the integration and could not reproduce the production environment faithfully.  
 **Risk**: Low  
 **Gap**: None blocking for first 100 users. GitHub Actions free tier provides ample minutes.  
 **Effort**: None required
