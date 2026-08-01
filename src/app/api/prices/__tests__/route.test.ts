@@ -145,4 +145,42 @@ describe('GET /api/prices', () => {
     // query uses, so a crop cannot match its history and miss its benchmark.
     expect(filter.cropName).toBeInstanceOf(RegExp);
   });
+
+  // ── D17 — the benchmark must be quoted in the unit that was asked for ──────
+
+  it('D17 — filters the MarketInsight lookup by unit', async () => {
+    // Before this filter existed the route returned the newest record for the
+    // crop whatever basis it was written on, so a KG request could be answered
+    // with a 90 kg BAG benchmark of 3,400 and `platformPremium` would divide a
+    // per-kg median by a per-bag figure.
+    await GET(request('cropName=maize&county=Kiambu&unit=KG'));
+
+    const filter = mockInsightFind.mock.calls[0]?.[0] as { unit: RegExp };
+    expect(filter.unit).toBeInstanceOf(RegExp);
+    expect(filter.unit.test('kg')).toBe(true);
+    expect(filter.unit.test('BAG')).toBe(false);
+  });
+
+  it('D17 — a BAG request asks for the BAG record, not the crop\'s newest', async () => {
+    await GET(request('cropName=maize&county=Kiambu&unit=BAG'));
+
+    const filter = mockInsightFind.mock.calls[0]?.[0] as { unit: RegExp };
+    expect(filter.unit.test('BAG')).toBe(true);
+    expect(filter.unit.test('KG')).toBe(false);
+  });
+
+  it('D17 — shows no benchmark when no record exists on the requested basis', async () => {
+    // Records written before `unit` existed do not match the filter. Failing
+    // closed is correct: no benchmark until the cron rewrites them, rather than
+    // a confident figure on an unknown basis.
+    mockInsightFind.mockReturnValue(chain([]));
+
+    const res = await GET(request('cropName=Maize&county=Kiambu&unit=KG'));
+    const body = (await res.json()) as {
+      data: { stats: { middlemanBenchmark: number | null; platformPremium: number | null } };
+    };
+
+    expect(body.data.stats.middlemanBenchmark).toBeNull();
+    expect(body.data.stats.platformPremium).toBeNull();
+  });
 });

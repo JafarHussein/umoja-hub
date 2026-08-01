@@ -64,11 +64,15 @@ async function runMarketInsight(requestId: string): Promise<{ updated: number; w
   const weekOf = new Date();
   weekOf.setUTCHours(0, 0, 0, 0);
 
+  // D17 — `unit` belongs in the group key. Without it every statistic below is
+  // computed across mixed units (maize: ~KES 40/KG and ~KES 3,600/BAG), so the
+  // min and the max are drawn from different quantities. Kept identical to
+  // `cron/market-insight`, which runs the same job.
   const aggregations = await PriceHistory.aggregate([
     { $match: { recordedAt: { $gte: sevenDaysAgo } } },
     {
       $group: {
-        _id: { cropName: '$cropName', county: '$county' },
+        _id: { cropName: '$cropName', county: '$county', unit: '$unit' },
         averageListingPrice: {
           $avg: { $cond: [{ $eq: ['$source', 'LISTING_CREATED'] }, '$pricePerUnit', null] },
         },
@@ -87,19 +91,26 @@ async function runMarketInsight(requestId: string): Promise<{ updated: number; w
   let updated = 0;
 
   for (const agg of aggregations) {
-    const { cropName, county } = agg._id as { cropName: string; county: string };
+    const { cropName, county, unit } = agg._id as {
+      cropName: string;
+      county: string;
+      unit: string;
+    };
     const avgPrice = agg.averageTransactionPrice ?? agg.averageListingPrice;
-    const middlemanBenchmark = getMiddlemanBenchmark(cropName);
+    const middlemanBenchmark = getMiddlemanBenchmark(cropName, unit);
     const platformPremium =
       avgPrice !== null && middlemanBenchmark !== null
         ? calculatePlatformPremium(avgPrice, middlemanBenchmark)
         : null;
 
+    // `unit` MUST be in this filter, or the KG and BAG records for one crop,
+    // county and week collapse onto a single document and overwrite each other.
     await MarketInsight.findOneAndUpdate(
-      { cropName, county, weekOf } as object,
+      { cropName, county, unit, weekOf } as object,
       {
         cropName,
         county,
+        unit,
         weekOf,
         pricing: {
           averageListingPrice: agg.averageListingPrice,
@@ -119,7 +130,7 @@ async function runMarketInsight(requestId: string): Promise<{ updated: number; w
 
   logger.info('cron/weekly-jobs/market-insight', 'Market insight update complete', {
     requestId,
-    cropCountyCombinationsUpdated: updated,
+    cropCountyUnitCombinationsUpdated: updated,
     weekOf: weekOf.toISOString(),
   });
 

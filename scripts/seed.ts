@@ -75,6 +75,10 @@ import KnowledgeArticle from '../src/lib/models/KnowledgeArticle.model';
 import VerifiedSupplier from '../src/lib/models/VerifiedSupplier.model';
 import BriefContextLibrary from '../src/lib/models/BriefContextLibrary.model';
 import MarketInsight from '../src/lib/models/MarketInsight.model';
+import {
+  calculatePlatformPremium,
+  getMiddlemanBenchmark,
+} from '../src/lib/integrations/priceDataService';
 import StudentPortfolioStatus from '../src/lib/models/StudentPortfolioStatus.model';
 import Order from '../src/lib/models/Order.model';
 import ProjectEngagement from '../src/lib/models/ProjectEngagement.model';
@@ -1334,82 +1338,63 @@ Set a UmojaHub Price Alert for your target sell price. When the Nairobi benchmar
 
   log('Inserting MarketInsight records...');
 
-  const weekOf = new Date('2024-01-08T00:00:00Z'); // First Monday of 2024
+  // D8 — relative to the run, like every other seeded date. An absolute weekOf
+  // put these records years outside any window the UI queries.
+  const weekOf = new Date();
+  weekOf.setUTCHours(0, 0, 0, 0);
 
-  await MarketInsight.insertMany([
-    {
-      cropName: 'Tomatoes',
-      county: 'Nairobi',
-      weekOf,
-      pricing: {
-        averageListingPrice: 55,
-        averageTransactionPrice: 62,
-        lowestPrice: 40,
-        highestPrice: 90,
-        middlemanBenchmark: 48,
-        platformPremium: 29.2,
-        dataPointCount: 24,
-      },
-    },
-    {
-      cropName: 'Maize',
-      county: 'Nairobi',
-      weekOf,
-      pricing: {
-        averageListingPrice: 3800,
-        averageTransactionPrice: 4100,
-        lowestPrice: 3200,
-        highestPrice: 4800,
-        middlemanBenchmark: 3400,
-        platformPremium: 20.6,
-        dataPointCount: 18,
-      },
-    },
-    {
-      cropName: 'Potatoes',
-      county: 'Nairobi',
-      weekOf,
-      pricing: {
-        averageListingPrice: 2800,
-        averageTransactionPrice: 3100,
-        lowestPrice: 2200,
-        highestPrice: 3600,
-        middlemanBenchmark: 2500,
-        platformPremium: 24.0,
-        dataPointCount: 15,
-      },
-    },
-    {
-      cropName: 'Beans',
-      county: 'Nairobi',
-      weekOf,
-      pricing: {
-        averageListingPrice: 9500,
-        averageTransactionPrice: 10200,
-        lowestPrice: 8500,
-        highestPrice: 11500,
-        middlemanBenchmark: 8800,
-        platformPremium: 15.9,
-        dataPointCount: 12,
-      },
-    },
-    {
-      cropName: 'Kale',
-      county: 'Nairobi',
-      weekOf,
-      pricing: {
-        averageListingPrice: 18,
-        averageTransactionPrice: 22,
-        lowestPrice: 12,
-        highestPrice: 30,
-        middlemanBenchmark: 15,
-        platformPremium: 46.7,
-        dataPointCount: 30,
-      },
-    },
-  ]);
+  // D17 — each record now declares the unit its figures are quoted in, and the
+  // benchmark comes from `getMiddlemanBenchmark` rather than being written by
+  // hand here. The hand-written numbers were the second half of the defect: this
+  // file claimed maize was benchmarked at 3,400 (a 90 kg BAG price) while
+  // MIDDLEMAN_BENCHMARKS says 35 (per kg), so the seed and the cron disagreed
+  // about the basis for the same crop. Deriving both from one helper makes that
+  // disagreement unrepresentable.
+  //
+  // The BAG-priced crops therefore seed with a null benchmark, because no
+  // bag-basis reference exists and none is invented by conversion. That is the
+  // honest state, and the dashboard renders it as absence.
+  const insightSeeds: ReadonlyArray<{
+    cropName: string;
+    unit: ListingUnit;
+    listing: number;
+    transaction: number;
+    low: number;
+    high: number;
+    points: number;
+  }> = [
+    { cropName: 'Tomatoes', unit: ListingUnit.KG, listing: 55, transaction: 62, low: 40, high: 90, points: 24 },
+    { cropName: 'Kale', unit: ListingUnit.KG, listing: 18, transaction: 22, low: 12, high: 30, points: 30 },
+    { cropName: 'Maize', unit: ListingUnit.BAG, listing: 3800, transaction: 4100, low: 3200, high: 4800, points: 18 },
+    { cropName: 'Potatoes', unit: ListingUnit.BAG, listing: 2800, transaction: 3100, low: 2200, high: 3600, points: 15 },
+    { cropName: 'Beans', unit: ListingUnit.BAG, listing: 9500, transaction: 10200, low: 8500, high: 11500, points: 12 },
+  ];
 
-  log('Inserted 5 MarketInsight records.');
+  await MarketInsight.insertMany(
+    insightSeeds.map((s) => {
+      const middlemanBenchmark = getMiddlemanBenchmark(s.cropName, s.unit);
+      return {
+        cropName: s.cropName,
+        county: 'Nairobi',
+        unit: s.unit,
+        weekOf,
+        pricing: {
+          averageListingPrice: s.listing,
+          averageTransactionPrice: s.transaction,
+          lowestPrice: s.low,
+          highestPrice: s.high,
+          middlemanBenchmark,
+          platformPremium:
+            middlemanBenchmark !== null
+              ? calculatePlatformPremium(s.transaction, middlemanBenchmark)
+              : null,
+          dataPointCount: s.points,
+        },
+      };
+    })
+  );
+
+  log(`Inserted ${insightSeeds.length} MarketInsight records.`);
 
   // -------------------------------------------------------------------------
   // 9. StudentPortfolioStatus

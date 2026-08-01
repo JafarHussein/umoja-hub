@@ -83,11 +83,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // `cropName` equality while the history query above used the taxonomy, so a
     // crop could match its history and miss its own benchmark — D3 surviving in
     // one line. It now resolves through the same taxonomy.
+    //
+    // D17 — and it is filtered by `unit`. Without that filter this returned the
+    // newest record for the crop whatever unit it was written on, so a KG request
+    // could be answered with a 90 kg BAG benchmark and `platformPremium` below
+    // would divide a per-kg median by a per-bag figure. Records written before
+    // `unit` existed have no value here and simply do not match, which fails
+    // closed: no benchmark is shown until the cron rewrites them.
     const marketInsight =
       (
-        await MarketInsight.find({ cropName: cropFilter, county } as object)
+        await MarketInsight.find({ cropName: cropFilter, county, unit: unitMatch } as object)
           .sort({ weekOf: -1 })
-          .select('pricing weekOf cropName')
+          .select('pricing weekOf cropName unit')
           .limit(10)
           .lean()
       ).find((m) => (cropId ? matchesCrop(m.cropName, cropId) : true)) ?? null;

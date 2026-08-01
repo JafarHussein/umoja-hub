@@ -50,18 +50,21 @@ interface IAlertFormState {
 function MiddlemanComparison({
   benchmark,
   premiumPct,
+  unit,
 }: {
   benchmark: number;
   premiumPct: number | null;
+  unit: string;
 }) {
-  // No unit is printed beside the benchmark, and this is deliberate: `MarketInsight`
-  // has no `unit` field (D17). The figure is whatever unit the record was authored
-  // in, which for seeded maize is a 90 kg BAG price of 3,400 — rendering that as
-  // "KSh 3,400/kg" beside a KG selector was a flatly false sentence on a farmer's
-  // pricing screen. Dropping the suffix is a stopgap, not the fix: while the unit
-  // is unknown, `platformPremium` can still be comparing a KG median against a BAG
-  // benchmark. D17 is the root-cause fix.
+  // The unit is printed again, which it could not be while D17 was open:
+  // `MarketInsight` carried no `unit`, so this figure was whatever basis the
+  // record happened to be written on — for seeded maize, a 90 kg BAG price of
+  // 3,400 rendered as "KSh 3,400/kg" against a KG selector. `unit` is now part of
+  // the record's identity and `/api/prices` filters the lookup by it, so the
+  // benchmark reaching this component is guaranteed to be quoted in the unit the
+  // farmer selected.
   const amount = benchmark.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const lowerUnit = unit.toLowerCase();
   return (
     <div className="rounded-b-app-card border border-t-0 border-app-hairline bg-app-sunken px-5 py-3">
       <p className="app-body text-app-body">
@@ -71,12 +74,12 @@ function MiddlemanComparison({
             <span className={premiumPct >= 0 ? 'text-app-brand' : 'text-app-danger'}>
               {Math.abs(premiumPct)}% {premiumPct >= 0 ? 'above' : 'below'}
             </span>{' '}
-            the middleman benchmark of KSh {amount}.
+            the middleman benchmark of KSh {amount}/{lowerUnit}.
           </>
         ) : (
           <>
-            Middlemen are benchmarked at KSh {amount} here. There is not yet enough platform
-            activity to compare against it.
+            Middlemen are benchmarked at KSh {amount}/{lowerUnit} here. There is not yet enough
+            platform activity to compare against it.
           </>
         )}
       </p>
@@ -234,6 +237,7 @@ export default function PriceIntelligenceDashboard() {
           <MiddlemanComparison
             benchmark={stats.middlemanBenchmark}
             premiumPct={stats.platformPremium}
+            unit={selectedUnit}
           />
         )}
       </div>
