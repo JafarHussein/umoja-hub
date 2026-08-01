@@ -62,7 +62,6 @@ import {
   ProjectStatus,
   PeerReviewStatus,
   LecturerDecision,
-  PriceHistorySource,
 } from '../src/types';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +84,9 @@ import LecturerEffectiveness from '../src/lib/models/LecturerEffectiveness.model
 import Rating from '../src/lib/models/Rating.model';
 import PriceHistory from '../src/lib/models/PriceHistory.model';
 import VerificationAuditLog from '../src/lib/models/VerificationAuditLog.model';
+// Extracted so it is testable — this file invokes seed() at module scope, so a
+// test importing it would drop and rebuild the target database (D8).
+import { docDate, priceSeries } from './seedPriceSeries';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -102,65 +104,6 @@ function sha256(s: string): string {
   return crypto.createHash('sha256').update(s).digest('hex');
 }
 
-function docDate(daysAgo: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return d;
-}
-
-interface IPriceSeriesOptions {
-  cropName: string;
-  county: string;
-  unit: ListingUnit;
-  farmerId: mongoose.Types.ObjectId;
-  /** Price at the most recent point in the series. */
-  endPrice: number;
-  /** Percent change across the whole span; positive means rising. */
-  driftPct: number;
-  /** Number of observations. Must clear MIN_POINTS (3) after unit filtering. */
-  points: number;
-  /** Age in days of the oldest observation. */
-  spanDays: number;
-  /** Attached to the most recent ORDER_COMPLETED point, when supplied. */
-  orderId?: mongoose.Types.ObjectId;
-}
-
-/**
- * Builds a back-dated price series for one crop/county/unit.
- *
- * Dates are relative to the seed run, not absolute. The Price Intelligence
- * Engine weights points on a 21-day half-life inside a 90-day window, so the
- * previous hard-coded 2024 timestamps put every row outside the window and the
- * recommendation panel rendered its empty state on a freshly seeded database.
- *
- * Sources alternate so the engine sees both aspirational asking prices and
- * settled sales — the split that drives its confidence score.
- */
-function priceSeries(options: IPriceSeriesOptions): Record<string, unknown>[] {
-  const { cropName, county, unit, farmerId, endPrice, driftPct, points, spanDays } = options;
-  const startPrice = endPrice / (1 + driftPct / 100);
-
-  return Array.from({ length: points }, (_, i) => {
-    const progress = points === 1 ? 1 : i / (points - 1);
-    const daysAgo = Math.round(spanDays * (1 - progress));
-    // Alternating jitter keeps the series from looking synthetic without
-    // introducing outliers that would distort the weighted median.
-    const jitter = i % 2 === 0 ? 1 : -1;
-    const price = Math.round(startPrice + (endPrice - startPrice) * progress + jitter * endPrice * 0.01);
-    const isSale = i % 2 === 1;
-
-    return {
-      cropName,
-      county,
-      pricePerUnit: price,
-      unit,
-      source: isSale ? PriceHistorySource.ORDER_COMPLETED : PriceHistorySource.LISTING_CREATED,
-      farmerId,
-      ...(isSale && i === points - 1 && options.orderId ? { orderId: options.orderId } : {}),
-      recordedAt: docDate(daysAgo),
-    };
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Main
