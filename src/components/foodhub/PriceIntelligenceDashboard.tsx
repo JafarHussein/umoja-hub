@@ -17,9 +17,6 @@ interface IPriceDataPoint {
 
 interface IPriceStats {
   dataPointCount: number;
-  averagePrice: number | null;
-  lowestPrice: number | null;
-  highestPrice: number | null;
   middlemanBenchmark: number | null;
   platformPremium: number | null;
 }
@@ -27,6 +24,7 @@ interface IPriceStats {
 interface IPriceData {
   cropName: string;
   county: string;
+  unit: string;
   period: string;
   priceHistory: IPriceDataPoint[];
   stats: IPriceStats;
@@ -53,6 +51,7 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 export default function PriceIntelligenceDashboard() {
   const [selectedCrop, setSelectedCrop] = useState('maize');
   const [selectedCounty, setSelectedCounty] = useState('Kiambu');
+  const [selectedUnit, setSelectedUnit] = useState('KG');
   const [period, setPeriod] = useState('30d');
   const [priceData, setPriceData] = useState<IPriceData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +69,7 @@ export default function PriceIntelligenceDashboard() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `/api/prices?cropName=${encodeURIComponent(selectedCrop)}&county=${encodeURIComponent(selectedCounty)}&period=${period}`
+        `/api/prices?cropName=${encodeURIComponent(selectedCrop)}&county=${encodeURIComponent(selectedCounty)}&unit=${encodeURIComponent(selectedUnit)}&period=${period}`
       );
       if (res.ok) {
         const body = await res.json() as { data: IPriceData };
@@ -79,7 +78,7 @@ export default function PriceIntelligenceDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCrop, selectedCounty, period]);
+  }, [selectedCrop, selectedCounty, selectedUnit, period]);
 
   useEffect(() => {
     void fetchPrices();
@@ -110,10 +109,12 @@ export default function PriceIntelligenceDashboard() {
     }
   }
 
+  // Must follow the same unit as the series below it, or the card and the chart
+  // describe different markets on one screen.
   const { data: recommendation, isLoading: isRecLoading } = usePriceRecommendation(
     selectedCrop,
     selectedCounty,
-    'KG'
+    selectedUnit
   );
 
   const stats = priceData?.stats;
@@ -154,6 +155,20 @@ export default function PriceIntelligenceDashboard() {
             ))}
           </Select>
         </div>
+        <div className="min-w-[140px] flex-1">
+          {/* Required since D13 — a series may only contain one unit. */}
+          <Select
+            label="Unit"
+            value={selectedUnit}
+            onChange={(e) => setSelectedUnit(e.target.value)}
+          >
+            {(['KG', 'BAG', 'CRATE', 'LITRE', 'PIECE'] as const).map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div>
           <span className="app-label mb-1.5 block text-app-body">Period</span>
           <div className="flex gap-2">
@@ -174,21 +189,24 @@ export default function PriceIntelligenceDashboard() {
       {/* Recommendation panel — the headline guidance */}
       <PriceRecommendationPanel recommendation={recommendation} isLoading={isRecLoading} />
 
-      {/* Stats row */}
+      {/* Context row. The average/lowest/highest cards were removed with D13 —
+          they were an unweighted mean and a min/max taken across mixed units, so
+          the low and the high were routinely drawn from different units. The
+          headline figure now comes from the recommendation panel above, which is
+          the single place that decides what a crop is worth. */}
       {stats && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <StatCard
-            label="Avg Price"
-            value={stats.averagePrice !== null ? `KSh ${stats.averagePrice.toFixed(0)}` : '—'}
-            sub="UmojaHub average"
+            label="Observations"
+            value={String(stats.dataPointCount)}
+            sub={`${selectedUnit} prices in ${period}`}
           />
           <StatCard
-            label="Lowest"
-            value={stats.lowestPrice !== null ? `KSh ${stats.lowestPrice.toFixed(0)}` : '—'}
-          />
-          <StatCard
-            label="Highest"
-            value={stats.highestPrice !== null ? `KSh ${stats.highestPrice.toFixed(0)}` : '—'}
+            label="Middleman Benchmark"
+            value={
+              stats.middlemanBenchmark !== null ? `KSh ${stats.middlemanBenchmark.toFixed(0)}` : '—'
+            }
+            sub={`per ${selectedUnit}`}
           />
           <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
             <p className="app-label mb-1 text-app-muted">Platform Premium</p>

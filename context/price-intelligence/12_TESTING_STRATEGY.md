@@ -79,7 +79,7 @@ The gap should be closed with **a small number of real integration tests against
 - The 3,000-row cap does not starve the requested unit.
 - `resolveCrop`'s pattern matches the same rows the alert cron matches (D3).
 - The cache returns a stored result on the second call and does not store a zero-confidence one (`shouldCache`).
-- `excludeFarmerId` removes the requesting farmer's own `LISTING_CREATED` points (D12, when built).
+- `excludeFarmerId` removes the requesting farmer's own `LISTING_CREATED` points (D12) — **built.** It earned its place immediately: `composeRecommendation` built its cache key from `excludeFarmerId` but forgot to forward the field to `computeRecommendation`, so the filter silently did nothing. The pure-layer unit tests all passed, because they call `assembleRecommendation` directly and never cross that seam.
 
 That is five tests, not a coverage percentage. One new dependency, with two constraints on how it is taken:
 
@@ -138,7 +138,7 @@ Already in place: D1 (mixed-unit regression, pure layer), D2/D3 (`taxonomy.test.
 
 Missing and owed: **D1 at the query layer** (§3.2 — the fix touched both layers, only one is tested), **D5** (cache hit and the `shouldCache` zero-confidence rule), **D6** (§3.1's `vercel.json` contract test), **D8** (seeded data lands inside the 90-day window — a seed regression is invisible until a demo).
 
-D4, D7, D11, D12 and D13 are open, settled by `09` and `06`, and their tests ship with their fixes.
+D11, D12 and D13 are **closed** (2026-08-01), each shipping with its tests: weighted trend windows, `excludeFarmerId` on the compose path, and the deletion of the `/api/prices` statistics block. D4 and D7 remain open, settled by `09` and `06`.
 
 **Name the test after the defect.** `'D1 — a KG request never draws on BAG rows'` survives refactoring in a way that `'filters units correctly'` does not, because six months from now the second one looks like a redundant test of an obvious property and gets deleted.
 

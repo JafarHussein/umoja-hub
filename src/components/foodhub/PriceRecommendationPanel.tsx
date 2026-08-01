@@ -41,7 +41,16 @@ export function usePriceRecommendation(
       void (async () => {
         setIsLoading(true);
         try {
-          const params = new URLSearchParams({ cropName, county, unit });
+          // D12 — this hook drives the listing form, which is exactly where the
+          // feedback loop lives: without it, saving a price and reopening the
+          // form nudges the recommendation toward whatever was typed. The server
+          // takes the farmer id from the session, not from this flag.
+          const params = new URLSearchParams({
+            cropName,
+            county,
+            unit,
+            excludeOwnListings: 'true',
+          });
           if (quantity && quantity > 0) params.set('quantity', String(quantity));
           const res = await fetch(`/api/prices/recommendation?${params.toString()}`, {
             signal: controller.signal,

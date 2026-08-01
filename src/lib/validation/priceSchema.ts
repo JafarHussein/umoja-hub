@@ -18,6 +18,15 @@ export const priceRecommendationQuerySchema = z.object({
   county: z.enum(KENYAN_COUNTIES),
   unit: z.enum(['KG', 'BAG', 'CRATE', 'LITRE', 'PIECE']).default('KG'),
   quantity: z.coerce.number().positive('Quantity must be positive').optional(),
+  /**
+   * Drops the requesting farmer's own asking prices from their own
+   * recommendation (D12). A query string carries no booleans, so 'true' and '1'
+   * are accepted and anything else — including absence — is false.
+   */
+  excludeOwnListings: z
+    .enum(['true', '1', 'false', '0'])
+    .optional()
+    .transform((v) => v === 'true' || v === '1'),
 });
 
 export type PriceRecommendationQuery = z.infer<typeof priceRecommendationQuerySchema>;

@@ -26,6 +26,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       county: searchParams.get('county') ?? undefined,
       unit: searchParams.get('unit') ?? undefined,
       quantity: searchParams.get('quantity') ?? undefined,
+      excludeOwnListings: searchParams.get('excludeOwnListings') ?? undefined,
     });
 
     if (!parsed.success) {
@@ -39,7 +40,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { cropName, county, unit, quantity } = parsed.data;
+    const { cropName, county, unit, quantity, excludeOwnListings } = parsed.data;
+
+    // D12 — the id comes from the session, never the query string: a caller must
+    // not be able to suppress someone else's listings from the evidence base.
+    const excludeFarmerId =
+      excludeOwnListings && session?.user?.id ? String(session.user.id) : undefined;
 
     // composeRecommendation is itself cached (see priceIntelligence.ts), so this
     // route stays a thin validate-and-delegate.
@@ -48,6 +54,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       county,
       unit,
       quantity,
+      excludeFarmerId,
     });
 
     return NextResponse.json({ data: recommendation });

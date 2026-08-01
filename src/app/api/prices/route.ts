@@ -7,13 +7,17 @@ import MarketInsight from '@/lib/models/MarketInsight.model';
 import { handleApiError, requireRole } from '@/lib/utils';
 import { calculatePlatformPremium } from '@/lib/integrations/priceDataService';
 import { cropNamePattern, matchesCrop, resolveCrop } from '@/lib/taxonomy/crops';
+import { resolveUnit } from '@/lib/taxonomy/units';
+import { composeRecommendation } from '@/lib/intelligence/priceIntelligence';
 import { Role } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/prices — Price Intelligence
 // Auth: FARMER or ADMIN
-// Query: cropName, county, period (7d | 30d | 90d, default 30d)
-// Returns: price history data points + market insight + platform premium
+// Query: cropName, county, unit (required), period (7d | 30d | 90d, default 30d)
+// Returns: unit-scoped price history series + market insight + platform premium.
+//          It does NOT return a central price — that is the recommendation
+//          endpoint's job, and duplicating it here was defect D13.
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -25,10 +29,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const cropName = searchParams.get('cropName');
     const county = searchParams.get('county');
     const period = searchParams.get('period') ?? '30d';
+    const unitParam = searchParams.get('unit');
 
     if (!cropName || !county) {
       return NextResponse.json(
         { error: 'cropName and county are required', code: 'VALIDATION_FAILED' },
+        { status: 400 }
+      );
+    }
+
+    // D13 — `unit` is required. Maize trades both per KG (~KES 40) and per 90 kg
+    // BAG (~KES 3,600); a chart plotting both on one axis is the mixed-unit
+    // defect in visual form, exactly as the unfiltered statistics were.
+    const unit = unitParam ? resolveUnit(unitParam) : null;
+    if (!unit) {
+      return NextResponse.json(
+        {
+          error: 'A valid unit is required (KG, BAG, CRATE, LITRE or PIECE).',
+          code: 'VALIDATION_FAILED',
+        },
         { status: 400 }
       );
     }
@@ -45,11 +64,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const cropId = resolveCrop(cropName);
     const cropFilter = cropId ? cropNamePattern(cropId) : cropName;
 
-    // Fetch price history data points
+    // Fetch price history data points, restricted to the requested unit.
+    const unitMatch = new RegExp('^' + unit.trim() + '$', 'i');
     const priceHistory = (
       await PriceHistory.find({
         cropName: cropFilter,
         county,
+        unit: unitMatch,
         recordedAt: { $gte: since },
       })
         .sort({ recordedAt: 1 })
@@ -58,34 +79,47 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       // `cropNamePattern` is a superset match — narrow it with alias precedence.
     ).filter((p) => (cropId ? matchesCrop(p.cropName, cropId) : true));
 
-    // Get latest market insight for middleman benchmark
-    const marketInsight = await MarketInsight.findOne({ cropName, county } as object)
-      .sort({ weekOf: -1 })
-      .select('pricing weekOf')
-      .lean();
+    // Latest market insight for the middleman benchmark. This lookup used exact
+    // `cropName` equality while the history query above used the taxonomy, so a
+    // crop could match its history and miss its own benchmark — D3 surviving in
+    // one line. It now resolves through the same taxonomy.
+    const marketInsight =
+      (
+        await MarketInsight.find({ cropName: cropFilter, county } as object)
+          .sort({ weekOf: -1 })
+          .select('pricing weekOf cropName')
+          .limit(10)
+          .lean()
+      ).find((m) => (cropId ? matchesCrop(m.cropName, cropId) : true)) ?? null;
 
     const middlemanBenchmark = marketInsight?.pricing?.middlemanBenchmark ?? null;
-    const umojaHubAverage =
-      priceHistory.length > 0
-        ? priceHistory.reduce((sum: number, p) => sum + (p.pricePerUnit ?? 0), 0) / priceHistory.length
-        : null;
+
+    // D13 — this route no longer computes its own central figure. The premium is
+    // measured against the engine's weighted median, so there is exactly one
+    // place in the codebase that decides what a crop is worth. The old
+    // unweighted mean over mixed units was defect D1 still live on this endpoint.
+    const recommendation = await composeRecommendation({ crop: cropName, county, unit });
+    const umojaHubPrice = recommendation.recommendedPricePerUnit;
 
     const platformPremium =
-      umojaHubAverage !== null && middlemanBenchmark !== null
-        ? calculatePlatformPremium(umojaHubAverage, middlemanBenchmark)
+      umojaHubPrice !== null && middlemanBenchmark !== null
+        ? calculatePlatformPremium(umojaHubPrice, middlemanBenchmark)
         : null;
 
     return NextResponse.json({
       data: {
         cropName,
         county,
+        unit,
         period,
         priceHistory,
+        // `averagePrice`, `lowestPrice` and `highestPrice` were removed (D13)
+        // rather than unit-corrected in place: duplicating the unit logic in a
+        // second location is what produced the defect. Consumers needing a
+        // central figure call /api/prices/recommendation, which is now also
+        // where `platformPremium` gets its baseline.
         stats: {
           dataPointCount: priceHistory.length,
-          averagePrice: umojaHubAverage !== null ? Math.round(umojaHubAverage * 100) / 100 : null,
-          lowestPrice: priceHistory.length > 0 ? Math.min(...priceHistory.map((p) => p.pricePerUnit ?? 0)) : null,
-          highestPrice: priceHistory.length > 0 ? Math.max(...priceHistory.map((p) => p.pricePerUnit ?? 0)) : null,
           middlemanBenchmark,
           platformPremium,
         },
