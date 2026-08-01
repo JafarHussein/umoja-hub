@@ -6,8 +6,9 @@ import { ListingStatus, LISTING_CATEGORY_ORDER, LISTING_CATEGORY_LABEL } from '@
 
 // ---------------------------------------------------------------------------
 // GET /api/marketplace/suggest — instant search autocomplete (Marketplace
-// Rebuild, Stage 4). Public, read-only, additive: powers the feed search box
-// with produce, category, county, and direct-listing suggestions. Never mutates.
+// Rebuild, Stage 4). Read-only, additive: powers the feed search box with
+// produce, category, county, and direct-listing suggestions. Never mutates.
+// Auth: None (public) — the marketplace feed it serves is a public surface
 // ---------------------------------------------------------------------------
 
 const MIN_QUERY = 2;
