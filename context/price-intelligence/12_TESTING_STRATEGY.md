@@ -138,7 +138,11 @@ Already in place: D1 (mixed-unit regression, pure layer), D2/D3 (`taxonomy.test.
 
 Missing and owed: **D1 at the query layer** (§3.2 — the fix touched both layers, only one is tested), **D5** (cache hit and the `shouldCache` zero-confidence rule), **D6** (§3.1's `vercel.json` contract test), **D8** (seeded data lands inside the 90-day window — a seed regression is invisible until a demo).
 
-D11, D12 and D13 are **closed** (2026-08-01), each shipping with its tests: weighted trend windows, `excludeFarmerId` on the compose path, and the deletion of the `/api/prices` statistics block. D4 and D7 remain open, settled by `09` and `06`.
+D11, D12 and D13 are **closed** (2026-08-01), each shipping with its tests: weighted trend windows, `excludeFarmerId` on the compose path, and the deletion of the `/api/prices` statistics block.
+
+**D4 and D7 closed the same day**, completing the register at 16 of 16. D7 ships `adjacency.test.ts` (13 tests — symmetry, completeness, no self-reference, spelling tolerance, and the Nairobi case the defect was reported against) plus four engine tests named for it: the `ADJACENT` tier is preferred over `REGION`, Nairobi reaches its neighbours instead of falling to national, an adjacent fallback is penalised less in confidence than a national one, and a county with sufficient local data is *not* widened. That last one is the one that matters most — a new tier's real risk is diluting the cases that were already correct.
+
+D4's remaining half was presentational (`09` §5.3) and carries no test: the assertion "these two blocks do not read as rival price systems" is not one a test runner can make. It was verified in the browser instead, which is the honest instrument for it.
 
 **Name the test after the defect.** `'D1 — a KG request never draws on BAG rows'` survives refactoring in a way that `'filters units correctly'` does not, because six months from now the second one looks like a redundant test of an obvious property and gets deleted.
 

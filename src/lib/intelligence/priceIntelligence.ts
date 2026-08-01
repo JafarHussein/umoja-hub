@@ -122,11 +122,20 @@ export interface AssembleInput {
   now?: Date;
 }
 
+/**
+ * How much a widened search costs the confidence figure. ADJACENT is 0.9 — a
+ * bordering county is a real answer to "what is this worth near me", so it is
+ * penalised far less than a province-wide or national fallback (`09` §3.1).
+ */
 const GEO_CONFIDENCE_FACTOR: Record<GeoScope, number> = {
   COUNTY: 1.0,
+  ADJACENT: 0.9,
   REGION: 0.8,
   NATIONAL: 0.55,
 };
+
+/** The widening tiers the engine searches, narrowest first. Order is load-bearing. */
+const GEO_LADDER: readonly GeoScope[] = ['COUNTY', 'ADJACENT', 'REGION', 'NATIONAL'];
 
 function bandFor(confidence: number): ConfidenceBand {
   if (confidence >= 75) return 'HIGH';
@@ -165,18 +174,21 @@ export function assembleRecommendation(input: AssembleInput): PriceRecommendatio
     .map((p) => ({ ...p, scope: scopeOf(county, p.county) }))
     .filter((p) => p.recordedAt.getTime() >= windowCutoff);
 
-  const nCounty = scoped.filter((p) => p.scope === 'COUNTY').length;
-  const nRegion = scoped.filter((p) => p.scope === 'COUNTY' || p.scope === 'REGION').length;
+  // The widening ladder, narrowest first. Each tier is cumulative — it includes
+  // every tier before it. ADJACENT was inserted between COUNTY and REGION to
+  // close D7: without it, Nairobi (a former province of one) had no peers at all
+  // between its own borders and the entire country, and every other county
+  // reached its province-mates before its actual neighbours.
+  const geoRank = (scope: GeoScope): number => GEO_LADDER.indexOf(scope);
+  const countThrough = (tier: GeoScope): number =>
+    scoped.filter((p) => geoRank(p.scope) <= geoRank(tier)).length;
 
-  const geoScope: GeoScope = nCounty >= MIN_POINTS ? 'COUNTY' : nRegion >= MIN_POINTS ? 'REGION' : 'NATIONAL';
+  // Stop at the first tier that clears MIN_POINTS, so local evidence is never
+  // diluted by a wider tier it did not need.
+  const geoScope: GeoScope = GEO_LADDER.find((tier) => countThrough(tier) >= MIN_POINTS) ?? 'NATIONAL';
 
-  // Keep only the points belonging to the chosen tier — local data stays
-  // undiluted when it is sufficient on its own.
-  const tierMatch = (scope: GeoScope): boolean => {
-    if (geoScope === 'COUNTY') return scope === 'COUNTY';
-    if (geoScope === 'REGION') return scope === 'COUNTY' || scope === 'REGION';
-    return true;
-  };
+  // Keep only the points belonging to the chosen tier.
+  const tierMatch = (scope: GeoScope): boolean => geoRank(scope) <= geoRank(geoScope);
   const recoPoints = scoped.filter((p) => tierMatch(p.scope));
 
   const weighted: WeightedValue[] = recoPoints.map((p) => ({

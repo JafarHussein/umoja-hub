@@ -199,6 +199,16 @@ A second, smaller residual sits at `route.ts:62`: the `MarketInsight` lookup use
 
 The general rule this establishes: **there is exactly one place in this codebase that decides what a crop is worth**, and it is `assembleRecommendation`. D4 closes.
 
+### 5.3 The presentational half, closed separately
+
+Shipping D13 closed the arithmetic split but not the defect as a farmer experiences it. `/api/prices` had stopped computing a rival figure, yet its remaining outputs — the middleman benchmark and the platform premium — were still rendered as a grid of stat cards directly beneath the recommendation panel, in the same card treatment and the same `app-data-l` numerals. Two blocks of large money figures at equal visual weight *is* two price systems, whatever the arithmetic underneath agrees on.
+
+Worse, the grid's third card, `Observations`, counted the points in the chart series over the selected period — a different window and a different geographic scope from `basis.dataPointCount`, the evidence behind the recommendation. Presenting it as a headline statistic invited exactly the reading the defect describes: two evidence counts, quietly disagreeing, for what looks like one question.
+
+**Resolution (2026-08-01).** One headline. The middleman benchmark is now attached beneath the recommendation panel on the sunken surface at body weight, phrased as a fact *about* the recommended price — *"That is 23% above the middleman benchmark of KSh 60/kg"* — so it cannot be read as a competing answer. The observation count moved into the chart header, captioning the series it actually describes. The stat-card grid is gone.
+
+The general rule the presentation now follows, alongside the arithmetic one: **the page has one price, and everything else on it is visibly commentary on that price.**
+
 ---
 
 ## 6. API and caching

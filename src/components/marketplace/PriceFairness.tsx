@@ -64,6 +64,8 @@ const CONFIDENCE_LABEL: Record<BuyerFairness['confidenceBand'], string> = {
 function basisSentence(basis: BuyerFairness['basis'], county: string, windowDays: number): string {
   const span = `the last ${windowDays} days`;
   if (basis === 'COUNTY') return `Based on sales in ${county} over ${span}.`;
+  if (basis === 'ADJACENT')
+    return `Based on sales in ${county} and the counties bordering it over ${span} — not enough data in ${county} alone.`;
   if (basis === 'REGION') return `Based on sales across the wider region over ${span} — not enough data in ${county} alone.`;
   return `Based on national sales over ${span} — no local data for this crop yet.`;
 }

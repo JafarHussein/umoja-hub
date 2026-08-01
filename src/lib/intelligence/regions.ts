@@ -2,11 +2,18 @@
 // Regional hierarchy for the Price Intelligence Engine.
 //
 // Maps each of Kenya's 47 counties to one of 8 historical regions (former
-// provinces). The engine prefers county-local price data, then widens to the
-// region, then nationally, until it has enough evidence to recommend a price.
-// This is a code constant (no DB) — see context/PRICE_INTELLIGENCE_ENGINE_DESIGN.md
-// Deliverable 6.
+// provinces). The engine prefers county-local price data, then widens through
+// adjacent counties, then the region, then nationally, until it has enough
+// evidence to recommend a price. This is a code constant (no DB) — see
+// context/PRICE_INTELLIGENCE_ENGINE_DESIGN.md Deliverable 6.
+//
+// The ADJACENT tier comes from src/lib/taxonomy/adjacency.ts and was added to
+// close D7: provincial grouping is a poor proxy for market proximity, and it
+// left Nairobi — a province of one — with no peers between itself and the whole
+// country.
 // ---------------------------------------------------------------------------
+
+import { areAdjacent } from '@/lib/taxonomy/adjacency';
 
 export type KenyaRegion =
   | 'Nairobi'
@@ -19,7 +26,7 @@ export type KenyaRegion =
   | 'Western';
 
 /** The widening tiers the engine searches, narrowest first. */
-export type GeoScope = 'COUNTY' | 'REGION' | 'NATIONAL';
+export type GeoScope = 'COUNTY' | 'ADJACENT' | 'REGION' | 'NATIONAL';
 
 const REGION_COUNTIES: Record<KenyaRegion, readonly string[]> = {
   Nairobi: ['Nairobi'],
@@ -79,10 +86,19 @@ export function regionPeers(county: string): readonly string[] {
 
 /**
  * Classifies how a data point's county relates to the target county:
- * COUNTY (exact), REGION (same region), or NATIONAL (anywhere else).
+ * COUNTY (exact), ADJACENT (shares a land border), REGION (same former
+ * province), or NATIONAL (anywhere else).
+ *
+ * ADJACENT is checked before REGION because a bordering county is the closer
+ * market even when the two sit in different provinces — Kajiado is Rift Valley
+ * and Machakos is Eastern, yet both are nearer to a Nairobi seller than any
+ * county reached by the provincial grouping. Where a neighbour happens to share
+ * the region too, ADJACENT still wins: it is the narrower and better-evidenced
+ * claim of the two.
  */
 export function scopeOf(targetCounty: string, pointCounty: string): GeoScope {
   if (pointCounty === targetCounty) return 'COUNTY';
+  if (areAdjacent(targetCounty, pointCounty)) return 'ADJACENT';
   const targetRegion = regionOf(targetCounty);
   if (targetRegion !== null && regionOf(pointCounty) === targetRegion) return 'REGION';
   return 'NATIONAL';
