@@ -13,8 +13,8 @@
 // so a short TTL removes almost all of that load.
 // ---------------------------------------------------------------------------
 
-import { Redis } from '@upstash/redis';
 import { logger } from '@/lib/utils';
+import { createRedisClient } from '@/lib/redisClient';
 
 interface MemoryEntry {
   value: unknown;
@@ -45,13 +45,7 @@ function writeMemory(key: string, value: unknown, ttlSeconds: number): void {
   memStore.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
 }
 
-const redis =
-  process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_REST_TOKEN']
-    ? new Redis({
-        url: process.env['UPSTASH_REDIS_REST_URL'],
-        token: process.env['UPSTASH_REDIS_REST_TOKEN'],
-      })
-    : null;
+const redis = createRedisClient('cache');
 
 export interface CacheOptions<T> {
   /**
