@@ -14,11 +14,19 @@
  * in-memory server; the models themselves are real and use the default mongoose
  * connection.
  *
- * NOT part of `npm test`. Run with `npm run test:integration`, which downloads a
- * MongoDB binary (~400 MB) on first use and caches it. `npm test` must stay
- * binary-free so the ordinary gate and CI are unaffected — hence
- * `mongodb-memory-server-core`, which has no postinstall download, rather than
- * `mongodb-memory-server`, which fetches the binary during `npm install`.
+ * NOT part of `npm test` — run with `npm run test:integration`.
+ *
+ * Where the database comes from depends on who is running:
+ *
+ * - **CI** supplies one through `INTEGRATION_MONGODB_URI`, backed by a `mongo:7`
+ *   service container (the pattern `e2e.yml` already uses). `MongoMemoryServer`
+ *   is then never constructed, so no binary is ever downloaded on a runner.
+ * - **Locally**, with that variable unset, an in-memory server is started. It
+ *   downloads a MongoDB binary (~400 MB) on first use and caches it.
+ *
+ * `npm test` stays binary-free either way — hence `mongodb-memory-server-core`,
+ * which has no postinstall download, rather than `mongodb-memory-server`, which
+ * fetches the binary during `npm install`.
  */
 
 import mongoose from 'mongoose';
@@ -34,16 +42,23 @@ import { PriceHistorySource, ListingUnit, ListingStatus, ListingCategory } from 
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-let mongod: MongoMemoryServer;
+// Left undefined when CI supplies a database; `MongoMemoryServer.create()` is
+// what triggers the binary download, so not calling it is the whole point.
+let mongod: MongoMemoryServer | undefined;
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  await mongoose.connect(mongod.getUri());
+  const suppliedUri = process.env['INTEGRATION_MONGODB_URI'];
+  if (suppliedUri) {
+    await mongoose.connect(suppliedUri);
+  } else {
+    mongod = await MongoMemoryServer.create();
+    await mongoose.connect(mongod.getUri());
+  }
 }, 120_000);
 
 afterAll(async () => {
   await mongoose.disconnect();
-  await mongod.stop();
+  await mongod?.stop();
 });
 
 beforeEach(async () => {

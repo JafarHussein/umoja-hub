@@ -6,10 +6,11 @@ const createJestConfig = nextJest({ dir: './' });
 // ---------------------------------------------------------------------------
 // Integration tests — `12_TESTING_STRATEGY.md` §3.2.
 //
-// Separate from jest.config.ts because these run against a real MongoDB via
+// Separate from jest.config.ts because these run against a real MongoDB, so
+// `npm test` stays binary-free. CI runs them as their own `integration` job
+// against a mongo:7 service container; locally they fall back to
 // mongodb-memory-server-core, which downloads a ~400 MB binary on first use and
-// caches it. `npm test` stays binary-free and CI is unaffected unless it opts
-// in with `npm run test:integration`.
+// caches it. See the suite header for how the two paths are selected.
 //
 // A separate config rather than an env-var switch: npm scripts that set env
 // vars inline are not portable to Windows, which is the primary dev platform

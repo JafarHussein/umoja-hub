@@ -84,9 +84,9 @@ The gap should be closed with **a small number of real integration tests against
 That is five tests, not a coverage percentage. One new dependency, with two constraints on how it is taken:
 
 - **`mongodb-memory-server-core`, not `mongodb-memory-server`.** The latter runs a `postinstall` that downloads a ~400 MB MongoDB binary during `npm install`, which every developer and every CI job would pay for whether or not they run these tests. The `-core` package is the same library without that hook; the binary is fetched lazily on first use and cached.
-- **Gated behind `npm run test:integration`** (`jest.integration.config.ts`), excluded from `npm test` by a `testPathIgnorePatterns` entry on `*.integration.test.ts`. The ordinary gate stays fast and binary-free; CI opts in deliberately or not at all. A separate config rather than an env-var switch, because npm scripts that set env vars inline are not portable to Windows.
+- **Gated behind `npm run test:integration`** (`jest.integration.config.ts`), excluded from `npm test` by a `testPathIgnorePatterns` entry on `*.integration.test.ts`. The ordinary gate stays fast and binary-free. A separate config rather than an env-var switch, because npm scripts that set env vars inline are not portable to Windows.
 
-The cost is that these tests do not run by default, so they can rot unnoticed. That is the accepted trade, and it is the reason the *contract* tests of §3.1 — which need nothing — carry the invariants that must never regress.
+**They run in CI**, as a separate `integration` job in `ci.yml` parallel to `quality`. The job provides a `mongo:7` service container — the pattern `e2e.yml` already established — and points the suite at it with `INTEGRATION_MONGODB_URI`. The in-memory server is constructed only when that variable is absent, so the binary is a local-development cost and never a CI one. Tests excluded from the default gate but absent from CI would rot unnoticed, which would defeat the purpose: the code these cover is exactly where D1 lived.
 
 ### 3.3 The backtest harness
 
