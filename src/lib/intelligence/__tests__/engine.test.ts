@@ -170,6 +170,62 @@ describe('trend', () => {
     expect(t.direction).toBe('STABLE');
     expect(t.changePct30d).toBeNull();
   });
+
+  // D11 — the windows were plain means, so one stale asking price counted as
+  // much as a settled sale when deciding the direction the farmer is shown.
+  describe('D11 — weighted windows', () => {
+    function weighted(days: number, price: number, weight: number): TrendPoint {
+      return { pricePerUnit: price, recordedAt: new Date(now.getTime() - days * 86400000), weight };
+    }
+
+    it('treats an absent weight as 1, preserving the unweighted result', () => {
+      const points = [ago(2, 110), ago(4, 112), ago(10, 100), ago(12, 98)];
+      const withOnes = points.map((p) => ({ ...p, weight: 1 }));
+
+      expect(changePct(withOnes, now, 7)).toBe(changePct(points, now, 7));
+    });
+
+    it('lets a heavily weighted observation dominate its window', () => {
+      // Recent window: 200 at weight 10 against 100 at weight 1 — the weighted
+      // mean is ~190, so this is a rise. The plain mean is 150, a smaller one.
+      const points = [
+        weighted(2, 200, 10),
+        weighted(3, 100, 1),
+        weighted(10, 100, 1),
+        weighted(11, 100, 1),
+      ];
+
+      const pct = changePct(points, now, 7);
+      expect(pct).not.toBeNull();
+      expect(pct as number).toBeGreaterThan(80);
+      expect(classifyTrend(points, now).direction).toBe('RISING');
+    });
+
+    it('can reverse the classification a plain mean would have given', () => {
+      // Unweighted, the recent window averages 105 against 100 — a rise inside
+      // the ±5% stable band. Weighting the low observation heavily makes the
+      // recent window genuinely lower, which is a fall.
+      const points = [
+        weighted(2, 90, 20),
+        weighted(3, 120, 1),
+        weighted(10, 100, 1),
+        weighted(11, 100, 1),
+      ];
+
+      expect(classifyTrend(points, now).direction).toBe('FALLING');
+    });
+
+    it('ignores zero-weight observations entirely', () => {
+      const points = [
+        weighted(2, 500, 0),
+        weighted(3, 110, 1),
+        weighted(10, 100, 1),
+        weighted(11, 100, 1),
+      ];
+
+      expect(changePct(points, now, 7)).toBe(10);
+    });
+  });
 });
 
 describe('demand', () => {

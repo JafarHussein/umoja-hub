@@ -220,3 +220,129 @@ describe('assembleRecommendation', () => {
     expect(rec.recommendedPricePerUnit as number).toBeLessThan(100);
   });
 });
+
+/**
+ * D12 — the anti-feedback rule (`06` §3).
+ *
+ * Without it, a farmer types a price, saves, reopens the form, and the
+ * recommendation has drifted toward whatever they typed: their own asking price
+ * became evidence for the advice given back to them. Their completed sales are
+ * deliberately kept, because those are settled facts rather than aspirations.
+ */
+describe('assembleRecommendation — excludeFarmerId', () => {
+  const OWNER = 'farmer-owner';
+
+  function ownListing(price: number, daysAgo: number): EnginePoint {
+    return point({
+      pricePerUnit: price,
+      county: 'Kiambu',
+      source: PriceHistorySource.LISTING_CREATED,
+      farmerId: OWNER,
+      recordedAt: new Date(NOW.getTime() - daysAgo * 86400000),
+    });
+  }
+
+  function marketSale(price: number, daysAgo: number): EnginePoint {
+    return point({
+      pricePerUnit: price,
+      county: 'Kiambu',
+      source: PriceHistorySource.ORDER_COMPLETED,
+      farmerId: 'someone-else',
+      recordedAt: new Date(NOW.getTime() - daysAgo * 86400000),
+    });
+  }
+
+  const base = { crop: 'tomatoes', county: 'Kiambu', unit: 'KG', demandInputs: ZERO_DEMAND, now: NOW };
+
+  it('drops the requesting farmer’s own asking prices', () => {
+    const points = [
+      marketSale(70, 1),
+      marketSale(72, 3),
+      marketSale(74, 5),
+      ownListing(500, 2),
+      ownListing(520, 4),
+    ];
+
+    const withOwn = assembleRecommendation({ ...base, points });
+    const withoutOwn = assembleRecommendation({ ...base, points, excludeFarmerId: OWNER });
+
+    expect(withOwn.basis.dataPointCount).toBe(5);
+    expect(withoutOwn.basis.dataPointCount).toBe(3);
+    expect(withoutOwn.recommendedPricePerUnit as number).toBeLessThan(100);
+  });
+
+  it('keeps the same farmer’s completed sales — those are settled facts', () => {
+    const points = [
+      point({
+        pricePerUnit: 70,
+        county: 'Kiambu',
+        source: PriceHistorySource.ORDER_COMPLETED,
+        farmerId: OWNER,
+      }),
+      marketSale(72, 3),
+      marketSale(74, 5),
+      ownListing(500, 2),
+    ];
+
+    const rec = assembleRecommendation({ ...base, points, excludeFarmerId: OWNER });
+
+    expect(rec.basis.dataPointCount).toBe(3);
+    expect(rec.recommendedPricePerUnit as number).toBeLessThan(100);
+  });
+
+  it('leaves other farmers’ listings untouched', () => {
+    const points = [
+      marketSale(70, 1),
+      marketSale(72, 3),
+      point({
+        pricePerUnit: 74,
+        county: 'Kiambu',
+        source: PriceHistorySource.LISTING_CREATED,
+        farmerId: 'another-farmer',
+      }),
+      ownListing(500, 2),
+    ];
+
+    const rec = assembleRecommendation({ ...base, points, excludeFarmerId: OWNER });
+
+    expect(rec.basis.dataPointCount).toBe(3);
+  });
+
+  it('is a no-op when the farmer has no listings of their own', () => {
+    const points = [marketSale(70, 1), marketSale(72, 3), marketSale(74, 5)];
+
+    const withFilter = assembleRecommendation({ ...base, points, excludeFarmerId: OWNER });
+    const without = assembleRecommendation({ ...base, points });
+
+    expect(withFilter.recommendedPricePerUnit).toBe(without.recommendedPricePerUnit);
+    expect(withFilter.basis.dataPointCount).toBe(without.basis.dataPointCount);
+  });
+
+  it('does not drop points that carry no farmerId at all', () => {
+    const points = [
+      point({ pricePerUnit: 70, county: 'Kiambu', source: PriceHistorySource.LISTING_CREATED }),
+      marketSale(72, 3),
+      marketSale(74, 5),
+    ];
+
+    const rec = assembleRecommendation({ ...base, points, excludeFarmerId: OWNER });
+
+    expect(rec.basis.dataPointCount).toBe(3);
+  });
+
+  it('also removes them from the trend, not just the median', () => {
+    // Own listings climb steeply in the recent window; market sales are flat.
+    const points = [
+      marketSale(100, 2),
+      marketSale(100, 4),
+      marketSale(100, 10),
+      marketSale(100, 12),
+      ownListing(400, 1),
+      ownListing(420, 3),
+    ];
+
+    const withoutOwn = assembleRecommendation({ ...base, points, excludeFarmerId: OWNER });
+
+    expect(withoutOwn.trend.direction).toBe('STABLE');
+  });
+});

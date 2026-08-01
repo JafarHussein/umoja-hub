@@ -72,6 +72,7 @@ interface RowOptions {
   unit?: string;
   daysAgo?: number;
   source?: PriceHistorySource;
+  farmerId?: mongoose.Types.ObjectId;
 }
 
 function row(pricePerUnit: number, options: RowOptions = {}) {
@@ -81,6 +82,7 @@ function row(pricePerUnit: number, options: RowOptions = {}) {
     unit = 'KG',
     daysAgo = 5,
     source = PriceHistorySource.ORDER_COMPLETED,
+    farmerId,
   } = options;
   return {
     cropName,
@@ -88,6 +90,7 @@ function row(pricePerUnit: number, options: RowOptions = {}) {
     pricePerUnit,
     unit,
     source,
+    ...(farmerId ? { farmerId } : {}),
     recordedAt: new Date(Date.now() - daysAgo * DAY_MS),
   };
 }
@@ -359,5 +362,63 @@ describe('D14 — buyer fairness over a real listing', () => {
     const fairness = await getListingFairness(String(new mongoose.Types.ObjectId()));
 
     expect(fairness).toBeNull();
+  });
+});
+
+describe('D12 — excludeFarmerId through the real query', () => {
+  it('drops the farmer’s own asking prices but keeps their completed sales', () => {
+    return (async () => {
+      const county = freshCounty();
+      const owner = new mongoose.Types.ObjectId();
+      const other = new mongoose.Types.ObjectId();
+
+      await PriceHistory.insertMany([
+        row(40, { county, farmerId: other, daysAgo: 1 }),
+        row(42, { county, farmerId: other, daysAgo: 3 }),
+        row(44, { county, farmerId: owner, daysAgo: 5 }),
+        row(500, { county, farmerId: owner, daysAgo: 2, source: PriceHistorySource.LISTING_CREATED }),
+        row(520, { county, farmerId: owner, daysAgo: 4, source: PriceHistorySource.LISTING_CREATED }),
+      ]);
+
+      const withOwn = await composeRecommendation({ crop: 'Maize', county, unit: 'KG' });
+      const withoutOwn = await composeRecommendation({
+        crop: 'Maize',
+        county,
+        unit: 'KG',
+        excludeFarmerId: String(owner),
+      });
+
+      // Five points seen normally; the two own listings drop out, and the
+      // owner's own COMPLETED sale (44) survives because it is a settled fact.
+      expect(withOwn.basis.dataPointCount).toBe(5);
+      expect(withoutOwn.basis.dataPointCount).toBe(3);
+      expect(withoutOwn.recommendedPricePerUnit as number).toBeLessThan(100);
+    })();
+  });
+
+  it('keys the cache on excludeFarmerId so the two views cannot collide', async () => {
+    const county = freshCounty();
+    const owner = new mongoose.Types.ObjectId();
+
+    await PriceHistory.insertMany([
+      row(40, { county, daysAgo: 1 }),
+      row(42, { county, daysAgo: 3 }),
+      row(44, { county, daysAgo: 5 }),
+      row(900, { county, farmerId: owner, daysAgo: 2, source: PriceHistorySource.LISTING_CREATED }),
+      row(920, { county, farmerId: owner, daysAgo: 4, source: PriceHistorySource.LISTING_CREATED }),
+    ]);
+
+    // Warm the unfiltered view first. If excludeFarmerId were absent from the
+    // key, the filtered call would be served this cached answer.
+    const unfiltered = await composeRecommendation({ crop: 'Maize', county, unit: 'KG' });
+    const filtered = await composeRecommendation({
+      crop: 'Maize',
+      county,
+      unit: 'KG',
+      excludeFarmerId: String(owner),
+    });
+
+    expect(unfiltered.basis.dataPointCount).toBe(5);
+    expect(filtered.basis.dataPointCount).toBe(3);
   });
 });

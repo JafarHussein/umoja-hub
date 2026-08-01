@@ -8,6 +8,8 @@
 // See context/PRICE_INTELLIGENCE_ENGINE_DESIGN.md Deliverable 4.
 // ---------------------------------------------------------------------------
 
+import { weightedMean } from './weighting';
+
 export type TrendDirection = 'RISING' | 'STABLE' | 'FALLING';
 
 export interface TrendResult {
@@ -20,6 +22,17 @@ export interface TrendResult {
 export interface TrendPoint {
   pricePerUnit: number;
   recordedAt: Date;
+  /**
+   * Data-quality weight for this observation (D11). Every other statistic in the
+   * engine is weighted; the trend windows were the last unweighted ones, so a
+   * stale asking price from an untrusted farmer counted as much as yesterday's
+   * settled sale when deciding whether prices are rising — and that ±5%
+   * classification drives the badge the farmer sees.
+   *
+   * Optional, defaulting to 1: callers that legitimately have no weights
+   * (`cooperativeInsights`, `priceAnalytics`) keep the plain mean they had.
+   */
+  weight?: number;
 }
 
 /** Movement beyond ±5% is treated as a real rise/fall, otherwise stable. */
@@ -38,7 +51,10 @@ function meanInWindow(
     return t >= toMs && t < fromMs;
   });
   if (inWindow.length === 0) return null;
-  return inWindow.reduce((sum, p) => sum + p.pricePerUnit, 0) / inWindow.length;
+  // Weighted, so the same data-quality terms that decide the headline price also
+  // decide the direction. `weightedMean` is reused rather than reimplemented —
+  // one definition of "weighted average" in the engine.
+  return weightedMean(inWindow.map((p) => ({ value: p.pricePerUnit, weight: p.weight ?? 1 })));
 }
 
 /**

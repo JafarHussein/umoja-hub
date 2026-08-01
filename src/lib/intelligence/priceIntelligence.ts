@@ -83,6 +83,8 @@ export interface EnginePoint {
   recordedAt: Date;
   tier: FarmerTrustTier | null;
   isDisputed: boolean;
+  /** Who produced this observation. Needed only for the D12 anti-feedback rule. */
+  farmerId?: string | null;
 }
 
 /**
@@ -105,6 +107,15 @@ export interface AssembleInput {
   county: string;
   unit: string;
   quantity?: number | undefined;
+  /**
+   * Suppresses this farmer's own `LISTING_CREATED` points (D12).
+   *
+   * Without it, typing a price, saving, and reopening the form nudges the
+   * recommendation toward whatever they typed — the farmer's own asking price
+   * becomes evidence for the advice given back to them. Their *completed sales*
+   * deliberately stay: those are settled facts, not aspirations.
+   */
+  excludeFarmerId?: string | undefined;
   /** Points over the full TREND_LOOKBACK window (engine fetches this span). */
   points: readonly EnginePoint[];
   demandInputs: DemandInputs;
@@ -134,7 +145,22 @@ export function assembleRecommendation(input: AssembleInput): PriceRecommendatio
   const { county, unit } = input;
 
   const windowCutoff = now.getTime() - RECO_WINDOW_DAYS * DAY_MS;
-  const comparable = input.points.filter((p) => sameUnit(p.unit, unit));
+
+  // D12 — applied before anything else, so the farmer's own asking prices are
+  // absent from the median, the range, the averages and the trend alike. Only
+  // LISTING_CREATED is dropped; their completed sales remain evidence.
+  const eligible = input.excludeFarmerId
+    ? input.points.filter(
+        (p) =>
+          !(
+            p.source === PriceHistorySource.LISTING_CREATED &&
+            p.farmerId != null &&
+            String(p.farmerId) === input.excludeFarmerId
+          )
+      )
+    : input.points;
+
+  const comparable = eligible.filter((p) => sameUnit(p.unit, unit));
   const scoped = comparable
     .map((p) => ({ ...p, scope: scopeOf(county, p.county) }))
     .filter((p) => p.recordedAt.getTime() >= windowCutoff);
@@ -203,9 +229,24 @@ export function assembleRecommendation(input: AssembleInput): PriceRecommendatio
   // Trend uses the full lookback (not just the 90-day window) for the chosen
   // tier — still restricted to the requested unit, or it would compare a BAG
   // series against a KG one and report a meaningless percentage change.
+  //
+  // Each window is a weighted mean (D11), carrying the same data-quality terms
+  // as the headline figure, with the geographic term held neutral exactly as the
+  // national average does: within an already tier-filtered series, distance
+  // governs how relevant a point is, not how true it is of the direction.
   const trendPoints: TrendPoint[] = comparable
     .filter((p) => tierMatch(scopeOf(county, p.county)))
-    .map((p) => ({ pricePerUnit: p.pricePerUnit, recordedAt: p.recordedAt }));
+    .map((p) => ({
+      pricePerUnit: p.pricePerUnit,
+      recordedAt: p.recordedAt,
+      weight: pointWeight({
+        ageDays: (now.getTime() - p.recordedAt.getTime()) / DAY_MS,
+        source: p.source,
+        tier: p.tier,
+        scope: 'COUNTY',
+        isDisputed: p.isDisputed,
+      }),
+    }));
   const trend = classifyTrend(trendPoints, now);
 
   const demand = scoreDemand(input.demandInputs);
@@ -277,6 +318,8 @@ interface ComposeInput {
   county: string;
   unit: string;
   quantity?: number | undefined;
+  /** See `AssembleInput.excludeFarmerId` (D12). Enters the cache key. */
+  excludeFarmerId?: string | undefined;
 }
 
 /**
@@ -379,6 +422,7 @@ async function computeRecommendation(input: ComposeInput): Promise<PriceRecommen
         recordedAt: new Date(p.recordedAt),
         tier: tierMap.get(String(p.farmerId)) ?? null,
         isDisputed: p.orderId ? disputedSet.has(String(p.orderId)) : false,
+        farmerId: p.farmerId ? String(p.farmerId) : null,
       }));
 
     // Demand metrics, scoped to crop + county. Best-effort; zeros on any failure.
@@ -443,6 +487,7 @@ async function computeRecommendation(input: ComposeInput): Promise<PriceRecommen
       county: input.county,
       unit: input.unit,
       quantity: input.quantity,
+      excludeFarmerId: input.excludeFarmerId,
       points,
       demandInputs,
       now,
@@ -475,16 +520,24 @@ async function computeRecommendation(input: ComposeInput): Promise<PriceRecommen
  * it would mint a fresh entry on every keystroke in the quantity field and
  * defeat the cache. The market view is computed once and the caller's quantity
  * applied to it afterwards.
+ *
+ * `excludeFarmerId` DOES enter the key, because unlike quantity it changes the
+ * point set the view is built from. Its cardinality is bounded by the farmers
+ * actively editing a listing, which is small.
  */
 export async function composeRecommendation(input: ComposeInput): Promise<PriceRecommendation> {
   const recommendation = await cached(
-    cacheKey('price-reco', input.crop, input.county, input.unit),
+    cacheKey('price-reco', input.crop, input.county, input.unit, input.excludeFarmerId ?? ''),
     RECOMMENDATION_TTL_SECONDS,
     () =>
       computeRecommendation({
         crop: input.crop,
         county: input.county,
         unit: input.unit,
+        // Must be forwarded, and must match the cache key above. `quantity` is
+        // the only field deliberately withheld — it is applied to the cached
+        // view afterwards.
+        excludeFarmerId: input.excludeFarmerId,
       }),
     {
       // A zero-confidence result is indistinguishable from one produced while

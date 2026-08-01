@@ -216,11 +216,11 @@ Caching (`priceIntelligence.ts:471`) is unchanged in structure and needs two adj
 
 ## 7. Defects registered by this document
 
-| # | Defect | Fix |
-|---|---|---|
-| **D11** | `trend.ts` uses unweighted window means | Weighted means, geographic term neutral (`06` §6) |
-| **D12** | A farmer's own listing feeds their own recommendation | `excludeFarmerId` on `LISTING_CREATED` points |
-| **D13** | `/api/prices` computes mean/min/max across mixed units; `MarketInsight` lookup bypasses the taxonomy | Delete the stats block; use `resolveCrop`; require `unit` |
+| # | Defect | Fix | Status |
+|---|---|---|---|
+| **D11** | `trend.ts` uses unweighted window means | Weighted means, geographic term neutral (`06` §6) | **Fixed** 2026-08-01 — `TrendPoint.weight`, `weightedMean` per window |
+| **D12** | A farmer's own listing feeds their own recommendation | `excludeFarmerId` on `LISTING_CREATED` points | **Fixed** 2026-08-01 — id taken from the session, never the query string; in the cache key |
+| **D13** | `/api/prices` computes mean/min/max across mixed units; `MarketInsight` lookup bypasses the taxonomy | Delete the stats block; use `resolveCrop`; require `unit` | **Fixed** 2026-08-01 — premium now measured against the engine's median |
 
 ---
 
