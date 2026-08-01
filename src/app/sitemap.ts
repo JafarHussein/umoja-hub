@@ -1,14 +1,15 @@
 import type { MetadataRoute } from 'next';
 import { doorways } from '@/components/website/doorways';
+import { siteUrl } from '@/lib/env';
 
 /**
  * Sitemap for the public website (foundation §13 — findability for auditors,
  * researchers, and search/AI crawlers). Only the publicly indexable surfaces:
  * the Documentation Stream homepage and the five audience doorways. Dashboard,
  * API, and auth routes are private and excluded (see robots.ts). Base URL
- * mirrors the root layout's metadataBase pattern.
+ * shares the root layout's metadataBase resolution.
  */
-const base = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+const base = siteUrl();
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

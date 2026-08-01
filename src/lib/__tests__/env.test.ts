@@ -1,4 +1,4 @@
-import { validateEnv } from '../env';
+import { validateEnv, siteUrl } from '../env';
 
 // Every always-required var, set to a placeholder. The M-Pesa vars are
 // deliberately omitted so we can assert the conditional requirement.
@@ -68,5 +68,68 @@ describe('validateEnv — conditional M-Pesa requirement', () => {
     for (const key of MPESA_VARS) env[key] = 'x';
     process.env = env as unknown as NodeJS.ProcessEnv;
     expect(() => validateEnv()).not.toThrow();
+  });
+});
+
+describe('siteUrl — NEXTAUTH_URL resolution', () => {
+  const saved = process.env;
+
+  beforeEach(() => {
+    process.env = { ...saved };
+  });
+
+  afterEach(() => {
+    process.env = saved;
+  });
+
+  function withUrl(value: string | undefined): string {
+    if (value === undefined) delete process.env['NEXTAUTH_URL'];
+    else process.env['NEXTAUTH_URL'] = value;
+    return siteUrl();
+  }
+
+  it('uses a well-formed https URL as given', () => {
+    expect(withUrl('https://umojahub.co.ke')).toBe('https://umojahub.co.ke');
+  });
+
+  it('keeps a non-default port and an http scheme', () => {
+    expect(withUrl('http://localhost:3000')).toBe('http://localhost:3000');
+  });
+
+  it('strips a trailing slash so callers can concatenate paths', () => {
+    expect(withUrl('https://umojahub.co.ke/')).toBe('https://umojahub.co.ke');
+  });
+
+  it('preserves a base path', () => {
+    expect(withUrl('https://umojahub.co.ke/app')).toBe('https://umojahub.co.ke/app');
+  });
+
+  // The production defect: `new URL()` throws ERR_INVALID_URL on this, which
+  // failed the whole build from the root layout's metadataBase.
+  it('upgrades a schemeless host to https rather than throwing', () => {
+    expect(withUrl('umojahub.co.ke')).toBe('https://umojahub.co.ke');
+  });
+
+  it('resolves a bare host:port, which URL parses as a bogus protocol', () => {
+    expect(withUrl('localhost:3000')).toBe('https://localhost:3000');
+  });
+
+  it('falls back when the variable is unset', () => {
+    expect(withUrl(undefined)).toBe('http://localhost:3000');
+  });
+
+  it('falls back on an empty or whitespace-only value', () => {
+    expect(withUrl('')).toBe('http://localhost:3000');
+    expect(withUrl('   ')).toBe('http://localhost:3000');
+  });
+
+  it('rejects a non-http protocol', () => {
+    expect(withUrl('ftp://umojahub.co.ke')).toBe('http://localhost:3000');
+  });
+
+  it('always returns something new URL() accepts', () => {
+    for (const value of ['umojahub.co.ke', '', 'ftp://x', 'localhost:3000', '://']) {
+      expect(() => new URL(withUrl(value))).not.toThrow();
+    }
   });
 });

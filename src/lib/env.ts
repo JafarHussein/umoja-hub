@@ -87,3 +87,51 @@ export function env(key: RequiredEnvVar): string {
   }
   return value;
 }
+
+/**
+ * The deployment's absolute base URL, derived from `NEXTAUTH_URL`, without a
+ * trailing slash.
+ *
+ * `validateEnv` only checks that `NEXTAUTH_URL` is *present*, and every consumer
+ * that merely concatenates strings accepts a malformed one silently. `new URL()`
+ * does not: a schemeless value such as `umojahub.co.ke` throws
+ * `ERR_INVALID_URL`. In the root layout's `metadataBase` that throw happens
+ * while Next is collecting page configuration, which fails the whole production
+ * build — this is exactly how production deploys broke. A cosmetic metadata URL
+ * must never be able to take the build down, so resolution is total:
+ *
+ * - a well-formed http(s) URL is used as given;
+ * - a bare host is upgraded to https, covering the missing-scheme case;
+ * - anything else falls back to localhost.
+ *
+ * A wrong-but-usable base URL degrades metadata and sitemap links. It does not
+ * stop the deploy, and the operator still has to correct the variable.
+ */
+export function siteUrl(): string {
+  const fallback = 'http://localhost:3000';
+  const raw = process.env['NEXTAUTH_URL']?.trim();
+  if (!raw) return fallback;
+
+  // `new URL('localhost:3000')` parses with protocol `localhost:` rather than
+  // throwing, so the protocol has to be checked and not just the parse.
+  const asUrl = (candidate: string): string | null => {
+    try {
+      const parsed = new URL(candidate);
+      const ok = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      return ok ? parsed.toString().replace(/\/$/, '') : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const direct = asUrl(raw);
+  if (direct) return direct;
+
+  // Only a value that named no scheme may be upgraded. Prefixing `https://` on
+  // one that did (`ftp://host`) parses into nonsense — host `ftp`, path
+  // `//host` — rather than failing, so an explicit non-http scheme is rejected
+  // outright instead.
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(raw)) return fallback;
+
+  return asUrl(`https://${raw}`) ?? fallback;
+}
