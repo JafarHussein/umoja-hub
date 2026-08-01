@@ -31,9 +31,19 @@ export const TRUST_WEIGHT: Record<FarmerTrustTier, number> = {
   [FarmerTrustTier.NEW]: 0.85,
 };
 
-/** Local data dominates; wider tiers only fill out the evidence base. */
+/**
+ * Local data dominates; wider tiers only fill out the evidence base.
+ *
+ * ADJACENT sits at 0.8, between COUNTY and REGION (D7, `06` §2). A bordering
+ * county is a genuinely nearer market than a province-mate two counties away,
+ * so it is discounted only slightly. The constant is PROVISIONAL — it is
+ * reasoned, not derived, and is to be calibrated against backtest once external
+ * price history lands. That distinction is deliberate: the other constants here
+ * are locked, this one is a placeholder with a number in it.
+ */
 export const GEO_WEIGHT: Record<GeoScope, number> = {
   COUNTY: 1.0,
+  ADJACENT: 0.8,
   REGION: 0.6,
   NATIONAL: 0.3,
 };

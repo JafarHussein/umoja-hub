@@ -39,8 +39,25 @@ describe('regions', () => {
 
   it('classifies scope relative to a target county', () => {
     expect(scopeOf('Kiambu', 'Kiambu')).toBe('COUNTY');
-    expect(scopeOf('Kiambu', 'Nyeri')).toBe('REGION'); // both Central
+    expect(scopeOf('Kiambu', 'Nyeri')).toBe('REGION'); // both Central, not bordering
     expect(scopeOf('Kiambu', 'Kisumu')).toBe('NATIONAL');
+  });
+
+  it('classifies a bordering county as ADJACENT, ahead of its region (D7)', () => {
+    // Murang'a borders Kiambu and shares its region — the narrower claim wins.
+    expect(scopeOf('Kiambu', "Murang'a")).toBe('ADJACENT');
+    // Kajiado borders Kiambu from a different province entirely. Under the old
+    // ladder this was NATIONAL, indistinguishable from a point in Mandera.
+    expect(scopeOf('Kiambu', 'Kajiado')).toBe('ADJACENT');
+  });
+
+  it('gives Nairobi neighbours instead of dropping it straight to national (D7)', () => {
+    // The defect as reported: Nairobi is a former province of one, so every
+    // non-Nairobi point scored NATIONAL no matter how close the market.
+    expect(scopeOf('Nairobi', 'Kiambu')).toBe('ADJACENT');
+    expect(scopeOf('Nairobi', 'Machakos')).toBe('ADJACENT');
+    expect(scopeOf('Nairobi', 'Kajiado')).toBe('ADJACENT');
+    expect(scopeOf('Nairobi', 'Kisumu')).toBe('NATIONAL');
   });
 
   it('lists region peers including itself', () => {
@@ -85,7 +102,8 @@ describe('weighting — factors', () => {
   });
 
   it('weights local data above distant data', () => {
-    expect(geoWeight('COUNTY')).toBeGreaterThan(geoWeight('REGION'));
+    expect(geoWeight('COUNTY')).toBeGreaterThan(geoWeight('ADJACENT'));
+    expect(geoWeight('ADJACENT')).toBeGreaterThan(geoWeight('REGION'));
     expect(geoWeight('REGION')).toBeGreaterThan(geoWeight('NATIONAL'));
   });
 

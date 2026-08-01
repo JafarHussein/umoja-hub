@@ -25,7 +25,7 @@ Every feature below carries a status:
 | Crop (canonical id) | **LIVE** | `taxonomy/crops.ts` | 17 crops, alias resolution via `resolveCrop` |
 | County | **LIVE** | `taxonomy/counties.ts` | 47 counties, spelling-tolerant resolution |
 | Region (8 former provinces) | **LIVE** | `intelligence/regions.ts` | Fallback tier |
-| **County adjacency** | **BLOCKED** | Derived — see §2 | Unblocks "what are neighbouring counties charging" (D7). Blocked on L4 (ODbL review) |
+| **County adjacency** | **LIVE** | `taxonomy/adjacency.ts` — see §2 | Hand-assembled, so L4 (ODbL) never applied. `ADJACENT` tier live in the engine (D7); the `neighbours` output field of `09` §3.2 remains to be built on top of it |
 | Unit | **LIVE** | `taxonomy/units.ts` | Filtered, never converted |
 | Market | **BUILD** | KAMIS `Market` column | Finer than county; the resolution external data actually arrives at |
 | Sub-county | **ABSENT** | — | Not on `MarketplaceListing`, not in any price source. The brief names it; it does not exist. |
@@ -104,6 +104,8 @@ with a geographic weight between `COUNTY` (1.0) and `REGION` (0.6) — proposed 
 This is what makes *"what are neighbouring counties charging"* answerable, and it improves the fallback ladder for every county, not only Nairobi.
 
 **Blocked on L4** — the ODbL share-alike review from `03_DATA_SOURCE_COMPARISON.md` §2.2. If the review is unclear, hand-assembling 47 adjacency lists from public maps is a few hours of work and sidesteps the licence question entirely. That fallback should be taken rather than delaying the feature.
+
+> **Built 2026-08-01.** The hand-assembly fallback was taken, so L4 never applied and no share-alike obligation attaches. `src/lib/taxonomy/adjacency.ts` holds the 47 lists, derived from the Constitution of Kenya (2010) First Schedule boundaries as rendered on public administrative maps; the asserted properties above are all covered by tests. `ADJACENT` sits between `COUNTY` and `REGION` in the ladder at geographic weight **0.8** and confidence factor **0.9**, both flagged in code as provisional pending backtest. Two judgement calls worth recording: land borders only — a shared lake shoreline is not adjacency, so Homa Bay does not neighbour Siaya across the Winam Gulf — and where a contact is disputed or vanishingly short the pair is omitted, on the reasoning that a missing far-flung edge costs a little evidence while a wrong edge imports a market that is not really next door. The `neighbours` output field (`09` §3.2) is now unblocked but **not** built: it is a farmer-facing surface and belongs to the UI gates, not to this defect.
 
 ---
 

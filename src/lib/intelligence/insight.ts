@@ -61,6 +61,13 @@ function seasonClause(crop: string, season: SeasonPhase): string {
 
 function scopeClause(county: string, geoScope: GeoScope): string {
   if (geoScope === 'COUNTY') return '';
+  if (geoScope === 'ADJACENT') {
+    // Deliberately unnamed. The builder knows which counties border this one but
+    // not which of them actually contributed a point, so naming them would claim
+    // evidence that may not exist. "Neighbouring" is the strongest phrasing that
+    // is certainly true.
+    return ` This estimate draws on neighbouring counties as well as ${county}, while local activity builds.`;
+  }
   if (geoScope === 'REGION') {
     const region = regionOf(county);
     return ` This estimate draws on ${region ?? 'nearby'} regional data while ${county} activity builds.`;

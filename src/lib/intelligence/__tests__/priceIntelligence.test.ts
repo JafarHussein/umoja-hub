@@ -70,6 +70,99 @@ describe('assembleRecommendation', () => {
     expect(rec.insight).toContain('Kiambu');
   });
 
+  // ── D7 — the ADJACENT tier ────────────────────────────────────────────────
+
+  it('widens to bordering counties before the region (D7)', () => {
+    const points: EnginePoint[] = [
+      point({ pricePerUnit: 70, county: 'Kiambu' }), // 1 county point — short of MIN_POINTS
+      point({ pricePerUnit: 72, county: "Murang'a" }), // borders Kiambu
+      point({ pricePerUnit: 74, county: 'Kajiado' }), // borders Kiambu, different province
+      point({ pricePerUnit: 200, county: 'Nyeri' }), // same region, does NOT border
+    ];
+
+    const rec = assembleRecommendation({
+      crop: 'tomatoes',
+      county: 'Kiambu',
+      unit: 'KG',
+      points,
+      demandInputs: ZERO_DEMAND,
+      now: NOW,
+    });
+
+    expect(rec.basis.geoScope).toBe('ADJACENT');
+    // Three adjacent-or-local points clear MIN_POINTS, so the Nyeri outlier is
+    // never reached. The tier is cumulative but it does not overshoot.
+    expect(rec.basis.dataPointCount).toBe(3);
+    expect(rec.recommendedPricePerUnit as number).toBeLessThan(100);
+  });
+
+  it('reaches neighbouring markets for Nairobi instead of falling to national (D7)', () => {
+    // D7 as reported: Nairobi is a former province of one, so its farmers had no
+    // tier between their own county and the whole country. Every one of these
+    // points used to score NATIONAL — the weakest weight and a 0.55 confidence
+    // penalty — despite being the closest markets that exist.
+    const points: EnginePoint[] = [
+      point({ pricePerUnit: 70, county: 'Kiambu' }),
+      point({ pricePerUnit: 72, county: 'Machakos' }),
+      point({ pricePerUnit: 74, county: 'Kajiado' }),
+    ];
+
+    const rec = assembleRecommendation({
+      crop: 'tomatoes',
+      county: 'Nairobi',
+      unit: 'KG',
+      points,
+      demandInputs: ZERO_DEMAND,
+      now: NOW,
+    });
+
+    expect(rec.basis.geoScope).toBe('ADJACENT');
+    expect(rec.insight).toContain('neighbouring counties');
+  });
+
+  it('penalises an adjacent fallback less than a national one (D7)', () => {
+    // Same prices, same recency, same trust — only the geography differs. The
+    // adjacent read is a better answer to "what is this worth near me" and the
+    // confidence figure has to say so.
+    const forCounty = (county: string, pointCounty: string) =>
+      assembleRecommendation({
+        crop: 'tomatoes',
+        county,
+        unit: 'KG',
+        points: [70, 72, 74, 76].map((p) => point({ pricePerUnit: p, county: pointCounty })),
+        demandInputs: ZERO_DEMAND,
+        now: NOW,
+      });
+
+    const adjacent = forCounty('Nairobi', 'Kiambu');
+    const national = forCounty('Nairobi', 'Kisumu');
+
+    expect(adjacent.basis.geoScope).toBe('ADJACENT');
+    expect(national.basis.geoScope).toBe('NATIONAL');
+    expect(adjacent.confidence).toBeGreaterThan(national.confidence);
+  });
+
+  it('still prefers county-local data over a bordering county (D7)', () => {
+    // The new tier must widen the ladder, not dilute a county that stands alone.
+    const points: EnginePoint[] = [
+      ...[70, 72, 74].map((p) => point({ pricePerUnit: p, county: 'Kiambu' })),
+      ...[300, 320].map((p) => point({ pricePerUnit: p, county: 'Kajiado' })),
+    ];
+
+    const rec = assembleRecommendation({
+      crop: 'tomatoes',
+      county: 'Kiambu',
+      unit: 'KG',
+      points,
+      demandInputs: ZERO_DEMAND,
+      now: NOW,
+    });
+
+    expect(rec.basis.geoScope).toBe('COUNTY');
+    expect(rec.basis.dataPointCount).toBe(3);
+    expect(rec.recommendedPricePerUnit as number).toBeLessThan(100);
+  });
+
   it('widens to the region when the county is sparse', () => {
     const points: EnginePoint[] = [
       point({ pricePerUnit: 70, county: 'Kiambu' }), // 1 county point

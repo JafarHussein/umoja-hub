@@ -38,12 +38,48 @@ interface IAlertFormState {
   notificationMethod: string;
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+/**
+ * The middleman comparison, stated as a fact *about* the recommended price
+ * rather than as a price of its own (D4).
+ *
+ * It renders attached beneath the recommendation panel, on the sunken surface
+ * and at body weight — never in the `app-data-l` numerals the recommendation
+ * owns. The visual subordination is the point: a farmer must be able to see at
+ * a glance which figure is the platform's answer and which is context for it.
+ */
+function MiddlemanComparison({
+  benchmark,
+  premiumPct,
+}: {
+  benchmark: number;
+  premiumPct: number | null;
+}) {
+  // No unit is printed beside the benchmark, and this is deliberate: `MarketInsight`
+  // has no `unit` field (D17). The figure is whatever unit the record was authored
+  // in, which for seeded maize is a 90 kg BAG price of 3,400 — rendering that as
+  // "KSh 3,400/kg" beside a KG selector was a flatly false sentence on a farmer's
+  // pricing screen. Dropping the suffix is a stopgap, not the fix: while the unit
+  // is unknown, `platformPremium` can still be comparing a KG median against a BAG
+  // benchmark. D17 is the root-cause fix.
+  const amount = benchmark.toLocaleString(undefined, { maximumFractionDigits: 0 });
   return (
-    <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-      <p className="app-label mb-1 text-app-muted">{label}</p>
-      <p className="app-data-l text-app-ink">{value}</p>
-      {sub && <p className="app-meta mt-1 text-app-faint">{sub}</p>}
+    <div className="rounded-b-app-card border border-t-0 border-app-hairline bg-app-sunken px-5 py-3">
+      <p className="app-body text-app-body">
+        {premiumPct !== null ? (
+          <>
+            That is{' '}
+            <span className={premiumPct >= 0 ? 'text-app-brand' : 'text-app-danger'}>
+              {Math.abs(premiumPct)}% {premiumPct >= 0 ? 'above' : 'below'}
+            </span>{' '}
+            the middleman benchmark of KSh {amount}.
+          </>
+        ) : (
+          <>
+            Middlemen are benchmarked at KSh {amount} here. There is not yet enough platform
+            activity to compare against it.
+          </>
+        )}
+      </p>
     </div>
   );
 }
@@ -118,12 +154,6 @@ export default function PriceIntelligenceDashboard() {
   );
 
   const stats = priceData?.stats;
-  const premiumColor =
-    stats?.platformPremium !== null && stats?.platformPremium !== undefined
-      ? stats.platformPremium >= 0
-        ? 'text-app-brand'
-        : 'text-app-danger'
-      : 'text-app-muted';
 
   return (
     <div className="space-y-6">
@@ -186,42 +216,38 @@ export default function PriceIntelligenceDashboard() {
         </div>
       </div>
 
-      {/* Recommendation panel — the headline guidance */}
-      <PriceRecommendationPanel recommendation={recommendation} isLoading={isRecLoading} />
-
-      {/* Context row. The average/lowest/highest cards were removed with D13 —
-          they were an unweighted mean and a min/max taken across mixed units, so
-          the low and the high were routinely drawn from different units. The
-          headline figure now comes from the recommendation panel above, which is
-          the single place that decides what a crop is worth. */}
-      {stats && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          <StatCard
-            label="Observations"
-            value={String(stats.dataPointCount)}
-            sub={`${selectedUnit} prices in ${period}`}
+      {/* One price system, one headline (D4).
+          D13 removed this page's competing average/lowest/highest — an unweighted
+          mean and a min/max drawn across mixed units — so the two endpoints no
+          longer disagree about the number. What remained was presentational: the
+          MarketInsight figures still sat in a stat-card grid at the same visual
+          weight as the recommendation, reading as a second price system beside
+          it. They are now attached to the recommendation as context for it, and
+          the observation count moved to the chart it actually describes. */}
+      <div>
+        <PriceRecommendationPanel
+          recommendation={recommendation}
+          isLoading={isRecLoading}
+          className={cn(stats?.middlemanBenchmark != null && 'rounded-b-none border-b-0')}
+        />
+        {stats?.middlemanBenchmark != null && (
+          <MiddlemanComparison
+            benchmark={stats.middlemanBenchmark}
+            premiumPct={stats.platformPremium}
           />
-          <StatCard
-            label="Middleman Benchmark"
-            value={
-              stats.middlemanBenchmark !== null ? `KSh ${stats.middlemanBenchmark.toFixed(0)}` : '—'
-            }
-            sub={`per ${selectedUnit}`}
-          />
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-            <p className="app-label mb-1 text-app-muted">Platform Premium</p>
-            <p className={cn('app-data-l', premiumColor)}>
-              {stats.platformPremium !== null
-                ? `${stats.platformPremium > 0 ? '+' : ''}${stats.platformPremium}%`
-                : '—'}
-            </p>
-            <p className="app-meta mt-1 text-app-faint">vs middleman benchmark</p>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Price chart */}
       <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+        {/* The observation count deliberately does NOT appear here. It belongs to
+            the series, not to the recommendation — it counts plotted points over
+            the selected period, a different window and scope from the evidence
+            behind the recommended price, and showing the two as peer statistics
+            is what made this page read as two systems. `PriceTrendChart` already
+            captions itself "KSh per KG · 6 data points" immediately above the
+            plot, which is where a count of plotted points belongs; repeating it
+            in this header would be the same number twice on one screen. */}
         <h3 className="app-h2 mb-4 capitalize text-app-ink">
           {selectedCrop} prices — {selectedCounty}
         </h3>
