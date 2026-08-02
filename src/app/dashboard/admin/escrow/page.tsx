@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, StatusPill, type StatusState } from '@/components/app';
+import { Alert, Button, Modal, StatusPill, Textarea, type StatusState } from '@/components/app';
 import { cn } from '@/lib/cn';
-import { Role, EscrowState } from '@/types';
+import { Role, EscrowState, MediationOutcome } from '@/types';
 
 // ---------------------------------------------------------------------------
-// Admin escrow ledger (P2). Read-only steward view over GET /api/admin/escrow:
-// platform custody totals (held / releasable / in-dispute / refunded / settled)
-// and a per-order ledger with each order's derived escrow state. Release and
-// refund actions live on the Mediation queue; settlement on Payouts — this is
-// the accountability surface that makes the platform a visible trust actor.
+// Admin escrow console. Platform custody totals (held / releasable /
+// in-dispute / refunded / settled) and a per-order ledger with each order's
+// derived escrow state — plus the decision surface over funds still held.
+//
+// An admin can settle held funds directly here, without a dispute having been
+// filed: an order can stall with neither party escalating, and before this the
+// money had nowhere to go. There are only two outcomes because there are only
+// two places held money can go — to the farmer, or back to the buyer. Both
+// demand a written reason and are recorded permanently against the admin.
 // ---------------------------------------------------------------------------
 
 interface ITotals {
@@ -62,6 +67,14 @@ const ESCROW_PILL: Record<EscrowState, { state: StatusState; label: string }> = 
   [EscrowState.REFUNDED]: { state: 'denied', label: 'Refunded' },
 };
 
+// Funds can only be settled while they are genuinely in custody. A releasable
+// or refunded order is already decided; the server enforces this too.
+const SETTLEABLE: EscrowState[] = [
+  EscrowState.HELD,
+  EscrowState.HELD_DISPATCHED,
+  EscrowState.HELD_UNDER_REVIEW,
+];
+
 function formatKES(amount: number): string {
   return `KSh ${amount.toLocaleString()}`;
 }
@@ -104,6 +117,16 @@ export default function AdminEscrowPage(): React.ReactElement {
   const [pageState, setPageState] = useState<PageState>('loading');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // Settlement decision state.
+  const [settling, setSettling] = useState<ILineItem | null>(null);
+  const [outcome, setOutcome] = useState<MediationOutcome.RELEASE | MediationOutcome.REFUND>(
+    MediationOutcome.RELEASE
+  );
+  const [reason, setReason] = useState('');
+  const [settleState, setSettleState] = useState<'idle' | 'submitting'>('idle');
+  const [settleError, setSettleError] = useState<string | null>(null);
+  const [settleNotice, setSettleNotice] = useState<string | null>(null);
+
   const fetchLedger = useCallback(async (state: LedgerFilter): Promise<void> => {
     setPageState('loading');
     try {
@@ -132,6 +155,43 @@ export default function AdminEscrowPage(): React.ReactElement {
       void fetchLedger(filter);
     }
   }, [status, session, router, fetchLedger, filter]);
+
+  function openSettle(item: ILineItem): void {
+    setSettling(item);
+    setOutcome(MediationOutcome.RELEASE);
+    setReason('');
+    setSettleError(null);
+  }
+
+  async function handleSettle(): Promise<void> {
+    if (!settling) return;
+    setSettleState('submitting');
+    setSettleError(null);
+    try {
+      const res = await fetch(`/api/admin/escrow/${settling.orderId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outcome, reason }),
+      });
+      const body = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setSettleError(body.error ?? 'Could not settle these funds.');
+        setSettleState('idle');
+        return;
+      }
+      setSettleNotice(
+        outcome === MediationOutcome.REFUND
+          ? `${formatKES(settling.amountKES)} refunded to ${settling.buyerName} for ${settling.orderReferenceId}.`
+          : `${formatKES(settling.amountKES)} released to ${settling.farmerName} for ${settling.orderReferenceId}.`
+      );
+      setSettling(null);
+      setSettleState('idle');
+      await fetchLedger(filter);
+    } catch {
+      setSettleError('Could not settle these funds. Check your connection and try again.');
+      setSettleState('idle');
+    }
+  }
 
   async function loadMore(): Promise<void> {
     if (!nextCursor) return;
@@ -271,6 +331,17 @@ export default function AdminEscrowPage(): React.ReactElement {
                       {formatKES(item.amountKES)}
                     </span>
                     <StatusPill state={pill.state} label={pill.label} />
+                    <Link
+                      href={`/dashboard/admin/escrow/${item.orderId}`}
+                      className="app-label rounded-app-control px-2 py-1 text-app-muted transition-colors duration-150 hover:bg-app-sunken hover:text-app-ink"
+                    >
+                      Receipt
+                    </Link>
+                    {SETTLEABLE.includes(item.escrowState) && (
+                      <Button variant="secondary" size="sm" onClick={() => openSettle(item)}>
+                        Settle
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -285,6 +356,125 @@ export default function AdminEscrowPage(): React.ReactElement {
             </div>
           )}
         </>
+      )}
+
+      {/* Settlement decision */}
+      <Modal
+        open={settling !== null}
+        onClose={() => setSettling(null)}
+        title="Settle held funds"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setSettling(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant={outcome === MediationOutcome.REFUND ? 'danger' : 'primary'}
+              isLoading={settleState === 'submitting'}
+              disabled={reason.trim().length < 10}
+              onClick={() => void handleSettle()}
+            >
+              {outcome === MediationOutcome.REFUND ? 'Refund the buyer' : 'Release to the farmer'}
+            </Button>
+          </>
+        }
+      >
+        {settling && (
+          <div className="space-y-4">
+            <div className="rounded-app-control border border-app-hairline bg-app-sunken px-3 py-2.5">
+              <p className="app-body-strong capitalize text-app-ink">
+                {settling.cropName}{' '}
+                <span className="app-meta font-app-mono text-app-faint">
+                  {settling.orderReferenceId}
+                </span>
+              </p>
+              <p className="app-meta text-app-muted">
+                {formatKES(settling.amountKES)} held · {settling.farmerName} ←{' '}
+                {settling.buyerName}
+              </p>
+            </div>
+
+            <fieldset className="space-y-2">
+              <legend className="app-label mb-1 text-app-muted">Where do these funds go?</legend>
+              {(
+                [
+                  {
+                    value: MediationOutcome.RELEASE,
+                    title: `Release to ${settling.farmerName}`,
+                    detail:
+                      'Closes the order as completed. The funds join the farmer’s releasable balance and can be paid out.',
+                  },
+                  {
+                    value: MediationOutcome.REFUND,
+                    title: `Refund to ${settling.buyerName}`,
+                    detail:
+                      'Returns the money to the buyer, marks the order disputed and puts the produce back on the marketplace.',
+                  },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={opt.value}
+                  className={cn(
+                    'flex cursor-pointer gap-2.5 rounded-app-control border px-3 py-2.5 transition-colors duration-150',
+                    outcome === opt.value
+                      ? 'border-app-brand bg-app-brand-surface'
+                      : 'border-app-hairline hover:bg-app-sunken'
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="escrow-outcome"
+                    className="mt-1"
+                    checked={outcome === opt.value}
+                    onChange={() => setOutcome(opt.value)}
+                  />
+                  <span>
+                    <span className="app-body-strong block text-app-ink">{opt.title}</span>
+                    <span className="app-meta text-app-muted">{opt.detail}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+
+            <div className="space-y-1.5">
+              <label htmlFor="settle-reason" className="app-label block text-app-muted">
+                Reason (recorded permanently)
+              </label>
+              <Textarea
+                id="settle-reason"
+                rows={3}
+                value={reason}
+                maxLength={500}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Why are you settling these funds without a buyer confirmation?"
+              />
+              <p className="app-meta text-app-faint">
+                Stored on the escrow record and the admin audit log, against your name. Minimum 10
+                characters.
+              </p>
+            </div>
+
+            {settleError && <Alert tone="danger">{settleError}</Alert>}
+          </div>
+        )}
+      </Modal>
+
+      {/* Post-settlement confirmation */}
+      {settleNotice && (
+        <div className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-md">
+          <Alert tone="success">
+            <span className="flex items-center justify-between gap-3">
+              {settleNotice}
+              <button
+                type="button"
+                onClick={() => setSettleNotice(null)}
+                className="app-label shrink-0 text-app-muted hover:text-app-ink"
+              >
+                Dismiss
+              </button>
+            </span>
+          </Alert>
+        </div>
       )}
     </div>
   );

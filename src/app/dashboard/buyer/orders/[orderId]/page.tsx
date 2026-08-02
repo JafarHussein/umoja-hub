@@ -10,9 +10,12 @@ import {
   OrderFulfillmentStatus,
   MediationCategory,
   MediationRequestStatus,
+  MediationInitiator,
   MEDIATION_ESCALATION_HOURS,
   ORDER_PAYMENT_LABEL,
   ORDER_FULFILLMENT_LABEL,
+  FulfillmentStage,
+  FULFILLMENT_STAGE_LABEL,
 } from '@/types';
 import {
   Button,
@@ -24,6 +27,12 @@ import {
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
+import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
+import {
+  MediationPanel,
+  MEDIATION_CATEGORY_LABEL,
+  type IMediationCase,
+} from '@/components/foodhub/MediationPanel';
 
 interface IBuyerOrder {
   _id: string;
@@ -40,31 +49,22 @@ interface IBuyerOrder {
   paidAt: string | null;
   confirmedByFarmerAt: string | null;
   receivedByBuyerAt: string | null;
+  fulfillmentStage: FulfillmentStage | null;
 }
 
 interface IOrdersResponse {
   orders: IBuyerOrder[];
 }
 
-interface IMediation {
-  _id: string;
-  status: MediationRequestStatus;
-  category: MediationCategory;
-  description: string;
-  resolutionNote?: string | null;
-  createdAt: string;
-}
-
-const MEDIATION_CATEGORY_LABEL: Record<MediationCategory, string> = {
-  [MediationCategory.NOT_DELIVERED]: 'Order not delivered',
-  [MediationCategory.QUALITY_ISSUE]: 'Quality issue',
-  [MediationCategory.WRONG_QUANTITY]: 'Wrong quantity',
-  [MediationCategory.OTHER]: 'Other',
-};
+// The mediation case shape and its labels are shared with the farmer surface —
+// both sides must see the same case described the same way.
+type IMediation = IMediationCase;
 
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
+  /** True when the payment simulator is the active provider. */
+  isSimulated?: boolean;
 }
 
 type PageState = 'loading' | 'ready' | 'error' | 'not_found';
@@ -106,6 +106,13 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   }>({ category: MediationCategory.NOT_DELIVERED, description: '' });
   const [mediationState, setMediationState] = useState<ActionState>('idle');
   const [mediationError, setMediationError] = useState<string | null>(null);
+
+  // Whether the payment simulator is active. Drives the waiting-screen copy so
+  // the buyer is never told to expect an STK prompt that will not arrive.
+  const [isSimulated, setIsSimulated] = useState(false);
+
+  const [paymentActionState, setPaymentActionState] = useState<'idle' | 'submitting'>('idle');
+  const [paymentActionError, setPaymentActionError] = useState<string | null>(null);
 
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -185,6 +192,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           const res = await fetch(`/api/orders/${orderId}/payment-status`);
           if (!res.ok) return;
           const data = (await res.json()) as IPaymentStatusResponse;
+          if (data.isSimulated !== undefined) setIsSimulated(data.isSimulated);
           if (data.paymentStatus !== OrderPaymentStatus.PENDING_PAYMENT) {
             stopPolling();
             setOrder((prev) =>
@@ -206,6 +214,35 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     pollingTimer.current = timer;
     return stopPolling;
   }, [pageState, order, stopPolling]);
+
+  // Retry or abandon a payment that did not go through. The order keeps its
+  // reference and its history — only the payment session is new.
+  async function handlePaymentAction(action: 'RETRY' | 'CANCEL'): Promise<void> {
+    if (!order) return;
+    setPaymentActionState('submitting');
+    setPaymentActionError(null);
+    try {
+      const res = await fetch(`/api/orders/${order._id}/payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const body = (await res.json()) as { error?: string; data?: { isSimulated?: boolean } };
+      if (!res.ok) {
+        setPaymentActionError(body.error ?? 'Could not complete that request.');
+        setPaymentActionState('idle');
+        return;
+      }
+      if (body.data?.isSimulated !== undefined) setIsSimulated(body.data.isSimulated);
+      setPaymentActionState('idle');
+      // Re-read the order so the page picks up the new payment state and, on a
+      // retry, restarts the payment poll.
+      await fetchOrder();
+    } catch {
+      setPaymentActionError('Could not complete that request. Check your connection.');
+      setPaymentActionState('idle');
+    }
+  }
 
   async function handleMarkReceived(): Promise<void> {
     if (!order) return;
@@ -422,8 +459,11 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           {activeMediation.status === MediationRequestStatus.IN_REVIEW
             ? 'is reviewing'
             : 'has received'}{' '}
-          your report ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status is
-          unchanged while this is resolved.
+          {activeMediation.initiatedBy === MediationInitiator.BUYER
+            ? 'your report'
+            : `a report from ${order.farmer.firstName}`}{' '}
+          ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status is unchanged
+          while this is resolved.
         </Alert>
       )}
 
@@ -458,6 +498,22 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           mediation decision.
         </Alert>
       )}
+
+      {/* Where the produce is right now — reported by the farmer */}
+      {order.fulfillmentStage &&
+        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+            <p className="app-label text-app-muted">Latest from {order.farmer.firstName}</p>
+            <p className="app-body-strong mt-0.5 text-app-ink">
+              {FULFILLMENT_STAGE_LABEL[order.fulfillmentStage]}
+            </p>
+            <p className="app-meta mt-0.5 text-app-muted">
+              {order.fulfillmentStage === FulfillmentStage.DELIVERED
+                ? 'Once you have checked it, confirm receipt below to release the payment.'
+                : 'Your payment stays protected in escrow until you confirm you have received the order.'}
+            </p>
+          </div>
+        )}
 
       {/* Progress timeline */}
       <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
@@ -494,6 +550,25 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         ))}
       </div>
 
+      {/* Receipt — available from the moment payment is confirmed */}
+      {(order.paymentStatus === OrderPaymentStatus.PAID ||
+        order.paymentStatus === OrderPaymentStatus.REFUNDED) && (
+        <Link
+          href={`/dashboard/buyer/orders/${order._id}/receipt`}
+          className="flex items-center justify-between gap-3 rounded-app-card border border-app-hairline bg-app-card p-4 transition-colors duration-150 hover:bg-app-sunken"
+        >
+          <div>
+            <p className="app-body-strong text-app-ink">View receipt</p>
+            <p className="app-meta text-app-muted">
+              M-Pesa reference, escrow reference and the full transaction history.
+            </p>
+          </div>
+          <span aria-hidden className="app-body text-app-muted">
+            →
+          </span>
+        </Link>
+      )}
+
       {/* ── Action zone ─────────────────────────────────────────────────── */}
 
       {/* PENDING_PAYMENT — waiting for M-Pesa */}
@@ -507,8 +582,39 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             <p className="app-body-strong text-app-ink">Awaiting payment</p>
           </div>
           <p className="app-body text-app-muted">
-            Check your phone and enter your M-Pesa PIN to complete this order.
+            {isSimulated
+              ? 'The payment request has been sent and is being processed. This page updates on its own — no PIN is requested on your handset.'
+              : 'Check your phone and enter your M-Pesa PIN to complete this order.'}
           </p>
+          {isSimulated && <SimulationNotice />}
+          {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
+          <Button
+            variant="secondary"
+            size="sm"
+            isLoading={paymentActionState === 'submitting'}
+            onClick={() => void handlePaymentAction('CANCEL')}
+          >
+            Cancel this order
+          </Button>
+        </div>
+      )}
+
+      {/* FAILED — the payment did not go through; offer a way forward */}
+      {order.paymentStatus === OrderPaymentStatus.FAILED && (
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-body-strong text-app-ink">Payment was not completed</p>
+          <p className="app-body text-app-muted">
+            No money left your account. You can try paying for this order again — the price and
+            quantity are unchanged, as long as {order.farmer.firstName} still has the stock.
+          </p>
+          {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
+          <Button
+            isLoading={paymentActionState === 'submitting'}
+            onClick={() => void handlePaymentAction('RETRY')}
+            className="w-full"
+          >
+            Try payment again
+          </Button>
         </div>
       )}
 
@@ -529,6 +635,17 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             Mark as received
           </Button>
         </div>
+      )}
+
+      {/* The case, when there is one — both accounts, all photos, and the
+          buyer's chance to reply if the farmer raised it. */}
+      {mediation && (
+        <MediationPanel
+          orderId={order._id}
+          mediation={mediation}
+          viewerRole={Role.BUYER}
+          onResponded={() => void fetchMediation()}
+        />
       )}
 
       {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}

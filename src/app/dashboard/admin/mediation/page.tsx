@@ -5,7 +5,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button, Modal, Textarea, StatusPill, type StatusState } from '@/components/app';
 import { cn } from '@/lib/cn';
-import { Role, MediationRequestStatus, MediationCategory } from '@/types';
+import {
+  Role,
+  MediationRequestStatus,
+  MediationCategory,
+  MediationInitiator,
+} from '@/types';
 
 // ---------------------------------------------------------------------------
 // UI-14 — Admin mediation tracking (BE-05).
@@ -30,11 +35,23 @@ interface IOrderRef {
   fulfillmentStatus?: string;
 }
 
+interface IMediationEvidence {
+  url: string;
+  uploadedByRole: string;
+  uploadedAt: string;
+}
+
 interface IMediationRequest {
   _id: string;
   category: MediationCategory;
   description: string;
   status: MediationRequestStatus;
+  /** Which party raised it — either side may now escalate. */
+  initiatedBy: MediationInitiator;
+  /** The other side's account, if they have given it yet. */
+  respondentStatement?: string | null;
+  respondentRespondedAt?: string | null;
+  evidence?: IMediationEvidence[];
   resolutionNote?: string;
   createdAt: string;
   buyer: IParty | null;
@@ -302,8 +319,61 @@ export default function AdminMediationPage(): React.ReactElement {
                   </span>
                 </div>
 
-                {/* Buyer's complaint */}
-                <p className="app-body text-app-ink">{req.description}</p>
+                {/* The account of whoever raised it */}
+                <div>
+                  <p className="app-label text-app-muted">
+                    Reported by the{' '}
+                    {req.initiatedBy === MediationInitiator.FARMER ? 'farmer' : 'buyer'}
+                  </p>
+                  <p className="app-body mt-0.5 whitespace-pre-line text-app-ink">
+                    {req.description}
+                  </p>
+                </div>
+
+                {/* The other side's account — a case decided on one story is
+                    not mediation, so this is called out when it is missing. */}
+                <div>
+                  <p className="app-label text-app-muted">
+                    Response from the{' '}
+                    {req.initiatedBy === MediationInitiator.FARMER ? 'buyer' : 'farmer'}
+                  </p>
+                  {req.respondentStatement ? (
+                    <p className="app-body mt-0.5 whitespace-pre-line text-app-ink">
+                      {req.respondentStatement}
+                    </p>
+                  ) : (
+                    <p className="app-meta mt-0.5 text-app-warning">
+                      Not yet given — they have not answered this case.
+                    </p>
+                  )}
+                </div>
+
+                {/* Photographic evidence from either side */}
+                {req.evidence && req.evidence.length > 0 && (
+                  <div>
+                    <p className="app-label mb-1.5 text-app-muted">
+                      Evidence ({req.evidence.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {req.evidence.map((item) => (
+                        <a
+                          key={item.url}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`Uploaded by the ${item.uploadedByRole.toLowerCase()}`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.url}
+                            alt={`Evidence from the ${item.uploadedByRole.toLowerCase()}`}
+                            className="h-16 w-16 rounded-app-control border border-app-hairline object-cover"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Resolution note (resolved cases) */}
                 {req.resolutionNote && (

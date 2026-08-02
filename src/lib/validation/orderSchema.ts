@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FulfillmentType } from '@/types';
+import { FulfillmentType, FulfillmentStage } from '@/types';
 
 const kenyanPhoneRegex = /^(?:\+254|0)[17]\d{8}$/;
 
@@ -17,6 +17,20 @@ export const updateOrderStatusSchema = z.object({
   fulfillmentStatus: z.enum(['IN_FULFILLMENT', 'RECEIVED', 'DISPUTED']),
   disputeReason: z.string().trim().max(500).optional(),
 });
+
+// Fulfilment progress. A separate axis from fulfillmentStatus: this narrates
+// the journey and never moves money or changes escrow custody.
+export const updateFulfillmentStageSchema = z.object({
+  stage: z.enum([
+    FulfillmentStage.PREPARING,
+    FulfillmentStage.READY,
+    FulfillmentStage.IN_TRANSIT,
+    FulfillmentStage.DELIVERED,
+  ]),
+  note: z.string().trim().max(200).optional(),
+});
+
+export type UpdateFulfillmentStageInput = z.infer<typeof updateFulfillmentStageSchema>;
 
 export const darajaCallbackSchema = z.object({
   Body: z.object({

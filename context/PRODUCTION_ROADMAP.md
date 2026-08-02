@@ -190,15 +190,19 @@ For a Next.js 15 app serving 100 users, typical monthly usage is 2–5GB bandwid
 
 **Solution**: Combine `cleanup-sessions`, `market-insight`, and `impact-summary` into a single `/api/cron/weekly-jobs` route that runs all three on Monday 3am UTC. The individual route files are preserved for manual invocation and testing. The cleanup-sessions cron is already belt-and-suspenders — MongoDB TTL indexes on `ChatSession` and `MentorSession` are the primary cleanup mechanism. The cron was only a backup. Dropping it from the schedule is safe.
 
-**Revised `vercel.json` cron configuration** (2 crons, within Hobby limit):
+**Second constraint — cron frequency**: Hobby also caps cron *invocations at once per day*. The `*/15 * * * *` schedule this section originally specified is not achievable on Hobby, and the shipped `vercel.json` correctly uses a daily schedule.
+
+**Actual `vercel.json` cron configuration** (2 crons, daily-or-less, within Hobby limits):
 ```json
 {
   "crons": [
-    { "path": "/api/cron/price-alert-check", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/price-alert-check", "schedule": "0 0 * * *" },
     { "path": "/api/cron/weekly-jobs", "schedule": "0 3 * * 1" }
   ]
 }
 ```
+
+**Consequence for payments**: stuck-payment reconciliation and simulated-callback delivery cannot depend on cron frequency, or stock would stay reserved for up to 24 hours. Both are therefore triggered lazily on the request path — the buyer's `payment-status` poll reconciles and delivers for their own order within seconds — with the daily cron acting only as the unscoped backstop for orders nobody is watching. See `src/lib/payments/reconcile.ts` and `dispatcher.ts`.
 
 **New `/api/cron/weekly-jobs` route** runs sequentially: cleanup-sessions logic → market-insight aggregation → impact-summary computation. Same CRON_SECRET auth. Each sub-task logs independently with service labels for traceability.
 

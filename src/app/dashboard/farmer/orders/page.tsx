@@ -1,11 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button, Modal, Table, THead, TH, TR, TD } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimeline, OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
+import { FulfillmentStageControl } from '@/components/foodhub/FulfillmentStageControl';
+import {
+  MediationPanel,
+  EscalateForm,
+  type IMediationCase,
+} from '@/components/foodhub/MediationPanel';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import {
   Role,
@@ -13,6 +20,10 @@ import {
   OrderFulfillmentStatus,
   FulfillmentType,
   ListingUnit,
+  FulfillmentStage,
+  MediationRequestStatus,
+  FARMER_MEDIATION_CATEGORIES,
+  FARMER_ESCALATION_HOURS,
 } from '@/types';
 
 interface IFarmerOrder {
@@ -32,6 +43,7 @@ interface IFarmerOrder {
   // Authoritative gate from GET /api/orders (PAID && IN_FULFILLMENT &&
   // !confirmedByFarmerAt). The client must never recompute this.
   canConfirmDispatch: boolean;
+  fulfillmentStage?: FulfillmentStage | null;
   createdAt: string;
   buyer: {
     firstName: string;
@@ -159,6 +171,8 @@ export default function FarmerOrdersPage(): React.ReactElement {
   const [pageState, setPageState] = useState<PageState>('loading');
   const [selectedOrder, setSelectedOrder] = useState<IFarmerOrder | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [mediation, setMediation] = useState<IMediationCase | null>(null);
+  const [escalateOpen, setEscalateOpen] = useState(false);
 
   const fetchOrders = useCallback(async (): Promise<void> => {
     setPageState('loading');
@@ -186,6 +200,40 @@ export default function FarmerOrdersPage(): React.ReactElement {
       void fetchOrders();
     }
   }, [status, session, router, fetchOrders]);
+
+  // The escalation case for whichever order is open, so the farmer can both see
+  // a buyer's complaint and answer it.
+  const fetchMediation = useCallback(async (orderId: string): Promise<void> => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/mediation`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { data: IMediationCase | null };
+      setMediation(data.data);
+    } catch {
+      // Non-fatal — the modal still renders without the mediation section.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      setMediation(null);
+      setEscalateOpen(false);
+      return;
+    }
+    void fetchMediation(selectedOrder._id);
+  }, [selectedOrder, fetchMediation]);
+
+  // A farmer may ask us to review an order the buyer has received but never
+  // confirmed — the only thing standing between them and their money.
+  const canEscalate = ((): boolean => {
+    if (!selectedOrder?.confirmedByFarmerAt) return false;
+    if (selectedOrder.paymentStatus !== OrderPaymentStatus.PAID) return false;
+    if (selectedOrder.fulfillmentStatus !== OrderFulfillmentStatus.IN_FULFILLMENT) return false;
+    if (mediation && mediation.status !== MediationRequestStatus.RESOLVED) return false;
+    const elapsedHours =
+      (Date.now() - new Date(selectedOrder.confirmedByFarmerAt).getTime()) / 3_600_000;
+    return elapsedHours >= FARMER_ESCALATION_HOURS;
+  })();
 
   async function confirmDispatch(orderId: string): Promise<void> {
     setConfirmingId(orderId);
@@ -457,6 +505,25 @@ export default function FarmerOrdersPage(): React.ReactElement {
               </div>
             )}
 
+            {/* Receipt — available from the moment payment is confirmed */}
+            {(selectedOrder.paymentStatus === OrderPaymentStatus.PAID ||
+              selectedOrder.paymentStatus === OrderPaymentStatus.REFUNDED) && (
+              <Link
+                href={`/dashboard/farmer/orders/${selectedOrder._id}/receipt`}
+                className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline px-3 py-2.5 transition-colors duration-150 hover:bg-app-sunken"
+              >
+                <span>
+                  <span className="app-body-strong block text-app-ink">View receipt</span>
+                  <span className="app-meta text-app-muted">
+                    M-Pesa reference and the full transaction history.
+                  </span>
+                </span>
+                <span aria-hidden className="app-body text-app-muted">
+                  →
+                </span>
+              </Link>
+            )}
+
             {/* Timeline */}
             <div>
               <p className="app-label mb-3 text-app-muted">Order progress</p>
@@ -468,6 +535,96 @@ export default function FarmerOrdersPage(): React.ReactElement {
                 receivedByBuyerAt={selectedOrder.receivedByBuyerAt}
               />
             </div>
+
+            {/* Fulfilment progress — only meaningful once dispatch is confirmed */}
+            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
+              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+              selectedOrder.confirmedByFarmerAt && (
+                <div className="border-t border-app-hairline pt-4">
+                  <FulfillmentStageControl
+                    orderId={selectedOrder._id}
+                    currentStage={selectedOrder.fulfillmentStage ?? null}
+                    onAdvanced={(stage) => {
+                      setSelectedOrder((prev) =>
+                        prev ? { ...prev, fulfillmentStage: stage } : prev
+                      );
+                      setOrders((prev) =>
+                        prev.map((o) =>
+                          o._id === selectedOrder._id ? { ...o, fulfillmentStage: stage } : o
+                        )
+                      );
+                    }}
+                  />
+                </div>
+              )}
+
+            {/* When does the farmer get paid? Stated, not left to guesswork. */}
+            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
+              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+              selectedOrder.confirmedByFarmerAt &&
+              !mediation && (
+                <div className="rounded-app-control border border-app-hairline bg-app-sunken px-3 py-2.5">
+                  <p className="app-label text-app-muted">When you get paid</p>
+                  <p className="app-meta mt-1 text-app-muted">
+                    The buyer releases the funds by confirming receipt. If they have not confirmed{' '}
+                    {Math.round(FARMER_ESCALATION_HOURS / 24)} days after your dispatch, you can ask
+                    UmojaHub to review the order and decide.
+                  </p>
+                  {!canEscalate && (
+                    <p className="app-meta mt-1 text-app-faint">
+                      You can ask for a review from{' '}
+                      {new Date(
+                        new Date(selectedOrder.confirmedByFarmerAt).getTime() +
+                          FARMER_ESCALATION_HOURS * 3_600_000
+                      ).toLocaleDateString('en-KE', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                      .
+                    </p>
+                  )}
+                </div>
+              )}
+
+            {/* The case, if there is one — visible to both sides */}
+            {mediation && (
+              <MediationPanel
+                orderId={selectedOrder._id}
+                mediation={mediation}
+                viewerRole={Role.FARMER}
+                onResponded={() => void fetchMediation(selectedOrder._id)}
+              />
+            )}
+
+            {/* Farmer-initiated escalation */}
+            {canEscalate && (
+              <div className="space-y-3 border-t border-app-hairline pt-4">
+                {!escalateOpen ? (
+                  <>
+                    <p className="app-body-strong text-app-ink">
+                      The buyer has not confirmed receipt
+                    </p>
+                    <p className="app-meta text-app-muted">
+                      Your payment stays held until they do. Ask UmojaHub to review the order and
+                      decide what happens to the funds.
+                    </p>
+                    <Button variant="secondary" onClick={() => setEscalateOpen(true)}>
+                      Ask UmojaHub to review
+                    </Button>
+                  </>
+                ) : (
+                  <EscalateForm
+                    orderId={selectedOrder._id}
+                    categories={FARMER_MEDIATION_CATEGORIES}
+                    onFiled={() => {
+                      setEscalateOpen(false);
+                      void fetchMediation(selectedOrder._id);
+                    }}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Action */}
             {selectedOrder.canConfirmDispatch && (

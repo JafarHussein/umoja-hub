@@ -47,6 +47,8 @@ type OrderLean = {
   paidAt?: Date | null;
   confirmedByFarmerAt?: Date | null;
   receivedByBuyerAt?: Date | null;
+  fulfillmentStage?: string | null;
+  stageHistory?: { stage: string; at: Date; note?: string }[];
 };
 
 type UserLean = {
@@ -138,6 +140,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             paidAt: order.paidAt?.toISOString() ?? null,
             confirmedByFarmerAt: order.confirmedByFarmerAt?.toISOString() ?? null,
             receivedByBuyerAt: order.receivedByBuyerAt?.toISOString() ?? null,
+            // Where the produce actually is — the buyer is watching this while
+            // their money sits in escrow.
+            fulfillmentStage: order.fulfillmentStage ?? null,
           };
         }),
         nextCursor,
@@ -195,6 +200,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           paidAt: order.paidAt?.toISOString() ?? null,
           confirmedByFarmerAt: order.confirmedByFarmerAt?.toISOString() ?? null,
           receivedByBuyerAt: order.receivedByBuyerAt?.toISOString() ?? null,
+          fulfillmentStage: order.fulfillmentStage ?? null,
         };
       }),
       nextCursor: farmerNextCursor,
@@ -325,6 +331,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       buyerPhone,
       paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
       fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
+      // Anchors the stuck-payment sweep to this payment session, not to the
+      // order's age (a retry reopens the session on an older order).
+      paymentRequestedAt: new Date(),
     });
 
     // Initiate payment via the active provider (simulation or Daraja). The
