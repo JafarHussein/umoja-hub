@@ -234,6 +234,9 @@ export async function POST(
         paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
         fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
         mpesaCheckoutRequestId: checkoutRequestId,
+        // Restarts the stuck-payment clock. Without this the sweep would judge
+        // the retry stale immediately, on the age of the original order.
+        paymentRequestedAt: new Date(),
       },
     });
 

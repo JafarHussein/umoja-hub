@@ -12,11 +12,13 @@ import { SimulatedOutcome, SimulatedPaymentStatus, PaymentEventType } from '@/ty
 //
 // Serverless-native delivery with no background worker: scheduled simulated
 // callbacks are delivered when (a) the buyer's payment-status poll runs, (b) the
-// 15-min reconciliation cron sweeps, or (c) an admin triggers it from the
-// Payment Lab — all three call dispatchDuePayments(). Each delivery builds a
-// Daraja-shaped payload and feeds it through processStkCallback (the same path
-// the real webhook uses). LOST callbacks are never delivered, leaving the order
-// to be reconciled by the stuck-payment cron — exactly like a dropped callback.
+// daily cron sweeps, or (c) an admin triggers it from the Payment Lab — all
+// three call dispatchDuePayments(). The poll is the timely trigger; the cron is
+// only a backstop, because Vercel Hobby permits just one invocation a day. Each
+// delivery builds a Daraja-shaped payload and feeds it through
+// processStkCallback (the same path the real webhook uses). LOST callbacks are
+// never delivered, leaving the order to be closed out by reconcileStuckPayments
+// — exactly like a dropped callback.
 // ---------------------------------------------------------------------------
 
 const PROVIDER = 'simulation';

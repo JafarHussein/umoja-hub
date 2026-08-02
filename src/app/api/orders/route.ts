@@ -325,6 +325,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       buyerPhone,
       paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
       fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
+      // Anchors the stuck-payment sweep to this payment session, not to the
+      // order's age (a retry reopens the session on an older order).
+      paymentRequestedAt: new Date(),
     });
 
     // Initiate payment via the active provider (simulation or Daraja). The

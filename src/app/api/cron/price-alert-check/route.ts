@@ -3,24 +3,30 @@ import { connectDB } from '@/lib/db';
 import PriceAlert from '@/lib/models/PriceAlert.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import User from '@/lib/models/User.model';
-import Order from '@/lib/models/Order.model';
-import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { sendSMS } from '@/lib/integrations/smsService';
 import { logger } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
 import { dispatchDuePayments } from '@/lib/payments/dispatcher';
+import { reconcileStuckPayments } from '@/lib/payments/reconcile';
 import { cropNamePattern, matchesCrop, resolveCrop } from '@/lib/taxonomy/crops';
-import { PRICE_ALERT_COOLDOWN_HOURS, OrderPaymentStatus, ListingStatus } from '@/types';
+import { PRICE_ALERT_COOLDOWN_HOURS } from '@/types';
 
 function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/cron/price-alert-check — Check active price alerts (every 15 min)
-// Auth: Bearer CRON_SECRET
-// Per BUSINESS_LOGIC.md §10.1
-// Batch size: 50 alerts per run
+// POST /api/cron/price-alert-check — the daily scheduled job.
+// Auth: Bearer CRON_SECRET. Batch size: 50 alerts per run.
+//
+// Runs three jobs: price-alert checks (BUSINESS_LOGIC.md §10.1), the simulated
+// callback delivery sweep, and stuck-payment reconciliation. They share one
+// route because Vercel Hobby allows only two cron jobs per project; the two
+// payment jobs are backstops whose timely triggers live on the request path
+// (see dispatcher.ts and reconcile.ts).
+//
+// Cadence is DAILY (`0 0 * * *` in vercel.json) — Hobby does not permit
+// sub-daily cron invocations. Nothing here may assume a tighter interval.
 // ---------------------------------------------------------------------------
 
 function verifyCronSecret(req: NextRequest): boolean {
@@ -142,39 +148,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // ---------------------------------------------------------------------------
-  // Stuck payment reconciliation
-  // Orders that have been PENDING_PAYMENT for >15 minutes without a Daraja
-  // callback are considered timed out. Mark FAILED and restore listing inventory.
+  // Stuck payment reconciliation — the unscoped backstop sweep.
+  //
+  // The timely path is the buyer's payment-status poll, which reconciles their
+  // own order the moment it times out. This sweep exists for orders nobody is
+  // watching. It cannot be the primary trigger: Vercel Hobby permits only daily
+  // cron invocations (and only two crons per project), so this runs once a day.
+  // See src/lib/payments/reconcile.ts.
   // ---------------------------------------------------------------------------
-  const stuckCutoff = new Date(Date.now() - 15 * 60 * 1000);
-  const stuckOrders = await Order.find({
-    paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
-    createdAt: { $lt: stuckCutoff },
-  })
-    .select('_id orderReferenceId listingId quantityOrdered')
-    .limit(20)
-    .lean();
-
   let reconciled = 0;
-
-  for (const stuckOrder of stuckOrders) {
-    await Promise.all([
-      Order.findByIdAndUpdate(stuckOrder._id, {
-        paymentStatus: OrderPaymentStatus.FAILED,
-      }),
-      MarketplaceListing.findByIdAndUpdate(stuckOrder.listingId, {
-        $inc: { quantityAvailable: stuckOrder.quantityOrdered },
-        listingStatus: ListingStatus.AVAILABLE,
-      }),
-    ]);
-
-    logger.info('cron/price-alert-check', 'Reconciled stuck payment order', {
-      requestId,
-      orderId: String(stuckOrder._id),
-      orderRef: stuckOrder.orderReferenceId,
-    });
-
-    reconciled++;
+  try {
+    reconciled = await reconcileStuckPayments({ limit: 20 });
+  } catch (err) {
+    logger.error('cron/price-alert-check', 'Stuck payment reconciliation failed', { requestId, err });
   }
 
   if (reconciled > 0) {

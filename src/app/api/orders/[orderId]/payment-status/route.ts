@@ -6,7 +6,8 @@ import Order from '@/lib/models/Order.model';
 import { AppError, handleApiError } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
 import { dispatchDuePayments } from '@/lib/payments/dispatcher';
-import { Role } from '@/types';
+import { reconcileStuckPayments } from '@/lib/payments/reconcile';
+import { OrderPaymentStatus, Role } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/orders/[orderId]/payment-status — Poll payment + fulfillment status
@@ -53,6 +54,27 @@ export async function GET(
         403,
         'AUTH_FORBIDDEN'
       );
+    }
+
+    // The buyer's poll is the timely trigger for both lazy payment jobs, since
+    // Vercel Hobby only permits a daily cron sweep.
+    //
+    // Reconciliation first: if this order's payment has passed the timeout with
+    // no callback, close it out here rather than leaving it stranded until the
+    // next daily sweep. Scoped to this order, and a no-op until the timeout.
+    if (order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT) {
+      try {
+        const closed = await reconcileStuckPayments({ orderId });
+        if (closed > 0) {
+          return NextResponse.json({
+            paymentStatus: OrderPaymentStatus.FAILED,
+            fulfillmentStatus: order.fulfillmentStatus,
+            isSimulated: isSimulationActive(),
+          });
+        }
+      } catch {
+        // Best-effort; fall through to the delivery sweep and current status.
+      }
     }
 
     // Simulation mode: the buyer's poll is the primary delivery trigger for due

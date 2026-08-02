@@ -160,6 +160,12 @@ describe('POST /api/orders/[orderId]/payment', () => {
     expect(mockPaymentLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'INITIATED', orderId: ORDER_ID })
     );
+    // The stuck-payment clock restarts, or the sweep would judge this retry
+    // stale immediately on the age of the original order.
+    const update = mockOrderFindByIdAndUpdate.mock.calls[0]?.[1] as {
+      $set: Record<string, unknown>;
+    };
+    expect(update.$set['paymentRequestedAt']).toBeInstanceOf(Date);
   });
 
   it('refuses the retry when the produce has since sold out', async () => {

@@ -20,6 +20,10 @@ const orderSchema = new Schema(
     },
     mpesaCheckoutRequestId: { type: String },
     mpesaTransactionId: { type: String, unique: true, sparse: true },
+    // When the current payment session was opened. Set at order creation and
+    // again on every retry, so a retried order is not judged stale by the
+    // reconciliation sweep on the strength of its original createdAt.
+    paymentRequestedAt: { type: Date },
     buyerPhone: { type: String, required: true },
     fulfillmentStatus: {
       type: String,
