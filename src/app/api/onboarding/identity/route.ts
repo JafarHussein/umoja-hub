@@ -37,22 +37,30 @@ function roleIdentityUpdate(role: string, data: Record<string, unknown>): Record
   switch (role) {
     case Role.FARMER:
       put('farmerData.primaryLanguage', data.primaryLanguage);
+      put('farmerData.cropsGrown', data.cropsGrown);
+      put('farmerData.farmSizeAcres', data.farmSizeAcres);
+      put('farmerData.cooperativeName', data.cooperativeName);
       break;
     case Role.BUYER:
       put('buyerData.organizationName', data.organizationName);
       put('buyerData.businessRegistrationNumber', data.businessRegistrationNumber);
       put('buyerData.corporatePaybill', data.corporatePaybill);
       put('buyerData.procurementScale', data.procurementScale);
+      put('buyerData.preferredCounties', data.preferredCounties);
+      put('buyerData.purchaseInterests', data.purchaseInterests);
       break;
     case Role.STUDENT:
       put('studentData.academicRegistrationNumber', data.academicRegistrationNumber);
       put('studentData.universityAffiliation', data.universityAffiliation);
       put('studentData.primaryInterest', data.primaryInterest);
+      put('studentData.programme', data.programme);
+      put('studentData.graduationYear', data.graduationYear);
       break;
     case Role.LECTURER:
       put('lecturerData.departmentAssignment', data.departmentAssignment);
       put('lecturerData.academicStaffId', data.academicStaffId);
       put('lecturerData.universityAffiliation', data.universityAffiliation);
+      put('lecturerData.position', data.position);
       break;
   }
   return set;

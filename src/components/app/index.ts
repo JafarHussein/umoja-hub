@@ -8,6 +8,8 @@ export { Input, Textarea, Select } from './Field';
 export type { IInputProps, ITextareaProps, ISelectProps } from './Field';
 export { Card } from './Card';
 export type { ICardProps } from './Card';
+export { ChipGroup, TokenSelect } from './MultiSelect';
+export type { IChipGroupProps, ITokenSelectProps } from './MultiSelect';
 export { ChoiceCard, ChoiceCardGroup } from './ChoiceCard';
 export type { IChoiceCardProps } from './ChoiceCard';
 export { ProviderButton } from './ProviderButton';
