@@ -254,7 +254,24 @@ Scope approved by the owner: **R1–R3, engine preserved.** Gate after: type-che
 
 - **Escrow "freeze"** (part of the brief's admin list) — a freeze is a *persisted* release block, which needs a new field on `Order` and a new input to the escrow derivation. That is a change to platform state, i.e. R4 territory. Release and refund are the only two places held money can actually go, and both are now reachable; a freeze adds a third *status* but no new destination. Deferred rather than faked.
 - **`OrderTimeline` left as-is** (G5) — the log-sourced timeline with actor + timestamp per event now exists as the receipt's transaction history. `OrderTimeline` remains a progress indicator derived from order status. Merging the two means changing the order state machine (G5/R4).
-- **G5, G8, G9, G10** — out of the approved R1–R3 scope. Still open, still accurate as written above.
+- **G5, G9, G10** — out of the approved R1–R3 scope. Still open, still accurate as written above.
+
+### G8 cron cadence — closed separately (commit `8aa5029`)
+
+The cadence contract was **unmeetable, not merely unmet**: Vercel Hobby permits only *daily* cron invocations and only two crons per project (`PRODUCTION_ROADMAP.md` §Vercel Hobby). The roadmap's `*/15 * * * *` was never achievable; `vercel.json` had been daily all along, and the 15-minute claims in `dispatcher.ts` and the cron route header were simply wrong.
+
+Raising the cadence being unavailable, the fix removes the dependency on cron frequency — reusing the lazy-trigger model already proven for simulated callback delivery:
+
+- Reconciliation extracted to `src/lib/payments/reconcile.ts` (out of a route named `price-alert-check`).
+- The buyer's `payment-status` poll reconciles their own order the moment it times out; the daily cron is the unscoped backstop.
+- All 15-minute claims corrected to state the real daily cadence and the Hobby constraint behind it.
+
+**Two further defects surfaced while fixing it:**
+
+1. **Reconciliation wrote no audit event whatsoever.** `PaymentEventType.RECONCILED` was a third reserved-but-never-written enum member — a payment could be marked FAILED and stock returned with nothing recording that the platform did it. Now written, and the buyer is notified so the retry path is reachable.
+2. **A regression introduced by R3's retry feature.** Staleness was measured from `Order.createdAt`, but retry resets an old order to `PENDING_PAYMENT` — so the next sweep would have re-failed essentially every retry. Adds `Order.paymentRequestedAt`, set at creation and on each retry, with a `createdAt` fallback for existing orders.
+
+Gate: type-check clean, lint 0 errors, **1008 tests / 92 suites**, build green.
 
 ### Notable design decisions
 
