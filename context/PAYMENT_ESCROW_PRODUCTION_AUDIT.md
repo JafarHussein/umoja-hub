@@ -235,6 +235,36 @@ Ordered by demonstration value per unit of risk. All of this is **platform logic
 
 ---
 
+---
+
+## BUILD OUTCOME — R1–R3 (approved 2026-08-02, commit `16a5450`)
+
+Scope approved by the owner: **R1–R3, engine preserved.** Gate after: type-check clean, lint 0 errors, **996 tests / 90 suites** (from 944 / 84), build green.
+
+| Gap | Status | What landed |
+|---|---|---|
+| G1 receipts | **Closed** | `GET /api/orders/[orderId]/receipt` + `TransactionReceipt` shared by buyer / farmer / admin. Derived, never stored. Print-to-PDF via print styles. The M-Pesa receipt number is now visible for the first time. |
+| G2 escrow trail invisible | **Closed** | `EscrowEventLog` now has a reader — merged into the receipt's transaction history with actor and timestamp. |
+| G3 no per-order payment history | **Closed** | `PaymentEventLog` merged into the same trail, with Safaricom result codes rendered as plain-language causes. |
+| G4 read-only admin console | **Closed** | `POST /api/admin/escrow/[orderId]` settles held funds directly, independent of mediation. Mandatory ≥10-char reason → `AdminAuditLog` + `EscrowEventLog`. Money movement extracted to `lib/foodhub/escrowSettlement.ts`, now shared with the mediation path. |
+| G6 simulation not disclosed | **Closed** | `SimulationNotice` component; the false "enter your M-Pesa PIN" instruction corrected; `payment-status` now reports `isSimulated`. |
+| G7 no retry / cancel | **Closed** | `POST /api/orders/[orderId]/payment` — RETRY re-reserves stock and rejoins the same order's trail; CANCEL releases stock immediately. Both refuse a paid or refunded order (`ORDER_ALREADY_PAID`). |
+
+### Deliberately not built, and why
+
+- **Escrow "freeze"** (part of the brief's admin list) — a freeze is a *persisted* release block, which needs a new field on `Order` and a new input to the escrow derivation. That is a change to platform state, i.e. R4 territory. Release and refund are the only two places held money can actually go, and both are now reachable; a freeze adds a third *status* but no new destination. Deferred rather than faked.
+- **`OrderTimeline` left as-is** (G5) — the log-sourced timeline with actor + timestamp per event now exists as the receipt's transaction history. `OrderTimeline` remains a progress indicator derived from order status. Merging the two means changing the order state machine (G5/R4).
+- **G5, G8, G9, G10** — out of the approved R1–R3 scope. Still open, still accurate as written above.
+
+### Notable design decisions
+
+- The escrow reference (`ESC-2026-000123`) is derived from the order reference, not stored — no counter, no schema field, cannot drift.
+- Admin and parties read the **same route and the same component**. There is no privileged rendering of the facts, which is what makes the trail worth anything.
+- `settleEscrow` applies the held guard (`PAID` + `IN_FULFILLMENT`) as the *filter of the update*, making settlement compare-and-swap: two concurrent decisions cannot both move the money.
+- Cancel deliberately does **not** return stock when it loses the race to a landing payment — covered by a test.
+
+---
+
 ## GOVERNANCE NOTE
 
 Payments, orders, escrow, trust and admin are **platform logic**. CLAUDE.md forbids modifying them outside an approved gated process, and the two prior escrow efforts both ran through explicit approval gates with recorded decisions. This audit is the gate. **No code has been written.** Phases R1–R5 proceed only on approval, and R4 in particular carries an owner decision (order state machine change) that I will not make unilaterally.
