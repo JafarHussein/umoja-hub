@@ -24,6 +24,7 @@ import {
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
+import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
 
 interface IBuyerOrder {
   _id: string;
@@ -65,6 +66,8 @@ const MEDIATION_CATEGORY_LABEL: Record<MediationCategory, string> = {
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
+  /** True when the payment simulator is the active provider. */
+  isSimulated?: boolean;
 }
 
 type PageState = 'loading' | 'ready' | 'error' | 'not_found';
@@ -106,6 +109,13 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   }>({ category: MediationCategory.NOT_DELIVERED, description: '' });
   const [mediationState, setMediationState] = useState<ActionState>('idle');
   const [mediationError, setMediationError] = useState<string | null>(null);
+
+  // Whether the payment simulator is active. Drives the waiting-screen copy so
+  // the buyer is never told to expect an STK prompt that will not arrive.
+  const [isSimulated, setIsSimulated] = useState(false);
+
+  const [paymentActionState, setPaymentActionState] = useState<'idle' | 'submitting'>('idle');
+  const [paymentActionError, setPaymentActionError] = useState<string | null>(null);
 
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -185,6 +195,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           const res = await fetch(`/api/orders/${orderId}/payment-status`);
           if (!res.ok) return;
           const data = (await res.json()) as IPaymentStatusResponse;
+          if (data.isSimulated !== undefined) setIsSimulated(data.isSimulated);
           if (data.paymentStatus !== OrderPaymentStatus.PENDING_PAYMENT) {
             stopPolling();
             setOrder((prev) =>
@@ -206,6 +217,35 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     pollingTimer.current = timer;
     return stopPolling;
   }, [pageState, order, stopPolling]);
+
+  // Retry or abandon a payment that did not go through. The order keeps its
+  // reference and its history — only the payment session is new.
+  async function handlePaymentAction(action: 'RETRY' | 'CANCEL'): Promise<void> {
+    if (!order) return;
+    setPaymentActionState('submitting');
+    setPaymentActionError(null);
+    try {
+      const res = await fetch(`/api/orders/${order._id}/payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const body = (await res.json()) as { error?: string; data?: { isSimulated?: boolean } };
+      if (!res.ok) {
+        setPaymentActionError(body.error ?? 'Could not complete that request.');
+        setPaymentActionState('idle');
+        return;
+      }
+      if (body.data?.isSimulated !== undefined) setIsSimulated(body.data.isSimulated);
+      setPaymentActionState('idle');
+      // Re-read the order so the page picks up the new payment state and, on a
+      // retry, restarts the payment poll.
+      await fetchOrder();
+    } catch {
+      setPaymentActionError('Could not complete that request. Check your connection.');
+      setPaymentActionState('idle');
+    }
+  }
 
   async function handleMarkReceived(): Promise<void> {
     if (!order) return;
@@ -494,6 +534,25 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         ))}
       </div>
 
+      {/* Receipt — available from the moment payment is confirmed */}
+      {(order.paymentStatus === OrderPaymentStatus.PAID ||
+        order.paymentStatus === OrderPaymentStatus.REFUNDED) && (
+        <Link
+          href={`/dashboard/buyer/orders/${order._id}/receipt`}
+          className="flex items-center justify-between gap-3 rounded-app-card border border-app-hairline bg-app-card p-4 transition-colors duration-150 hover:bg-app-sunken"
+        >
+          <div>
+            <p className="app-body-strong text-app-ink">View receipt</p>
+            <p className="app-meta text-app-muted">
+              M-Pesa reference, escrow reference and the full transaction history.
+            </p>
+          </div>
+          <span aria-hidden className="app-body text-app-muted">
+            →
+          </span>
+        </Link>
+      )}
+
       {/* ── Action zone ─────────────────────────────────────────────────── */}
 
       {/* PENDING_PAYMENT — waiting for M-Pesa */}
@@ -507,8 +566,39 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             <p className="app-body-strong text-app-ink">Awaiting payment</p>
           </div>
           <p className="app-body text-app-muted">
-            Check your phone and enter your M-Pesa PIN to complete this order.
+            {isSimulated
+              ? 'The payment request has been sent and is being processed. This page updates on its own — no PIN is requested on your handset.'
+              : 'Check your phone and enter your M-Pesa PIN to complete this order.'}
           </p>
+          {isSimulated && <SimulationNotice />}
+          {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
+          <Button
+            variant="secondary"
+            size="sm"
+            isLoading={paymentActionState === 'submitting'}
+            onClick={() => void handlePaymentAction('CANCEL')}
+          >
+            Cancel this order
+          </Button>
+        </div>
+      )}
+
+      {/* FAILED — the payment did not go through; offer a way forward */}
+      {order.paymentStatus === OrderPaymentStatus.FAILED && (
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <p className="app-body-strong text-app-ink">Payment was not completed</p>
+          <p className="app-body text-app-muted">
+            No money left your account. You can try paying for this order again — the price and
+            quantity are unchanged, as long as {order.farmer.firstName} still has the stock.
+          </p>
+          {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
+          <Button
+            isLoading={paymentActionState === 'submitting'}
+            onClick={() => void handlePaymentAction('RETRY')}
+            className="w-full"
+          >
+            Try payment again
+          </Button>
         </div>
       )}
 

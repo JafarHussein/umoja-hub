@@ -73,6 +73,7 @@ export async function GET(
             return NextResponse.json({
               paymentStatus: fresh.paymentStatus,
               fulfillmentStatus: fresh.fulfillmentStatus,
+              isSimulated: true,
             });
           }
         }
@@ -81,9 +82,13 @@ export async function GET(
       }
     }
 
+    // The waiting screen must tell the buyer the truth about what it is asking
+    // them to do: under simulation no STK prompt reaches their handset, so a
+    // "enter your M-Pesa PIN" instruction would be false.
     return NextResponse.json({
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
+      isSimulated: isSimulationActive(),
     });
   } catch (error) {
     return handleApiError(error);

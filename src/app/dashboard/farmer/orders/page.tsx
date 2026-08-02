@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button, Modal, Table, THead, TH, TR, TD } from '@/components/app';
@@ -455,6 +456,25 @@ export default function FarmerOrdersPage(): React.ReactElement {
                   platform returned the held funds following a mediation decision.
                 </p>
               </div>
+            )}
+
+            {/* Receipt — available from the moment payment is confirmed */}
+            {(selectedOrder.paymentStatus === OrderPaymentStatus.PAID ||
+              selectedOrder.paymentStatus === OrderPaymentStatus.REFUNDED) && (
+              <Link
+                href={`/dashboard/farmer/orders/${selectedOrder._id}/receipt`}
+                className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline px-3 py-2.5 transition-colors duration-150 hover:bg-app-sunken"
+              >
+                <span>
+                  <span className="app-body-strong block text-app-ink">View receipt</span>
+                  <span className="app-meta text-app-muted">
+                    M-Pesa reference and the full transaction history.
+                  </span>
+                </span>
+                <span aria-hidden className="app-body text-app-muted">
+                  →
+                </span>
+              </Link>
             )}
 
             {/* Timeline */}
