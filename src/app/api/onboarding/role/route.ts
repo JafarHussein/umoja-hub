@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { roleSelectionSchema } from '@/lib/validation/onboardingSchema';
 import { buildRoleDefaults } from '@/lib/auth/roleDefaults';
+import { sendWelcome } from '@/lib/auth/welcome';
 import { AppError, handleApiError, logger } from '@/lib/utils';
 import { Role, OnboardingStage, OAuthProvider } from '@/types';
 
@@ -78,6 +79,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     logger.info('onboarding', 'Role selected', { userId: session.user.id, role });
+
+    // The welcome lands here rather than at account creation: under V3 the OAuth
+    // callback creates the account before a role exists, and the welcome copy is
+    // role-specific. This is the first moment it can name the user's real next
+    // step. Never throws.
+    await sendWelcome(session.user.id, role);
 
     return NextResponse.json({ data: { role, onboardingStage: OnboardingStage.IDENTITY_INPUT } });
   } catch (error) {

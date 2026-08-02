@@ -41,11 +41,65 @@ describe('middleware', () => {
     expect(res.status).toBe(401);
   });
 
-  it('lets an unauthenticated user into the V2 onboarding pages (pre-auth)', async () => {
+  it('lets an unauthenticated user reach the provider picker (the only pre-auth screen)', async () => {
     mockGetToken.mockResolvedValue(null);
     expect((await run('/onboarding/welcome')).status).toBe(200);
-    expect((await run('/onboarding/details')).status).toBe(200);
-    expect((await run('/onboarding/connect')).status).toBe(200);
+  });
+
+  it('sends an unauthenticated user off every other onboarding screen to login', async () => {
+    // Under V3 the rest of the funnel is authenticated — the OAuth callback has
+    // already created the account by the time those screens are reachable.
+    mockGetToken.mockResolvedValue(null);
+    expect(location(await run('/onboarding/password'))).toContain('/auth/login');
+    expect(location(await run('/onboarding/role-selection'))).toContain('/auth/login');
+  });
+
+  it('routes a password-setup user to the password screen', async () => {
+    mockGetToken.mockResolvedValue({
+      role: null,
+      isOnboarded: false,
+      onboardingStage: 'PASSWORD_SETUP',
+    });
+    expect(location(await run('/dashboard/farmer/listings'))).toContain('/onboarding/password');
+  });
+
+  it('moves a signed-in user off the pre-auth welcome screen to their stage', async () => {
+    // /onboarding/welcome is the OAuth callback target, so a user who has just
+    // authenticated lands there — and must not be left looking at the sign-up
+    // page they have already completed.
+    mockGetToken.mockResolvedValue({
+      role: null,
+      isOnboarded: false,
+      onboardingStage: 'PASSWORD_SETUP',
+    });
+    expect(location(await run('/onboarding/welcome'))).toContain('/onboarding/password');
+  });
+
+  it('keeps a mid-funnel user on the screen their stage points at', async () => {
+    mockGetToken.mockResolvedValue({
+      role: null,
+      isOnboarded: false,
+      onboardingStage: 'ROLE_SELECTION',
+    });
+    const res = await run('/onboarding/role-selection');
+    expect(res.status).toBe(200);
+    expect(location(res)).toBeNull();
+  });
+
+  it('does not police funnel screens against a possibly-stale token stage', async () => {
+    // Regression: the JWT's stage lags the database between a step's API call
+    // and the update() that refreshes the token. If the middleware redirected on
+    // the stale claim while the page redirected on the fresh row, the two fought
+    // and the browser looped until it gave up (ERR_TOO_MANY_REDIRECTS).
+    // Each funnel page self-guards against the database instead.
+    mockGetToken.mockResolvedValue({
+      role: null,
+      isOnboarded: false,
+      onboardingStage: 'PASSWORD_SETUP',
+    });
+    const res = await run('/onboarding/role-selection');
+    expect(res.status).toBe(200);
+    expect(location(res)).toBeNull();
   });
 
   it('funnels a not-onboarded user to the onboarding stage', async () => {

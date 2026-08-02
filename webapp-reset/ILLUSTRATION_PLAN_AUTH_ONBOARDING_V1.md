@@ -2,6 +2,31 @@
 
 **Owner-directed (2026-06-17).** Operationalizes [08 Illustration Strategy](08_ILLUSTRATION_STRATEGY.md) for the highest-stakes illustration surfaces, using the owner's approved resource list. **Rule (Foundation §12): every illustration has a job; none are random.**
 
+---
+
+> ## AMENDMENT — 2026-08-03 (owner-directed)
+>
+> **The role-card character illustrations are withdrawn.** The ON-02 Intent row
+> below specified one Humaaans character per role, to help users self-identify by
+> depicting their real context. In the built screen those characters competed with
+> the text for attention on the one decision that has to be quick and unambiguous,
+> and four figures at 56×80 could not carry enough detail to do the identifying
+> job the plan claimed for them. They are replaced by **Lucide icons at icon
+> weight** — scanning aids, not depictions — with the role name and description
+> carrying the meaning.
+>
+> **Everything else in this plan stands.** In particular ON-09 (verification
+> handoff) and X-01 (sign-in) keep their concept illustrations: those reduce a
+> named anxiety rather than decorate a choice, and the Gate-1 finding behind ON-09
+> has not changed.
+>
+> The cultural-authenticity guardrails below remain binding for every illustration
+> that survives, and for any future character work.
+>
+> See [AUTH_ONBOARDING_FLOW_V3](AUTH_ONBOARDING_FLOW_V3.md) §7.
+
+---
+
 ## Resource routing (which library for which kind of illustration)
 
 | Use | Resource(s) | Why |

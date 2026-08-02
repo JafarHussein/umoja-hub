@@ -6,11 +6,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { connectDB } from '@/lib/db';
 import { logger, verifySecret } from '@/lib/utils';
 import { credentialsLoginSchema } from '@/lib/validation/onboardingSchema';
-import {
-  ONBOARDING_DRAFT_COOKIE,
-  verifyDraftValue,
-  clearedDraftCookieOptions,
-} from '@/lib/auth/onboardingDraftCookie';
+import { extractOAuthIdentity, resolveUniqueUsername } from '@/lib/auth/oauthIdentity';
+import { sendWelcome } from '@/lib/auth/welcome';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, UserStatus, OnboardingStage, OAuthProvider } from '@/types';
 
@@ -164,40 +161,6 @@ function deriveFirstName(profile: Profile | undefined, fallbackEmail: string): s
   return fallbackEmail.split('@')[0] ?? fallbackEmail;
 }
 
-// Role-aware welcome copy for the first email a brand-new account receives. Each
-// line names the concrete first step for that role so the welcome doubles as
-// onboarding guidance, not just a greeting.
-function welcomeBodyFor(role: Role): string {
-  switch (role) {
-    case Role.FARMER:
-      return 'Your account is ready. Get your farm verified, then create your first listing to reach buyers across the region.';
-    case Role.BUYER:
-      return 'Your account is ready. Browse verified produce and source directly from trusted farmers — every order is escrow-protected.';
-    case Role.STUDENT:
-      return 'Your account is ready. Verify your university email and start building the public portfolio employers can see.';
-    case Role.LECTURER:
-      return 'Your reviewer account is ready and pending verification. Once approved, student work will arrive in your review queue.';
-    case Role.ADMIN:
-      return 'Your admin console is ready. Verification requests, disputes and payout approvals will surface here for you to action.';
-    default:
-      return 'Your account is ready. Open your dashboard to take your first step.';
-  }
-}
-
-// Send the one-time welcome email/notification for a freshly created account.
-// Awaited (not fire-and-forget) so the welcome reliably dispatches within the
-// serverless signIn call before the OAuth redirect; notify() never throws.
-async function sendWelcome(userId: string, role: Role): Promise<void> {
-  const { notify } = await import('@/lib/notifications/notify');
-  const { NotificationType } = await import('@/types');
-  await notify({
-    userId,
-    type: NotificationType.WELCOME,
-    title: 'Welcome to UmojaHub',
-    body: welcomeBodyFor(role),
-  });
-}
-
 // ---------------------------------------------------------------------------
 // authOptions — the single NextAuth configuration object
 // ---------------------------------------------------------------------------
@@ -329,12 +292,18 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
 
-      // New OAuth identity (AUTH_ONBOARDING_FLOW_V2). Allowlisted Google emails
-      // are bootstrapped straight to ADMIN with no draft. Everyone else MUST have
-      // completed onboarding first — their username/role/password live in a signed
-      // OnboardingDraft cookie, reconciled into the account here.
-      const githubLogin = (profile as { login?: string } | undefined)?.login;
-
+      // New OAuth identity (AUTH_ONBOARDING_FLOW_V3). Allowlisted Google emails
+      // are bootstrapped straight to ADMIN. Everyone else gets a PENDING account
+      // created here and finishes onboarding inside the app.
+      //
+      // This is the V3 inversion: V2 refused to create an account without a
+      // pre-auth OnboardingDraft. Creation is now the normal path, and the
+      // anti-takeover protection it was guarding rests where it always actually
+      // sat — on the two checks above: the email must be provider-verified, and
+      // an email already bound to a different provider is refused, never linked.
+      // What a new identity can obtain here is deliberately inert: no role, no
+      // password, no verification. It cannot reach any dashboard until the user
+      // picks a role, and it can never become an ADMIN (see below).
       if (provider === OAuthProvider.GOOGLE && getAdminAllowlist().includes(email)) {
         const admin = await UserModel.create({
           email,
@@ -350,61 +319,37 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
 
-      // Reconcile the onboarding draft (the signed cookie survives the OAuth
-      // round-trip; the NextAuth handler runs in a request context so
-      // next/headers cookies() is readable here).
-      const { cookies } = await import('next/headers');
-      const cookieStore = await cookies();
-      const draftId = verifyDraftValue(cookieStore.get(ONBOARDING_DRAFT_COOKIE)?.value);
-      if (!draftId) {
-        // No draft → the user reached OAuth without onboarding. Send them through it.
-        return '/onboarding/welcome';
-      }
+      const identity = extractOAuthIdentity(provider, profile, email);
+      const username = await resolveUniqueUsername(
+        identity.usernameSeed,
+        async (candidate) => (await UserModel.exists({ username: candidate })) !== null
+      );
 
-      const OnboardingDraft = (await import('@/lib/models/OnboardingDraft.model')).default;
-      const draft = await OnboardingDraft.findById(draftId);
-      if (!draft) {
-        return '/onboarding/welcome';
-      }
-
-      // Security invariant: ADMIN is never created from a draft (defence in depth;
-      // the schema already excludes it from the role enum).
-      if (draft.role === Role.ADMIN || !providerAllowsRole(provider, draft.role)) {
-        return `${LOGIN_PATH}?error=ProviderRoleMismatch`;
-      }
-      // Username may have been claimed since the draft was made (race / TTL).
-      if (await UserModel.exists({ username: draft.username })) {
-        return `${LOGIN_PATH}?error=AccountExists`;
-      }
-
+      // Security invariant #1 is preserved structurally: `role` is null here and
+      // the only route that can set it (POST /api/onboarding/role) validates
+      // against a schema whose enum excludes ADMIN. There is no code path from a
+      // public OAuth sign-in to an admin account.
       const created = await UserModel.create({
         email,
-        username: draft.username,
-        hashedPassword: draft.hashedPassword,
-        firstName: deriveFirstName(profile, email),
-        role: draft.role,
-        onboardingStage: OnboardingStage.COMPLETED,
+        username,
+        firstName: identity.firstName,
+        lastName: identity.lastName,
+        role: null,
+        onboardingStage: OnboardingStage.PASSWORD_SETUP,
         oauthProvider: provider,
         isEmailVerified: true,
         status: UserStatus.ACTIVE,
-        ...(provider === OAuthProvider.GITHUB && githubLogin
-          ? { studentData: { githubUsername: githubLogin } }
-          : {}),
+        ...(identity.profilePhotoUrl ? { profilePhotoUrl: identity.profilePhotoUrl } : {}),
+        // Held so the role step can seed studentData without a second GitHub call.
+        ...(identity.githubLogin ? { studentData: { githubUsername: identity.githubLogin } } : {}),
       });
 
-      await OnboardingDraft.findByIdAndDelete(draftId);
-      try {
-        cookieStore.set(ONBOARDING_DRAFT_COOKIE, '', clearedDraftCookieOptions);
-      } catch {
-        // Cookie clearing is best-effort; the draft row is already deleted, so a
-        // dangling cookie reference is harmless and the DB TTL backstops it.
-      }
-
-      logger.info('auth', 'Account finalized from onboarding draft', {
+      logger.info('auth', 'Pending account created from OAuth identity', {
         provider,
-        role: draft.role,
+        userId: String(created._id),
       });
-      await sendWelcome(String(created._id), draft.role as Role);
+      // The welcome message waits until the role is known — it is role-specific
+      // copy, and at this point there is no role to speak to.
       return true;
     },
 

@@ -14,9 +14,9 @@ export const roleSelectionSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// V2 onboarding (AUTH_ONBOARDING_FLOW_V2): username + password are collected
-// before the account exists and held in an OnboardingDraft. ADMIN is excluded
-// from the role enum at the schema boundary — admins are provisioned, never
+// Credentials (AUTH_ONBOARDING_FLOW_V3): OAuth creates the account, then the
+// user sets the username + password it can also sign in with. ADMIN is excluded
+// from every role enum at the schema boundary — admins are provisioned, never
 // self-registered (security invariant #1).
 // ---------------------------------------------------------------------------
 export const usernameSchema = z
@@ -35,11 +35,21 @@ export const passwordSchema = z
   .regex(/[A-Z]/, 'Password must contain an uppercase letter')
   .regex(/\d/, 'Password must contain a number');
 
-export const onboardingDraftSchema = z.object({
-  username: usernameSchema,
-  password: passwordSchema,
-  role: z.enum([Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER]),
-});
+// Password setup (AUTH_ONBOARDING_FLOW_V3, stage PASSWORD_SETUP). The account
+// already exists — OAuth created it — so this only sets the credentials the
+// account will use when the provider is not reachable. The username is editable
+// because it was auto-derived from the provider and may not be what the user
+// wants to be known by; it is pre-filled, never blank.
+export const passwordSetupSchema = z
+  .object({
+    username: usernameSchema,
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Both passwords must match',
+    path: ['confirmPassword'],
+  });
 
 // Login accepts either a username or an account email in the same field. The
 // account is still resolved server-side (authorize), but we validate the shape
@@ -150,7 +160,7 @@ export const institutionalEmailVerifySchema = z.object({
 });
 
 export type RoleSelectionInput = z.infer<typeof roleSelectionSchema>;
-export type OnboardingDraftInput = z.infer<typeof onboardingDraftSchema>;
+export type PasswordSetupInput = z.infer<typeof passwordSetupSchema>;
 export type CredentialsLoginInput = z.infer<typeof credentialsLoginSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetConfirmInput = z.infer<typeof passwordResetConfirmSchema>;

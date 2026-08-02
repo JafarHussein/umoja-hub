@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Button, Alert, Input } from '@/components/app';
+import { Button, Alert, Input, ProviderButton } from '@/components/app';
 
 // Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
 // account through /onboarding/welcome; OAuth here reconciles an existing account.
@@ -160,28 +160,20 @@ function LoginContent(): React.ReactElement {
             </div>
 
             <div className="flex flex-col gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
+              <ProviderButton
+                provider="google"
                 isLoading={loading === 'google'}
                 disabled={loading !== null}
                 onClick={() => handleSignIn('google')}
                 className="w-full"
-              >
-                Continue with Google
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
+              />
+              <ProviderButton
+                provider="github"
                 isLoading={loading === 'github'}
                 disabled={loading !== null}
                 onClick={() => handleSignIn('github')}
                 className="w-full"
-              >
-                Continue with GitHub
-              </Button>
+              />
             </div>
 
             <p className="app-meta mt-6 text-app-faint">

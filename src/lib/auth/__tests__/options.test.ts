@@ -30,31 +30,9 @@ jest.mock('@/lib/rateLimit', () => ({
   checkRateLimit: (...a: unknown[]) => mockCheckRateLimit(...a),
 }));
 
-// V2 onboarding-draft reconcile dependencies (AUTH_ONBOARDING_FLOW_V2).
-const mockCookieGet = jest.fn();
-const mockCookieSet = jest.fn();
-jest.mock('next/headers', () => ({
-  cookies: jest.fn().mockResolvedValue({
-    get: (...a: unknown[]) => mockCookieGet(...a),
-    set: (...a: unknown[]) => mockCookieSet(...a),
-  }),
-}));
-
-const mockVerifyDraftValue = jest.fn();
-jest.mock('@/lib/auth/onboardingDraftCookie', () => ({
-  ONBOARDING_DRAFT_COOKIE: 'onboarding_draft',
-  verifyDraftValue: (...a: unknown[]) => mockVerifyDraftValue(...a),
-  clearedDraftCookieOptions: { maxAge: 0 },
-}));
-
-const mockDraftFindById = jest.fn();
-const mockDraftFindByIdAndDelete = jest.fn().mockResolvedValue({});
-jest.mock('@/lib/models/OnboardingDraft.model', () => ({
-  __esModule: true,
-  default: {
-    findById: (...a: unknown[]) => mockDraftFindById(...a),
-    findByIdAndDelete: (...a: unknown[]) => mockDraftFindByIdAndDelete(...a),
-  },
+const mockSendWelcome = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/auth/welcome', () => ({
+  sendWelcome: (...a: unknown[]) => mockSendWelcome(...a),
 }));
 
 import { authOptions } from '../options';
@@ -80,89 +58,92 @@ describe('signIn callback — OAuth account lifecycle', () => {
     jest.clearAllMocks();
     delete process.env.ADMIN_EMAIL_ALLOWLIST;
     mockUserExists.mockResolvedValue(null);
-    mockVerifyDraftValue.mockReturnValue(null);
-    mockCookieGet.mockReturnValue(undefined);
   });
 
-  it('redirects a new Google identity with no draft to onboarding (no silent account)', async () => {
+  it('creates a PENDING account for a new Google identity (no role, no password)', async () => {
     mockUserFindOne.mockResolvedValue(null);
-    mockVerifyDraftValue.mockReturnValue(null);
+    mockUserCreate.mockResolvedValue({ _id: 'u-new' });
+
     const res = await signIn({
-      user: { email: 'new@gmail.com' },
+      user: { email: 'kamau@gmail.com' },
       account: { provider: 'google' },
-      profile: googleProfile('new@gmail.com'),
+      profile: { email: 'kamau@gmail.com', email_verified: true, given_name: 'Kamau', family_name: 'Githinji', picture: 'https://img/pic.jpg' },
     });
-    expect(res).toBe('/onboarding/welcome');
-    expect(mockUserCreate).not.toHaveBeenCalled();
+
+    expect(res).toBe(true);
+    const created = mockUserCreate.mock.calls[0][0];
+    // Identity is taken from the provider, never asked for again.
+    expect(created).toMatchObject({
+      email: 'kamau@gmail.com',
+      firstName: 'Kamau',
+      lastName: 'Githinji',
+      profilePhotoUrl: 'https://img/pic.jpg',
+      username: 'kamau',
+      oauthProvider: 'google',
+      isEmailVerified: true,
+      onboardingStage: 'PASSWORD_SETUP',
+      role: null,
+    });
+    // What a fresh OAuth identity gets is deliberately inert.
+    expect(created.hashedPassword).toBeUndefined();
+    // The welcome is role-specific, so it cannot fire before a role exists.
+    expect(mockSendWelcome).not.toHaveBeenCalled();
   });
 
-  it('creates an account from a valid onboarding draft and clears the draft + cookie', async () => {
+  it('de-duplicates a username that is already taken', async () => {
     mockUserFindOne.mockResolvedValue(null);
-    mockVerifyDraftValue.mockReturnValue('draft123');
-    mockDraftFindById.mockResolvedValue({
-      role: 'FARMER',
-      username: 'kamau',
-      hashedPassword: 'hashed',
-    });
-    mockUserExists.mockResolvedValue(null);
+    mockUserCreate.mockResolvedValue({ _id: 'u-dup' });
+    // 'kamau' is taken; the next candidate is free.
+    mockUserExists.mockImplementation((q: { username?: string }) =>
+      Promise.resolve(q.username === 'kamau' ? { _id: 'other' } : null)
+    );
 
-    const res = await signIn({
+    await signIn({
       user: { email: 'kamau@gmail.com' },
       account: { provider: 'google' },
       profile: googleProfile('kamau@gmail.com'),
     });
 
-    expect(res).toBe(true);
-    expect(mockUserCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        username: 'kamau',
-        hashedPassword: 'hashed',
-        role: 'FARMER',
-        onboardingStage: 'COMPLETED',
-        oauthProvider: 'google',
-      })
-    );
-    expect(mockDraftFindByIdAndDelete).toHaveBeenCalledWith('draft123');
-    expect(mockCookieSet).toHaveBeenCalled();
+    expect(mockUserCreate.mock.calls[0][0].username).toBe('kamau_1');
   });
 
-  it('rejects a draft whose role is ADMIN (defence in depth)', async () => {
+  it('seeds githubUsername from the GitHub handle so the student never types it', async () => {
     mockUserFindOne.mockResolvedValue(null);
-    mockVerifyDraftValue.mockReturnValue('draftAdmin');
-    mockDraftFindById.mockResolvedValue({
-      role: 'ADMIN',
-      username: 'sneaky',
-      hashedPassword: 'hashed',
+    mockUserCreate.mockResolvedValue({ _id: 'u-gh' });
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([{ email: 'dev@users.noreply.github.com', primary: true, verified: true }]),
+    }) as unknown as typeof fetch;
+
+    await signIn({
+      user: { email: 'dev@users.noreply.github.com' },
+      account: { provider: 'github', access_token: 'gho_x' },
+      profile: { login: 'brianotieno', name: 'Brian Otieno', avatar_url: 'https://gh/a.png' },
     });
 
-    const res = await signIn({
+    expect(mockUserCreate.mock.calls[0][0]).toMatchObject({
+      username: 'brianotieno',
+      firstName: 'Brian',
+      lastName: 'Otieno',
+      oauthProvider: 'github',
+      studentData: { githubUsername: 'brianotieno' },
+    });
+  });
+
+  it('never creates an ADMIN from a public OAuth sign-in (security invariant #1)', async () => {
+    mockUserFindOne.mockResolvedValue(null);
+    mockUserCreate.mockResolvedValue({ _id: 'u-x' });
+
+    await signIn({
       user: { email: 'sneaky@gmail.com' },
       account: { provider: 'google' },
       profile: googleProfile('sneaky@gmail.com'),
     });
 
-    expect(res).toBe('/auth/login?error=ProviderRoleMismatch');
-    expect(mockUserCreate).not.toHaveBeenCalled();
-  });
-
-  it('rejects a draft whose username was claimed since it was created', async () => {
-    mockUserFindOne.mockResolvedValue(null);
-    mockVerifyDraftValue.mockReturnValue('draftRace');
-    mockDraftFindById.mockResolvedValue({
-      role: 'FARMER',
-      username: 'taken',
-      hashedPassword: 'hashed',
-    });
-    mockUserExists.mockResolvedValue({ _id: 'someone' });
-
-    const res = await signIn({
-      user: { email: 'race@gmail.com' },
-      account: { provider: 'google' },
-      profile: googleProfile('race@gmail.com'),
-    });
-
-    expect(res).toBe('/auth/login?error=AccountExists');
-    expect(mockUserCreate).not.toHaveBeenCalled();
+    // The account is created, but inert: role null. Only the role route can set
+    // a role, and its schema excludes ADMIN.
+    expect(mockUserCreate.mock.calls[0][0].role).toBeNull();
+    expect(mockUserCreate.mock.calls[0][0].onboardingStage).toBe('PASSWORD_SETUP');
   });
 
   it('bootstraps an allowlisted Google email straight to ADMIN/COMPLETED', async () => {
@@ -179,11 +160,11 @@ describe('signIn callback — OAuth account lifecycle', () => {
   });
 
   it('does not admin-bootstrap an allowlisted email arriving via GitHub', async () => {
-    // GitHub is never an admin path; with no draft the identity is sent through
-    // onboarding rather than silently created.
+    // GitHub is never an admin path. The allowlist only applies to Google, so
+    // the same address arriving over GitHub gets an ordinary pending account.
     process.env.ADMIN_EMAIL_ALLOWLIST = 'boss@umojahub.com';
     mockUserFindOne.mockResolvedValue(null);
-    mockVerifyDraftValue.mockReturnValue(null);
+    mockUserCreate.mockResolvedValue({ _id: 'u-gh-boss' });
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([{ email: 'boss@umojahub.com', primary: true, verified: true }]),
@@ -194,8 +175,12 @@ describe('signIn callback — OAuth account lifecycle', () => {
       account: { provider: 'github', access_token: 'gho_x' },
       profile: { login: 'boss' },
     });
-    expect(res).toBe('/onboarding/welcome');
-    expect(mockUserCreate).not.toHaveBeenCalled();
+    expect(res).toBe(true);
+    expect(mockUserCreate.mock.calls[0][0]).toMatchObject({
+      role: null,
+      onboardingStage: 'PASSWORD_SETUP',
+      oauthProvider: 'github',
+    });
   });
 
   it('rejects a Google sign-in with an unverified email', async () => {

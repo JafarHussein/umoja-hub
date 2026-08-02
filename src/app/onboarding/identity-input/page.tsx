@@ -64,7 +64,7 @@ export default function IdentityInputPage(): React.ReactElement {
   // The middleware funnels users here only with a role set; guard defensively.
   if (role === null) {
     return (
-      <OnboardingShell step={2} title="Tell us about you">
+      <OnboardingShell step={3} title="Tell us about you">
         <p className="app-body text-app-muted">
           Loading your details… If this persists, return to{' '}
           <button
@@ -81,7 +81,7 @@ export default function IdentityInputPage(): React.ReactElement {
   }
 
   return (
-    <OnboardingShell step={2} title="Tell us about you" subtitle="A few details so we can set up your account.">
+    <OnboardingShell step={3} title="Tell us about you" subtitle="A few details so we can set up your account.">
       {error && <OnboardingError message={error} />}
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">

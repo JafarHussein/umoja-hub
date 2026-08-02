@@ -2,7 +2,7 @@ import {
   roleSelectionSchema,
   usernameSchema,
   passwordSchema,
-  onboardingDraftSchema,
+  passwordSetupSchema,
   credentialsLoginSchema,
   passwordResetRequestSchema,
   passwordResetConfirmSchema,
@@ -65,23 +65,37 @@ describe('passwordSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
   });
 });
 
-describe('onboardingDraftSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
-  it('accepts a valid farmer draft', () => {
+describe('passwordSetupSchema (AUTH_ONBOARDING_FLOW_V3)', () => {
+  it('accepts a matching username and password pair', () => {
     expect(
-      onboardingDraftSchema.safeParse({
+      passwordSetupSchema.safeParse({
         username: 'wanjiku',
         password: 'Farmer2024',
-        role: 'FARMER',
+        confirmPassword: 'Farmer2024',
       }).success
     ).toBe(true);
   });
 
-  it('rejects an ADMIN role at the schema boundary (security invariant #1)', () => {
+  it('rejects a mismatched confirmation', () => {
+    const result = passwordSetupSchema.safeParse({
+      username: 'wanjiku',
+      password: 'Farmer2024',
+      confirmPassword: 'Farmer2025',
+    });
+    expect(result.success).toBe(false);
+    // The error must land on the confirm field so the form highlights the box
+    // the user has to fix, not the one they got right.
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(['confirmPassword']);
+    }
+  });
+
+  it('rejects a weak password even when both entries match', () => {
     expect(
-      onboardingDraftSchema.safeParse({
-        username: 'sneaky',
-        password: 'Sneaky2024',
-        role: 'ADMIN',
+      passwordSetupSchema.safeParse({
+        username: 'wanjiku',
+        password: 'alllowercase',
+        confirmPassword: 'alllowercase',
       }).success
     ).toBe(false);
   });
@@ -139,7 +153,14 @@ describe('roleSelectionSchema', () => {
   });
 
   it('rejects ADMIN (allowlist only)', () => {
+    // Under V3 role selection happens after OAuth, so this schema is the last
+    // thing standing between a signed-in stranger and an admin account.
     expect(roleSelectionSchema.safeParse({ role: 'ADMIN' }).success).toBe(false);
+  });
+
+  it.each(['NGO', 'EMPLOYER', 'INSTITUTION'])('rejects the provisioned role %s', (role) => {
+    // Organisation accounts are provisioned out of band, never self-claimed.
+    expect(roleSelectionSchema.safeParse({ role }).success).toBe(false);
   });
 
   it('rejects a missing role', () => {

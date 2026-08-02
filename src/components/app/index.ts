@@ -8,8 +8,12 @@ export { Input, Textarea, Select } from './Field';
 export type { IInputProps, ITextareaProps, ISelectProps } from './Field';
 export { Card } from './Card';
 export type { ICardProps } from './Card';
-export { ChoiceCard } from './ChoiceCard';
+export { ChoiceCard, ChoiceCardGroup } from './ChoiceCard';
 export type { IChoiceCardProps } from './ChoiceCard';
+export { ProviderButton } from './ProviderButton';
+export type { IProviderButtonProps, OAuthProvider } from './ProviderButton';
+export { GoogleIcon, GitHubIcon } from './BrandIcons';
+export type { IBrandIconProps } from './BrandIcons';
 export { Alert } from './Alert';
 export type { IAlertProps } from './Alert';
 export {

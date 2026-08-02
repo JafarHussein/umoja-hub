@@ -33,6 +33,10 @@ export enum VerificationStatus {
 // AUTH-02 writes the starting stage on OAuth account creation; AUTH-05 advances
 // it as each onboarding step is submitted.
 export enum OnboardingStage {
+  // AUTH_ONBOARDING_FLOW_V3: OAuth comes first and creates the account, so a
+  // brand-new user lands here — authenticated, but with no password and no role
+  // yet. Everything before this stage is handled by the identity provider.
+  PASSWORD_SETUP = 'PASSWORD_SETUP',
   ROLE_SELECTION = 'ROLE_SELECTION',
   IDENTITY_INPUT = 'IDENTITY_INPUT',
   VERIFICATION_UPLOAD = 'VERIFICATION_UPLOAD',

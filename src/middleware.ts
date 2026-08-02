@@ -66,24 +66,22 @@ function isExempt(path: string): boolean {
   return EXEMPT_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`) || path.startsWith(p));
 }
 
-// V2 onboarding (AUTH_ONBOARDING_FLOW_V2) is pre-auth: welcome/details/connect
-// run before an account exists, so they must be reachable without a JWT. The
-// connect step self-guards its draft cookie server-side (Node runtime), and an
-// already-onboarded user is still bounced to their dashboard below (step 6).
-const V2_ONBOARDING_PREFIXES = [
-  '/onboarding/welcome',
-  '/onboarding/details',
-  '/onboarding/connect',
-];
+// V3 onboarding (AUTH_ONBOARDING_FLOW_V3) is OAuth-first, so exactly one screen
+// runs before an account exists: the provider picker. Everything after it is
+// authenticated, because the OAuth callback has already created the account.
+// An already-onboarded user is still bounced to their dashboard below (step 6).
+const PRE_AUTH_ONBOARDING_PREFIXES = ['/onboarding/welcome'];
 
 function isPreAuthOnboarding(path: string): boolean {
-  return V2_ONBOARDING_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+  return PRE_AUTH_ONBOARDING_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
 // Onboarding funnel target for a given stage (Decision 02-A). The /onboarding
 // route group is built by AUTH-06; these slugs are the contract it must honour.
 function onboardingPathForStage(stage: string | undefined): string {
   switch (stage) {
+    case OnboardingStage.PASSWORD_SETUP:
+      return '/onboarding/password';
     case OnboardingStage.IDENTITY_INPUT:
       return '/onboarding/identity-input';
     case OnboardingStage.VERIFICATION_UPLOAD:
@@ -161,7 +159,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
         { status: 401 }
       );
     }
-    // V2 onboarding happens before an account exists — let it through.
+    // The provider picker runs before an account exists — let it through.
     if (isPreAuthOnboarding(path)) {
       return NextResponse.next();
     }
@@ -184,8 +182,22 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   if (!isApi) {
     const onOnboarding = path.startsWith('/onboarding');
     if (role === null || !isOnboarded) {
+      const target = onboardingPathForStage(stage);
       if (!onOnboarding) {
-        return NextResponse.redirect(new URL(onboardingPathForStage(stage), req.url));
+        return NextResponse.redirect(new URL(target, req.url));
+      }
+      // /onboarding/welcome is the pre-auth provider picker AND the OAuth
+      // callback target, so a user who has just signed in lands there and must
+      // be moved on. Only that screen is policed here.
+      //
+      // The other funnel screens deliberately are NOT: each one self-guards
+      // against the database, and the stage on this token can lag it (the JWT
+      // refreshes on update(), the row updates immediately). Forcing the token's
+      // stage on every path made those two authorities fight — the middleware
+      // sent the user back on the stale claim, the page sent them forward on the
+      // fresh row, and the browser looped until it gave up.
+      if (isPreAuthOnboarding(path)) {
+        return NextResponse.redirect(new URL(target, req.url));
       }
     } else if (onOnboarding) {
       // A fully-onboarded user has no business on the onboarding pages.

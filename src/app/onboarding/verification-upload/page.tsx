@@ -7,6 +7,10 @@ import { Input, Select, Button } from '@/components/app';
 import { Role, DocumentType } from '@/types';
 import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
+// This screen is the one funnel stage that is not universal, so it extends the
+// shared rail rather than living inside it.
+const VERIFY_STEPS = ['Password', 'Role', 'Details', 'Verification'];
+
 const DASHBOARD_BY_ROLE: Record<string, string> = {
   FARMER: '/dashboard/farmer/listings',
   BUYER: '/marketplace',
@@ -41,7 +45,7 @@ export default function VerificationUploadPage(): React.ReactElement {
   }
 
   return (
-    <OnboardingShell step={3} title="Verify your account">
+    <OnboardingShell step={4} steps={VERIFY_STEPS} title="Verify your account">
       <p className="app-body text-app-muted">Loading your details…</p>
     </OnboardingShell>
   );
@@ -122,7 +126,8 @@ function StudentVerification(): React.ReactElement {
 
   return (
     <OnboardingShell
-      step={3}
+      step={4}
+      steps={VERIFY_STEPS}
       title="Verify you're a student"
       subtitle="We'll email a 6-digit code to your university address."
       illustration="/illustrations/concepts/concept-verification.svg"
@@ -252,7 +257,8 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
 
   return (
     <OnboardingShell
-      step={3}
+      step={4}
+      steps={VERIFY_STEPS}
       title={copy.title}
       subtitle={copy.subtitle}
       illustration="/illustrations/concepts/concept-data-security.svg"

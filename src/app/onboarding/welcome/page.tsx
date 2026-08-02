@@ -1,11 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
-import { buttonVariants } from '@/components/app';
+import { WelcomeClient } from './WelcomeClient';
 
-// SCR-ONB-V2-001 — onboarding entry (AUTH_ONBOARDING_FLOW_V2). Pre-auth: no
-// account or draft exists yet. Sets expectations, then sends the visitor to the
-// details step where the OnboardingDraft is created. Mirrors the login two-pane
-// brand layout under .theme-app (warm canvas, light mode).
+// SCR-ONB-V3-000 — sign-up entry (AUTH_ONBOARDING_FLOW_V3).
+//
+// Pre-auth: no account exists. The only decision on this page is which identity
+// provider to use; everything the platform needs about the person is collected
+// afterwards, and only once it knows who they are.
+//
+// Mirrors the login two-pane brand layout under .theme-app (warm canvas).
 export default function WelcomePage(): React.ReactElement {
   return (
     <div className="theme-app grid min-h-screen bg-app-canvas lg:grid-cols-2">
@@ -17,9 +20,7 @@ export default function WelcomePage(): React.ReactElement {
         </div>
 
         <div className="max-w-md">
-          <h2 className="app-display text-app-ink">
-            Trade you can verify. Skills you can prove.
-          </h2>
+          <h2 className="app-display text-app-ink">Trade you can verify. Skills you can prove.</h2>
           <p className="app-body mt-3 text-app-muted">
             One account for the verified farmer marketplace and the hands-on build track.
           </p>
@@ -39,7 +40,7 @@ export default function WelcomePage(): React.ReactElement {
 
       {/* Content panel. */}
       <main className="flex min-h-screen items-center justify-center px-6 py-10">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-sm">
           {/* Wordmark shown here on mobile (the brand panel is hidden < lg). */}
           <div className="mb-8 flex items-center gap-1 lg:hidden">
             <span className="app-h2 text-app-ink">Umoja</span>
@@ -48,38 +49,17 @@ export default function WelcomePage(): React.ReactElement {
 
           <div className="rounded-app-card border border-app-hairline bg-app-card p-6 sm:p-8">
             <h1 className="app-h1 mb-1 text-app-ink">Create your account</h1>
-            <p className="app-body text-app-muted">
-              Two quick steps. Pick how you&apos;ll use UmojaHub and set a username and
-              password, then connect a sign-in provider to finish.
+            <p className="app-body mb-6 text-app-muted">
+              Start with the account you already have. We&apos;ll ask what you do next.
             </p>
 
-            <ol className="mt-6 space-y-3" aria-label="What to expect">
-              <li className="flex items-start gap-3">
-                <span className="app-meta flex h-7 w-7 shrink-0 items-center justify-center rounded-app-pill border border-app-brand bg-app-brand-surface text-app-brand">
-                  1
-                </span>
-                <span className="app-body text-app-body">
-                  Your details — role, username, and password.
-                </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="app-meta flex h-7 w-7 shrink-0 items-center justify-center rounded-app-pill border border-app-hairline text-app-faint">
-                  2
-                </span>
-                <span className="app-body text-app-body">
-                  Connect Google or GitHub to confirm your email.
-                </span>
-              </li>
-            </ol>
-
-            <Link
-              href="/onboarding/details"
-              className={`${buttonVariants({ size: 'lg' })} mt-8 w-full`}
-            >
-              Get started
-            </Link>
+            <WelcomeClient />
 
             <p className="app-meta mt-6 text-app-faint">
+              Students sign up with GitHub. Farmers, buyers and lecturers use Google.
+            </p>
+
+            <p className="app-meta mt-6 text-app-muted">
               Already have an account?{' '}
               <Link href="/auth/login" className="text-app-brand hover:underline">
                 Sign in

@@ -3,7 +3,9 @@
 import React from 'react';
 import { Alert } from '@/components/app';
 
-const DEFAULT_STEPS = ['Role', 'Identity', 'Verification'];
+// AUTH_ONBOARDING_FLOW_V3 funnel. Verification is role-specific, so it is not
+// in the shared rail — the verification screen supplies its own longer list.
+const DEFAULT_STEPS = ['Password', 'Role', 'Details'];
 
 export interface IOnboardingShellProps {
   step: number;
@@ -39,7 +41,7 @@ export function OnboardingShell({
           </div>
           <h2 className="app-h1 mt-8 text-app-ink">Set up your verified account</h2>
           <p className="app-body mt-2 text-app-muted">
-            Three quick steps. We tailor the rest of the platform to how you will use it.
+            A few quick steps. We tailor the rest of the platform to how you will use it.
           </p>
         </div>
 
@@ -90,7 +92,9 @@ export function OnboardingShell({
           )}
         </div>
 
-        <p className="app-meta text-app-muted">A few steps to set up your verified account.</p>
+        <p className="app-meta text-app-muted">
+          Verified identities · Honest delivery history · Recourse on every order
+        </p>
       </aside>
 
       {/* Content panel — centered step card on every breakpoint. */}
