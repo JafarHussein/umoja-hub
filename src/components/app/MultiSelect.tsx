@@ -25,6 +25,7 @@ const chipBase =
 export interface IChipGroupProps {
   label: string;
   hint?: string | undefined;
+  optional?: boolean | undefined;
   options: readonly { value: string; label: string }[];
   selected: string[];
   onToggle: (value: string) => void;
@@ -34,6 +35,7 @@ export interface IChipGroupProps {
 export function ChipGroup({
   label,
   hint,
+  optional,
   options,
   selected,
   onToggle,
@@ -41,7 +43,10 @@ export function ChipGroup({
 }: IChipGroupProps): React.ReactElement {
   return (
     <fieldset>
-      <legend className="app-label mb-1 text-app-body">{label}</legend>
+      <legend className="app-label mb-1 flex items-baseline gap-2 text-app-body">
+        {label}
+        {optional && <span className="app-meta font-normal text-app-faint">Optional</span>}
+      </legend>
       {hint && <p className="app-meta mb-2 text-app-faint">{hint}</p>}
       <div className="flex flex-wrap gap-2">
         {options.map(({ value, label: optionLabel }) => {
@@ -77,6 +82,7 @@ export interface ITokenSelectProps {
   id: string;
   label: string;
   hint?: string | undefined;
+  optional?: boolean | undefined;
   placeholder: string;
   options: readonly string[];
   selected: string[];
@@ -88,6 +94,7 @@ export function TokenSelect({
   id,
   label,
   hint,
+  optional,
   placeholder,
   options,
   selected,
@@ -100,8 +107,9 @@ export function TokenSelect({
 
   return (
     <div>
-      <label htmlFor={id} className="app-label mb-1 block text-app-body">
+      <label htmlFor={id} className="app-label mb-1 flex items-baseline gap-2 text-app-body">
         {label}
+        {optional && <span className="app-meta font-normal text-app-faint">Optional</span>}
       </label>
       {hint && <p className="app-meta mb-2 text-app-faint">{hint}</p>}
 
