@@ -254,7 +254,19 @@ Scope approved by the owner: **R1–R3, engine preserved.** Gate after: type-che
 
 - **Escrow "freeze"** (part of the brief's admin list) — a freeze is a *persisted* release block, which needs a new field on `Order` and a new input to the escrow derivation. That is a change to platform state, i.e. R4 territory. Release and refund are the only two places held money can actually go, and both are now reachable; a freeze adds a third *status* but no new destination. Deferred rather than faked.
 - **`OrderTimeline` left as-is** (G5) — the log-sourced timeline with actor + timestamp per event now exists as the receipt's transaction history. `OrderTimeline` remains a progress indicator derived from order status. Merging the two means changing the order state machine (G5/R4).
-- **G5, G9, G10** — out of the approved R1–R3 scope. Still open, still accurate as written above.
+- **G5, G9, G10** — closed subsequently in R4; see below.
+
+### R4 — G5, G9, G10 closed (commit `c3ce803`)
+
+**G5 fulfilment granularity — built as a separate axis, not new order states.** `fulfillmentStatus === IN_FULFILLMENT` proved load-bearing in ~15 non-test places (escrow held-guard, balance aggregation, `settleEscrow`, mediation gate, admin ledger filter, UI). Promoting PREPARING/READY/COLLECTED to real fulfilment statuses would have made every one of those wrong, each a potential escrow defect. Instead: a descriptive `Order.fulfillmentStage` (`PREPARING → READY → IN_TRANSIT → DELIVERED`) plus a bounded `stageHistory`, forward-only, feeding the receipt's transaction timeline. Every escrow invariant is untouched — pinned by a test asserting the stage route never writes `paymentStatus` or `fulfillmentStatus`.
+
+*Correction to the audit as originally written:* `OrderFulfillmentStatus.RECEIVED` is **not** entirely dead — `updateOrderStatusSchema` accepts it as the buyer's *request* token, which the route translates to `COMPLETED`. It is never **persisted**, which is what was actually verified. Left as-is; it is a working request contract, not a defect.
+
+**G9 two-sided disputes.** Adds a respondent statement (one each — an adjudication record, not a moderated thread) and photo evidence from either party through the existing Cloudinary upload route (`umojahub/disputes`). The admin queue shows both accounts side by side and explicitly flags when the other side has not answered, since that decision moves real money.
+
+**G10 farmer escalation + stated release timeline.** These turned out to be one feature. A farmer whose buyer went quiet had no recourse at all — funds held indefinitely behind someone else's inaction. Either party can now file, on different clocks and different grounds: buyers at `MEDIATION_ESCALATION_HOURS` (48h) from payment, farmers at `FARMER_ESCALATION_HOURS` (7 days) from their own dispatch confirmation. That gate *is* the answer to "when do I get paid?", now stated on the order.
+
+Gate: type-check clean, lint 0 errors, **1045 tests / 94 suites**, build green.
 
 ### G8 cron cadence — closed separately (commit `8aa5029`)
 
