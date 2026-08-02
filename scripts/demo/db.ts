@@ -1,13 +1,13 @@
-// Simulation DB bootstrap. Loads Next env (.env / .env.local), connects through
+// Demo-world DB bootstrap. Loads Next env (.env / .env.local), connects through
 // the same singleton the app uses, and hard-guards against running in
 // production. The engine NEVER drops collections or runs unscoped deletes.
 
 import { loadEnvConfig } from '@next/env';
 
 export function guardEnvironment(): void {
-  if (process.env.NODE_ENV === 'production' && process.env.SIMULATION_ALLOW_PROD !== 'true') {
+  if (process.env.NODE_ENV === 'production' && process.env.DEMO_ALLOW_PROD !== 'true') {
     // eslint-disable-next-line no-console
-    console.error('DANGER: the simulation engine refuses to run in production.');
+    console.error('DANGER: the demo world generator refuses to run in production.');
     process.exit(1);
   }
 }
@@ -28,5 +28,5 @@ export async function shutdown(): Promise<void> {
 
 export function log(msg: string): void {
   // eslint-disable-next-line no-console
-  console.log(`[simulate] ${msg}`);
+  console.log(`[demo] ${msg}`);
 }

@@ -17,8 +17,10 @@ import {
   type Crop,
 } from '../dictionaries';
 import { cropImageUrl } from '../images';
+import { priceSeries } from '../priceSeries';
 import { recalculate } from '../../../src/lib/trust/farmerTrustCalculator';
 import {
+  ListingUnit,
   OrderPaymentStatus,
   OrderFulfillmentStatus,
   FulfillmentType,
@@ -91,7 +93,7 @@ function laterOf(a: Date, b: Date): Date {
 }
 
 export async function generateCommerce(ctx: SimContext, world: World): Promise<void> {
-  const { rng, ledger } = ctx;
+  const { rng, ledger, batcher } = ctx;
   const year = new Date().getFullYear();
 
   const { default: MarketplaceListing } = await import('../../../src/lib/models/MarketplaceListing.model');
@@ -158,18 +160,15 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
       // "popular" feel stays consistent with the listing's actual demand.
       let orderViews = 0;
 
-      ledger.track(
-        'PriceHistory',
-        await createDoc(PriceHistory, {
-          cropName: crop.name,
-          county: farmer.county,
-          pricePerUnit: price,
-          unit: crop.unit,
-          source: PriceHistorySource.LISTING_CREATED,
-          farmerId: farmer.id,
-          recordedAt: listedAt,
-        })
-      );
+      batcher.add(PriceHistory, 'PriceHistory', {
+        cropName: crop.name,
+        county: farmer.county,
+        pricePerUnit: price,
+        unit: crop.unit,
+        source: PriceHistorySource.LISTING_CREATED,
+        farmerId: farmer.id,
+        recordedAt: listedAt,
+      });
 
       let consumed = 0;
       const nOrders = rng.int(profile.orders[0], profile.orders[1]);
@@ -221,14 +220,14 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
             })
           );
           consumed += qty; releasable += total;
-          await escrowEvent(EscrowEventLog, ledger, EscrowEventType.HELD, order._id, farmer, buyer, total, paidAt, 'SYSTEM');
-          await escrowEvent(EscrowEventLog, ledger, EscrowEventType.RELEASED, order._id, farmer, buyer, total, receivedAt, Role.BUYER, buyer.id);
-          ledger.track('PriceHistory', await createDoc(PriceHistory, {
+          await escrowEvent(EscrowEventLog, batcher, EscrowEventType.HELD, order._id, farmer, buyer, total, paidAt, 'SYSTEM');
+          await escrowEvent(EscrowEventLog, batcher, EscrowEventType.RELEASED, order._id, farmer, buyer, total, receivedAt, Role.BUYER, buyer.id);
+          batcher.add(PriceHistory, 'PriceHistory', {
             cropName: crop.name, county: farmer.county, pricePerUnit: price, unit: crop.unit,
             source: PriceHistorySource.ORDER_COMPLETED, farmerId: farmer.id, orderId: order._id, recordedAt: receivedAt,
-          }));
-          await pushNotification(ledger, { userId: buyer.id, type: NotificationType.ORDER_UPDATE, title: 'Payment confirmed — protected in escrow', body: `Your KES ${total.toLocaleString()} for ${crop.name} is protected in escrow.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: paidAt });
-          await pushNotification(ledger, { userId: farmer.id, type: NotificationType.ESCROW_UPDATE, title: 'Funds released from escrow', body: `Order ${ref} confirmed received. KES ${total.toLocaleString()} released and available to request.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: receivedAt });
+          });
+          await pushNotification(batcher, { userId: buyer.id, type: NotificationType.ORDER_UPDATE, title: 'Payment confirmed — protected in escrow', body: `Your KES ${total.toLocaleString()} for ${crop.name} is protected in escrow.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: paidAt });
+          await pushNotification(batcher, { userId: farmer.id, type: NotificationType.ESCROW_UPDATE, title: 'Funds released from escrow', body: `Order ${ref} confirmed received. KES ${total.toLocaleString()} released and available to request.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: receivedAt });
 
           if (rng.bool(profile.ratingP)) {
             const stars = rng.weighted<number>(
@@ -236,12 +235,12 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
                 ? [[5, 6], [4, 4], [3, 2], [2, 1], [1, 1]]
                 : [[5, 3], [4, 4], [3, 3], [2, 2], [1, 1]]
             );
-            ledger.track('Rating', await createDoc(Rating, {
+            batcher.add(Rating, 'Rating', {
               orderId: order._id,
               farmerId: farmer.id, buyerId: buyer.id, rating: stars,
               comment: rng.pick(['Good quality and on time.', 'Fresh produce, will buy again.', 'Reliable farmer.', 'Delivery was a bit late but quality was fine.', 'As described.']),
               createdAt: clampPast(daysAfter(receivedAt, 1)),
-            }));
+            });
           }
         } else if (outcome === 'held') {
           const dispatched = rng.bool(0.6);
@@ -255,8 +254,8 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
             createdAt: orderedAt, updatedAt: paidAt,
           }));
           consumed += qty;
-          await escrowEvent(EscrowEventLog, ledger, EscrowEventType.HELD, order._id, farmer, buyer, total, paidAt, 'SYSTEM');
-          await pushNotification(ledger, { userId: farmer.id, type: NotificationType.ESCROW_UPDATE, title: 'New order paid — held in escrow', body: `Order ${ref} for ${crop.name} is paid and held in escrow. Prepare for fulfillment.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: paidAt });
+          await escrowEvent(EscrowEventLog, batcher, EscrowEventType.HELD, order._id, farmer, buyer, total, paidAt, 'SYSTEM');
+          await pushNotification(batcher, { userId: farmer.id, type: NotificationType.ESCROW_UPDATE, title: 'New order paid — held in escrow', body: `Order ${ref} for ${crop.name} is paid and held in escrow. Prepare for fulfillment.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: paidAt });
         } else {
           // dispute
           const order = ledger.track('Order', await createDoc(Order, {
@@ -269,7 +268,7 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
             createdAt: orderedAt, updatedAt: paidAt,
           }));
           consumed += qty;
-          await escrowEvent(EscrowEventLog, ledger, EscrowEventType.HELD, order._id, farmer, buyer, total, paidAt, 'SYSTEM');
+          await escrowEvent(EscrowEventLog, batcher, EscrowEventType.HELD, order._id, farmer, buyer, total, paidAt, 'SYSTEM');
           const filedAt = clampPast(daysAfter(paidAt, rng.int(1, 4)));
           const willRefund = rng.bool(0.5);
           const resolvedAt = clampPast(daysAfter(filedAt, rng.int(1, 5)));
@@ -294,8 +293,8 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
               },
             });
             consumed -= qty; // inventory restored on refund
-            await escrowEvent(EscrowEventLog, ledger, EscrowEventType.REFUND_ISSUED, order._id, farmer, buyer, total, resolvedAt, Role.ADMIN, admin?.id);
-            await pushNotification(ledger, { userId: buyer.id, type: NotificationType.ESCROW_UPDATE, title: 'Held funds refunded', body: `Your KES ${total.toLocaleString()} for order ${ref} has been refunded after mediation.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: resolvedAt });
+            await escrowEvent(EscrowEventLog, batcher, EscrowEventType.REFUND_ISSUED, order._id, farmer, buyer, total, resolvedAt, Role.ADMIN, admin?.id);
+            await pushNotification(batcher, { userId: buyer.id, type: NotificationType.ESCROW_UPDATE, title: 'Held funds refunded', body: `Your KES ${total.toLocaleString()} for order ${ref} has been refunded after mediation.`, relatedEntity: { kind: 'Order', id: order._id }, createdAt: resolvedAt });
           }
         }
       }
@@ -314,6 +313,9 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
     // Genuine trust score from the real calculator. recalculate() upserts a
     // FarmerTrustScore outside the ledger, so track it here to keep the run's
     // manifest complete (and reset clean).
+    // recalculate() reads the Order and Rating collections, so anything still
+    // queued for this farmer has to be on disk before it runs.
+    await batcher.flush();
     await recalculate(String(farmer.id));
     const trustDoc = await FarmerTrustScore.findOne({ farmerId: farmer.id }).select('_id');
     if (trustDoc) ledger.track('FarmerTrustScore', trustDoc);
@@ -352,18 +354,64 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
   for (const crop of combos) {
     const county = rng.pick(FARMING_COUNTIES);
     for (let k = 0; k < 3; k++) {
-      ledger.track('PriceHistory', await createDoc(PriceHistory, {
+      batcher.add(PriceHistory, 'PriceHistory', {
         cropName: crop.name, county, pricePerUnit: rng.int(crop.priceMin, crop.priceMax),
         unit: crop.unit, source: PriceHistorySource.LISTING_CREATED,
         recordedAt: clampPast(daysAgo(rng.int(1, 6))),
-      }));
+      });
+    }
+  }
+
+  // Deliberate trends for the crop-county pairs the presentation opens. The
+  // scatter above is realistic but directionless; Price Intelligence is judged
+  // on whether it can show a rise or a fall and say so with confidence, so these
+  // three series are laid down with a known drift inside the engine's 90-day
+  // window. Anchored on the canonical farmers, whose counties are fixed.
+  await curatedTrends(ctx, world, PriceHistory);
+}
+
+// Rising tomatoes in Kirinyaga, falling potatoes in Nyandarua, steady maize in
+// Uasin Gishu — one of each direction, so the recommendation, the trend arrow
+// and the confidence score all have something honest to report.
+async function curatedTrends(
+  ctx: SimContext,
+  world: World,
+  PriceHistory: import('mongoose').Model<unknown>
+): Promise<void> {
+  const { batcher } = ctx;
+
+  const TRENDS: Array<{ crop: string; county: string; unit: ListingUnit; endPrice: number; driftPct: number }> = [
+    { crop: 'Tomatoes', county: 'Kirinyaga', unit: ListingUnit.CRATE, endPrice: 4100, driftPct: 18 },
+    { crop: 'Potatoes', county: 'Nyandarua', unit: ListingUnit.BAG, endPrice: 2150, driftPct: -14 },
+    { crop: 'Maize', county: 'Uasin Gishu', unit: ListingUnit.BAG, endPrice: 4300, driftPct: 4 },
+  ];
+
+  for (const trend of TRENDS) {
+    // Attribute the series to a farmer who actually sells there, so the rows are
+    // not orphaned against a farmerId from another county.
+    const farmer =
+      world.farmers.find((f) => f.county === trend.county && f.archetype !== 'new') ?? world.farmers[0];
+    if (!farmer) continue;
+
+    const docs = priceSeries({
+      cropName: trend.crop,
+      county: trend.county,
+      unit: trend.unit,
+      farmerId: farmer.id,
+      endPrice: trend.endPrice,
+      driftPct: trend.driftPct,
+      points: 12,
+      spanDays: 75,
+    });
+    for (const doc of docs) {
+      batcher.add(PriceHistory, 'PriceHistory', doc);
     }
   }
 }
 
 async function escrowEvent(
   EscrowEventLog: import('mongoose').Model<unknown>,
-  ledger: SimContext['ledger'],
+  batcher: SimContext['batcher'],
   eventType: string,
   orderId: import('mongoose').Types.ObjectId,
   farmer: PersonRef,
@@ -373,8 +421,8 @@ async function escrowEvent(
   actorRole: string,
   actorId?: import('mongoose').Types.ObjectId
 ): Promise<void> {
-  ledger.track('EscrowEventLog', await createDoc(EscrowEventLog, {
+  batcher.add(EscrowEventLog, 'EscrowEventLog', {
     eventType, orderId, buyerId: buyer.id, farmerId: farmer.id,
     amountKES, actorRole, actorId, occurredAt,
-  }));
+  });
 }

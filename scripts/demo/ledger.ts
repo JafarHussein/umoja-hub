@@ -40,6 +40,14 @@ export class Ledger {
     return this.entities.length;
   }
 
+  // Ids this run created in a given collection. The operations phase reads these
+  // to attach payment trails, audit entries and assistant history to exactly the
+  // records this run produced, rather than re-querying the whole database and
+  // risking picking up someone else's data.
+  idsFor(collection: string): mongoose.Types.ObjectId[] {
+    return this.entities.filter((e) => e.collection === collection).map((e) => e.id);
+  }
+
   summary(): Record<string, number> {
     return { ...this.counts };
   }
@@ -59,7 +67,7 @@ export class Ledger {
   }
 
   // Persist whatever was tracked so far without marking the run complete. Called
-  // when a run throws mid-way, so the partial manifest is recorded and seed:reset
+  // when a run throws mid-way, so the partial manifest is recorded and a reset
   // can still clean exactly what was created (status stays BUILDING = interrupted).
   async fail(error: string): Promise<void> {
     const { default: SimulationRun } = await import('../../src/lib/models/SimulationRun.model');

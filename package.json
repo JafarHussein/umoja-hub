@@ -16,12 +16,11 @@
     "test:e2e:update": "playwright test --update-snapshots",
     "test:e2e:report": "playwright show-report",
     "test:integration": "jest --config jest.integration.config.ts",
-    "db:seed": "tsx scripts/seed.ts",
-    "seed:demo": "tsx scripts/simulate/cli.ts demo",
-    "seed:reset": "tsx scripts/simulate/cli.ts reset",
-    "seed:rebuild": "tsx scripts/simulate/cli.ts rebuild",
-    "seed:validate": "tsx scripts/simulate/cli.ts validate",
-    "illustrations": "tsx scripts/fetch-illustrations.ts"
+    "illustrations": "tsx scripts/fetch-illustrations.ts",
+    "demo": "tsx scripts/demo/cli.ts demo",
+    "demo:reset": "tsx scripts/demo/cli.ts reset",
+    "demo:validate": "tsx scripts/demo/cli.ts validate",
+    "demo:accounts": "tsx scripts/demo/cli.ts accounts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

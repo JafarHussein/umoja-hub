@@ -3,10 +3,13 @@
 import type mongoose from 'mongoose';
 import type { Rng } from './rng';
 import type { Ledger } from './ledger';
+import type { Batcher } from './helpers';
 
 export interface SimContext {
   rng: Rng;
   ledger: Ledger;
+  /** Deferred writer for append-only logs. Flush before reading what you queued. */
+  batcher: Batcher;
 }
 
 export interface PersonRef {

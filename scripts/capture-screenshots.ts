@@ -7,8 +7,7 @@
  * the exact filenames the README references. LOCAL-DEV-ONLY; refuses production.
  *
  * Prerequisites:
- *   1. npm run db:seed        # 5 canonical role accounts
- *   2. npm run seed:demo      # full ecosystem (adds NGO/Employer/Institution + data)
+npm run demo
  *   3. npm run dev            # dev server on :3000 (in another terminal)
  *   4. npx playwright install chromium   # once
  *
@@ -38,7 +37,7 @@ const VIEWPORT = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
 
 // Preferred seeded account per role; falls back to the first user of that role
-// (the ecosystem roles come from seed:demo with generated emails).
+// (the NGO / employer / institution roles have generated emails).
 const ROLE_EMAIL: Partial<Record<Role, string>> = {
   [Role.FARMER]: 'wanjiku.kamau@gmail.com',
   [Role.BUYER]: 'kamau.githinji@gmail.com',

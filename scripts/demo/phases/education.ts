@@ -48,7 +48,7 @@ interface LecturerStat {
 let slugSeq = 0;
 
 export async function generateEducation(ctx: SimContext, world: World): Promise<void> {
-  const { rng, ledger } = ctx;
+  const { rng, ledger, batcher } = ctx;
   if (world.students.length < 2 || world.lecturers.length === 0) return;
 
   const { default: User } = await import('../../../src/lib/models/User.model');
@@ -162,13 +162,13 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       await ProjectEngagement.updateOne({ _id: engagement._id }, { $set: { peerReviewId: peer._id, lecturerReviewId: lecReview._id } });
 
       // Verification audit log (immutable trail).
-      ledger.track('VerificationAuditLog', await createDoc(VerificationAuditLog, {
+      batcher.add(VerificationAuditLog, 'VerificationAuditLog', {
         engagementId: engagement._id, studentId: student.id, lecturerId: lecturer.id, decision,
         documentHashes: { problemBreakdown: documents.problemBreakdown.hash, approachPlan: documents.approachPlan.hash, finalReflection: documents.finalReflection.hash },
         githubSnapshot: { commitCount: rng.int(8, 60), lastCommitHash: sha256(title).slice(0, 12), commitTimelineHash: sha256(title + 'tl').slice(0, 16) },
         reviewScores: sc,
         recordedAt: lecAt,
-      }));
+      });
 
       // Lecturer effectiveness accumulation.
       const lid = String(lecturer.id);
@@ -182,7 +182,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       if (lecAt > stat.lastAt) stat.lastAt = lecAt;
       lecturerStats.set(lid, stat);
 
-      await pushNotification(ledger, {
+      await pushNotification(batcher, {
         userId: student.id, type: NotificationType.REVIEW_UPDATE,
         title: verified ? 'Project verified' : decision === LecturerDecision.DENIED ? 'Project not verified' : 'Revision requested',
         body: verified ? 'A lecturer verified your project. It now counts toward your portfolio.' : 'A lecturer reviewed your project — see the feedback.',
@@ -230,10 +230,10 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       const viewers = rng.sample(world.employers, rng.int(0, Math.min(3, world.employers.length)));
       for (const emp of viewers) {
         const viewedAt = between(rng, daysAgo(45), daysAgo(0));
-        ledger.track('PortfolioView', await createDoc(PortfolioView, {
+        batcher.add(PortfolioView, 'PortfolioView', {
           studentId: student.id, viewerId: emp.id, viewerRole: Role.EMPLOYER, viewedAt,
-        }));
-        await pushNotification(ledger, {
+        });
+        await pushNotification(batcher, {
           userId: student.id, type: NotificationType.PORTFOLIO_VIEW,
           title: 'An employer viewed your portfolio',
           body: 'Your public portfolio was opened by an employer on UmojaHub.',

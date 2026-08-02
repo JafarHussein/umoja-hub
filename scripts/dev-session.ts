@@ -89,7 +89,7 @@ async function main(): Promise<void> {
     .lean()) as ILeanUser | null;
 
   if (!user) {
-    console.error(`dev-session: no user with email ${email}. Run npm run db:seed first.`); // eslint-disable-line no-console
+    console.error(`dev-session: no user with email ${email}. Run npm run demo first.`); // eslint-disable-line no-console
     process.exit(1);
   }
 

@@ -1,4 +1,4 @@
-// Deterministic, seedable RNG so a run is reproducible and seed:rebuild varies by
+// Deterministic, seedable RNG so a run is reproducible and each rebuild varies by
 // a new seed. mulberry32 — small, fast, good enough for data generation.
 
 export class Rng {

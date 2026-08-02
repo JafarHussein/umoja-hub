@@ -71,8 +71,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Seed database
-        run: npm run db:seed
+      - name: Build the demo world
+        run: npm run demo
 
       - name: Run Playwright tests
         run: npm run test:e2e

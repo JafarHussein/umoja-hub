@@ -1,19 +1,24 @@
 // ---------------------------------------------------------------------------
-// Price-series generation for the seed script.
+// Controlled price-series generation.
 //
-// Extracted from scripts/seed.ts so it can be tested: seed.ts invokes `seed()`
-// at module scope, so importing it would drop and rebuild the target database.
-// This module is pure and imports nothing at runtime — the mongoose reference
-// is type-only and erased at compile time.
+// The commerce phase already writes PriceHistory as a by-product of listings and
+// completed orders, but that scatter has no deliberate direction. Price
+// Intelligence is judged on whether it can show a *trend*, so the demo also lays
+// down a few series with a known drift — a crop that is rising, one that is
+// falling — for the counties the presentation visits.
 //
-// D8: the previous implementation hard-coded Jan–Feb 2024 timestamps. The
-// engine weights points on a 21-day half-life inside a 90-day window, so every
-// seeded row fell outside it and a freshly seeded database rendered only empty
-// states. Dates are now relative to the seed run.
+// Kept as a separate pure module so it stays unit-testable: it touches no
+// database and imports nothing at runtime (the mongoose reference is type-only
+// and erased at compile time).
+//
+// D8: an earlier implementation hard-coded Jan–Feb 2024 timestamps. The engine
+// weights points on a 21-day half-life inside a 90-day window, so every row fell
+// outside it and a freshly built world rendered only empty states. Dates are now
+// relative to the run.
 // ---------------------------------------------------------------------------
 
 import type { Types } from 'mongoose';
-import { ListingUnit, PriceHistorySource } from '../src/types';
+import { ListingUnit, PriceHistorySource } from '../../src/types';
 
 /** A date `daysAgo` days before now. Relative to the run, never absolute (D8). */
 export function docDate(daysAgo: number): Date {

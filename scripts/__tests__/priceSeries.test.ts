@@ -13,7 +13,7 @@
  * state that is also the correct rendering for a genuinely empty database.
  */
 
-import { docDate, priceSeries } from '../seedPriceSeries';
+import { docDate, priceSeries } from '../demo/priceSeries';
 import { RECO_WINDOW_DAYS } from '../../src/lib/intelligence/priceIntelligence';
 import { MIN_POINTS } from '../../src/lib/intelligence/weighting';
 import { ListingUnit, PriceHistorySource } from '../../src/types';

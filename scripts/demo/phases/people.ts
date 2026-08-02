@@ -1,12 +1,16 @@
-// People + organisations generator. Creates users for every role with behaviour
-// archetypes, the institutions/NGOs/suppliers/cooperatives they belong to, and
-// the relationships between them. All records are backdated to the actor's join
-// date. Verified farmers/lecturers are set up so downstream generators can
-// legitimately produce listings, orders, and reviews.
+// People + organisations phase. Grows the population around the canonical
+// accounts the foundation phase pinned: users for every role with behaviour
+// archetypes, the institution admins / NGOs / suppliers / cooperatives they
+// belong to, and the relationships between them. All records are backdated to
+// the actor's join date. Verified farmers and lecturers are set up so the later
+// phases can legitimately produce listings, orders, and reviews.
+//
+// This phase EXTENDS the World the foundation returned — it never replaces it.
+// The canonical accounts are already in the arrays, so a generated cooperative
+// can include Wanjiku and a generated buyer can order from her.
 
 import type { SimContext, World, PersonRef } from '../world';
-import { emptyWorld } from '../world';
-import { createDoc } from '../helpers';
+import { createDoc, demoPasswordHash } from '../helpers';
 import { joinDate } from '../clock';
 import { faceUrl } from '../images';
 import {
@@ -78,9 +82,8 @@ function makePhone(rng: { int(a: number, b: number): number }): string {
   return `+2547${rng.int(10000000, 99999999)}`;
 }
 
-export async function generatePeople(ctx: SimContext): Promise<World> {
+export async function generatePeople(ctx: SimContext, world: World): Promise<void> {
   const { rng, ledger } = ctx;
-  const world = emptyWorld();
 
   const { default: User } = await import('../../../src/lib/models/User.model');
   const { default: Institution } = await import('../../../src/lib/models/Institution.model');
@@ -123,22 +126,33 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
     };
   }
 
-  // ---- Institutions (org + admin account) ----
-  const chosenUnis = rng.sample(KENYAN_UNIVERSITIES, 3);
-  for (const uni of chosenUnis) {
+  // ---- Institutions ----
+  // The foundation already created the three partner universities the canonical
+  // students and lecturers belong to. Add one more for breadth, then give every
+  // institution — foundation's included — a partnerships-office admin account so
+  // none of them is an orphan org with no one to sign in as.
+  const extraUni = KENYAN_UNIVERSITIES.find(
+    (u) => !world.institutions.some((i) => i.name === u.name)
+  );
+  if (extraUni) {
     const joinedAt = joinDate(rng, 9);
     const inst = ledger.track(
       'Institution',
       await createDoc(Institution, {
-        name: uni.name,
+        name: extraUni.name,
         type: InstitutionType.UNIVERSITY,
-        county: uni.county,
-        emailDomains: uni.domains,
+        county: extraUni.county,
+        emailDomains: extraUni.domains,
         accreditationBody: 'Commission for University Education',
         createdAt: joinedAt,
         updatedAt: joinedAt,
       })
     );
+    world.institutions.push({ id: inst._id, name: extraUni.name, county: extraUni.county });
+  }
+
+  for (const inst of world.institutions) {
+    const joinedAt = joinDate(rng, 9);
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
     const email = makeEmail(p.name, last);
@@ -150,16 +164,17 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.INSTITUTION),
         role: Role.INSTITUTION,
-        county: uni.county,
+        county: inst.county,
         status: UserStatus.ACTIVE,
         onboardingStage: OnboardingStage.COMPLETED,
         isEmailVerified: true,
         profilePhotoUrl: nextFace(p.gender),
-        bio: `${uni.name} — partnerships and student outcomes.`,
+        bio: `${inst.name} — partnerships and student outcomes.`,
         institutionData: {
-          institutionId: inst._id,
-          institutionName: uni.name,
+          institutionId: inst.id,
+          institutionName: inst.name,
           institutionType: InstitutionType.UNIVERSITY,
           contactRole: 'Partnerships Office',
         },
@@ -167,8 +182,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         updatedAt: joinedAt,
       })
     );
-    await Institution.updateOne({ _id: inst._id }, { $set: { adminUserId: user._id } });
-    world.institutions.push({ id: inst._id, name: uni.name, county: uni.county });
+    await Institution.updateOne({ _id: inst.id }, { $set: { adminUserId: user._id } });
   }
 
   // ---- NGOs (org + admin account) ----
@@ -198,6 +212,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.NGO),
         role: Role.NGO,
         county: counties[0],
         status: UserStatus.ACTIVE,
@@ -240,6 +255,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.FARMER),
         role: Role.FARMER,
         county,
         status: UserStatus.ACTIVE,
@@ -286,6 +302,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.BUYER),
         role: Role.BUYER,
         county,
         status: UserStatus.ACTIVE,
@@ -322,6 +339,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.LECTURER),
         role: Role.LECTURER,
         county: inst.county,
         status: UserStatus.ACTIVE,
@@ -368,6 +386,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.STUDENT),
         role: Role.STUDENT,
         county: inst.county,
         status: UserStatus.ACTIVE,
@@ -409,6 +428,7 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
         firstName: p.name,
         lastName: last,
         phoneNumber: makePhone(rng),
+        hashedPassword: await demoPasswordHash(Role.EMPLOYER),
         role: Role.EMPLOYER,
         county: 'Nairobi',
         status: UserStatus.ACTIVE,
@@ -429,45 +449,9 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
     world.employers.push(person(p, last, 'Nairobi', 'employer', user._id, joinedAt));
   }
 
-  // ---- Admin steward ----
-  // Reuse an existing admin (e.g. the seeded platform admin) as the mediation /
-  // payout actor so escrow records reference a real steward. It is referenced,
-  // never tracked or mutated. Only create one if the platform has no admin yet.
-  {
-    const joinedAt = joinDate(rng, 9);
-    const existingAdmin = await User.findOne({ role: Role.ADMIN })
-      .select('_id firstName lastName county')
-      .lean();
-    if (existingAdmin) {
-      world.admin = person(
-        { name: existingAdmin.firstName ?? 'Platform', gender: 'm' },
-        existingAdmin.lastName ?? 'Steward',
-        existingAdmin.county ?? 'Nairobi',
-        'admin',
-        existingAdmin._id,
-        joinedAt
-      );
-    } else {
-      const user = ledger.track(
-        'User',
-        await createDoc(User, {
-          email: 'umojahub16@gmail.com',
-          username: 'admin',
-          firstName: 'Platform',
-          lastName: 'Steward',
-          phoneNumber: makePhone(rng),
-          role: Role.ADMIN,
-          county: 'Nairobi',
-          status: UserStatus.ACTIVE,
-          onboardingStage: OnboardingStage.COMPLETED,
-          isEmailVerified: true,
-          createdAt: joinedAt,
-          updatedAt: joinedAt,
-        })
-      );
-      world.admin = person({ name: 'Platform', gender: 'm' }, 'Steward', 'Nairobi', 'admin', user._id, joinedAt);
-    }
-  }
+  // The admin steward (mediation / payout actor) is the canonical admin account
+  // created by the foundation phase — there is exactly one, and it is the same
+  // account the presenter signs in as.
 
   // ---- Verified suppliers ----
   for (let i = 0; i < 4; i++) {
@@ -493,13 +477,26 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
   }
 
   // ---- Farmer cooperatives (some NGO-sponsored) ----
+  // Founded by the farmers whose archetype says they are cooperative members, so
+  // "cooperative farmer" is a fact in the data rather than a label. Members are
+  // drawn from the founder's county first; if that county is thin the pool
+  // widens rather than emitting a one-member cooperative.
   const verifiedFarmers = world.farmers.filter((f) => f.archetype !== 'new');
-  for (let i = 0; i < 3 && verifiedFarmers.length >= 4; i++) {
-    const founder = rng.pick(verifiedFarmers);
-    const memberPool = verifiedFarmers.filter((f) => f.county === founder.county && f.id !== founder.id);
-    const members = [founder, ...rng.sample(memberPool, rng.int(2, Math.max(2, memberPool.length)))];
+  const founders = verifiedFarmers.filter((f) => f.archetype === 'cooperative');
+  const founderPool = founders.length > 0 ? founders : verifiedFarmers;
+  const used = new Set<string>();
+
+  for (const founder of founderPool.slice(0, 3)) {
+    if (verifiedFarmers.length < 3) break;
+    if (used.has(String(founder.id))) continue;
+    used.add(String(founder.id));
+
+    const sameCounty = verifiedFarmers.filter((f) => f.county === founder.county && f.id !== founder.id);
+    const pool = sameCounty.length >= 2 ? sameCounty : verifiedFarmers.filter((f) => f.id !== founder.id);
+    const members = [founder, ...rng.sample(pool, rng.int(2, Math.min(5, pool.length)))];
     const sponsor = rng.bool(0.6) && world.ngos.length > 0 ? rng.pick(world.ngos) : null;
     const joinedAt = founder.joinedAt;
+
     ledger.track(
       'FarmerGroup',
       await createDoc(FarmerGroup, {
@@ -515,6 +512,4 @@ export async function generatePeople(ctx: SimContext): Promise<World> {
       })
     );
   }
-
-  return world;
 }
