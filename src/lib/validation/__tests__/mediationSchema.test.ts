@@ -1,4 +1,56 @@
-import { mediationRequestSchema, adminMediationDecisionSchema } from '../mediationSchema';
+import {
+  mediationRequestSchema,
+  adminMediationDecisionSchema,
+  mediationResponseSchema,
+} from '../mediationSchema';
+
+describe('mediationResponseSchema', () => {
+  const statement = 'I delivered this order on Tuesday and the buyer signed for it at their shop.';
+
+  it('accepts a substantive statement', () => {
+    expect(mediationResponseSchema.safeParse({ statement }).success).toBe(true);
+  });
+
+  it('rejects a statement that says nothing', () => {
+    expect(mediationResponseSchema.safeParse({ statement: 'nope' }).success).toBe(false);
+  });
+
+  it('accepts up to five photos', () => {
+    const evidence = Array.from({ length: 5 }, (_, i) => ({
+      url: `https://res.cloudinary.com/x/${i}.jpg`,
+      publicId: String(i),
+    }));
+    expect(mediationResponseSchema.safeParse({ statement, evidence }).success).toBe(true);
+  });
+
+  it('rejects more than five photos — a case must stay reviewable', () => {
+    const evidence = Array.from({ length: 6 }, (_, i) => ({
+      url: `https://res.cloudinary.com/x/${i}.jpg`,
+      publicId: String(i),
+    }));
+    expect(mediationResponseSchema.safeParse({ statement, evidence }).success).toBe(false);
+  });
+
+  it('rejects evidence that is not a real URL', () => {
+    expect(
+      mediationResponseSchema.safeParse({
+        statement,
+        evidence: [{ url: 'not-a-url', publicId: 'a' }],
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe('mediationRequestSchema — farmer ground', () => {
+  it('accepts the farmer’s receipt-not-confirmed category', () => {
+    expect(
+      mediationRequestSchema.safeParse({
+        category: 'RECEIPT_NOT_CONFIRMED',
+        description: 'The buyer collected this over a week ago and has never confirmed receipt.',
+      }).success
+    ).toBe(true);
+  });
+});
 
 describe('mediationRequestSchema', () => {
   const valid = {

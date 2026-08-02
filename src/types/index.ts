@@ -64,6 +64,38 @@ export enum OrderFulfillmentStatus {
 // Buyer-facing display labels for the order lifecycle. One source of truth so
 // the orders list and the order detail screen never drift (Kenyan localization
 // pass — display text only; the enum values above are the API/DB contract).
+// Fulfilment progress within IN_FULFILLMENT — a descriptive axis, deliberately
+// SEPARATE from OrderFulfillmentStatus.
+//
+// Escrow custody and fulfilment progress are different questions. The escrow
+// held-guard, the balance aggregation, the mediation gate and the admin ledger
+// all key on `fulfillmentStatus === IN_FULFILLMENT`; putting delivery progress
+// on its own field means the farmer can narrate the journey without any of
+// those invariants having to change. Nothing here moves money.
+export enum FulfillmentStage {
+  PREPARING = 'PREPARING',
+  READY = 'READY',
+  IN_TRANSIT = 'IN_TRANSIT',
+  DELIVERED = 'DELIVERED',
+}
+
+// Forward-only. A farmer may skip ahead (produce collected straight from the
+// farm never sits READY) but may never walk a stage back — the buyer has
+// already been told, and a reversal would make the trail a lie.
+export const FULFILLMENT_STAGE_ORDER: FulfillmentStage[] = [
+  FulfillmentStage.PREPARING,
+  FulfillmentStage.READY,
+  FulfillmentStage.IN_TRANSIT,
+  FulfillmentStage.DELIVERED,
+];
+
+export const FULFILLMENT_STAGE_LABEL: Record<FulfillmentStage, string> = {
+  [FulfillmentStage.PREPARING]: 'Preparing produce',
+  [FulfillmentStage.READY]: 'Ready for collection',
+  [FulfillmentStage.IN_TRANSIT]: 'On the way',
+  [FulfillmentStage.DELIVERED]: 'Delivered',
+};
+
 export const ORDER_FULFILLMENT_LABEL: Record<OrderFulfillmentStatus, string> = {
   [OrderFulfillmentStatus.AWAITING_PAYMENT]: 'Awaiting payment',
   [OrderFulfillmentStatus.IN_FULFILLMENT]: 'Being prepared',
@@ -270,7 +302,31 @@ export enum MediationCategory {
   QUALITY_ISSUE = 'QUALITY_ISSUE',
   WRONG_QUANTITY = 'WRONG_QUANTITY',
   OTHER = 'OTHER',
+  // Farmer-side: the buyer has the produce but has not confirmed receipt, so
+  // the escrow will not release. Previously the farmer had no way to raise this
+  // at all — only buyers could escalate.
+  RECEIPT_NOT_CONFIRMED = 'RECEIPT_NOT_CONFIRMED',
 }
+
+// Which party raised an escalation. Both can now; the gates and the categories
+// available differ by side.
+export enum MediationInitiator {
+  BUYER = 'BUYER',
+  FARMER = 'FARMER',
+}
+
+// Categories each side may file under.
+export const BUYER_MEDIATION_CATEGORIES: MediationCategory[] = [
+  MediationCategory.NOT_DELIVERED,
+  MediationCategory.QUALITY_ISSUE,
+  MediationCategory.WRONG_QUANTITY,
+  MediationCategory.OTHER,
+];
+
+export const FARMER_MEDIATION_CATEGORIES: MediationCategory[] = [
+  MediationCategory.RECEIPT_NOT_CONFIRMED,
+  MediationCategory.OTHER,
+];
 
 // ---------------------------------------------------------------------------
 // Payments — provider abstraction + simulation layer
@@ -442,3 +498,12 @@ export const REVIEW_MIN_WORD_COUNT = 50;
 export const MAX_ASSISTANT_MESSAGE_CHARS = 1000;
 export const GITHUB_CACHE_TTL_MINUTES = 60;
 export const MEDIATION_ESCALATION_HOURS = 48;
+
+// How long a farmer waits, after confirming dispatch, before they may ask
+// UmojaHub to review a buyer who has not confirmed receipt.
+//
+// This is also the platform's answer to "when do I get paid?": release is the
+// buyer's to give, but it is not open-ended. Seven days is long enough for
+// upcountry transport and a buyer's inspection, short enough that a farmer's
+// money is never stranded indefinitely by silence.
+export const FARMER_ESCALATION_HOURS = 168;

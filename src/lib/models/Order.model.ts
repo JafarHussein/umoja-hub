@@ -1,5 +1,10 @@
 import mongoose, { Schema } from 'mongoose';
-import { OrderPaymentStatus, OrderFulfillmentStatus, FulfillmentType } from '@/types';
+import {
+  OrderPaymentStatus,
+  OrderFulfillmentStatus,
+  FulfillmentType,
+  FulfillmentStage,
+} from '@/types';
 
 const orderSchema = new Schema(
   {
@@ -30,6 +35,21 @@ const orderSchema = new Schema(
       enum: Object.values(OrderFulfillmentStatus),
       default: OrderFulfillmentStatus.AWAITING_PAYMENT,
     },
+    // Fulfilment progress within IN_FULFILLMENT. Descriptive only — escrow and
+    // mediation key on fulfillmentStatus, never on this. See FulfillmentStage.
+    fulfillmentStage: { type: String, enum: Object.values(FulfillmentStage) },
+    // Append-only, forward-only record of stage transitions. Bounded by the
+    // number of stages, so it lives on the order rather than in a collection of
+    // its own; it feeds the transaction timeline alongside the payment and
+    // escrow logs.
+    stageHistory: [
+      {
+        _id: false,
+        stage: { type: String, enum: Object.values(FulfillmentStage), required: true },
+        at: { type: Date, required: true },
+        note: { type: String, trim: true, maxlength: 200 },
+      },
+    ],
     paidAt: { type: Date },
     confirmedByFarmerAt: { type: Date },
     receivedByBuyerAt: { type: Date },

@@ -130,7 +130,15 @@ export async function GET(
       isSimulated: isSimulationActive(),
     });
 
-    const events = buildTransactionTrail(paymentEvents, escrowEvents);
+    const events = buildTransactionTrail(
+      paymentEvents,
+      escrowEvents,
+      (order.stageHistory ?? []).map((s) => ({
+        stage: s.stage,
+        at: s.at,
+        note: s.note ?? null,
+      }))
+    );
 
     return NextResponse.json({ data: { receipt, events } });
   } catch (error) {

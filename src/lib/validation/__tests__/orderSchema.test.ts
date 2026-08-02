@@ -2,7 +2,31 @@ import {
   createOrderSchema,
   updateOrderStatusSchema,
   darajaCallbackSchema,
+  updateFulfillmentStageSchema,
 } from '../orderSchema';
+
+describe('updateFulfillmentStageSchema', () => {
+  it.each(['PREPARING', 'READY', 'IN_TRANSIT', 'DELIVERED'])('accepts %s', (stage) => {
+    expect(updateFulfillmentStageSchema.safeParse({ stage }).success).toBe(true);
+  });
+
+  it('rejects a stage that is not part of the journey', () => {
+    expect(updateFulfillmentStageSchema.safeParse({ stage: 'COMPLETED' }).success).toBe(false);
+  });
+
+  it('accepts an optional note', () => {
+    expect(
+      updateFulfillmentStageSchema.safeParse({ stage: 'READY', note: 'Collect before 5pm.' })
+        .success
+    ).toBe(true);
+  });
+
+  it('rejects an over-long note', () => {
+    expect(
+      updateFulfillmentStageSchema.safeParse({ stage: 'READY', note: 'x'.repeat(201) }).success
+    ).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // createOrderSchema

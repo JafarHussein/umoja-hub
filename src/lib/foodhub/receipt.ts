@@ -1,5 +1,7 @@
 import {
   EscrowEventType,
+  FULFILLMENT_STAGE_LABEL,
+  FulfillmentStage,
   OrderPaymentStatus,
   PaymentEventType,
   Role,
@@ -70,7 +72,7 @@ export interface IReceiptEventInput {
 }
 
 export interface IReceiptEvent {
-  kind: 'PAYMENT' | 'ESCROW';
+  kind: 'PAYMENT' | 'ESCROW' | 'FULFILMENT';
   type: string;
   label: string;
   detail: string | null;
@@ -115,8 +117,9 @@ const ESCROW_DETAIL: Record<string, string> = {
   [EscrowEventType.REFUND_ISSUED]: 'The held funds were returned to the buyer.',
 };
 
-function actorFor(kind: 'PAYMENT' | 'ESCROW', actorRole?: string | null): string {
+function actorFor(kind: IReceiptEvent['kind'], actorRole?: string | null): string {
   if (kind === 'PAYMENT') return 'M-Pesa';
+  if (kind === 'FULFILMENT') return 'Farmer';
   switch (actorRole) {
     case Role.BUYER:
       return 'Buyer';
@@ -138,9 +141,16 @@ function toIso(value: Date | string): string {
  * are append-only, so the trail is a faithful replay — nothing is inferred from
  * the order's current status.
  */
+export interface IStageEventInput {
+  stage: string;
+  at: Date | string;
+  note?: string | null | undefined;
+}
+
 export function buildTransactionTrail(
   paymentEvents: IReceiptEventInput[],
-  escrowEvents: IReceiptEventInput[]
+  escrowEvents: IReceiptEventInput[],
+  stageEvents: IStageEventInput[] = []
 ): IReceiptEvent[] {
   const payment: IReceiptEvent[] = paymentEvents.map((e) => {
     const codeDetail =
@@ -168,7 +178,19 @@ export function buildTransactionTrail(
     reference: typeof e.amountKES === 'number' ? `KSh ${e.amountKES.toLocaleString()}` : null,
   }));
 
-  return [...payment, ...escrow].sort(
+  // Fulfilment progress the farmer reported. It moves no money, but it is what
+  // explains the gap between "paid" and "released" on the timeline.
+  const fulfilment: IReceiptEvent[] = stageEvents.map((e) => ({
+    kind: 'FULFILMENT' as const,
+    type: e.stage,
+    label: FULFILLMENT_STAGE_LABEL[e.stage as FulfillmentStage] ?? e.stage,
+    detail: e.note ?? null,
+    actor: actorFor('FULFILMENT'),
+    occurredAt: toIso(e.at),
+    reference: null,
+  }));
+
+  return [...payment, ...escrow, ...fulfilment].sort(
     (a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime()
   );
 }

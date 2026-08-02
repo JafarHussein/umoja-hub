@@ -1,11 +1,26 @@
 import { z } from 'zod';
 import { MediationCategory, MediationOutcome } from '@/types';
 
+// Evidence is uploaded first via /api/upload (Cloudinary), then attached here
+// by reference. Capped so a dispute stays reviewable by a human.
+const evidenceSchema = z
+  .array(
+    z.object({
+      url: z.string().url('Each piece of evidence needs a valid URL'),
+      publicId: z.string().min(1),
+    })
+  )
+  .max(5, 'Attach at most 5 photos')
+  .optional();
+
 export const mediationRequestSchema = z.object({
+  // Both sides may file, under different categories — the route enforces which
+  // categories each role is allowed (see BUYER_/FARMER_MEDIATION_CATEGORIES).
   category: z.enum([
     MediationCategory.NOT_DELIVERED,
     MediationCategory.QUALITY_ISSUE,
     MediationCategory.WRONG_QUANTITY,
+    MediationCategory.RECEIPT_NOT_CONFIRMED,
     MediationCategory.OTHER,
   ]),
   description: z
@@ -13,9 +28,22 @@ export const mediationRequestSchema = z.object({
     .trim()
     .min(20, 'Describe the problem in at least 20 characters')
     .max(1000),
+  evidence: evidenceSchema,
 });
 
 export type MediationRequestInput = z.infer<typeof mediationRequestSchema>;
+
+// The respondent's account of the same order. One statement each.
+export const mediationResponseSchema = z.object({
+  statement: z
+    .string()
+    .trim()
+    .min(20, 'Give your account in at least 20 characters')
+    .max(1000),
+  evidence: evidenceSchema,
+});
+
+export type MediationResponseInput = z.infer<typeof mediationResponseSchema>;
 
 // Admin transition: OPEN → IN_REVIEW, or OPEN/IN_REVIEW → RESOLVED.
 // A resolution note is mandatory when resolving — the outcome must be on

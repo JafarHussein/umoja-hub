@@ -60,20 +60,39 @@ function orderSelectLean(order: unknown) {
 }
 
 const PAID_STALE = {
+  orderReferenceId: 'UMJ-2026-000123',
   buyerId: BUYER_ID,
   farmerId: FARMER_ID,
   paymentStatus: 'PAID',
   fulfillmentStatus: 'IN_FULFILLMENT',
   paidAt: new Date(Date.now() - 49 * 60 * 60 * 1000),
+  // Dispatched 8 days ago — past the farmer's 7-day escalation gate.
+  confirmedByFarmerAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+};
+
+const FARMER_BODY = {
+  category: 'RECEIPT_NOT_CONFIRMED',
+  description: 'The buyer collected this order over a week ago but has never confirmed receipt.',
 };
 
 describe('POST /api/orders/[orderId]/mediation', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('rejects a non-buyer with 403', async () => {
-    (getServerSession as jest.Mock).mockResolvedValue(FARMER_SESSION);
+  it('rejects a role that is neither buyer nor farmer with 403', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue({
+      user: { id: 'x', role: 'STUDENT', firstName: 'Stu' },
+    });
     const res = await POST(postReq(VALID_BODY), params());
     expect(res.status).toBe(403);
+  });
+
+  it('rejects a farmer filing on a buyer-only ground', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(FARMER_SESSION);
+    orderSelectLean(PAID_STALE);
+    // NOT_DELIVERED is the buyer's complaint to make, not the farmer's.
+    const res = await POST(postReq(VALID_BODY), params());
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe('MEDIATION_INVALID_CATEGORY');
   });
 
   it('returns 400 on an invalid order ID', async () => {
@@ -88,7 +107,7 @@ describe('POST /api/orders/[orderId]/mediation', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 403 when the buyer does not own the order', async () => {
+  it('returns 403 when the caller is not a party to the order', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
     orderSelectLean({ ...PAID_STALE, buyerId: 'someone-else' });
     const res = await POST(postReq(VALID_BODY), params());
@@ -130,8 +149,84 @@ describe('POST /api/orders/[orderId]/mediation', () => {
 
     expect(res.status).toBe(201);
     expect(mockMRCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ orderId: ORDER_ID, buyerId: BUYER_ID, farmerId: FARMER_ID, status: 'OPEN' })
+      expect.objectContaining({
+        orderId: ORDER_ID,
+        buyerId: BUYER_ID,
+        farmerId: FARMER_ID,
+        status: 'OPEN',
+        initiatedBy: 'BUYER',
+      })
     );
+  });
+
+  // ── Farmer-initiated escalation ─────────────────────────────────────────
+  // Before this a farmer whose buyer simply went quiet had no recourse at all:
+  // their money stayed held indefinitely behind someone else's inaction.
+
+  it('lets a farmer escalate an order the buyer never confirmed', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(FARMER_SESSION);
+    orderSelectLean(PAID_STALE);
+    mockMRFindOne.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    });
+    mockMRCreate.mockResolvedValue({ _id: 'mr-2', orderId: ORDER_ID, status: 'OPEN' });
+
+    const res = await POST(postReq(FARMER_BODY), params());
+
+    expect(res.status).toBe(201);
+    expect(mockMRCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ initiatedBy: 'FARMER', category: 'RECEIPT_NOT_CONFIRMED' })
+    );
+  });
+
+  it('holds the farmer to the 7-day gate after dispatch', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(FARMER_SESSION);
+    orderSelectLean({
+      ...PAID_STALE,
+      confirmedByFarmerAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    });
+
+    const res = await POST(postReq(FARMER_BODY), params());
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('MEDIATION_TOO_EARLY');
+    expect(mockMRCreate).not.toHaveBeenCalled();
+  });
+
+  it('refuses a farmer escalation before dispatch has been confirmed', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(FARMER_SESSION);
+    orderSelectLean({ ...PAID_STALE, confirmedByFarmerAt: null });
+
+    const res = await POST(postReq(FARMER_BODY), params());
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('MEDIATION_TOO_EARLY');
+  });
+
+  it('records evidence attached at filing, tagged to the side that sent it', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
+    orderSelectLean(PAID_STALE);
+    mockMRFindOne.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    });
+    mockMRCreate.mockResolvedValue({ _id: 'mr-3', status: 'OPEN' });
+
+    await POST(
+      postReq({
+        ...VALID_BODY,
+        evidence: [{ url: 'https://res.cloudinary.com/x/a.jpg', publicId: 'a' }],
+      }),
+      params()
+    );
+
+    const created = mockMRCreate.mock.calls[0]?.[0] as {
+      evidence: { url: string; uploadedByRole: string }[];
+    };
+    expect(created.evidence).toHaveLength(1);
+    expect(created.evidence[0]).toMatchObject({
+      url: 'https://res.cloudinary.com/x/a.jpg',
+      uploadedByRole: 'BUYER',
+    });
   });
 });
 

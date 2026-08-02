@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { MediationRequestStatus, MediationCategory } from '@/types';
+import { MediationRequestStatus, MediationCategory, MediationInitiator } from '@/types';
 
 // ---------------------------------------------------------------------------
 // MediationRequest — a buyer's structured escalation on an order, routed to
@@ -10,13 +10,26 @@ import { MediationRequestStatus, MediationCategory } from '@/types';
 // enforced both in the route and by a partial unique index.
 // ---------------------------------------------------------------------------
 
+export interface IMediationEvidence {
+  url: string;
+  publicId: string;
+  uploadedByRole: string;
+  uploadedAt: Date;
+}
+
 export interface IMediationRequestDocument extends Document {
   orderId: mongoose.Types.ObjectId;
   buyerId: mongoose.Types.ObjectId;
   farmerId: mongoose.Types.ObjectId;
+  /** Which party raised it. Buyers and farmers file under different categories. */
+  initiatedBy: string;
   category: string;
   description: string;
   status: string;
+  /** The other side's account. A dispute decided on one story is not mediation. */
+  respondentStatement?: string;
+  respondentRespondedAt?: Date;
+  evidence: IMediationEvidence[];
   resolutionNote?: string;
   resolvedBy?: mongoose.Types.ObjectId;
   resolvedAt?: Date;
@@ -29,12 +42,31 @@ const mediationRequestSchema = new Schema(
     orderId: { type: Schema.Types.ObjectId, required: true, ref: 'Order' },
     buyerId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     farmerId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+    initiatedBy: {
+      type: String,
+      enum: Object.values(MediationInitiator),
+      default: MediationInitiator.BUYER,
+      required: true,
+    },
     category: {
       type: String,
       enum: Object.values(MediationCategory),
       required: true,
     },
     description: { type: String, required: true, trim: true, maxlength: 1000 },
+    // The respondent is whichever party did not file. One statement each — this
+    // is an adjudication record, not a message thread.
+    respondentStatement: { type: String, trim: true, maxlength: 1000 },
+    respondentRespondedAt: { type: Date },
+    evidence: [
+      {
+        _id: false,
+        url: { type: String, required: true },
+        publicId: { type: String, required: true },
+        uploadedByRole: { type: String, required: true },
+        uploadedAt: { type: Date, required: true },
+      },
+    ],
     status: {
       type: String,
       enum: Object.values(MediationRequestStatus),

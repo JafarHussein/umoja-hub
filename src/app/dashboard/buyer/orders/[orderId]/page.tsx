@@ -10,9 +10,12 @@ import {
   OrderFulfillmentStatus,
   MediationCategory,
   MediationRequestStatus,
+  MediationInitiator,
   MEDIATION_ESCALATION_HOURS,
   ORDER_PAYMENT_LABEL,
   ORDER_FULFILLMENT_LABEL,
+  FulfillmentStage,
+  FULFILLMENT_STAGE_LABEL,
 } from '@/types';
 import {
   Button,
@@ -25,6 +28,11 @@ import {
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
+import {
+  MediationPanel,
+  MEDIATION_CATEGORY_LABEL,
+  type IMediationCase,
+} from '@/components/foodhub/MediationPanel';
 
 interface IBuyerOrder {
   _id: string;
@@ -41,27 +49,16 @@ interface IBuyerOrder {
   paidAt: string | null;
   confirmedByFarmerAt: string | null;
   receivedByBuyerAt: string | null;
+  fulfillmentStage: FulfillmentStage | null;
 }
 
 interface IOrdersResponse {
   orders: IBuyerOrder[];
 }
 
-interface IMediation {
-  _id: string;
-  status: MediationRequestStatus;
-  category: MediationCategory;
-  description: string;
-  resolutionNote?: string | null;
-  createdAt: string;
-}
-
-const MEDIATION_CATEGORY_LABEL: Record<MediationCategory, string> = {
-  [MediationCategory.NOT_DELIVERED]: 'Order not delivered',
-  [MediationCategory.QUALITY_ISSUE]: 'Quality issue',
-  [MediationCategory.WRONG_QUANTITY]: 'Wrong quantity',
-  [MediationCategory.OTHER]: 'Other',
-};
+// The mediation case shape and its labels are shared with the farmer surface —
+// both sides must see the same case described the same way.
+type IMediation = IMediationCase;
 
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
@@ -462,8 +459,11 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           {activeMediation.status === MediationRequestStatus.IN_REVIEW
             ? 'is reviewing'
             : 'has received'}{' '}
-          your report ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status is
-          unchanged while this is resolved.
+          {activeMediation.initiatedBy === MediationInitiator.BUYER
+            ? 'your report'
+            : `a report from ${order.farmer.firstName}`}{' '}
+          ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status is unchanged
+          while this is resolved.
         </Alert>
       )}
 
@@ -498,6 +498,22 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           mediation decision.
         </Alert>
       )}
+
+      {/* Where the produce is right now — reported by the farmer */}
+      {order.fulfillmentStage &&
+        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+            <p className="app-label text-app-muted">Latest from {order.farmer.firstName}</p>
+            <p className="app-body-strong mt-0.5 text-app-ink">
+              {FULFILLMENT_STAGE_LABEL[order.fulfillmentStage]}
+            </p>
+            <p className="app-meta mt-0.5 text-app-muted">
+              {order.fulfillmentStage === FulfillmentStage.DELIVERED
+                ? 'Once you have checked it, confirm receipt below to release the payment.'
+                : 'Your payment stays protected in escrow until you confirm you have received the order.'}
+            </p>
+          </div>
+        )}
 
       {/* Progress timeline */}
       <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
@@ -619,6 +635,17 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             Mark as received
           </Button>
         </div>
+      )}
+
+      {/* The case, when there is one — both accounts, all photos, and the
+          buyer's chance to reply if the farmer raised it. */}
+      {mediation && (
+        <MediationPanel
+          orderId={order._id}
+          mediation={mediation}
+          viewerRole={Role.BUYER}
+          onResponded={() => void fetchMediation()}
+        />
       )}
 
       {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}

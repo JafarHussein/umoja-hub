@@ -19,7 +19,13 @@ import { Role } from '@/types';
 // validated inside cloudinaryService.uploadImage.
 // ---------------------------------------------------------------------------
 
-const ALLOWED_FOLDERS = ['umojahub/listings', 'umojahub/verification', 'umojahub/profiles'];
+const ALLOWED_FOLDERS = [
+  'umojahub/listings',
+  'umojahub/verification',
+  'umojahub/profiles',
+  // Photographic evidence attached to a mediation case by either party.
+  'umojahub/disputes',
+];
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {

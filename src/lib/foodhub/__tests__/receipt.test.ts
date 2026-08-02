@@ -115,6 +115,48 @@ describe('buildTransactionTrail', () => {
     expect(adminEvent?.detail).toBe('Farmer never dispatched.');
   });
 
+  it('weaves fulfilment progress into the same chronological trail', () => {
+    const trail = buildTransactionTrail(
+      [
+        {
+          eventType: PaymentEventType.SUCCESS,
+          occurredAt: '2026-06-01T10:00:00Z',
+          amount: 2000,
+        },
+      ],
+      [
+        {
+          eventType: EscrowEventType.HELD,
+          occurredAt: '2026-06-01T10:00:01Z',
+          amountKES: 2000,
+          actorRole: 'SYSTEM',
+        },
+        {
+          eventType: EscrowEventType.RELEASED,
+          occurredAt: '2026-06-05T09:00:00Z',
+          amountKES: 2000,
+          actorRole: Role.BUYER,
+        },
+      ],
+      [
+        { stage: 'PREPARING', at: '2026-06-02T08:00:00Z' },
+        { stage: 'IN_TRANSIT', at: '2026-06-03T08:00:00Z', note: 'Sent on the Kisumu matatu.' },
+      ]
+    );
+
+    expect(trail.map((e) => e.type)).toEqual([
+      PaymentEventType.SUCCESS,
+      EscrowEventType.HELD,
+      'PREPARING',
+      'IN_TRANSIT',
+      EscrowEventType.RELEASED,
+    ]);
+    expect(trail[2]?.kind).toBe('FULFILMENT');
+    expect(trail[2]?.label).toBe('Preparing produce');
+    expect(trail[3]?.actor).toBe('Farmer');
+    expect(trail[3]?.detail).toBe('Sent on the Kisumu matatu.');
+  });
+
   it('returns an empty trail when nothing was recorded', () => {
     expect(buildTransactionTrail([], [])).toEqual([]);
   });
