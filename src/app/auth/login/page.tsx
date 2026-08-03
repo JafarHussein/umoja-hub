@@ -24,6 +24,26 @@ const ERROR_COPY: Record<string, string> = {
     'This email is already linked to a different sign-in method. Use that method instead.',
 };
 
+// What the platform guarantees, stated on the panel where someone decides
+// whether to trust it. Each line is a rule the product actually enforces.
+const ASSURANCES: { term: string; detail: string }[] = [
+  {
+    term: 'Every seller is verified by a person',
+    detail:
+      'Identity documents are reviewed by an administrator before anyone can list produce for sale.',
+  },
+  {
+    term: 'Money is held, never sent blind',
+    detail:
+      'A buyer’s payment sits in escrow until they confirm what arrived. Only then is it released to the farmer.',
+  },
+  {
+    term: 'Either side can ask for a review',
+    detail:
+      'If an order goes wrong, buyer or farmer can escalate it and UmojaHub decides what happens to the funds.',
+  },
+];
+
 export default function LoginPage(): React.ReactElement {
   return (
     <Suspense fallback={null}>
@@ -72,55 +92,61 @@ function LoginContent(): React.ReactElement {
 
   return (
     <div className="theme-app grid min-h-screen bg-app-canvas lg:grid-cols-2">
-      {/* Brand panel — desktop only. Fills the left half with the wordmark, a
-          value statement, and the secure-login illustration. */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-app-hairline bg-app-brand-surface px-12 py-12 lg:flex">
+      {/* Brand panel — desktop only. The left half carries the wordmark, the
+          promise, and the three guarantees that promise rests on. It used to
+          hold an illustration; stating what the platform actually does for
+          someone about to trust it with money is worth more than a picture. */}
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-app-hairline bg-app-brand-surface px-12 py-14 lg:flex xl:px-16">
         <div className="flex items-center gap-1">
           <span className="app-h2 text-app-ink">Umoja</span>
           <span className="app-h2 text-app-brand">Hub</span>
         </div>
 
         <div className="max-w-md">
-          <h2 className="app-display text-app-ink">Trade you can verify. Skills you can prove.</h2>
-          <p className="app-body mt-3 text-app-muted">
+          <h2 className="app-display text-balance text-app-ink">
+            Trade you can verify. Skills you can prove.
+          </h2>
+          <p className="app-body mt-4 text-app-muted">
             One account for the verified farmer marketplace and the hands-on build track.
           </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/illustrations/concepts/concept-secure-login.svg"
-            alt=""
-            aria-hidden="true"
-            className="mt-10 h-56 w-auto max-w-full object-contain"
-          />
+
+          <dl className="mt-12 divide-y divide-app-brand-border border-t border-app-brand-border">
+            {ASSURANCES.map((item) => (
+              <div key={item.term} className="py-5">
+                <dt className="app-body-strong text-app-ink">{item.term}</dt>
+                <dd className="app-meta mt-1.5 text-pretty text-app-muted">{item.detail}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
 
         <p className="app-meta text-app-muted">
-          Verified identities · Honest delivery history · Recourse on every order
+          Built for farmers, buyers, students and lecturers across Kenya.
         </p>
       </aside>
 
       {/* Form panel — centered, full-height on every breakpoint. */}
-      <main className="flex min-h-screen items-center justify-center px-6 py-10">
-        <div className="w-full max-w-sm">
+      <main className="flex min-h-screen items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
           {/* Wordmark shown here on mobile (the brand panel is hidden < lg). */}
           <div className="mb-8 flex items-center gap-1 lg:hidden">
             <span className="app-h2 text-app-ink">Umoja</span>
             <span className="app-h2 text-app-brand">Hub</span>
           </div>
 
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-6 sm:p-8">
-            <h1 className="app-h1 mb-1 text-app-ink">Sign in to UmojaHub</h1>
-            <p className="app-body mb-6 text-app-muted">
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-7 sm:p-9">
+            <h1 className="app-h1 text-app-ink">Sign in to UmojaHub</h1>
+            <p className="app-body mt-2 text-app-muted">
               Use your username or email and password, or continue with your connected provider.
             </p>
 
             {error && (
-              <div className="mb-4">
+              <div className="mt-6">
                 <Alert tone="danger">{error}</Alert>
               </div>
             )}
 
-            <form onSubmit={handleCredentials} className="flex flex-col gap-4">
+            <form onSubmit={handleCredentials} className="mt-8 flex flex-col gap-5">
               <Input
                 label="Username or email"
                 value={username}
@@ -153,7 +179,7 @@ function LoginContent(): React.ReactElement {
               </Link>
             </form>
 
-            <div className="my-6 flex items-center gap-3" aria-hidden="true">
+            <div className="my-8 flex items-center gap-3" aria-hidden="true">
               <span className="h-px flex-1 bg-app-hairline" />
               <span className="app-meta text-app-faint">or</span>
               <span className="h-px flex-1 bg-app-hairline" />
@@ -176,11 +202,11 @@ function LoginContent(): React.ReactElement {
               />
             </div>
 
-            <p className="app-meta mt-6 text-app-faint">
+            <p className="app-meta mt-5 text-app-faint">
               Students sign in with GitHub. Farmers, buyers and lecturers use Google.
             </p>
 
-            <p className="app-meta mt-4 text-app-muted">
+            <p className="app-body mt-8 border-t border-app-hairline pt-6 text-app-muted">
               New to UmojaHub?{' '}
               <Link href="/onboarding/welcome" className="text-app-brand hover:underline">
                 Create your account

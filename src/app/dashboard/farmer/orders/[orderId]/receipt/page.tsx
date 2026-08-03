@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TransactionReceipt } from '@/components/foodhub/TransactionReceipt';
+import { Page } from '@/components/app';
 
 // ---------------------------------------------------------------------------
 // Farmer receipt view — the same receipt and audit trail the buyer and the
@@ -16,7 +17,7 @@ export default function FarmerOrderReceiptPage(): React.ReactElement {
   const orderId = typeof params?.['orderId'] === 'string' ? params['orderId'] : '';
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <Page width="focus">
       <Link
         href="/dashboard/farmer/orders"
         className="app-body inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink print:hidden"
@@ -34,6 +35,6 @@ export default function FarmerOrderReceiptPage(): React.ReactElement {
       </Link>
 
       <TransactionReceipt orderId={orderId} />
-    </div>
+    </Page>
   );
 }

@@ -3,7 +3,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Select, Textarea, Alert, Table, THead, TH, TR, TD } from '@/components/app';
+import {
+  Button,
+  Input,
+  Page,
+  PageHeader,
+  Select,
+  Textarea,
+  Alert,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+} from '@/components/app';
 import { Role, KnowledgeCategory } from '@/types';
 
 interface IArticle {
@@ -176,18 +189,24 @@ export default function AdminKnowledgePage(): React.ReactElement {
   const slugPreview = toSlugPreview(form.title);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="app-h1 text-app-ink">Knowledge Hub CMS</h1>
-        <Button variant={showCreateForm ? 'ghost' : 'primary'} onClick={() => setShowCreateForm((v) => !v)}>
-          {showCreateForm ? 'Cancel' : 'New article'}
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title="Knowledge Hub CMS"
+        description="Articles farmers read for growing guidance and standards. Everything published here is attributed to a source, so a farmer can always see where the advice came from."
+        actions={
+          <Button
+            variant={showCreateForm ? 'secondary' : 'primary'}
+            onClick={() => setShowCreateForm((v) => !v)}
+          >
+            {showCreateForm ? 'Cancel' : 'New article'}
+          </Button>
+        }
+      />
 
       {/* ── Create article form ─────────────────────────────────────────── */}
       {showCreateForm && (
         <form
-          className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4"
+          className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6"
           onSubmit={(e) => void handleCreate(e)}
         >
           <h2 className="app-h2 text-app-ink">Create article</h2>
@@ -322,6 +341,6 @@ export default function AdminKnowledgePage(): React.ReactElement {
           </tbody>
         </Table>
       )}
-    </div>
+    </Page>
   );
 }

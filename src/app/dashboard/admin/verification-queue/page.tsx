@@ -3,7 +3,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Modal, Input, Table, THead, TH, TR, TD } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  Modal,
+  Input,
+  Page,
+  PageHeader,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+} from '@/components/app';
 import { Role, DocumentType, VerificationStatus } from '@/types';
 
 interface IVerificationDocument {
@@ -228,23 +240,24 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-7 w-48 rounded" />
+      <Page>
+        <div className="skeleton h-8 w-56 rounded" />
         <div className="skeleton h-64 rounded-app-card" />
-      </div>
+      </Page>
     );
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load verification queue</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchQueue()}>
-          Retry
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="Verification queue" />
+        <EmptyState
+          title="We could not load the verification queue"
+          description="No farmer's submission has been affected — this screen just could not reach the queue."
+          action={{ label: 'Try again', onClick: () => void fetchQueue() }}
+        />
+      </Page>
     );
   }
 
@@ -254,44 +267,47 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
       : null;
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Page header */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Verification queue</h1>
-        <p className="app-body mt-1 text-app-muted">
-          {total} pending verification{total !== 1 ? 's' : ''}
-        </p>
-      </div>
+      <PageHeader
+        title="Verification queue"
+        description="Farmers waiting on a decision before they can sell. Approving someone is what puts a verified badge next to their produce, so read the document against the name on the account before you decide."
+        meta={
+          total > 0 ? (
+            <span>
+              {total} pending verification{total !== 1 ? 's' : ''}
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Empty state */}
       {farmers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-16 text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path
-                d="M3 8L7 12L17 4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-app-brand"
-              />
-            </svg>
-          </div>
-          <p className="app-body-strong mb-1 text-app-ink">Queue is clear</p>
-          <p className="app-body text-app-muted">
-            All farmer verification requests have been reviewed.
-          </p>
-        </div>
+        <EmptyState
+          title="The queue is clear"
+          description="Every farmer verification request has been reviewed. New submissions land here as soon as farmers upload their documents — nothing is waiting on you right now."
+          hints={[
+            {
+              label: 'Review suppliers',
+              href: '/dashboard/admin/supplier-verification',
+              description: 'input suppliers awaiting credential checks',
+            },
+            {
+              label: 'Review lecturers',
+              href: '/dashboard/admin/lecturer-verification',
+              description: 'academic accounts awaiting approval',
+            },
+          ]}
+        />
       ) : (
         /* Queue table */
-        <Table>
+        <Table layout="fixed">
           <THead>
-            <TH>Farmer</TH>
-            <TH>County</TH>
-            <TH>Document</TH>
-            <TH>Submitted</TH>
-            <TH className="text-right">Actions</TH>
+            <TH className="w-[28%]">Farmer</TH>
+            <TH className="w-[16%]">County</TH>
+            <TH className="w-[22%]">Document</TH>
+            <TH className="w-[16%]">Submitted</TH>
+            <TH className="w-[18%] text-right">Actions</TH>
           </THead>
           <tbody>
             {farmers.map((farmer) => (
@@ -523,6 +539,6 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
           </div>
         </Modal>
       )}
-    </div>
+    </Page>
   );
 }

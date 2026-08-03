@@ -50,7 +50,7 @@ function formatDate(iso: string): string {
 // Bordered card section with an uppercase section label.
 function Section({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
   return (
-    <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
       <p className="app-label mb-2 text-app-muted">{title}</p>
       {children}
     </div>
@@ -100,7 +100,7 @@ function StatusBadge({ status }: { status: VerificationStatus }): React.ReactEle
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-app-focus space-y-10">
       <div className="skeleton h-3 w-36 rounded" />
       <div className="skeleton h-7 w-52 rounded" />
       <div className="skeleton h-40 rounded-app-card" />
@@ -225,7 +225,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
   const isPending = verificationStatus === VerificationStatus.PENDING;
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-app-focus space-y-10">
       {/* Back link */}
       <Link
         href="/dashboard/admin/verification-queue"

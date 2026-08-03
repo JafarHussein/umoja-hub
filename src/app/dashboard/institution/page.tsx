@@ -2,7 +2,20 @@ import React from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
-import { Card, Table, THead, TH, TR, TD, StatusPill } from '@/components/app';
+import {
+  EmptyState,
+  MetricGrid,
+  MetricTile,
+  Page,
+  PageHeader,
+  PageSection,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  StatusPill,
+} from '@/components/app';
 import { Role } from '@/types';
 
 // Institution overview — the students and lecturers hosted by this institution.
@@ -14,15 +27,6 @@ interface MemberRow {
   role: string;
   detail: string;
   verified: boolean;
-}
-
-function Stat({ label, value }: { label: string; value: string | number }): React.ReactElement {
-  return (
-    <Card>
-      <p className="app-label text-app-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-app-ink">{value}</p>
-    </Card>
-  );
 }
 
 export default async function InstitutionOverviewPage(): Promise<React.ReactElement> {
@@ -64,54 +68,71 @@ export default async function InstitutionOverviewPage(): Promise<React.ReactElem
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="app-h1 text-app-ink">{institution?.name ?? 'Institution'}</h1>
-        <p className="app-body text-app-muted">
-          {institution?.county
-            ? `${institution.type ?? 'Institution'} · ${institution.county}`
-            : 'Students and lecturers affiliated with your institution.'}
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title={institution?.name ?? 'Institution'}
+        description="The students and lecturers affiliated with your institution, and where each stands on verification."
+        meta={
+          institution?.county ? (
+            <>
+              <span>{institution.type ?? 'Institution'}</span>
+              <span>{institution.county}</span>
+            </>
+          ) : undefined
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Students" value={students.length} />
-        <Stat label="Lecturers" value={lecturers.length} />
-        <Stat label="Members" value={members.length} />
-      </div>
+      <MetricGrid columns={3}>
+        <MetricTile
+          label="Students"
+          value={students.length}
+          emphasis
+          caption="Enrolled and building verified portfolios under your name."
+        />
+        <MetricTile
+          label="Lecturers"
+          value={lecturers.length}
+          caption="Academics able to review and sign off student work."
+        />
+        <MetricTile
+          label="Total members"
+          value={members.length}
+          caption="Everyone affiliated with your institution on UmojaHub."
+        />
+      </MetricGrid>
 
-      {rows.length > 0 ? (
-        <Table>
-          <THead>
-            <TH>Name</TH>
-            <TH>Role</TH>
-            <TH>Detail</TH>
-            <TH>Status</TH>
-          </THead>
-          <tbody>
-            {rows.map((r) => (
-              <TR key={r.id}>
-                <TD className="app-body-strong text-app-ink">{r.name || '—'}</TD>
-                <TD>{r.role}</TD>
-                <TD>{r.detail}</TD>
-                <TD>
-                  <StatusPill
-                    state={r.verified ? 'verified' : 'pending'}
-                    label={r.verified ? 'Verified' : 'Pending'}
-                  />
-                </TD>
-              </TR>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <Card>
-          <p className="app-body text-app-muted">
-            No affiliated members yet. Students and lecturers linked to your institution will appear
-            here.
-          </p>
-        </Card>
-      )}
-    </div>
+      <PageSection title="Affiliated members">
+        {rows.length > 0 ? (
+          <Table layout="fixed">
+            <THead>
+              <TH className="w-[30%]">Name</TH>
+              <TH className="w-[18%]">Role</TH>
+              <TH className="w-[32%]">Detail</TH>
+              <TH className="w-[20%]">Status</TH>
+            </THead>
+            <tbody>
+              {rows.map((r) => (
+                <TR key={r.id}>
+                  <TD className="app-body-strong text-app-ink">{r.name || '—'}</TD>
+                  <TD>{r.role}</TD>
+                  <TD>{r.detail}</TD>
+                  <TD>
+                    <StatusPill
+                      state={r.verified ? 'verified' : 'pending'}
+                      label={r.verified ? 'Verified' : 'Pending'}
+                    />
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        ) : (
+          <EmptyState
+            title="Nobody is affiliated with your institution yet"
+            description="Students who verify with an email on your domain, and lecturers an administrator links to you, will be listed here with their verification status."
+          />
+        )}
+      </PageSection>
+    </Page>
   );
 }

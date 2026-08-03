@@ -103,7 +103,7 @@ const DOC_ITEMS: { type: DocumentType; label: string }[] = [
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <div className="skeleton h-4 w-24 rounded" />
       <div className="skeleton h-7 w-56 rounded" />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
@@ -139,7 +139,7 @@ function BulletList({ items }: { items: string[] }): React.ReactElement {
 
 function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
   return (
-    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
       <div>
         <p className="app-label mb-1 text-app-muted">Brief</p>
         <h2 className="app-h2 text-app-ink">{brief.title}</h2>
@@ -207,7 +207,7 @@ function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
 
 function OpenSourceBriefCard({ brief }: { brief: IOpenSourceBrief }): React.ReactElement {
   return (
-    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
       <div>
         <p className="app-label mb-1 text-app-muted">Open Source Brief</p>
         <h2 className="app-h2 text-app-ink">{brief.repoName}</h2>
@@ -425,7 +425,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="max-w-5xl">
+      <div className="mx-auto w-full max-w-app-page">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
           <p className="app-body text-app-muted">Could not load this project.</p>
           <Link
@@ -441,7 +441,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   if (pageState === 'not_found' || !engagement) {
     return (
-      <div className="max-w-5xl">
+      <div className="mx-auto w-full max-w-app-page">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
           <p className="app-body text-app-muted">Project not found.</p>
           <Link
@@ -468,7 +468,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
   const allDocsPresent = completedCount === DOC_ITEMS.length;
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       {/* Back link */}
       <Link
         href="/dashboard/student"
@@ -554,13 +554,13 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         {/* Right — stepper + actions */}
         <div className="space-y-4 md:col-span-4">
           {/* Status stepper */}
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
             <p className="app-label mb-3 text-app-muted">Progress</p>
             <ProjectStatusStepper status={engagement.status} />
           </div>
 
           {/* Action zone */}
-          <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+          <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
             <p className="app-label text-app-muted">Actions</p>
 
             {/* BRIEF_GENERATED */}

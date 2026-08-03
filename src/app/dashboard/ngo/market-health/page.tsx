@@ -3,7 +3,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Table, THead, TH, TR, TD, StatusPill } from '@/components/app';
+import {
+  Button,
+  Card,
+  EmptyState,
+  MetricGrid,
+  MetricTile,
+  Page,
+  PageHeader,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  StatusPill,
+} from '@/components/app';
 import { Role } from '@/types';
 
 interface ICropAvailability {
@@ -46,15 +60,6 @@ function humanize(token: string): string {
     .toLowerCase()
     .replace(/_/g, ' ')
     .replace(/^\w/, (c) => c.toUpperCase());
-}
-
-function Stat({ label, value }: { label: string; value: string | number }): React.ReactElement {
-  return (
-    <Card>
-      <p className="app-label text-app-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-app-ink">{value}</p>
-    </Card>
-  );
 }
 
 function Section({
@@ -148,32 +153,45 @@ export default function NgoMarketHealthPage(): React.ReactElement {
 
   if (data.servedCounties.length === 0) {
     return (
-      <div className="space-y-2">
-        <h1 className="app-h1 text-app-ink">Market Health</h1>
-        <p className="app-body text-app-muted">
-          No served counties on record yet. Once your organisation lists the counties it serves or
-          sponsors a cooperative, market-health indicators for those areas appear here.
-        </p>
-      </div>
+      <Page>
+        <PageHeader title="Market Health" />
+        <EmptyState
+          title="We don't know which counties you serve yet"
+          description="Market-health indicators are scoped to your programme rather than the whole country, so we need to know where you work. Once your organisation records the counties it serves — or sponsors a cooperative in one — supply, price and sales figures for those areas appear here."
+          action={{ label: 'See your cooperatives', href: '/dashboard/ngo' }}
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="app-h1 text-app-ink">Market Health</h1>
-        <p className="app-meta mt-1 text-app-faint">
-          Aggregate indicators across {data.summary.servedCounties} served{' '}
-          {data.summary.servedCounties === 1 ? 'county' : 'counties'}.
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Market Health"
+        description="Supply, price and sales conditions across the counties your programme serves — the signal for whether the farmers you support can actually sell what they grow."
+        meta={
+          <span>
+            {data.summary.servedCounties} served{' '}
+            {data.summary.servedCounties === 1 ? 'county' : 'counties'}
+          </span>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Stat label="Served counties" value={data.summary.servedCounties} />
-        <Stat label="Active listings" value={data.summary.activeListings} />
-        <Stat label="Crops on market" value={data.summary.crops} />
-        <Stat label="Completed sales (30d)" value={data.summary.completedSales30d} />
-      </div>
+      <MetricGrid columns={4}>
+        <MetricTile label="Served counties" value={data.summary.servedCounties} />
+        <MetricTile
+          label="Active listings"
+          value={data.summary.activeListings}
+          emphasis
+          caption="Produce currently on sale in your counties."
+        />
+        <MetricTile label="Crops on market" value={data.summary.crops} />
+        <MetricTile
+          label="Completed sales (30d)"
+          value={data.summary.completedSales30d}
+          caption="Orders that reached delivery and payment release."
+        />
+      </MetricGrid>
 
       <Section
         title="Food availability"
@@ -264,6 +282,6 @@ export default function NgoMarketHealthPage(): React.ReactElement {
           </Table>
         )}
       </Section>
-    </div>
+    </Page>
   );
 }

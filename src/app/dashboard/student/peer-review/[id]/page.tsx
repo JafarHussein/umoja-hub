@@ -179,7 +179,7 @@ function CriteriaGroup({
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <div className="skeleton h-4 w-24 rounded" />
       <div className="skeleton h-7 w-48 rounded" />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
@@ -311,7 +311,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'not_found' || !review) {
     return (
-      <div className="max-w-5xl">
+      <div className="mx-auto w-full max-w-app-page">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
           <p className="app-body text-app-muted">Review not found.</p>
           <Link
@@ -327,7 +327,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="max-w-5xl">
+      <div className="mx-auto w-full max-w-app-page">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
           <p className="app-body text-app-muted">Could not load this review.</p>
           <Link
@@ -358,7 +358,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
   const activeDoc = engagement?.documents?.[activeDocTab];
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <Link
         href="/dashboard/student/peer-review"
         className="app-body inline-flex text-app-muted transition-colors duration-150 hover:text-app-ink"
@@ -384,7 +384,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
           {/* Brief metadata */}
           {engagement && (
-            <div className="space-y-0 rounded-app-card border border-app-hairline bg-app-card p-4">
+            <div className="space-y-0 rounded-app-card border border-app-hairline bg-app-card p-6">
               <p className="app-label mb-2 text-app-muted">Project info</p>
               <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
                 <span className="app-body text-app-muted">Track</span>
@@ -447,7 +447,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
         {/* Right — review form */}
         <div className="md:col-span-5">
           {isSubmitted ? (
-            <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+            <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-brand" />
                 <p className="app-body-strong text-app-brand">Review submitted</p>
@@ -492,7 +492,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
               )}
             </div>
           ) : (
-            <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+            <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
               <p className="app-label text-app-muted">Review form</p>
 
               <div className="space-y-2.5">

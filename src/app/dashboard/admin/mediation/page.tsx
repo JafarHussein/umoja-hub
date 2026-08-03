@@ -3,7 +3,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Modal, Textarea, StatusPill, type StatusState } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  Modal,
+  Page,
+  PageHeader,
+  Textarea,
+  StatusPill,
+  type StatusState,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 import {
   Role,
@@ -224,15 +233,19 @@ export default function AdminMediationPage(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Header */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Mediation</h1>
-        <p className="app-body mt-1 max-w-2xl text-app-muted">
-          {queueSize} open escalation{queueSize !== 1 ? 's' : ''}. Resolving a case records a note
-          only; it does not change the order status or either party&apos;s trust score.
-        </p>
-      </div>
+      <PageHeader
+        title="Mediation"
+        description="Orders where a buyer or farmer has asked UmojaHub to step in. Resolving a case records a note only — it does not change the order status or either party's trust score."
+        meta={
+          queueSize > 0 ? (
+            <span>
+              {queueSize} open escalation{queueSize !== 1 ? 's' : ''}
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Status filter */}
       <div
@@ -264,25 +277,23 @@ export default function AdminMediationPage(): React.ReactElement {
 
       {/* Body */}
       {pageState === 'error' ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="app-title mb-2 text-app-ink">Could not load the mediation queue</p>
-          <Button variant="secondary" onClick={() => void fetchQueue(statusFilter)}>
-            Retry
-          </Button>
-        </div>
+        <EmptyState
+          title="We could not load the mediation queue"
+          description="No case has been closed or altered. This screen simply could not read the queue."
+          action={{ label: 'Try again', onClick: () => void fetchQueue(statusFilter) }}
+        />
       ) : requests.length === 0 ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-12 text-center">
-          <p className="app-body text-app-muted">
-            No {statusFilter.replace('_', ' ').toLowerCase()} cases.
-          </p>
-        </div>
+        <EmptyState
+          title={`No ${statusFilter.replace('_', ' ').toLowerCase()} cases`}
+          description="Escalations only open once an order has been paid and gone quiet for long enough that one side asks for help — so an empty queue means the marketplace is settling itself. Switch the filter above to review cases you have already decided."
+        />
       ) : (
         <>
           <div className="space-y-3">
             {requests.map((req) => (
               <div
                 key={req._id}
-                className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4"
+                className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6"
               >
                 {/* Top row: order ref + category + status */}
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
@@ -457,6 +468,6 @@ export default function AdminMediationPage(): React.ReactElement {
           )}
         </div>
       </Modal>
-    </div>
+    </Page>
   );
 }

@@ -121,7 +121,7 @@ export function MediationPanel({
   }
 
   return (
-    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
       <div>
         <p className="app-label text-app-muted">Mediation case</p>
         <p className="app-meta text-app-faint">

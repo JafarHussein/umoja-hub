@@ -99,7 +99,7 @@ export default function IdentityRecords({ role }: { role: Role }): React.ReactEl
     <div className="space-y-6">
       <div>
         <h1 className="app-h1 text-app-ink">Profile</h1>
-        <p className="app-body mt-1 max-w-2xl text-app-muted">
+        <p className="app-body mt-1 max-w-app-prose text-app-muted">
           Your identity records. These are set when you sign in or during onboarding and cannot be
           edited here, contact an administrator if any of them need to be corrected.
         </p>

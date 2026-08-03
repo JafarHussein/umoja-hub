@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, ProjectTrack } from '@/types';
-import { Button } from '@/components/app';
+import { EmptyState, Page, PageHeader } from '@/components/app';
 import { MentorChat } from '@/components/education/MentorChat';
 
 interface IEngagementRef {
@@ -18,7 +17,7 @@ type PageState = 'loading' | 'ready' | 'no_engagement' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-app-focus space-y-10">
       <div className="skeleton h-7 w-36 rounded" />
       <div className="skeleton h-[480px] rounded-app-card" />
     </div>
@@ -70,37 +69,40 @@ export default function MentorPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your mentor</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setPageState('loading');
-            void fetchEngagement();
+      <Page width="focus">
+        <PageHeader title="AI Mentor" />
+        <EmptyState
+          title="We could not load your mentor"
+          description="Your conversation history is kept on the server and is unaffected — this screen just could not reach it."
+          action={{
+            label: 'Try again',
+            onClick: () => {
+              setPageState('loading');
+              void fetchEngagement();
+            },
           }}
-        >
-          Retry
-        </Button>
-      </div>
+        />
+      </Page>
     );
   }
 
   if (pageState === 'no_engagement' || !engagement) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="app-h1 text-app-ink">AI Mentor</h1>
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">No active project</p>
-          <p className="app-meta mt-1 text-app-faint">Start a project to unlock the AI mentor.</p>
-          <Link
-            href="/dashboard/student/projects/new"
-            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
-          >
-            Start new project →
-          </Link>
-        </div>
-      </div>
+      <Page width="focus">
+        <PageHeader title="AI Mentor" />
+        <EmptyState
+          title="The mentor opens once you have a project"
+          description="It is scoped to whatever you are currently building, so it needs a project to talk about. Start one and the mentor will know your brief, your track and where you have got to."
+          action={{ label: 'Start a new project', href: '/dashboard/student/projects/new' }}
+          hints={[
+            {
+              label: 'See your projects',
+              href: '/dashboard/student',
+              description: 'pick up where you left off',
+            },
+          ]}
+        />
+      </Page>
     );
   }
 
@@ -110,24 +112,28 @@ export default function MentorPage(): React.ReactElement {
       : ((engagement.brief as { repoName?: string }).repoName ?? 'Your project');
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="app-h1 text-app-ink">AI Mentor</h1>
-
-      <div className="inline-flex items-center gap-2 rounded-app-pill border border-app-hairline bg-app-sunken px-3 py-1">
-        <span className="app-label text-app-muted">AI</span>
-        <span className="app-meta text-app-muted">
-          Groq Llama 3 · Socratic guidance · Engagement-scoped
-        </span>
-      </div>
+    <Page width="focus">
+      <PageHeader
+        title="AI Mentor"
+        description="Talk through whatever you are stuck on. The mentor asks questions rather than handing you answers — the work stays yours, which is what makes the lecturer's sign-off mean something."
+        meta={
+          <span className="inline-flex items-center gap-2 rounded-app-pill border border-app-hairline bg-app-sunken px-3 py-1">
+            <span className="app-label text-app-muted">AI</span>
+            <span className="app-meta text-app-muted">
+              Groq Llama 3 · scoped to {briefTitle}
+            </span>
+          </span>
+        }
+      />
 
       <div className="overflow-hidden rounded-app-card border border-app-hairline">
         <MentorChat engagementId={engagement._id} briefTitle={briefTitle} />
       </div>
 
-      <p className="app-meta text-app-faint">
+      <p className="app-meta max-w-app-prose text-app-faint">
         The AI mentor guides your thinking without solving problems for you. It is scoped to your
         current project and maintains conversation history for 30 days.
       </p>
-    </div>
+    </Page>
   );
 }

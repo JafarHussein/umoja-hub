@@ -4,7 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Button } from '@/components/app';
+import {
+  EmptyState,
+  MetricGrid,
+  MetricTile,
+  Page,
+  PageHeader,
+  PageSection,
+} from '@/components/app';
 
 interface IPortfolioStats {
   verifiedProjectCount: number;
@@ -27,24 +34,15 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="skeleton h-7 w-36 rounded" />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <Page>
+      <div className="skeleton h-8 w-44 rounded" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="skeleton h-20 rounded-app-card" />
+          <div key={i} className="skeleton h-32 rounded-app-card" />
         ))}
       </div>
-      <div className="skeleton h-24 rounded-app-card" />
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: React.ReactNode }): React.ReactElement {
-  return (
-    <div className="rounded-app-card border border-app-hairline bg-app-card p-3">
-      <p className="app-label mb-1 text-app-muted">{label}</p>
-      <p className="app-data-l text-app-ink">{value}</p>
-    </div>
+      <div className="skeleton h-32 rounded-app-card" />
+    </Page>
   );
 }
 
@@ -89,107 +87,130 @@ export default function PortfolioPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your portfolio</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setPageState('loading');
-            void fetchPortfolio();
+      <Page>
+        <PageHeader title="My Portfolio" />
+        <EmptyState
+          title="We could not load your portfolio"
+          description="Your verified projects are stored on UmojaHub and are unaffected — this screen just could not reach them."
+          action={{
+            label: 'Try again',
+            onClick: () => {
+              setPageState('loading');
+              void fetchPortfolio();
+            },
           }}
-        >
-          Retry
-        </Button>
-      </div>
+        />
+      </Page>
     );
   }
 
   const hasVerifiedProjects = (portfolio?.stats.verifiedProjectCount ?? 0) > 0;
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <Page>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <h1 className="app-h1 text-app-ink">My Portfolio</h1>
-        {portfolio && (
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <span className="app-label inline-flex items-center rounded-app-pill bg-app-brand-surface px-2 py-0.5 capitalize text-app-brand">
-              {portfolio.currentTier.replace(/_/g, ' ').toLowerCase()}
-            </span>
-            <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
-              {portfolio.portfolioStrength.replace(/_/g, ' ').toLowerCase()}
-            </span>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="My Portfolio"
+        description="The public record of work a lecturer has checked and signed off. Employers can open this and see the projects themselves rather than a list of claims."
+        meta={
+          portfolio ? (
+            <>
+              <span className="capitalize">
+                {portfolio.currentTier.replace(/_/g, ' ').toLowerCase()}
+              </span>
+              <span className="capitalize">
+                {portfolio.portfolioStrength.replace(/_/g, ' ').toLowerCase()} portfolio
+              </span>
+              {portfolio.lastRecalculatedAt && (
+                <span>
+                  updated{' '}
+                  {new Date(portfolio.lastRecalculatedAt).toLocaleDateString('en-KE', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Stat grid */}
       {portfolio && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Verified" value={portfolio.stats.verifiedProjectCount} />
-          <StatCard label="Total" value={portfolio.stats.totalProjectCount} />
-          <StatCard
-            label="Avg score"
+        <MetricGrid columns={4}>
+          <MetricTile
+            label="Verified"
+            value={portfolio.stats.verifiedProjectCount}
+            emphasis
+            caption="Signed off by a lecturer and visible to employers."
+          />
+          <MetricTile
+            label="Total projects"
+            value={portfolio.stats.totalProjectCount}
+            caption="Everything you have started, verified or not."
+          />
+          <MetricTile
+            label="Average score"
             value={
               portfolio.stats.averageScore > 0 ? portfolio.stats.averageScore.toFixed(1) : '—'
             }
+            caption="Across every project a lecturer has scored."
           />
-          <StatCard label="Tech stacks" value={portfolio.stats.techStacksUsed.length} />
-        </div>
+          <MetricTile
+            label="Tech stacks"
+            value={portfolio.stats.techStacksUsed.length}
+            caption="Distinct technologies your verified work covers."
+          />
+        </MetricGrid>
       )}
 
       {/* Tech stack tags */}
       {portfolio && portfolio.stats.techStacksUsed.length > 0 && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-label text-app-muted">Skills used</p>
-          <div className="flex flex-wrap gap-1.5">
+        <PageSection
+          title="Skills used"
+          description="Drawn from the projects themselves, not self-reported."
+        >
+          <div className="flex flex-wrap gap-2 rounded-app-card border border-app-hairline bg-app-card p-6">
             {portfolio.stats.techStacksUsed.map((tech) => (
               <span
                 key={tech}
-                className="app-label rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-0.5 text-app-muted"
+                className="app-label rounded-app-pill border border-app-hairline bg-app-sunken px-2.5 py-1 text-app-muted"
               >
                 {tech}
               </span>
             ))}
           </div>
-        </div>
+        </PageSection>
       )}
 
       {/* Verified projects */}
-      {!hasVerifiedProjects ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">No verified projects yet</p>
-          <p className="app-meta mt-1 text-app-faint">
-            Complete a project and receive a VERIFIED decision from a lecturer to build your
-            portfolio.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
-          <div className="border-b border-app-hairline px-4 py-3">
-            <p className="app-label text-app-muted">Verified projects</p>
-          </div>
-          <div className="px-4 py-3">
-            <p className="app-body text-app-muted">
-              {portfolio!.stats.verifiedProjectCount} project
-              {portfolio!.stats.verifiedProjectCount !== 1 ? 's' : ''} verified
+      <PageSection title="Verified projects">
+        {!hasVerifiedProjects ? (
+          <EmptyState
+            title="Nothing has been verified yet"
+            description="A project appears here once a lecturer reviews it and returns a VERIFIED decision. That decision — not the fact you built something — is what an employer is looking at."
+            action={{ label: 'Start a project', href: '/dashboard/student/projects/new' }}
+            hints={[
+              {
+                label: 'Ask the AI mentor',
+                href: '/dashboard/student/mentor',
+                description: 'work through the brief before you submit',
+              },
+            ]}
+          />
+        ) : (
+          // The count already sits in the metric above, so this card says the
+          // thing the number does not: what having them actually does for you.
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+            <p className="app-body max-w-app-prose text-app-muted">
+              Your verified work is published at your public portfolio link. Employers searching
+              UmojaHub can open it without an account, and each project carries the name of the
+              lecturer who signed it off.
             </p>
           </div>
-        </div>
-      )}
-
-      {/* Last recalculated timestamp */}
-      {portfolio?.lastRecalculatedAt && (
-        <p className="app-meta text-app-faint">
-          Last updated{' '}
-          {new Date(portfolio.lastRecalculatedAt).toLocaleDateString('en-KE', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          })}
-        </p>
-      )}
-    </div>
+        )}
+      </PageSection>
+    </Page>
   );
 }

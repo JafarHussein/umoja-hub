@@ -3,7 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  MetricGrid,
+  MetricTile,
+  Page,
+  PageHeader,
+} from '@/components/app';
 import { Role } from '@/types';
 
 interface ISummary {
@@ -84,12 +91,13 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
 
   if (!summary) {
     return (
-      <div className="space-y-2">
-        <h1 className="app-h1 text-app-ink">Impact Summary</h1>
-        <p className="app-body text-app-muted">
-          No snapshot yet. Run the impact-summary cron to generate the first record.
-        </p>
-      </div>
+      <Page>
+        <PageHeader title="Impact Summary" />
+        <EmptyState
+          title="No snapshot has been generated yet"
+          description="This page reports from a periodic snapshot rather than querying live, so the figures stay stable between runs. Run the impact-summary cron once and the first record will appear here."
+        />
+      </Page>
     );
   }
 
@@ -110,23 +118,18 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="app-h1 text-app-ink">Impact Summary</h1>
-        <p className="app-meta mt-1 text-app-faint">Last updated: {generatedAt}</p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Impact Summary"
+        description="What the platform has actually done, counted from a periodic snapshot: who is registered, what they traded, and how far across the country it reached."
+        meta={<span>Last updated {generatedAt}</span>}
+      />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <MetricGrid columns={4}>
         {metrics.map(({ label, value }) => (
-          <div
-            key={label}
-            className="flex flex-col gap-1 rounded-app-card border border-app-hairline bg-app-card p-3"
-          >
-            <span className="app-label text-app-faint">{label}</span>
-            <span className="app-data-l text-app-ink">{value}</span>
-          </div>
+          <MetricTile key={label} label={label} value={value} />
         ))}
-      </div>
-    </div>
+      </MetricGrid>
+    </Page>
   );
 }

@@ -123,6 +123,16 @@ const config: Config = {
       maxWidth: {
         // Reading measure for the Documentation Stream (~68 characters)
         reading: '68ch',
+        // APP measure scale — the one place page width is decided. Content is
+        // centred inside the shell's main column at one of these widths so no
+        // screen stretches edge-to-edge on a wide monitor. `page` is the
+        // default (tables, detail views, most dashboards); `focus` is for
+        // forms and single-column decisions; `prose` is for explanatory text
+        // that must stay readable.
+        'app-wide': '1440px',
+        'app-page': '1160px',
+        'app-focus': '720px',
+        'app-prose': '62ch',
       },
       borderRadius: {
         DEFAULT: '6px',

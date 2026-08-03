@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 // hint) so the whole form reads consistently. Against the `app` token group.
 
 const fieldBase = [
-  'app-body w-full min-h-[44px] px-3 py-2 rounded-app-control',
+  'app-body w-full min-h-[46px] px-3.5 py-2.5 rounded-app-control',
   'bg-app-card text-app-ink placeholder:text-app-faint',
   'border border-app-border-strong',
   'transition-colors duration-150 ease-standard',
@@ -35,7 +35,7 @@ function FieldShell({
   children,
 }: IFieldShellProps): React.ReactElement {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {label && (
         <label htmlFor={id} className="app-label flex items-baseline gap-2 text-app-body">
           {label}

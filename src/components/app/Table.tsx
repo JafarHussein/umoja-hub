@@ -5,15 +5,34 @@ import { cn } from '@/lib/cn';
 // Card-framed; header in app-label, rows with a bottom hairline + hover; figure
 // cells use the mono ramp (caller adds `.app-data-m` / `text-right`). Against
 // the `app` token group.
+//
+// Density is deliberate: rows are 56px tall and the outer columns carry a
+// wider gutter than the inner ones, so a table reads as a set of records with
+// air around them rather than a spreadsheet pushed against its frame. Wide
+// tables scroll inside their own frame — the page never scrolls sideways.
+
+export interface ITableProps extends React.TableHTMLAttributes<HTMLTableElement> {
+  /**
+   * `fixed` honours the widths set on each `TH`, so the slack in a table is
+   * shared out deliberately instead of being swallowed by whichever column
+   * happens to hold the longest string. Use it — with a width on every header —
+   * for any table wide enough that auto layout leaves a void mid-row.
+   */
+  layout?: 'auto' | 'fixed';
+}
 
 export function Table({
+  layout = 'auto',
   className,
   children,
   ...props
-}: React.TableHTMLAttributes<HTMLTableElement>): React.ReactElement {
+}: ITableProps): React.ReactElement {
   return (
-    <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
-      <table className={cn('w-full border-collapse', className)} {...props}>
+    <div className="overflow-x-auto rounded-app-card border border-app-hairline bg-app-card">
+      <table
+        className={cn('w-full border-collapse', layout === 'fixed' && 'table-fixed', className)}
+        {...props}
+      >
         {children}
       </table>
     </div>
@@ -38,7 +57,10 @@ export function TH({
 }: React.ThHTMLAttributes<HTMLTableCellElement>): React.ReactElement {
   return (
     <th
-      className={cn('app-label px-4 py-3 text-left text-app-muted', className)}
+      className={cn(
+        'app-label whitespace-nowrap px-5 py-4 text-left text-app-muted first:pl-6 last:pr-6',
+        className
+      )}
       scope="col"
       {...props}
     >
@@ -71,7 +93,10 @@ export function TD({
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>): React.ReactElement {
   return (
-    <td className={cn('app-body px-4 py-3 text-app-body', className)} {...props}>
+    <td
+      className={cn('app-body px-5 py-4 text-app-body first:pl-6 last:pr-6', className)}
+      {...props}
+    >
       {children}
     </td>
   );

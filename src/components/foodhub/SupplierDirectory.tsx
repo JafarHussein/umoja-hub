@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Select } from '@/components/app';
+import { Button, EmptyState, Page, PageHeader, Select } from '@/components/app';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import SupplierCard from '@/components/foodhub/SupplierCard';
 import { KENYAN_COUNTIES, SupplierInputCategory } from '@/types';
@@ -112,16 +112,20 @@ export default function SupplierDirectory(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page header — read-only, administrator-curated */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Verified Suppliers</h1>
-        <p className="app-meta mt-0.5 max-w-2xl text-app-muted">
-          Agricultural input suppliers reviewed by UmojaHub. This directory is administrator-curated
-          — suppliers are added after credential verification and cannot self-register. Contact a
-          supplier directly to discuss group orders.
-        </p>
-      </div>
+    <Page>
+      {/* Page header — read-only; curation policy is stated in the description. */}
+      <PageHeader
+        title="Verified Suppliers"
+        description="Agricultural input suppliers reviewed by UmojaHub. Every one on this list had its credentials checked by an administrator before it appeared here — suppliers cannot add themselves. Contact a supplier directly to discuss group orders."
+        meta={
+          pageState === 'ready' && suppliers.length > 0 ? (
+            <span>
+              {suppliers.length} supplier{suppliers.length !== 1 ? 's' : ''}
+              {hasActiveFilters ? ' matching your filters' : ' in the directory'}
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-4">
@@ -168,21 +172,24 @@ export default function SupplierDirectory(): React.ReactElement {
       {pageState === 'loading' ? (
         <ListSkeleton rows={4} />
       ) : pageState === 'error' ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="app-title mb-2 text-app-ink">Could not load the supplier directory</p>
-          <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-          <Button variant="secondary" onClick={() => void fetchFirstPage()}>
-            Retry
-          </Button>
-        </div>
+        <EmptyState
+          title="We could not load the supplier directory"
+          description="The directory is served from UmojaHub rather than stored on your device, so this is almost always a passing connection problem."
+          action={{ label: 'Try again', onClick: () => void fetchFirstPage() }}
+        />
       ) : suppliers.length === 0 ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-12 text-center">
-          <p className="app-body text-app-muted">
-            {hasActiveFilters
-              ? 'No verified suppliers match these filters.'
-              : 'No verified suppliers in the directory yet.'}
-          </p>
-        </div>
+        hasActiveFilters ? (
+          <EmptyState
+            title="No verified supplier matches these filters"
+            description="The directory only holds suppliers an administrator has already verified, so it is deliberately narrow. Widening the county or category will usually surface someone who can serve you."
+            action={{ label: 'Clear filters', onClick: clearFilters }}
+          />
+        ) : (
+          <EmptyState
+            title="No suppliers have been verified yet"
+            description="Verified input suppliers will be listed here as UmojaHub checks their KEBS, PCPB and KEPHIS registrations. Until then there is nothing to show — an empty directory means nobody has passed that check, not that the page failed."
+          />
+        )
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -215,6 +222,6 @@ export default function SupplierDirectory(): React.ReactElement {
           )}
         </>
       )}
-    </div>
+    </Page>
   );
 }
