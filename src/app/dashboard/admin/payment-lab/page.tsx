@@ -7,6 +7,7 @@ import { Button, Alert, Page, PageHeader } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role } from '@/types';
 import { PAYMENT_LAB_ACTIONS, type PaymentLabAction } from '@/lib/validation/paymentLabSchema';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ---------------------------------------------------------------------------
 // UI — Admin Payment Lab. Drive deterministic simulated payment scenarios and
@@ -139,7 +140,7 @@ export default function AdminPaymentLabPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

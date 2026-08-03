@@ -12,6 +12,7 @@ import {
   PageHeader,
 } from '@/components/app';
 import { Role } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface ISummary {
   totalFarmers: number;
@@ -52,7 +53,7 @@ export default function AdminImpactSummaryPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

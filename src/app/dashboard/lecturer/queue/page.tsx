@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Role, ProjectTrack, StudentTier } from '@/types';
 import { EmptyState, Page, PageHeader } from '@/components/app';
 import { VerificationLockout } from '@/components/shared/VerificationLockout';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IStudentRef {
   firstName?: string;
@@ -82,7 +83,7 @@ export default function LecturerQueuePage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

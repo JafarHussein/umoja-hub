@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Modal, Input, VerificationBadge } from '@/components/app';
 import { Role, DocumentType, VerificationStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IFarmerDetail {
   _id: string;
@@ -145,7 +146,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

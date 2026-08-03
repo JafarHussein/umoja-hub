@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { EmptyState, Page, PageHeader, Table, THead, TH, TR, TD } from '@/components/app';
 import { Role } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface ICommodityRow {
   crop: string;
@@ -109,7 +110,7 @@ export default function AdminPriceAnalyticsPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

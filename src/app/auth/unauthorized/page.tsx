@@ -6,39 +6,20 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/app';
-import { Role } from '@/types';
+import { ROLE_HOME, ROLE_LABEL } from '@/lib/auth/dashboards';
 
-const DASHBOARD_BY_ROLE: Record<Role, string> = {
-  FARMER: '/dashboard/farmer/listings',
-  BUYER: '/marketplace',
-  STUDENT: '/dashboard/student/projects/new',
-  LECTURER: '/dashboard/lecturer/reviews/pending',
-  ADMIN: '/dashboard/admin/verification-queue',
-  NGO: '/dashboard/ngo',
-  EMPLOYER: '/dashboard/employer',
-  INSTITUTION: '/dashboard/institution',
-};
-
-const ROLE_LABELS: Record<Role, string> = {
-  FARMER: 'Farmer',
-  BUYER: 'Buyer',
-  STUDENT: 'Student',
-  LECTURER: 'Lecturer',
-  ADMIN: 'Admin',
-  NGO: 'NGO',
-  EMPLOYER: 'Employer',
-  INSTITUTION: 'Institution',
-};
+// The role→home and role→label maps used to be copied here. The copy had
+// drifted: it sent lecturers to `/dashboard/lecturer/reviews/pending`, which
+// does not exist, so "Go to my dashboard" turned an access-denied page into a
+// 404. Both now come from the single map the middleware also routes on.
 
 export default function UnauthorizedPage(): React.ReactElement {
   const router = useRouter();
   const { user, isLoading } = useAuth();
 
-  const dashboardUrl = user?.role
-    ? (DASHBOARD_BY_ROLE[user.role] ?? '/dashboard')
-    : '/auth/login';
+  const dashboardUrl = user?.role ? (ROLE_HOME[user.role] ?? '/') : '/auth/login';
 
-  const roleLabel = user?.role ? ROLE_LABELS[user.role] : null;
+  const roleLabel = user?.role ? ROLE_LABEL[user.role] : null;
 
   function handleGoToDashboard(): void {
     router.push(dashboardUrl);

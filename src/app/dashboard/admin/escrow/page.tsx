@@ -17,6 +17,7 @@ import {
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role, EscrowState, MediationOutcome } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ---------------------------------------------------------------------------
 // Admin escrow console. Platform custody totals (held / releasable /
@@ -154,7 +155,7 @@ export default function AdminEscrowPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

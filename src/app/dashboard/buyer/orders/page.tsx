@@ -19,6 +19,7 @@ import {
   type StatusState,
 } from '@/components/app';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IBuyerOrder {
   _id: string;
@@ -73,7 +74,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

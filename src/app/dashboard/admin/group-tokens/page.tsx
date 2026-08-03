@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Page, PageHeader, Select, Alert } from '@/components/app';
 import { Role } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ---------------------------------------------------------------------------
 // UI-15 — Admin group-token mint console (BE-07).
@@ -47,7 +48,7 @@ export default function AdminGroupTokensPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated' && session.user.role !== Role.ADMIN) {

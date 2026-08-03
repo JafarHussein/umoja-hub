@@ -5,13 +5,19 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Button, Alert, Input, ProviderButton } from '@/components/app';
+import { resolvePostAuthDestination } from '@/lib/auth/intent';
 
 // Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
 // account through /onboarding/welcome; OAuth here reconciles an existing account.
 // The callback lands on an /onboarding route so the middleware bounces an
 // already-onboarded user on to their dashboard. An OAuth sign-in without an
 // account (no draft) is redirected back into onboarding by the signIn callback.
-const POST_AUTH_CALLBACK = '/onboarding/welcome';
+//
+// This is only the FALLBACK. When the middleware bounced someone here from a
+// protected page it recorded that page in `?callbackUrl=`, and we return them
+// to it — sending a user who asked for their orders to the marketplace instead
+// is how the app used to "forget" what they were doing.
+const POST_AUTH_FALLBACK = '/onboarding/welcome';
 
 // Maps NextAuth `?error=` codes (set by our signIn callback redirects) to copy.
 const ERROR_COPY: Record<string, string> = {
@@ -58,6 +64,14 @@ function LoginContent(): React.ReactElement {
   const errorCode = searchParams.get('error');
   const urlError = errorCode ? (ERROR_COPY[errorCode] ?? 'Sign-in failed. Please try again.') : '';
 
+  // Where the user was headed before the middleware asked them to sign in.
+  // Rejected unless it is a same-origin path, so `?callbackUrl=` cannot be used
+  // to redirect a freshly-authenticated user off-site.
+  const destination = resolvePostAuthDestination(
+    searchParams.get('callbackUrl'),
+    POST_AUTH_FALLBACK
+  );
+
   const [loading, setLoading] = useState<'google' | 'github' | 'credentials' | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -66,7 +80,7 @@ function LoginContent(): React.ReactElement {
 
   function handleSignIn(provider: 'google' | 'github'): void {
     setLoading(provider);
-    void signIn(provider, { callbackUrl: POST_AUTH_CALLBACK });
+    void signIn(provider, { callbackUrl: destination });
   }
 
   async function handleCredentials(e: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -80,9 +94,13 @@ function LoginContent(): React.ReactElement {
         setFormError('Invalid login or password.');
         return;
       }
-      // Onboarded account → the middleware routes /onboarding/welcome to the
-      // role's dashboard.
-      router.push(POST_AUTH_CALLBACK);
+      // Back to the page they asked for. If the account is not finished
+      // onboarding, or the role may not view that page, the middleware
+      // re-guards the destination — this restores intent, it does not grant
+      // access. `refresh()` lets the new session reach the server components
+      // that render the destination.
+      router.push(destination);
+      router.refresh();
     } catch {
       setFormError('Something went wrong. Please try again.');
     } finally {

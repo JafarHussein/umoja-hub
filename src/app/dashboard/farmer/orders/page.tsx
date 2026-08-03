@@ -25,6 +25,7 @@ import {
   type IMediationCase,
 } from '@/components/foodhub/MediationPanel';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   Role,
   OrderPaymentStatus,
@@ -200,7 +201,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

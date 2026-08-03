@@ -17,6 +17,7 @@ import {
   TD,
 } from '@/components/app';
 import { Role, DocumentType, VerificationStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IVerificationDocument {
   documentType: DocumentType;
@@ -172,7 +173,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

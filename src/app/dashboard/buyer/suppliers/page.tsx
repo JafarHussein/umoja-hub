@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import SupplierDirectory from '@/components/foodhub/SupplierDirectory';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Role } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // UI-11 — Verified supplier directory (read-only) in the buyer hub. Buyers see
 // which input suppliers the platform has credential-verified.
@@ -15,7 +16,7 @@ export default function BuyerSuppliersPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated' && session.user.role !== Role.BUYER) {

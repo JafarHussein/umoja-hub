@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   Card,
   DataItem,
@@ -56,7 +57,7 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

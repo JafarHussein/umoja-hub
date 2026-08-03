@@ -8,6 +8,7 @@ import { FeedFilters } from '@/components/marketplace/FeedFilters';
 import { ActiveFilterChips } from '@/components/marketplace/ActiveFilterChips';
 import { MobileFilterButton } from '@/components/marketplace/MobileFilterButton';
 import { LoadMoreListings } from '@/components/marketplace/LoadMoreListings';
+import { AccountNav, MobileAccountLink } from '@/components/app';
 
 export const revalidate = 60;
 
@@ -158,32 +159,10 @@ export default async function MarketplacePage({
           <div className="min-w-0 flex-1 sm:max-w-2xl">
             <MarketplaceSearch />
           </div>
-          <div className="hidden flex-shrink-0 items-center gap-4 sm:flex">
-            <Link
-              href="/auth/login"
-              className="app-nav whitespace-nowrap text-app-body transition-colors duration-150 hover:text-app-ink"
-            >
-              Sell produce
-            </Link>
-            <Link
-              href="/auth/login"
-              className="app-nav whitespace-nowrap rounded-app-control bg-app-brand px-3.5 py-2 text-app-on-brand transition-colors duration-150 hover:bg-app-brand-hover"
-            >
-              Sign in
-            </Link>
-          </div>
-
-          {/* Compact account entry on mobile (full links hide below sm) */}
-          <Link
-            href="/auth/login"
-            aria-label="Sign in or sell produce"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-app-control border border-app-hairline text-app-body transition-colors duration-150 hover:border-app-border-strong sm:hidden"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M3.5 15a5.5 5.5 0 0111 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </Link>
+          {/* Reads the session in the browser, so this statically-cached page
+              stops telling signed-in buyers to sign in. */}
+          <AccountNav showSellLink className="hidden flex-shrink-0 sm:flex" />
+          <MobileAccountLink className="sm:hidden" />
         </div>
 
         {/* Category rail */}

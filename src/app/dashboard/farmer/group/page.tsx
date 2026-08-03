@@ -9,6 +9,7 @@ import { EmptyState, Page, PageHeader, VerificationBadge } from '@/components/ap
 import { cn } from '@/lib/cn';
 import { Role } from '@/types';
 import type { CooperativeInsights } from '@/lib/intelligence/cooperativeInsights';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IGroup {
   _id: string;
@@ -90,7 +91,7 @@ export default function FarmerGroupPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

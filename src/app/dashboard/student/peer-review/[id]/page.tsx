@@ -7,6 +7,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Role, PeerReviewStatus, ProjectTrack } from '@/types';
 import { Button, Alert } from '@/components/app';
 import { cn } from '@/lib/cn';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -243,7 +244,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

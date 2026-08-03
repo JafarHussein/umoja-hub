@@ -22,6 +22,7 @@ import {
 import { cn } from '@/lib/cn';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Role, OrderFulfillmentStatus, WithdrawalRequestStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface ILedgerLineItem {
   orderId: string;
@@ -172,7 +173,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

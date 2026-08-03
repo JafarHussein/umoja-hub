@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Modal, VerificationBadge } from '@/components/app';
 import { Role, SupplierVerificationStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IRegistrations {
   kebsNumber?: string;
@@ -123,7 +124,7 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {
