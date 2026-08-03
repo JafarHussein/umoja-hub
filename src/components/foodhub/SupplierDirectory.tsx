@@ -113,7 +113,7 @@ export default function SupplierDirectory(): React.ReactElement {
 
   return (
     <Page>
-      {/* Page header — read-only, administrator-curated */}
+      {/* Page header — read-only; curation policy is stated in the description. */}
       <PageHeader
         title="Verified Suppliers"
         description="Agricultural input suppliers reviewed by UmojaHub. Every one on this list had its credentials checked by an administrator before it appeared here — suppliers cannot add themselves. Contact a supplier directly to discuss group orders."

@@ -19,9 +19,11 @@ async function assertReadOnlyDirectory(page: Page, route: string): Promise<void>
     timeout: 30_000,
   });
 
-  // Administrator-curated, read-only framing.
-  await expect(page.getByText(/administrator-curated/i)).toBeVisible();
-  await expect(page.getByText(/cannot self-register/i)).toBeVisible();
+  // Administrator-curated, read-only framing. The policy is still stated on the
+  // page, in plainer words than the "administrator-curated / cannot
+  // self-register" phrasing this used to assert.
+  await expect(page.getByText(/checked by an administrator/i)).toBeVisible();
+  await expect(page.getByText(/cannot add themselves/i)).toBeVisible();
 
   // Seeded verified supplier card with its registration number.
   await expect(page.getByText('E2E Agrovet Supplies')).toBeVisible();

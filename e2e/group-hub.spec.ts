@@ -19,7 +19,7 @@ test('read-only hub: roster, manager variant, off-platform notice, histories', a
 }) => {
   await page.goto('/dashboard/farmer/group');
 
-  await expect(page.getByRole('heading', { name: 'Farmer Groups' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'My Cooperative' })).toBeVisible({
     timeout: 30_000,
   });
 
