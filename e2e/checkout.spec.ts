@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { authFile } from './support/auth';
 
 // ---------------------------------------------------------------------------
@@ -16,21 +16,32 @@ const CHECKOUT_URL = `/marketplace/${LISTING_ID}`;
 
 test.use({ storageState: authFile('buyer') });
 
-async function fillPhoneAndPay(page: import('@playwright/test').Page): Promise<void> {
-  await page.getByLabel(/M-Pesa phone number/i).fill('700000000');
-  await page.getByRole('button', { name: /pay ksh/i }).click();
+// The detail page is streamed: React ships the checkout markup inside a hidden
+// holder (`<div hidden id="S:1">`) and only moves it into the Suspense boundary
+// once that chunk is ready. Until the swap lands both copies are in the DOM, so
+// a page-wide query resolves two identical controls and trips strict mode —
+// which is exactly how this spec failed in CI. Scope every query to the visible
+// form instead of the document.
+function checkoutForm(page: Page): Locator {
+  return page
+    .locator('form')
+    .filter({ has: page.getByRole('heading', { name: 'Pay with M-Pesa' }) })
+    .filter({ visible: true });
+}
+
+async function fillPhoneAndPay(page: Page): Promise<void> {
+  const form = checkoutForm(page);
+  await form.getByLabel(/M-Pesa phone number/i).fill('700000000');
+  await form.getByRole('button', { name: /pay ksh/i }).click();
 }
 
 test('checkout shows the quantity lock bound to available stock', async ({ page }) => {
   await page.goto(CHECKOUT_URL);
 
-  await expect(page.getByRole('heading', { name: 'Pay with M-Pesa' })).toBeVisible({
-    timeout: 30_000,
-  });
-  // Quantity is locked to the listing's available stock. The detail page can
-  // render the checkout form more than once (responsive layout), so scope to
-  // the first match.
-  await expect(page.getByText('of 25 avail.').first()).toBeVisible();
+  const form = checkoutForm(page);
+  await expect(form).toBeVisible({ timeout: 30_000 });
+  // Quantity is locked to the listing's available stock.
+  await expect(form.getByText('of 25 avail.')).toBeVisible();
 });
 
 test('inventory-lock-failed surfaces an explicit refresh path', async ({ page }) => {
@@ -50,13 +61,12 @@ test('inventory-lock-failed surfaces an explicit refresh path', async ({ page })
   });
 
   await page.goto(CHECKOUT_URL);
-  await expect(page.getByRole('heading', { name: 'Pay with M-Pesa' })).toBeVisible({
-    timeout: 30_000,
-  });
+  const form = checkoutForm(page);
+  await expect(form).toBeVisible({ timeout: 30_000 });
   await fillPhoneAndPay(page);
 
-  await expect(page.getByText(/no longer available/i)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Refresh stock' })).toBeVisible();
+  await expect(form.getByText(/no longer available/i)).toBeVisible();
+  await expect(form.getByRole('button', { name: 'Refresh stock' })).toBeVisible();
 });
 
 test('awaiting payment shows the 90-s ticker and times out explicitly', async ({ page }) => {
@@ -90,11 +100,10 @@ test('awaiting payment shows the 90-s ticker and times out explicitly', async ({
   });
 
   await page.goto(CHECKOUT_URL);
-  await expect(page.getByRole('heading', { name: 'Pay with M-Pesa' })).toBeVisible({
-    timeout: 30_000,
-  });
+  await expect(checkoutForm(page)).toBeVisible({ timeout: 30_000 });
   await fillPhoneAndPay(page);
 
+  // The form is replaced by the awaiting-payment panel, so these stay page-wide.
   // Ticker visible and counting from the full 90-s window.
   await expect(page.getByText('Waiting for confirmation')).toBeVisible();
   await expect(page.getByText('90s', { exact: true })).toBeVisible();
