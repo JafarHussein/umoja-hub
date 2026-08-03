@@ -2,7 +2,20 @@ import React from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
-import { Card, Table, THead, TH, TR, TD, StatusPill } from '@/components/app';
+import {
+  EmptyState,
+  MetricGrid,
+  MetricTile,
+  Page,
+  PageHeader,
+  PageSection,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  StatusPill,
+} from '@/components/app';
 
 // NGO overview — the cooperatives this NGO sponsors and the reach of that
 // support. Server component reading the sponsorship graph directly.
@@ -13,15 +26,6 @@ interface CoopRow {
   county: string;
   memberCount: number;
   status: string;
-}
-
-function Stat({ label, value }: { label: string; value: string | number }): React.ReactElement {
-  return (
-    <Card>
-      <p className="app-label text-app-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-app-ink">{value}</p>
-    </Card>
-  );
 }
 
 export default async function NgoOverviewPage(): Promise<React.ReactElement> {
@@ -49,53 +53,79 @@ export default async function NgoOverviewPage(): Promise<React.ReactElement> {
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="app-h1 text-app-ink">{org?.name ?? 'NGO'}</h1>
-        <p className="app-body text-app-muted">
-          {org?.focusAreas?.length
-            ? org.focusAreas.join(' · ')
-            : 'Cooperatives you sponsor on UmojaHub.'}
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title={org?.name ?? 'NGO'}
+        description="The cooperatives your organisation sponsors on UmojaHub, and how far that support reaches."
+        meta={
+          org?.focusAreas?.length ? (
+            <>
+              {org.focusAreas.map((area) => (
+                <span key={area}>{area}</span>
+              ))}
+            </>
+          ) : undefined
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Cooperatives sponsored" value={groups.length} />
-        <Stat label="Farmers reached" value={totalMembers} />
-        <Stat label="Counties" value={counties} />
-      </div>
+      <MetricGrid columns={3}>
+        <MetricTile
+          label="Cooperatives sponsored"
+          value={groups.length}
+          emphasis
+          caption="Groups receiving your support on the platform."
+        />
+        <MetricTile
+          label="Farmers reached"
+          value={totalMembers}
+          caption="Individual members across every cooperative you sponsor."
+        />
+        <MetricTile
+          label="Counties"
+          value={counties}
+          caption="Geographic spread of your programme."
+        />
+      </MetricGrid>
 
-      {rows.length > 0 ? (
-        <Table>
-          <THead>
-            <TH>Cooperative</TH>
-            <TH>County</TH>
-            <TH className="text-right">Members</TH>
-            <TH>Status</TH>
-          </THead>
-          <tbody>
-            {rows.map((r) => (
-              <TR key={r.id}>
-                <TD className="app-body-strong text-app-ink">{r.groupName}</TD>
-                <TD>{r.county}</TD>
-                <TD className="text-right app-data-m">{r.memberCount}</TD>
-                <TD>
-                  <StatusPill
-                    state={r.status === 'ACTIVE' ? 'verified' : 'denied'}
-                    label={r.status}
-                  />
-                </TD>
-              </TR>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <Card>
-          <p className="app-body text-app-muted">
-            No sponsored cooperatives yet. Cooperatives you support will appear here.
-          </p>
-        </Card>
-      )}
-    </div>
+      <PageSection title="Sponsored cooperatives">
+        {rows.length > 0 ? (
+          <Table layout="fixed">
+            <THead>
+              <TH className="w-[40%]">Cooperative</TH>
+              <TH className="w-[22%]">County</TH>
+              <TH className="w-[16%] text-right">Members</TH>
+              <TH className="w-[22%]">Status</TH>
+            </THead>
+            <tbody>
+              {rows.map((r) => (
+                <TR key={r.id}>
+                  <TD className="app-body-strong text-app-ink">{r.groupName}</TD>
+                  <TD>{r.county}</TD>
+                  <TD className="app-data-m text-right">{r.memberCount}</TD>
+                  <TD>
+                    <StatusPill
+                      state={r.status === 'ACTIVE' ? 'verified' : 'denied'}
+                      label={r.status}
+                    />
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        ) : (
+          <EmptyState
+            title="No cooperatives are linked to your organisation yet"
+            description="Once an administrator attaches a cooperative to your sponsorship, it appears here with its membership and county — and the reach figures above start counting."
+            hints={[
+              {
+                label: 'See market health',
+                href: '/dashboard/ngo/market-health',
+                description: 'county-level price and supply conditions',
+              },
+            ]}
+          />
+        )}
+      </PageSection>
+    </Page>
   );
 }

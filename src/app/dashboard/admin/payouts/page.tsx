@@ -3,7 +3,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Modal, Textarea, StatusPill, type StatusState } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  Modal,
+  Page,
+  PageHeader,
+  Textarea,
+  StatusPill,
+  type StatusState,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role, WithdrawalRequestStatus } from '@/types';
 
@@ -195,11 +204,11 @@ export default function AdminPayoutsPage(): React.ReactElement {
 
   if (status === 'loading' || (pageState === 'loading' && requests.length === 0)) {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-7 w-40 rounded" />
-        <div className="skeleton h-9 w-72 rounded-app-control" />
+      <Page>
+        <div className="skeleton h-8 w-52 rounded" />
+        <div className="skeleton h-10 w-80 rounded-app-control" />
         <div className="skeleton h-64 rounded-app-card" />
-      </div>
+      </Page>
     );
   }
 
@@ -211,15 +220,19 @@ export default function AdminPayoutsPage(): React.ReactElement {
         : 'Mark payout as paid';
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Header */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Payout Requests</h1>
-        <p className="app-body mt-1 max-w-2xl text-app-muted">
-          {queueSize} request{queueSize !== 1 ? 's' : ''} awaiting review. Payouts are released
-          manually; there is no automated disbursement.
-        </p>
-      </div>
+      <PageHeader
+        title="Payout Requests"
+        description="Farmers asking for cleared money to be sent to them. Payouts are released by hand — nothing leaves the platform without an administrator deciding it should."
+        meta={
+          queueSize > 0 ? (
+            <span>
+              {queueSize} request{queueSize !== 1 ? 's' : ''} awaiting review
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Status filter */}
       <div
@@ -251,18 +264,16 @@ export default function AdminPayoutsPage(): React.ReactElement {
 
       {/* Body */}
       {pageState === 'error' ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="app-title mb-2 text-app-ink">Could not load the payout queue</p>
-          <Button variant="secondary" onClick={() => void fetchQueue(statusFilter)}>
-            Retry
-          </Button>
-        </div>
+        <EmptyState
+          title="We could not load the payout queue"
+          description="No request has been lost or actioned. This screen simply could not read the queue."
+          action={{ label: 'Try again', onClick: () => void fetchQueue(statusFilter) }}
+        />
       ) : requests.length === 0 ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-12 text-center">
-          <p className="app-body text-app-muted">
-            No {statusFilter.toLowerCase()} payout requests.
-          </p>
-        </div>
+        <EmptyState
+          title={`No ${statusFilter.toLowerCase()} payout requests`}
+          description="Nothing sits in this state right now. Farmers can only request a payout against a cleared balance, so this queue stays short by design — switch the filter above to see requests you have already decided."
+        />
       ) : (
         <>
           <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
@@ -380,6 +391,6 @@ export default function AdminPayoutsPage(): React.ReactElement {
           )}
         </div>
       </Modal>
-    </div>
+    </Page>
   );
 }

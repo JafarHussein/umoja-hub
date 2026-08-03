@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/app';
+import { Button, EmptyState, Page, PageHeader } from '@/components/app';
 import { Role, SupplierVerificationStatus } from '@/types';
 
 interface IRegistrations {
@@ -143,30 +143,43 @@ export default function AdminSupplierVerificationPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load supplier verification queue</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchQueue()}>
-          Retry
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="Supplier Verification" />
+        <EmptyState
+          title="We could not load the supplier queue"
+          description="No supplier application has been affected — this screen just could not reach the queue."
+          action={{ label: 'Try again', onClick: () => void fetchQueue() }}
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="app-h1 text-app-ink">Supplier Verification</h1>
-        <p className="app-body mt-1 text-app-muted">
-          {queueSize} pending verification{queueSize !== 1 ? 's' : ''}
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Supplier Verification"
+        description="Input suppliers waiting on a credential check. Farmers can only see suppliers you approve, so their KEBS, PCPB and KEPHIS numbers are what stands between a farm and a bad input."
+        meta={
+          queueSize > 0 ? (
+            <span>
+              {queueSize} pending verification{queueSize !== 1 ? 's' : ''}
+            </span>
+          ) : undefined
+        }
+      />
 
       {suppliers.length === 0 ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">Queue is clear</p>
-          <p className="app-meta mt-1 text-app-faint">No pending supplier verifications.</p>
-        </div>
+        <EmptyState
+          title="The queue is clear"
+          description="No supplier is waiting on a credential check. New applications appear here for review before any farmer can see them in the directory."
+          hints={[
+            {
+              label: 'Review farmers',
+              href: '/dashboard/admin/verification-queue',
+              description: 'farmer identity documents awaiting a decision',
+            },
+          ]}
+        />
       ) : (
         <div className="space-y-3">
           {suppliers.map((supplier) => {
@@ -287,6 +300,6 @@ export default function AdminSupplierVerificationPage(): React.ReactElement {
           })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

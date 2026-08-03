@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Table, THead, TH, TR, TD } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  Page,
+  PageHeader,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 import { CreateListingForm } from '@/components/foodhub/CreateListingForm';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
@@ -146,26 +156,27 @@ export default function FarmerListingsPage(): React.ReactElement {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="space-y-6">
+      <Page>
         <div className="flex items-center justify-between">
-          <div className="skeleton h-6 w-32 rounded" />
-          <div className="skeleton h-11 w-36 rounded-sm" />
+          <div className="skeleton h-8 w-40 rounded" />
+          <div className="skeleton h-11 w-36 rounded-app-control" />
         </div>
         <ListSkeleton rows={5} />
-      </div>
+      </Page>
     );
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your produce</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchData()}>
-          Retry
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="My Produce" />
+        <EmptyState
+          title="We could not load your produce"
+          description="Your listings are safe — this screen just could not reach them. This is usually a brief connection problem, so trying again normally works."
+          action={{ label: 'Try again', onClick: () => void fetchData() }}
+        />
+      </Page>
     );
   }
 
@@ -174,73 +185,75 @@ export default function FarmerListingsPage(): React.ReactElement {
   // replaced with the lockout layer rather than an unusable create surface.
   if (verification !== VerificationStatus.APPROVED) {
     return (
-      <div className="space-y-6">
-        <h1 className="app-h1 text-app-ink">My Produce</h1>
+      <Page>
+        <PageHeader
+          title="My Produce"
+          description="Everything you have listed for sale, and how each item is performing."
+        />
         <VerificationLockout {...lockoutForStatus(verification)} />
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="app-h1 text-app-ink">My Produce</h1>
-          <p className="app-meta mt-0.5 text-app-muted">
-            {listings.length} item{listings.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <rect y="6" width="14" height="2" rx="1" />
-            <rect x="6" width="2" height="14" rx="1" />
-          </svg>
-          Add produce
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title="My Produce"
+        description="Everything you have listed for sale. Pause an item to hide it from buyers without deleting it; reactivate it when you have stock again."
+        meta={
+          listings.length > 0 ? (
+            <span>
+              {listings.length} item{listings.length !== 1 ? 's' : ''} ·{' '}
+              {listings.filter((l) => l.listingStatus === ListingStatus.AVAILABLE).length} visible to
+              buyers
+            </span>
+          ) : undefined
+        }
+        actions={
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <rect y="6" width="14" height="2" rx="1" />
+              <rect x="6" width="2" height="14" rx="1" />
+            </svg>
+            Add produce
+          </Button>
+        }
+      />
 
       {/* Empty state */}
       {listings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-16 text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M3 17V7L10 3L17 7V17H3Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-                className="text-app-faint"
-              />
-            </svg>
-          </div>
-          <p className="app-title mb-1 text-app-ink">No produce yet</p>
-          <p className="app-body mb-4 text-app-muted">
-            Add your first produce to start receiving orders from buyers across Kenya.
-          </p>
-          <Button onClick={() => setIsCreateOpen(true)}>Add produce</Button>
-        </div>
+        <EmptyState
+          title="Your produce will appear here once you publish it"
+          description="Each item you add becomes visible to buyers searching your county, with your verified badge attached. You can set the price, the quantity available and where buyers collect from — and change any of it later."
+          action={{ label: 'Add your first produce', onClick: () => setIsCreateOpen(true) }}
+          hints={[
+            {
+              label: 'Check market prices first',
+              href: '/dashboard/farmer/prices',
+              description: 'see what your crop is fetching this week',
+            },
+            {
+              label: 'Review your profile',
+              href: '/dashboard/farmer/profile',
+              description: 'buyers see your trust score before they order',
+            },
+          ]}
+        />
       ) : (
         /* Listings table */
-        <Table>
+        <Table layout="fixed">
           <THead>
-            <TH>Produce</TH>
-            <TH className="text-right">Price</TH>
-            <TH className="text-right">Available</TH>
-            <TH>Status</TH>
-            <TH className="text-right">
+            <TH className="w-[38%]">Produce</TH>
+            <TH className="w-[17%] text-right">Price</TH>
+            <TH className="w-[15%] text-right">Available</TH>
+            <TH className="w-[16%]">Status</TH>
+            <TH className="w-[14%] text-right">
               <span className="sr-only">Actions</span>
             </TH>
           </THead>
@@ -310,6 +323,6 @@ export default function FarmerListingsPage(): React.ReactElement {
           void fetchData();
         }}
       />
-    </div>
+    </Page>
   );
 }

@@ -4,7 +4,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, VerificationStatus, FarmerTrustTier, DocumentType } from '@/types';
-import { Button, Input, Select, Alert, VerificationBadge } from '@/components/app';
+import {
+  Alert,
+  Button,
+  Card,
+  DataItem,
+  DataList,
+  EmptyState,
+  Form,
+  FormActions,
+  FormSection,
+  Input,
+  Page,
+  PageHeader,
+  PageSection,
+  Select,
+  VerificationBadge,
+} from '@/components/app';
 import { LinkGroupTokenForm } from '@/components/foodhub/LinkGroupTokenForm';
 
 interface IFarmerData {
@@ -47,16 +63,6 @@ interface IVerifyForm {
 type PageState = 'loading' | 'ready' | 'error';
 type SubmitState = 'idle' | 'submitting' | 'error';
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
-
-// Key/value row inside a bordered summary card.
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
-  return (
-    <div className="flex items-start justify-between gap-4 px-4 py-3">
-      <span className="app-label text-app-muted">{label}</span>
-      <span className="app-body text-right text-app-ink">{children}</span>
-    </div>
-  );
-}
 
 // Verification status rendered as a trust badge (verified/pending/denied) or a
 // neutral "not submitted" pill — status by icon + text, never colour alone.
@@ -208,23 +214,24 @@ export default function FarmerProfilePage(): React.ReactElement {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-6 w-40 rounded" />
-        <div className="skeleton h-48 rounded-app-card" />
-      </div>
+      <Page width="focus">
+        <div className="skeleton h-8 w-48 rounded" />
+        <div className="skeleton h-64 rounded-app-card" />
+      </Page>
     );
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your profile</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchProfile()}>
-          Retry
-        </Button>
-      </div>
+      <Page width="focus">
+        <PageHeader title="Farmer Profile" />
+        <EmptyState
+          title="We could not load your profile"
+          description="Nothing has been changed or lost — this screen just could not reach your details. Trying again usually clears it."
+          action={{ label: 'Try again', onClick: () => void fetchProfile() }}
+        />
+      </Page>
     );
   }
 
@@ -244,64 +251,76 @@ export default function FarmerProfilePage(): React.ReactElement {
   ];
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <Page width="focus">
+      <PageHeader
+        title="Farmer Profile"
+        description="What buyers see when they consider ordering from you. Your verification and trust score decide how high you appear when they search."
+      />
+
       {/* ── Profile summary ─────────────────────────────────────────────── */}
-      <section className="space-y-3">
-        <h1 className="app-h1 text-app-ink">Farmer Profile</h1>
-        <div className="divide-y divide-app-hairline rounded-app-card border border-app-hairline bg-app-card">
-          <InfoRow label="Name">
-            {farmer.firstName ?? '—'} {farmer.lastName ?? ''}
-          </InfoRow>
-          <InfoRow label="County">{farmer.county ?? '—'}</InfoRow>
-          <InfoRow label="Phone">{farmer.phoneNumber ?? '—'}</InfoRow>
-          <InfoRow label="Trust tier">
-            <span className="capitalize">{trustScore.tier.toLowerCase()}</span> ·{' '}
-            <span className="app-data-m text-app-ink">{trustScore.compositeScore}</span>
-          </InfoRow>
-          <InfoRow label="Verification">
-            <VerificationStatusValue status={farmerData.verificationStatus} />
-          </InfoRow>
-        </div>
-      </section>
+      <PageSection title="Your details">
+        <Card pad="none" className="px-6">
+          <DataList>
+            <DataItem label="Name">
+              {farmer.firstName ?? '—'} {farmer.lastName ?? ''}
+            </DataItem>
+            <DataItem label="County">{farmer.county ?? '—'}</DataItem>
+            <DataItem label="Phone">{farmer.phoneNumber ?? '—'}</DataItem>
+            <DataItem label="Trust tier">
+              <span className="capitalize">{trustScore.tier.toLowerCase()}</span> ·{' '}
+              <span className="app-data-m text-app-ink">{trustScore.compositeScore}</span>
+            </DataItem>
+            <DataItem label="Verification">
+              <VerificationStatusValue status={farmerData.verificationStatus} />
+            </DataItem>
+          </DataList>
+        </Card>
+      </PageSection>
 
       {/* ── Farm details / onboarding ────────────────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="app-h2 text-app-ink">Farm Details</h2>
+      <PageSection title="Farm details">
         {onboarded ? (
-          <div className="divide-y divide-app-hairline rounded-app-card border border-app-hairline bg-app-card">
-            <InfoRow label="Crops grown">{farmerData.cropsGrown.join(', ') || '—'}</InfoRow>
-            <InfoRow label="Farm size">
-              {farmerData.farmSizeAcres != null ? `${farmerData.farmSizeAcres} acres` : '—'}
-            </InfoRow>
-          </div>
+          <Card pad="none" className="px-6">
+            <DataList>
+              <DataItem label="Crops grown">{farmerData.cropsGrown.join(', ') || '—'}</DataItem>
+              <DataItem label="Farm size">
+                {farmerData.farmSizeAcres != null ? `${farmerData.farmSizeAcres} acres` : '—'}
+              </DataItem>
+            </DataList>
+          </Card>
         ) : (
-          <form
-            className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4"
-            onSubmit={(e) => void handleCropSubmit(e)}
-          >
-            <p className="app-body text-app-muted">
-              Profile incomplete. Add your crops to activate your account.
-            </p>
-            <Input
-              label="Crops grown (comma-separated)"
-              type="text"
-              value={cropsInput}
-              onChange={(e) => setCropsInput(e.target.value)}
-              placeholder="Maize, Beans, Tomatoes"
-              required
-              {...(cropError ? { error: cropError } : {})}
-            />
-            <Button type="submit" isLoading={cropState === 'submitting'} className="self-start">
-              Save crops
-            </Button>
-          </form>
+          <Card>
+            <Form onSubmit={(e) => void handleCropSubmit(e)}>
+              <FormSection
+                title="Tell us what you grow"
+                description="Buyers search by crop, so this is what puts you in front of them. You can change it whenever your season changes."
+                divided={false}
+              >
+                <Input
+                  label="Crops grown (comma-separated)"
+                  type="text"
+                  value={cropsInput}
+                  onChange={(e) => setCropsInput(e.target.value)}
+                  placeholder="Maize, Beans, Tomatoes"
+                  required
+                  {...(cropError ? { error: cropError } : {})}
+                />
+              </FormSection>
+              <FormActions note="Your account becomes active as soon as this is saved.">
+                <Button type="submit" isLoading={cropState === 'submitting'}>
+                  Save crops
+                </Button>
+              </FormActions>
+            </Form>
+          </Card>
         )}
-      </section>
+      </PageSection>
 
       {/* ── Identity verification ────────────────────────────────────────── */}
-      <section className="space-y-3">
-        <h2 className="app-h2 text-app-ink">Identity Verification</h2>
-
+      <PageSection
+        title="Identity verification"
+        description="Verified farmers can list produce and carry a badge buyers can see. UmojaHub checks the document you submit against the name on your account."
+      >
         {farmerData.verificationStatus === VerificationStatus.APPROVED && (
           <Alert tone="success">
             Verified. Document on file: {farmerData.documentType ?? '—'}
@@ -309,14 +328,15 @@ export default function FarmerProfilePage(): React.ReactElement {
         )}
 
         {farmerData.verificationStatus === VerificationStatus.PENDING && (
-          <Alert tone="info">Your verification is under review.</Alert>
+          <Alert tone="info">
+            Your verification is under review. Most submissions are decided within two working days,
+            and you will be emailed either way.
+          </Alert>
         )}
 
         {canSubmitVerification && (
-          <form
-            className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4"
-            onSubmit={(e) => void handleVerifySubmit(e)}
-          >
+          <Card>
+            <form className="space-y-6" onSubmit={(e) => void handleVerifySubmit(e)}>
             {farmerData.verificationStatus === VerificationStatus.REJECTED && (
               <Alert tone="danger">
                 Previous submission was rejected. Please resubmit with a valid document.
@@ -348,7 +368,7 @@ export default function FarmerProfilePage(): React.ReactElement {
               required
             />
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <label htmlFor="documentImage" className="app-label text-app-body">
                 Document image
               </label>
@@ -375,28 +395,32 @@ export default function FarmerProfilePage(): React.ReactElement {
 
             {verifyError !== null && <Alert tone="danger">{verifyError}</Alert>}
 
-            <Button
-              type="submit"
-              isLoading={verifyState === 'submitting'}
-              disabled={uploadState === 'uploading' || verifyForm.documentImageUrl === ''}
-              className="self-start"
-            >
-              Submit for verification
-            </Button>
-          </form>
+            <FormActions note="An administrator reviews every submission by hand. You will be emailed with the decision.">
+              <Button
+                type="submit"
+                isLoading={verifyState === 'submitting'}
+                disabled={uploadState === 'uploading' || verifyForm.documentImageUrl === ''}
+              >
+                Submit for verification
+              </Button>
+            </FormActions>
+            </form>
+          </Card>
         )}
-      </section>
+      </PageSection>
 
       {/* ── Group membership (UI-05) ─────────────────────────────────────── */}
       <LinkGroupTokenForm />
 
       {/* ── Trust score breakdown — shown only when APPROVED ─────────────── */}
       {farmerData.verificationStatus === VerificationStatus.APPROVED && (
-        <section className="space-y-3">
-          <h2 className="app-h2 text-app-ink">Trust Score Breakdown</h2>
-          <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <PageSection
+          title="Trust score breakdown"
+          description="Buyers see your composite score before they order. Each part below moves independently, so you can tell exactly what would raise it."
+        >
+          <Card pad="generous" className="space-y-6">
             {scoreFactors.map(({ label, score, max }) => (
-              <div key={label} className="space-y-1.5">
+              <div key={label} className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <span className="app-body text-app-ink">{label}</span>
                   <span className="app-data-m text-app-muted">
@@ -411,15 +435,15 @@ export default function FarmerProfilePage(): React.ReactElement {
                 </div>
               </div>
             ))}
-            <div className="flex items-center justify-between gap-3 border-t border-app-hairline pt-3">
+            <div className="flex items-center justify-between gap-3 border-t border-app-hairline pt-5">
               <span className="app-body-strong text-app-ink">Composite score</span>
               <span className="app-data-l text-app-brand">
                 {trustScore.compositeScore} / 100
               </span>
             </div>
-          </div>
-        </section>
+          </Card>
+        </PageSection>
       )}
-    </div>
+    </Page>
   );
 }

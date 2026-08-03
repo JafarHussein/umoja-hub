@@ -5,7 +5,15 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Button, buttonVariants } from '@/components/app';
+import {
+  Card,
+  DataItem,
+  DataList,
+  EmptyState,
+  Page,
+  PageHeader,
+  buttonVariants,
+} from '@/components/app';
 
 interface IAssignedReview {
   _id: string;
@@ -18,10 +26,10 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-3xl space-y-6">
-      <div className="skeleton h-7 w-40 rounded" />
-      <div className="skeleton h-40 rounded-app-card" />
-    </div>
+    <Page width="focus">
+      <div className="skeleton h-8 w-52 rounded" />
+      <div className="skeleton h-48 rounded-app-card" />
+    </Page>
   );
 }
 
@@ -66,67 +74,72 @@ export default function PeerReviewAssignmentPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your peer review</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setPageState('loading');
-            void fetchAssignment();
+      <Page width="focus">
+        <PageHeader title="My Review Assignment" />
+        <EmptyState
+          title="We could not load your peer review"
+          description="Any review you have already written is saved — this screen just could not reach your assignment."
+          action={{
+            label: 'Try again',
+            onClick: () => {
+              setPageState('loading');
+              void fetchAssignment();
+            },
           }}
-        >
-          Retry
-        </Button>
-      </div>
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <h1 className="app-h1 text-app-ink">My Review Assignment</h1>
+    <Page width="focus">
+      <PageHeader
+        title="My Review Assignment"
+        description="Every submitted project is read by another student before a lecturer sees it. Reviewing someone else's work is part of the course, not a favour — and it is the fastest way to spot the same mistakes in your own."
+      />
 
       {review === null ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">No review assignment</p>
-          <p className="app-meta mt-1 text-app-faint">
-            You will be assigned a project to review after another student submits theirs.
-          </p>
-        </div>
+        <EmptyState
+          title="You have nothing to review right now"
+          description="A project is assigned to you once another student submits theirs. Nothing is required of you until then — we will let you know when one arrives."
+          hints={[
+            {
+              label: 'Work on your own project',
+              href: '/dashboard/student',
+              description: 'submitting yours puts you in the queue',
+            },
+          ]}
+        />
       ) : (
-        <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
-          <div className="flex items-center justify-between">
+        <Card pad="generous" className="space-y-6">
+          <div className="flex items-center justify-between gap-4">
             <p className="app-label text-app-muted">Assignment</p>
-            <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
+            <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2.5 py-1 capitalize text-app-muted">
               {review.status.replace(/_/g, ' ').toLowerCase()}
             </span>
           </div>
 
-          <div className="space-y-0">
-            <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
-              <span className="app-body text-app-muted">Review ID</span>
-              <span className="app-data-m text-app-faint">{review._id}</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="app-body text-app-muted">Assigned</span>
-              <span className="app-data-m text-app-muted">
-                {new Date(review.createdAt).toLocaleDateString('en-KE', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
-            </div>
-          </div>
+          <DataList>
+            <DataItem label="Review ID" numeric>
+              {review._id}
+            </DataItem>
+            <DataItem label="Assigned" numeric>
+              {new Date(review.createdAt).toLocaleDateString('en-KE', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </DataItem>
+          </DataList>
 
           <Link
             href={`/dashboard/student/peer-review/${review._id}`}
             className={buttonVariants({ variant: 'primary' })}
           >
-            Open review →
+            Open review
           </Link>
-        </div>
+        </Card>
       )}
-    </div>
+    </Page>
   );
 }

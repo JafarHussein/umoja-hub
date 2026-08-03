@@ -4,7 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Button, Alert, VerificationBadge } from '@/components/app';
+import {
+  Button,
+  Alert,
+  EmptyState,
+  Page,
+  PageHeader,
+  VerificationBadge,
+} from '@/components/app';
 
 interface ILecturerData {
   isVerified: boolean;
@@ -25,7 +32,7 @@ type PageState = 'loading' | 'ready' | 'error';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <div className="skeleton h-7 w-48 rounded" />
       <div className="skeleton h-64 rounded-app-card" />
     </div>
@@ -117,19 +124,20 @@ export default function LecturerVerificationPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load lecturers</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setPageState('loading');
-            void fetchLecturers();
+      <Page>
+        <PageHeader title="Lecturer Accounts" />
+        <EmptyState
+          title="We could not load lecturer accounts"
+          description="No account has been altered — this screen just could not read the list."
+          action={{
+            label: 'Try again',
+            onClick: () => {
+              setPageState('loading');
+              void fetchLecturers();
+            },
           }}
-        >
-          Retry
-        </Button>
-      </div>
+        />
+      </Page>
     );
   }
 
@@ -137,24 +145,25 @@ export default function LecturerVerificationPage(): React.ReactElement {
   const verified = lecturers.filter((l) => l.lecturerData?.isVerified);
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="app-label mb-1 text-app-faint">Admin · Lecturer Verification</p>
-          <h1 className="app-h1 text-app-ink">Lecturer Accounts</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <StatTile label="Pending" value={unverified.length} tone="text-app-warning" />
-          <StatTile label="Verified" value={verified.length} tone="text-app-brand" />
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        title="Lecturer Accounts"
+        description="Academics who review and sign off student work. Verifying a lecturer gives them authority over what appears in a student's public portfolio, so confirm the institution before you approve."
+        actions={
+          <div className="flex items-center gap-3">
+            <StatTile label="Pending" value={unverified.length} tone="text-app-warning" />
+            <StatTile label="Verified" value={verified.length} tone="text-app-brand" />
+          </div>
+        }
+      />
 
       {actionError && <Alert tone="danger">{actionError}</Alert>}
 
       {lecturers.length === 0 ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">No lecturer accounts registered yet.</p>
-        </div>
+        <EmptyState
+          title="No lecturer has registered yet"
+          description="Lecturer accounts appear here as soon as someone signs up with an academic role. Until one does, students have nobody to review their work — so this queue filling up is a good sign."
+        />
       ) : (
         <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
           {lecturers.map((lecturer) => {
@@ -193,6 +202,6 @@ export default function LecturerVerificationPage(): React.ReactElement {
           })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

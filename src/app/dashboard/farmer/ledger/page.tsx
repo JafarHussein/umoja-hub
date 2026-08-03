@@ -3,7 +3,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Modal, Table, THead, TH, TR, TD } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  Input,
+  MetricGrid,
+  MetricTile,
+  Modal,
+  Page,
+  PageHeader,
+  PageSection,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Role, OrderFulfillmentStatus, WithdrawalRequestStatus } from '@/types';
@@ -216,90 +231,89 @@ export default function FarmerLedgerPage(): React.ReactElement {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-6 w-32 rounded" />
+      <Page>
+        <div className="skeleton h-8 w-40 rounded" />
         <ListSkeleton rows={5} />
-      </div>
+      </Page>
     );
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load your payments</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchData()}>
-          Retry
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="Payments" />
+        <EmptyState
+          title="We could not load your payments"
+          description="Nothing has moved — any money held against your orders is untouched. This screen simply could not reach your balance just now."
+          action={{ label: 'Try again', onClick: () => void fetchData() }}
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="app-h1 text-app-ink">Payments</h1>
-          <p className="app-meta mt-0.5 max-w-prose text-app-muted">
-            When a buyer pays, the money is held safely in escrow by the platform. It clears once the
-            buyer confirms they received your produce — then you can request a payout.
-          </p>
-        </div>
-        <Button size="sm" disabled={!canRequest} onClick={openForm} aria-label="Request a payout">
-          Request Payout
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title="Payments"
+        description="When a buyer pays, the money is held safely in escrow by the platform. It clears once the buyer confirms they received your produce — then you can request a payout."
+        actions={
+          <Button disabled={!canRequest} onClick={openForm} aria-label="Request a payout">
+            Request payout
+          </Button>
+        }
+      />
 
       {/* Balance summary — the escrow story: held → releasable → available */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-label mb-2 text-app-muted">Held in escrow</p>
-          <p className="app-data-l text-app-ink">{formatKES(balance?.heldKES ?? 0)}</p>
-          <p className="app-meta mt-1 text-app-faint">awaiting buyer confirmation</p>
-        </div>
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-label mb-2 text-app-muted">Cleared</p>
-          <p className="app-data-l text-app-ink">{formatKES(balance?.releasableKES ?? 0)}</p>
-          <p className="app-meta mt-1 text-app-faint">
-            confirmed received
-            {balance && balance.committedPayoutsKES > 0
-              ? ` · ${formatKES(balance.committedPayoutsKES)} committed`
-              : ''}
-          </p>
-        </div>
-        <div className="rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
-          <p className="app-label mb-2 text-app-muted">Available to withdraw</p>
-          <p className="app-data-l text-app-brand">{formatKES(availableKES)}</p>
-          {balance && balance.inDisputeKES > 0 && (
-            <p className="app-meta mt-1 text-app-faint">
-              {formatKES(balance.inDisputeKES)} held under review
-            </p>
-          )}
-        </div>
-      </div>
+      <PageSection>
+        <MetricGrid columns={3}>
+          <MetricTile
+            label="Held in escrow"
+            value={formatKES(balance?.heldKES ?? 0)}
+            caption="Paid by buyers, waiting on them to confirm they received the produce."
+          />
+          <MetricTile
+            label="Cleared"
+            value={formatKES(balance?.releasableKES ?? 0)}
+            caption={
+              balance && balance.committedPayoutsKES > 0
+                ? `Confirmed received. ${formatKES(balance.committedPayoutsKES)} of this is already committed to a payout request.`
+                : 'Confirmed received by the buyer and counted toward what you can withdraw.'
+            }
+          />
+          <MetricTile
+            label="Available to withdraw"
+            value={formatKES(availableKES)}
+            emphasis
+            caption={
+              balance && balance.inDisputeKES > 0
+                ? `${formatKES(balance.inDisputeKES)} is held back while an order is under review.`
+                : 'Yours to request whenever you want it. An administrator releases each payout.'
+            }
+          />
+        </MetricGrid>
 
-      {hasOpenRequest && (
-        <p className="app-meta text-app-muted">
-          You have a payout request awaiting review. You can file another once it is resolved.
-        </p>
-      )}
+        {hasOpenRequest && (
+          <p className="app-body text-app-muted">
+            You have a payout request awaiting review. You can file another once it is resolved.
+          </p>
+        )}
+      </PageSection>
 
       {/* Payout request history */}
-      <section className="space-y-3">
-        <h2 className="app-h2 text-app-ink">Payout requests</h2>
+      <PageSection title="Payout requests">
         {requests.length === 0 ? (
-          <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
-            <p className="app-body text-app-muted">No payout requests yet.</p>
-          </div>
+          <EmptyState
+            title="You haven't requested a payout yet"
+            description="Once you have a cleared balance, request a payout here and an administrator will release it to your M-Pesa number. Every request you make stays on this list with its outcome."
+          />
         ) : (
-          <Table>
+          <Table layout="fixed">
             <THead>
-              <TH>Amount</TH>
-              <TH>Status</TH>
-              <TH>Note</TH>
-              <TH className="text-right">Requested</TH>
+              <TH className="w-[20%]">Amount</TH>
+              <TH className="w-[20%]">Status</TH>
+              <TH className="w-[40%]">Note</TH>
+              <TH className="w-[20%] text-right">Requested</TH>
             </THead>
             <tbody>
               {requests.map((req) => (
@@ -321,27 +335,33 @@ export default function FarmerLedgerPage(): React.ReactElement {
             </tbody>
           </Table>
         )}
-      </section>
+      </PageSection>
 
       {/* Settlement ledger — PAID-order line items */}
-      <section className="space-y-3">
-        <h2 className="app-h2 text-app-ink">Payments received</h2>
-        <p className="app-meta text-app-muted">
-          Each payment is held in escrow until the buyer confirms receipt, at which point it clears.
-          You can then request a payout, which an administrator releases.
-        </p>
+      <PageSection
+        title="Payments received"
+        description="Each payment is held in escrow until the buyer confirms receipt, at which point it clears. You can then request a payout, which an administrator releases."
+      >
         {lineItems.length === 0 ? (
-          <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
-            <p className="app-body text-app-muted">No payments received yet.</p>
-          </div>
+          <EmptyState
+            title="No buyer has paid you yet"
+            description="Every payment a buyer makes will be listed here with its escrow state, so you can always see which money is still held and which has cleared."
+            hints={[
+              {
+                label: 'See your orders',
+                href: '/dashboard/farmer/orders',
+                description: 'payment follows an order being placed',
+              },
+            ]}
+          />
         ) : (
-          <Table>
+          <Table layout="fixed">
             <THead>
-              <TH>Ref</TH>
-              <TH>Item</TH>
-              <TH className="text-right">Amount</TH>
-              <TH>Escrow</TH>
-              <TH className="text-right">Received</TH>
+              <TH className="w-[12%]">Ref</TH>
+              <TH className="w-[30%]">Item</TH>
+              <TH className="w-[18%] text-right">Amount</TH>
+              <TH className="w-[22%]">Escrow</TH>
+              <TH className="w-[18%] text-right">Received</TH>
             </THead>
             <tbody>
               {lineItems.map((item) => (
@@ -371,7 +391,7 @@ export default function FarmerLedgerPage(): React.ReactElement {
             </tbody>
           </Table>
         )}
-      </section>
+      </PageSection>
 
       {/* Payout request modal */}
       <Modal
@@ -409,6 +429,6 @@ export default function FarmerLedgerPage(): React.ReactElement {
           />
         </div>
       </Modal>
-    </div>
+    </Page>
   );
 }

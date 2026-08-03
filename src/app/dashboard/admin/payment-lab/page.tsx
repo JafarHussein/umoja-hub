@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Alert } from '@/components/app';
+import { Button, Alert, Page, PageHeader } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role } from '@/types';
 import { PAYMENT_LAB_ACTIONS, type PaymentLabAction } from '@/lib/validation/paymentLabSchema';
@@ -213,27 +213,24 @@ export default function AdminPaymentLabPage(): React.ReactElement {
   ];
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="app-h1 text-app-ink">Payment Lab</h1>
-          <p className="app-body mt-1 max-w-2xl text-app-muted">
-            Drive payment scenarios against live orders and watch orders, notifications, audit, and
-            trust react exactly as in production. The only thing simulated is the M-Pesa callback.
-          </p>
-        </div>
-        <span
-          className={cn(
-            'app-label inline-flex shrink-0 items-center rounded-app-pill px-2 py-0.5',
-            data.simulationActive
-              ? 'bg-app-brand-surface text-app-brand'
-              : 'bg-app-sunken text-app-muted'
-          )}
-        >
-          {data.provider}
-        </span>
-      </div>
+      <PageHeader
+        title="Payment Lab"
+        description="Drive payment scenarios against live orders and watch orders, notifications, audit, and trust react exactly as in production. The only thing simulated is the M-Pesa callback."
+        actions={
+          <span
+            className={cn(
+              'app-label inline-flex shrink-0 items-center rounded-app-pill px-2.5 py-1',
+              data.simulationActive
+                ? 'bg-app-brand-surface text-app-brand'
+                : 'bg-app-sunken text-app-muted'
+            )}
+          >
+            {data.provider}
+          </span>
+        }
+      />
 
       {!data.simulationActive && (
         <Alert tone="warning">
@@ -353,6 +350,6 @@ export default function AdminPaymentLabPage(): React.ReactElement {
           </div>
         )}
       </section>
-    </div>
+    </Page>
   );
 }

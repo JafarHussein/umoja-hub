@@ -3,7 +3,20 @@ import Link from 'next/link';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
-import { Card, Table, THead, TH, TR, TD, Button } from '@/components/app';
+import {
+  EmptyState,
+  MetricGrid,
+  MetricTile,
+  Page,
+  PageHeader,
+  PageSection,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  Button,
+} from '@/components/app';
 import { PortfolioVisibility } from '@/types';
 
 // Employer overview — discover verified student talent. Shows how many public
@@ -16,15 +29,6 @@ interface ViewRow {
   tier: string;
   slug: string | undefined;
   viewedAt: string;
-}
-
-function Stat({ label, value }: { label: string; value: string | number }): React.ReactElement {
-  return (
-    <Card>
-      <p className="app-label text-app-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-app-ink">{value}</p>
-    </Card>
-  );
 }
 
 export default async function EmployerOverviewPage(): Promise<React.ReactElement> {
@@ -65,62 +69,70 @@ export default async function EmployerOverviewPage(): Promise<React.ReactElement
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="app-h1 text-app-ink">Discover talent</h1>
-          <p className="app-body text-app-muted">
-            Verified student portfolios, reviewed and certified by lecturers.
-          </p>
-        </div>
-        <Link href="/dashboard/employer/talent">
-          <Button variant="primary" size="md">
-            Search talent
-          </Button>
-        </Link>
-      </div>
+    <Page>
+      <PageHeader
+        title="Discover talent"
+        description="Student portfolios where every project has been reviewed and signed off by a lecturer. What you are looking at is checked work, not a self-reported CV."
+        actions={
+          <Link href="/dashboard/employer/talent">
+            <Button variant="primary">Search talent</Button>
+          </Link>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Stat label="Public portfolios available" value={publicCount} />
-        <Stat label="Your recent views" value={views.length} />
-      </div>
+      <MetricGrid columns={2}>
+        <MetricTile
+          label="Public portfolios available"
+          value={publicCount}
+          emphasis
+          caption="Students who have opened their verified work to employers."
+        />
+        <MetricTile
+          label="Your recent views"
+          value={views.length}
+          caption="Portfolios you have opened. Students are not told who viewed them."
+        />
+      </MetricGrid>
 
-      {rows.length > 0 ? (
-        <Table>
-          <THead>
-            <TH>Student</TH>
-            <TH>Tier</TH>
-            <TH>Viewed</TH>
-            <TH />
-          </THead>
-          <tbody>
-            {rows.map((r) => (
-              <TR key={r.id}>
-                <TD className="app-body-strong text-app-ink">{r.name}</TD>
-                <TD>{r.tier}</TD>
-                <TD>{r.viewedAt}</TD>
-                <TD className="text-right">
-                  {r.slug ? (
-                    <Link href={`/portfolio/${r.slug}`} className="app-link text-app-accent">
-                      View
-                    </Link>
-                  ) : null}
-                </TD>
-              </TR>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <Card>
-          <p className="app-body text-app-muted">
-            You haven&apos;t viewed any portfolios yet. Start with{' '}
-            <Link href="/dashboard/employer/talent" className="app-link text-app-accent">
-              Search talent
-            </Link>
-            .
-          </p>
-        </Card>
-      )}
-    </div>
+      <PageSection title="Recently viewed">
+        {rows.length > 0 ? (
+          <Table layout="fixed">
+            <THead>
+              <TH className="w-[40%]">Student</TH>
+              <TH className="w-[22%]">Tier</TH>
+              <TH className="w-[22%]">Viewed</TH>
+              <TH className="w-[16%] text-right">
+                <span className="sr-only">Actions</span>
+              </TH>
+            </THead>
+            <tbody>
+              {rows.map((r) => (
+                <TR key={r.id}>
+                  <TD className="app-body-strong text-app-ink">{r.name}</TD>
+                  <TD>{r.tier}</TD>
+                  <TD>{r.viewedAt}</TD>
+                  <TD className="text-right">
+                    {r.slug ? (
+                      <Link
+                        href={`/portfolio/${r.slug}`}
+                        className="app-body-strong text-app-brand hover:text-app-brand-hover"
+                      >
+                        View
+                      </Link>
+                    ) : null}
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        ) : (
+          <EmptyState
+            title="You haven't opened a portfolio yet"
+            description="Portfolios you look at are kept here so you can return to a candidate without searching for them again. Start with a search — you can filter by tier, technology and institution."
+            action={{ label: 'Search talent', href: '/dashboard/employer/talent' }}
+          />
+        )}
+      </PageSection>
+    </Page>
   );
 }

@@ -29,6 +29,7 @@ function Icon({ d }: { d: string }): React.ReactElement {
 
 const ADMIN_NAV: IAppNavSpec[] = [
   {
+    section: 'Verification',
     label: 'Farmer Verification',
     href: '/dashboard/admin/verification-queue',
     icon: (
@@ -36,6 +37,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Verification',
     label: 'Supplier Verification',
     href: '/dashboard/admin/supplier-verification',
     icon: (
@@ -43,6 +45,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Verification',
     label: 'Lecturer Verification',
     href: '/dashboard/admin/lecturer-verification',
     icon: (
@@ -50,6 +53,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Money',
     label: 'Payouts',
     href: '/dashboard/admin/payouts',
     icon: (
@@ -57,6 +61,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Money',
     label: 'Escrow',
     href: '/dashboard/admin/escrow',
     icon: (
@@ -64,6 +69,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Money',
     label: 'Mediation',
     href: '/dashboard/admin/mediation',
     icon: (
@@ -71,13 +77,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
-    label: 'Group Tokens',
-    href: '/dashboard/admin/group-tokens',
-    icon: (
-      <Icon d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-    ),
-  },
-  {
+    section: 'Money',
     label: 'Payment Lab',
     href: '/dashboard/admin/payment-lab',
     icon: (
@@ -85,6 +85,15 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Content',
+    label: 'Group Tokens',
+    href: '/dashboard/admin/group-tokens',
+    icon: (
+      <Icon d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+    ),
+  },
+  {
+    section: 'Content',
     label: 'Brief Contexts',
     href: '/dashboard/admin/brief-contexts',
     icon: (
@@ -92,6 +101,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Content',
     label: 'Knowledge Hub CMS',
     href: '/dashboard/admin/knowledge',
     icon: (
@@ -99,6 +109,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Insight',
     label: 'Impact Summary',
     href: '/dashboard/admin/impact-summary',
     icon: (
@@ -106,6 +117,7 @@ const ADMIN_NAV: IAppNavSpec[] = [
     ),
   },
   {
+    section: 'Insight',
     label: 'Price Analytics',
     href: '/dashboard/admin/price-analytics',
     icon: (

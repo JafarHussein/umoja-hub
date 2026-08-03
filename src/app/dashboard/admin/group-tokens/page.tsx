@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Select, Alert } from '@/components/app';
+import { Button, Input, Page, PageHeader, Select, Alert } from '@/components/app';
 import { Role } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -114,15 +114,12 @@ export default function AdminGroupTokensPage(): React.ReactElement {
   }
 
   return (
-    <div className="max-w-xl space-y-6">
+    <Page width="focus">
       {/* Header */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Group Tokens</h1>
-        <p className="app-body mt-1 text-app-muted">
-          Mint a single-use join code for a cooperative group. The code is texted to the recipient
-          farmer, who redeems it from their settings pane. Each code works once and then expires.
-        </p>
-      </div>
+      <PageHeader
+        title="Group Tokens"
+        description="Mint a single-use join code for a cooperative group. The code is texted to the recipient farmer, who redeems it from their profile. Each code works once and then expires."
+      />
 
       {/* Mint result */}
       {result && (
@@ -149,7 +146,7 @@ export default function AdminGroupTokensPage(): React.ReactElement {
       {/* Mint form */}
       <form
         onSubmit={(e) => void mint(e)}
-        className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4"
+        className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6"
       >
         <h2 className="app-h2 text-app-ink">Mint a join code</h2>
 
@@ -187,6 +184,6 @@ export default function AdminGroupTokensPage(): React.ReactElement {
           Mint token
         </Button>
       </form>
-    </div>
+    </Page>
   );
 }

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import GroupOrderCard from '@/components/foodhub/GroupOrderCard';
 import { CoopInsightsPanel } from '@/components/foodhub/CoopInsightsPanel';
-import { VerificationBadge } from '@/components/app';
+import { EmptyState, Page, PageHeader, VerificationBadge } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role } from '@/types';
 import type { CooperativeInsights } from '@/lib/intelligence/cooperativeInsights';
@@ -148,37 +148,32 @@ export default function FarmerGroupPage() {
 
   if (status === 'loading') {
     return (
-      <div className="space-y-6">
+      <Page>
         <GroupSkeleton />
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Header — read-only hub: no create/join controls */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Farmer Groups</h1>
-        <p className="app-meta mt-0.5 max-w-prose text-app-muted">
-          View your cooperative rosters and collective input-purchase history. Membership is
-          managed by an administrator.
-        </p>
-      </div>
+      <PageHeader
+        title="My Cooperative"
+        description="Your cooperative rosters and the input purchases the group has made together. Buying inputs as a group is what gets you supplier prices a single farm cannot reach. Membership is managed by an administrator."
+      />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Groups list */}
         <div className="lg:col-span-1">
-          <h2 className="app-h2 mb-4 text-app-ink">Your Groups</h2>
+          <h2 className="app-h2 mb-5 text-app-ink">Your groups</h2>
           {isLoadingGroups ? (
             <GroupSkeleton />
           ) : groups.length === 0 ? (
-            <div className="rounded-app-card border border-app-hairline bg-app-card py-12 text-center">
-              <p className="app-body mb-2 text-app-muted">No groups yet</p>
-              <p className="app-meta text-app-faint">
-                An administrator can add you to a cooperative, or you can link an institutional
-                group token from your settings.
-              </p>
-            </div>
+            <EmptyState
+              title="You are not in a cooperative yet"
+              description="Cooperatives let neighbouring farms order inputs together at a price no single farm would be quoted. An administrator can add you to one, or you can link an institutional group token from your profile."
+              action={{ label: 'Link a group token', href: '/dashboard/farmer/profile' }}
+            />
           ) : (
             <div className="space-y-3">
               {groups.map((group) => (
@@ -206,13 +201,12 @@ export default function FarmerGroupPage() {
         {/* Group detail */}
         <div className="lg:col-span-2">
           {!selectedGroup ? (
-            <div className="flex h-48 items-center justify-center rounded-app-card border border-app-hairline bg-app-card">
-              <p className="app-body text-app-muted">
-                Select a group to see its roster and order history
-              </p>
-            </div>
+            <EmptyState
+              title="Choose a cooperative to see inside it"
+              description="Pick a group on the left and its roster, price insights and shared input orders will open here."
+            />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Group header + manager variant */}
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -250,9 +244,10 @@ export default function FarmerGroupPage() {
                 {isLoadingDetail ? (
                   <GroupSkeleton />
                 ) : selectedGroup.members.length === 0 ? (
-                  <div className="rounded-app-card border border-app-hairline bg-app-card py-8 text-center">
-                    <p className="app-body text-app-muted">No members to show.</p>
-                  </div>
+                  <EmptyState
+                    title="This cooperative has no members listed"
+                    description="Members are added by an administrator. Once they are, each one appears here with their verification status so you know who you are buying alongside."
+                  />
                 ) : (
                   <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
                     {selectedGroup.members.map((member) => (
@@ -296,11 +291,10 @@ export default function FarmerGroupPage() {
                 {isLoadingDetail ? (
                   <GroupSkeleton />
                 ) : groupOrders.length === 0 ? (
-                  <div className="rounded-app-card border border-app-hairline bg-app-card py-8 text-center">
-                    <p className="app-body text-app-muted">
-                      No group orders for this cooperative yet.
-                    </p>
-                  </div>
+                  <EmptyState
+                    title="This cooperative hasn't ordered together yet"
+                    description="When a member proposes a shared input order, it appears here with the price per member and how many have joined — so you can decide whether to be one of them before the deadline."
+                  />
                 ) : (
                   <div className="space-y-4">
                     {groupOrders.map((order) => (
@@ -330,6 +324,6 @@ export default function FarmerGroupPage() {
           )}
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

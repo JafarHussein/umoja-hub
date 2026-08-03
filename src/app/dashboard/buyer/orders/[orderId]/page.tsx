@@ -19,6 +19,8 @@ import {
 } from '@/types';
 import {
   Button,
+  EmptyState,
+  Page,
   Select,
   Textarea,
   Alert,
@@ -331,45 +333,41 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   // ── Loading ─────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="max-w-2xl space-y-6">
-        <div className="space-y-1.5">
-          <div className="skeleton h-3 w-20 rounded" />
-          <div className="skeleton h-7 w-40 rounded" />
+      <Page width="focus">
+        <div className="space-y-2">
+          <div className="skeleton h-3 w-24 rounded" />
+          <div className="skeleton h-8 w-48 rounded" />
         </div>
         <div className="skeleton h-40 rounded-app-card" />
         <div className="skeleton h-48 rounded-app-card" />
-      </div>
+      </Page>
     );
   }
 
   // ── Not found ────────────────────────────────────────────────────────────
   if (pageState === 'not_found' || !order) {
     return (
-      <div className="max-w-2xl">
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body text-app-muted">Order not found.</p>
-          <Link
-            href="/dashboard/buyer/orders"
-            className="app-body mt-4 inline-flex text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
-          >
-            ← Back to orders
-          </Link>
-        </div>
-      </div>
+      <Page width="focus">
+        <EmptyState
+          title="We can't find that order"
+          description="The link may be out of date, or the order may belong to a different account. Your other orders are all listed together."
+          action={{ label: 'Back to my orders', href: '/dashboard/buyer/orders' }}
+        />
+      </Page>
     );
   }
 
   // ── Error ────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="max-w-2xl">
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
-          <p className="app-body mb-3 text-app-muted">Could not load this order.</p>
-          <Button variant="secondary" onClick={() => void fetchOrder()}>
-            Retry
-          </Button>
-        </div>
-      </div>
+      <Page width="focus">
+        <EmptyState
+          title="We could not load this order"
+          description="Whatever you have paid is still held in escrow — this screen just could not reach the order's details."
+          action={{ label: 'Try again', onClick: () => void fetchOrder() }}
+          secondaryAction={{ label: 'Back to my orders', href: '/dashboard/buyer/orders' }}
+        />
+      </Page>
     );
   }
 
@@ -418,7 +416,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   ];
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <Page width="focus">
       {/* Back link */}
       <Link
         href="/dashboard/buyer/orders"
@@ -439,8 +437,8 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       {/* Page header */}
       <div>
         <p className="app-data-m text-app-faint">{order.orderReferenceId}</p>
-        <h1 className="app-h1 capitalize text-app-ink">{order.cropName}</h1>
-        <div className="mt-2 flex items-center gap-2">
+        <h1 className="app-h1 mt-1 capitalize text-app-ink">{order.cropName}</h1>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <StatusPill
             state={paymentPillState(order.paymentStatus)}
             label={ORDER_PAYMENT_LABEL[order.paymentStatus]}
@@ -502,7 +500,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       {/* Where the produce is right now — reported by the farmer */}
       {order.fulfillmentStage &&
         order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
             <p className="app-label text-app-muted">Latest from {order.farmer.firstName}</p>
             <p className="app-body-strong mt-0.5 text-app-ink">
               {FULFILLMENT_STAGE_LABEL[order.fulfillmentStage]}
@@ -516,7 +514,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         )}
 
       {/* Progress timeline */}
-      <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+      <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
         <p className="app-label text-app-muted">Progress</p>
         <OrderTimelineDetailed
           paymentStatus={order.paymentStatus}
@@ -555,7 +553,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         order.paymentStatus === OrderPaymentStatus.REFUNDED) && (
         <Link
           href={`/dashboard/buyer/orders/${order._id}/receipt`}
-          className="flex items-center justify-between gap-3 rounded-app-card border border-app-hairline bg-app-card p-4 transition-colors duration-150 hover:bg-app-sunken"
+          className="flex items-center justify-between gap-3 rounded-app-card border border-app-hairline bg-app-card p-6 transition-colors duration-150 hover:bg-app-sunken"
         >
           <div>
             <p className="app-body-strong text-app-ink">View receipt</p>
@@ -573,7 +571,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
       {/* PENDING_PAYMENT — waiting for M-Pesa */}
       {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
-        <div className="space-y-2 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <div className="space-y-2 rounded-app-card border border-app-hairline bg-app-card p-6">
           <div className="flex items-center gap-2.5">
             <div
               className="h-2 w-2 flex-shrink-0 animate-pulse rounded-app-pill bg-app-warning"
@@ -601,7 +599,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
       {/* FAILED — the payment did not go through; offer a way forward */}
       {order.paymentStatus === OrderPaymentStatus.FAILED && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-body-strong text-app-ink">Payment was not completed</p>
           <p className="app-body text-app-muted">
             No money left your account. You can try paying for this order again — the price and
@@ -620,7 +618,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
       {/* IN_FULFILLMENT — mark as received */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">Confirm receipt</p>
           <p className="app-body text-app-muted">
             Have you received your order from {order.farmer.firstName}? Confirming releases your
@@ -650,7 +648,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
       {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && !activeMediation && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">Problem with this order?</p>
 
           {!canEscalate ? (
@@ -724,7 +722,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
       {/* COMPLETED + not rated — rating form */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && !hasRated && (
-        <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">Rate this order</p>
           <form onSubmit={(e) => void handleRatingSubmit(e)} className="space-y-4">
             {/* Star selector */}
@@ -774,10 +772,13 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
       {/* COMPLETED + already rated */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && hasRated && (
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
-          <p className="app-body text-app-muted">You have rated this order.</p>
+        <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+          <p className="app-body text-app-muted">
+            You have rated this order. Your rating feeds {order.farmer.firstName}&apos;s trust score,
+            which is what other buyers see before they order.
+          </p>
         </div>
       )}
-    </div>
+    </Page>
   );
 }

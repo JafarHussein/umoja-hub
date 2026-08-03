@@ -4,7 +4,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Modal, Table, THead, TH, TR, TD } from '@/components/app';
+import {
+  Button,
+  EmptyState,
+  Modal,
+  Page,
+  PageHeader,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimeline, OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 import { FulfillmentStageControl } from '@/components/foodhub/FulfillmentStageControl';
@@ -287,73 +298,77 @@ export default function FarmerOrdersPage(): React.ReactElement {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-6 w-24 rounded" />
+      <Page>
+        <div className="skeleton h-8 w-32 rounded" />
         <ListSkeleton rows={5} />
-      </div>
+      </Page>
     );
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load orders</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchOrders()}>
-          Retry
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="Orders" />
+        <EmptyState
+          title="We could not load your orders"
+          description="Your orders and any money held against them are unaffected — this screen just could not reach them. Trying again usually clears it."
+          action={{ label: 'Try again', onClick: () => void fetchOrders() }}
+        />
+      </Page>
     );
   }
 
+  const awaitingDispatch = orders.filter((o) => o.canConfirmDispatch).length;
+
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Orders</h1>
-        <p className="app-meta mt-0.5 text-app-muted">
-          {orders.length} order{orders.length !== 1 ? 's' : ''}
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Orders"
+        description="Every order buyers have placed with you, and where each one has reached. Confirm dispatch as soon as you hand produce to the carrier — that is what starts the clock on your payment."
+        meta={
+          orders.length > 0 ? (
+            <>
+              <span>
+                {orders.length} order{orders.length !== 1 ? 's' : ''}
+              </span>
+              {awaitingDispatch > 0 && (
+                <span className="text-app-warning">
+                  {awaitingDispatch} waiting for you to confirm dispatch
+                </span>
+              )}
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Empty state */}
       {orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-app-card border border-app-hairline bg-app-card py-16 text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <rect
-                x="3"
-                y="5"
-                width="14"
-                height="12"
-                rx="1"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="text-app-faint"
-              />
-              <path
-                d="M7 5V4a3 3 0 016 0v1"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="text-app-faint"
-              />
-            </svg>
-          </div>
-          <p className="app-title mb-1 text-app-ink">No orders yet</p>
-          <p className="app-body text-app-muted">
-            Orders will appear here once buyers order your produce.
-          </p>
-        </div>
+        <EmptyState
+          title="When buyers order your produce, you'll track every stage here"
+          description="Each order arrives with the buyer's details and the amount they have paid into escrow. You confirm dispatch, they confirm receipt, and the money is released to you — this screen shows exactly where each order sits in that sequence."
+          hints={[
+            {
+              label: 'List more produce',
+              href: '/dashboard/farmer/listings',
+              description: 'buyers can only order what you have published',
+            },
+            {
+              label: 'Check your trust score',
+              href: '/dashboard/farmer/profile',
+              description: 'a higher score puts you above other farmers in search',
+            },
+          ]}
+        />
       ) : (
         /* Orders table */
-        <Table>
+        <Table layout="fixed">
           <THead>
-            <TH>Ref</TH>
-            <TH>Order</TH>
-            <TH className="text-right">Amount</TH>
-            <TH>Progress</TH>
-            <TH className="text-right">
+            <TH className="w-[11%]">Ref</TH>
+            <TH className="w-[27%]">Order</TH>
+            <TH className="w-[17%] text-right">Amount</TH>
+            <TH className="w-[21%]">Progress</TH>
+            <TH className="w-[24%] text-right">
               <span className="sr-only">Actions</span>
             </TH>
           </THead>
@@ -650,6 +665,6 @@ export default function FarmerOrdersPage(): React.ReactElement {
           </div>
         </Modal>
       )}
-    </div>
+    </Page>
   );
 }

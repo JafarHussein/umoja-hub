@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Button, Table, THead, TH, TR, TD } from '@/components/app';
+import { EmptyState, Page, PageHeader, Table, THead, TH, TR, TD } from '@/components/app';
 import { Role } from '@/types';
 
 interface ICommodityRow {
@@ -134,13 +134,14 @@ export default function AdminPriceAnalyticsPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="app-title mb-2 text-app-ink">Could not load price analytics</p>
-        <p className="app-body mb-4 text-app-muted">Check your connection and try again.</p>
-        <Button variant="secondary" onClick={() => void fetchAnalytics()}>
-          Retry
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="Price Analytics" />
+        <EmptyState
+          title="We could not load price analytics"
+          description="The underlying price history is intact — this screen just could not reach the aggregated view."
+          action={{ label: 'Try again', onClick: () => void fetchAnalytics() }}
+        />
+      </Page>
     );
   }
 
@@ -153,13 +154,12 @@ export default function AdminPriceAnalyticsPage(): React.ReactElement {
   });
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="app-h1 text-app-ink">Price Analytics</h1>
-        <p className="app-meta mt-1 text-app-faint">
-          Platform-wide market intelligence · generated {generatedAt}
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Price Analytics"
+        description="What produce is actually selling for across the platform, aggregated from completed orders rather than asking prices. This is the data farmers see recommendations from."
+        meta={<span>Generated {generatedAt}</span>}
+      />
 
       <Section
         title="Commodity overview"
@@ -238,7 +238,7 @@ export default function AdminPriceAnalyticsPage(): React.ReactElement {
             {data.regionalComparison.map((r) => (
               <div
                 key={r.crop}
-                className="rounded-app-card border border-app-hairline bg-app-card p-4"
+                className="rounded-app-card border border-app-hairline bg-app-card p-6"
               >
                 <p className="app-label mb-2 capitalize text-app-ink">{r.crop}</p>
                 <ul className="space-y-1">
@@ -323,6 +323,6 @@ export default function AdminPriceAnalyticsPage(): React.ReactElement {
           </Table>
         )}
       </Section>
-    </div>
+    </Page>
   );
 }

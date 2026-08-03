@@ -39,7 +39,7 @@ function formatDate(iso: string): string {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
   return (
-    <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
       <p className="app-label mb-2 text-app-muted">{title}</p>
       {children}
     </div>
@@ -78,7 +78,7 @@ function StatusBadge({ status }: { status: SupplierVerificationStatus }): React.
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-app-focus space-y-10">
       <div className="skeleton h-3 w-36 rounded" />
       <div className="skeleton h-7 w-52 rounded" />
       <div className="skeleton h-40 rounded-app-card" />
@@ -208,7 +208,7 @@ export default function AdminSupplierDetailPage(): React.ReactElement {
   ).filter((r): r is { label: string; value: string } => r !== null);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-app-focus space-y-10">
       {/* Back link */}
       <Link
         href="/dashboard/admin/supplier-verification"

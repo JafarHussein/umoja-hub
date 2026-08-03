@@ -4,7 +4,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Modal, StatusPill, Textarea, type StatusState } from '@/components/app';
+import {
+  Alert,
+  Button,
+  EmptyState,
+  Modal,
+  Page,
+  PageHeader,
+  StatusPill,
+  Textarea,
+  type StatusState,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role, EscrowState, MediationOutcome } from '@/types';
 
@@ -98,10 +108,10 @@ function SummaryCard({
   meta: string;
 }): React.ReactElement {
   return (
-    <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-4">
+    <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
       <p className="app-label text-app-muted">{label}</p>
-      <p className="app-data-l mt-2 font-app-mono text-app-ink">{formatKES(amount)}</p>
-      <p className="app-meta mt-1 text-app-faint">{meta}</p>
+      <p className="app-data-l mt-3 font-app-mono text-app-ink">{formatKES(amount)}</p>
+      <p className="app-meta mt-2 text-pretty text-app-muted">{meta}</p>
     </div>
   );
 }
@@ -211,32 +221,29 @@ export default function AdminEscrowPage(): React.ReactElement {
 
   if (status === 'loading' || (pageState === 'loading' && items.length === 0 && !totals)) {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-7 w-40 rounded" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <Page>
+        <div className="skeleton h-8 w-40 rounded" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="skeleton h-24 rounded-app-card" />
+            <div key={i} className="skeleton h-32 rounded-app-card" />
           ))}
         </div>
         <div className="skeleton h-64 rounded-app-card" />
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Header */}
-      <div>
-        <h1 className="app-h1 text-app-ink">Escrow</h1>
-        <p className="app-body mt-1 max-w-2xl text-app-muted">
-          Funds the platform holds in custody on behalf of farmers. Money is released only after the
-          buyer confirms receipt; an open dispute holds it until you resolve the mediation.
-        </p>
-      </div>
+      <PageHeader
+        title="Escrow"
+        description="Funds the platform holds in custody on behalf of farmers. Money is released only after the buyer confirms receipt; an open dispute holds it until you resolve the mediation."
+      />
 
       {/* Totals */}
       {totals && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <SummaryCard
             label="Held in escrow"
             amount={totals.heldKES}
@@ -295,16 +302,16 @@ export default function AdminEscrowPage(): React.ReactElement {
 
       {/* Ledger */}
       {pageState === 'error' ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="app-title mb-2 text-app-ink">Could not load the escrow ledger</p>
-          <Button variant="secondary" onClick={() => void fetchLedger(filter)}>
-            Retry
-          </Button>
-        </div>
+        <EmptyState
+          title="We could not load the escrow ledger"
+          description="No funds have moved. The ledger is the record, not the mechanism — a failure to read it does not change what is held."
+          action={{ label: 'Try again', onClick: () => void fetchLedger(filter) }}
+        />
       ) : items.length === 0 ? (
-        <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-12 text-center">
-          <p className="app-body text-app-muted">No orders in this view.</p>
-        </div>
+        <EmptyState
+          title="Nothing in this view"
+          description="No order currently sits in this escrow state. Switch the filter above to see money held elsewhere in the cycle, or check back as buyers confirm receipt."
+        />
       ) : (
         <>
           <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
@@ -313,9 +320,9 @@ export default function AdminEscrowPage(): React.ReactElement {
               return (
                 <div
                   key={item.orderId}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-app-hairline px-4 py-4 last:border-0"
+                  className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-app-hairline px-6 py-5 last:border-0"
                 >
-                  <div className="min-w-0 flex-1 basis-[16rem]">
+                  <div className="min-w-0 flex-1 basis-[16rem] space-y-1">
                     <p className="app-body-strong truncate text-app-ink">
                       {item.cropName}{' '}
                       <span className="app-meta font-app-mono text-app-faint">
@@ -326,11 +333,15 @@ export default function AdminEscrowPage(): React.ReactElement {
                       {item.farmerName} ← {item.buyerName} · paid {formatDate(item.paidAt)}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <span className="app-data-l whitespace-nowrap font-app-mono text-app-ink">
+                  {/* Fixed widths on the money and status columns so the figures
+                      line up down the ledger regardless of pill label length. */}
+                  <div className="flex shrink-0 items-center gap-5">
+                    <span className="app-data-l w-36 whitespace-nowrap text-right font-app-mono text-app-ink">
                       {formatKES(item.amountKES)}
                     </span>
-                    <StatusPill state={pill.state} label={pill.label} />
+                    <span className="flex w-32 justify-start">
+                      <StatusPill state={pill.state} label={pill.label} />
+                    </span>
                     <Link
                       href={`/dashboard/admin/escrow/${item.orderId}`}
                       className="app-label rounded-app-control px-2 py-1 text-app-muted transition-colors duration-150 hover:bg-app-sunken hover:text-app-ink"
@@ -476,6 +487,6 @@ export default function AdminEscrowPage(): React.ReactElement {
           </Alert>
         </div>
       )}
-    </div>
+    </Page>
   );
 }

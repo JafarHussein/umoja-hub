@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
-import { Button, Alert } from '@/components/app';
+import { Button, Alert, Page, PageHeader } from '@/components/app';
 
 interface IContextEntry {
   id: string;
@@ -25,7 +25,7 @@ type PublishState = 'idle' | 'submitting';
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <div className="skeleton h-7 w-48 rounded" />
       <div className="skeleton h-64 rounded-app-card" />
     </div>
@@ -164,36 +164,41 @@ export default function BriefContextsPage(): React.ReactElement {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="app-label mb-1 text-app-faint">Admin · Brief Context Library</p>
-          <h1 className="app-h1 text-app-ink">Brief Contexts</h1>
-          {library && (
-            <p className="app-data-m mt-1 text-app-muted">
-              Version {library.version} · Published{' '}
-              {new Date(library.createdAt).toLocaleDateString('en-KE', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </p>
-          )}
-        </div>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setShowPublishForm((v) => !v);
-            setPublishError(null);
-          }}
-        >
-          {showPublishForm ? 'Cancel' : 'Publish new version'}
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title="Brief Contexts"
+        description="The source material the AI draws on when it writes a student's project brief. Publishing a new version changes what every brief generated from now on is grounded in."
+        meta={
+          library ? (
+            <>
+              <span>Version {library.version}</span>
+              <span>
+                published{' '}
+                {new Date(library.createdAt).toLocaleDateString('en-KE', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            </>
+          ) : undefined
+        }
+        actions={
+          <Button
+            variant={showPublishForm ? 'secondary' : 'primary'}
+            onClick={() => {
+              setShowPublishForm((v) => !v);
+              setPublishError(null);
+            }}
+          >
+            {showPublishForm ? 'Cancel' : 'Publish new version'}
+          </Button>
+        }
+      />
 
       {/* Publish form */}
       {showPublishForm && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">New library version</p>
           <p className="app-body text-app-muted">
             Paste a JSON array of context objects. Each object must include{' '}
@@ -274,6 +279,6 @@ export default function BriefContextsPage(): React.ReactElement {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

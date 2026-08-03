@@ -4,7 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role, ProjectTrack, StudentTier } from '@/types';
-import { Button, Input } from '@/components/app';
+import {
+  Button,
+  Card,
+  Form,
+  FormActions,
+  FormSection,
+  Input,
+  Page,
+  PageHeader,
+} from '@/components/app';
 import { cn } from '@/lib/cn';
 
 type FormState = 'form' | 'generating' | 'error';
@@ -47,7 +56,9 @@ function SegButton({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        'app-body h-9 flex-1 rounded-app-control border transition-colors duration-150',
+        // Sized to its label with a floor, not stretched: a two-option row and
+        // a three-option row then read as the same kind of control.
+        'app-body h-11 min-w-[9rem] rounded-app-control border px-5 transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring',
         selected
           ? 'border-app-brand bg-app-brand text-app-on-brand'
@@ -128,15 +139,15 @@ export default function NewProjectPage(): React.ReactElement {
 
   if (status === 'loading') {
     return (
-      <div className="max-w-2xl space-y-1.5">
-        <div className="skeleton h-7 w-48 rounded" />
-      </div>
+      <Page width="focus">
+        <div className="skeleton h-8 w-56 rounded" />
+      </Page>
     );
   }
 
   if (formState === 'generating') {
     return (
-      <div className="max-w-2xl space-y-5">
+      <Page width="focus">
         <div className="flex items-center gap-2.5">
           <div
             className="h-2 w-2 flex-shrink-0 animate-pulse rounded-app-pill bg-app-brand"
@@ -152,78 +163,95 @@ export default function NewProjectPage(): React.ReactElement {
           <div className="skeleton h-4 w-32 rounded" />
           <div className="skeleton h-4 w-40 rounded" />
         </div>
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="app-h1 text-app-ink">Create project brief</h1>
+    <Page width="focus">
+      <PageHeader
+        title="Create project brief"
+        description="Two choices decide what you get: the kind of work you want to do, and how hard it should be. We write the brief from those, and a lecturer reviews what you build against it."
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {/* Error bar */}
-        {formState === 'error' && (
-          <div
-            className="flex items-center justify-between gap-4 rounded-app-control border border-app-danger/30 bg-app-danger-surface p-3"
-            role="alert"
-          >
-            <p className="app-body text-app-danger">{errorMessage ?? 'Something went wrong.'}</p>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="app-body shrink-0 text-app-danger underline underline-offset-2 transition-opacity duration-150 hover:opacity-80"
+      <Card pad="generous">
+        <Form onSubmit={handleSubmit} noValidate>
+          {/* Error bar */}
+          {formState === 'error' && (
+            <div
+              className="flex items-center justify-between gap-4 rounded-app-control border border-app-danger/30 bg-app-danger-surface p-4"
+              role="alert"
             >
-              Retry
-            </button>
-          </div>
-        )}
+              <p className="app-body text-app-danger">{errorMessage ?? 'Something went wrong.'}</p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="app-body shrink-0 text-app-danger underline underline-offset-2 transition-opacity duration-150 hover:opacity-80"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
-        {/* Track selector */}
-        <div className="space-y-1.5">
-          <p className="app-body text-app-muted">Project track</p>
-          <div className="flex gap-2" role="group" aria-label="Project track">
-            {(Object.values(ProjectTrack) as ProjectTrack[]).map((t) => (
-              <SegButton key={t} selected={track === t} onClick={() => setTrack(t)}>
-                {TRACK_LABEL[t]}
-              </SegButton>
-            ))}
-          </div>
-          <p className="app-meta text-app-faint">{TRACK_HINT[track]}</p>
-        </div>
+          <FormSection
+            title="What kind of project?"
+            description="The track decides where the work comes from — a brief we write for you, or a real open-source repository."
+            divided={false}
+          >
+            {/* Track selector */}
+            <div className="space-y-2.5">
+              <p className="app-label text-app-body">Project track</p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Project track">
+                {(Object.values(ProjectTrack) as ProjectTrack[]).map((t) => (
+                  <SegButton key={t} selected={track === t} onClick={() => setTrack(t)}>
+                    {TRACK_LABEL[t]}
+                  </SegButton>
+                ))}
+              </div>
+              <p className="app-meta text-app-muted">{TRACK_HINT[track]}</p>
+            </div>
 
-        {/* Tier selector */}
-        <div className="space-y-1.5">
-          <p className="app-body text-app-muted">Difficulty tier</p>
-          <div className="flex gap-2" role="group" aria-label="Difficulty tier">
-            {(Object.values(StudentTier) as StudentTier[]).map((t) => (
-              <SegButton key={t} selected={tier === t} onClick={() => setTier(t)}>
-                {TIER_LABEL[t]}
-              </SegButton>
-            ))}
-          </div>
-        </div>
+            {/* GitHub URL — OPEN_SOURCE only */}
+            {track === ProjectTrack.OPEN_SOURCE && (
+              <Input
+                type="url"
+                label="GitHub repository URL"
+                placeholder="https://github.com/owner/repo"
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+                hint="Must be a public repository (https://github.com/owner/repo)"
+                error={
+                  githubUrlTouched && !isGithubUrlValid
+                    ? 'Enter a valid GitHub repository URL'
+                    : undefined
+                }
+              />
+            )}
+          </FormSection>
 
-        {/* GitHub URL — OPEN_SOURCE only */}
-        {track === ProjectTrack.OPEN_SOURCE && (
-          <Input
-            type="url"
-            label="GitHub repository URL"
-            placeholder="https://github.com/owner/repo"
-            value={githubUrl}
-            onChange={(e) => setGithubUrl(e.target.value)}
-            hint="Must be a public repository (https://github.com/owner/repo)"
-            error={
-              githubUrlTouched && !isGithubUrlValid
-                ? 'Enter a valid GitHub repository URL'
-                : undefined
-            }
-          />
-        )}
+          <FormSection
+            title="How hard should it be?"
+            description="Pick the tier that stretches you. A harder tier carries more weight in your portfolio, but it is also more to see through to a verified decision."
+          >
+            <div className="space-y-2.5">
+              <p className="app-label text-app-body">Difficulty tier</p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Difficulty tier">
+                {(Object.values(StudentTier) as StudentTier[]).map((t) => (
+                  <SegButton key={t} selected={tier === t} onClick={() => setTier(t)}>
+                    {TIER_LABEL[t]}
+                  </SegButton>
+                ))}
+              </div>
+            </div>
+          </FormSection>
 
-        <Button type="submit" disabled={isSubmitDisabled} className="w-full">
-          Generate project brief
-        </Button>
-      </form>
-    </div>
+          <FormActions note="Generating the brief takes 10–20 seconds. You can start over if it isn't the project you wanted.">
+            <Button type="submit" disabled={isSubmitDisabled}>
+              Generate project brief
+            </Button>
+          </FormActions>
+        </Form>
+      </Card>
+    </Page>
   );
 }

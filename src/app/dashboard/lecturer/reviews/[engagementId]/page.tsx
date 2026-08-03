@@ -106,7 +106,7 @@ function MetaPill({ children }: { children: React.ReactNode }): React.ReactEleme
 
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <div className="skeleton h-4 w-24 rounded" />
       <div className="skeleton h-7 w-56 rounded" />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
@@ -182,7 +182,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'unverified') {
     return (
-      <div className="max-w-6xl">
+      <div className="mx-auto w-full max-w-app-page">
         <Alert tone="warning">
           <span className="app-body-strong">Account not yet verified.</span> An administrator must
           verify your account before you can submit reviews.
@@ -193,7 +193,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'not_found' || !engagement) {
     return (
-      <div className="max-w-6xl">
+      <div className="mx-auto w-full max-w-app-page">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
           <p className="app-body text-app-muted">Engagement not found or already reviewed.</p>
           <Link
@@ -209,7 +209,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   if (pageState === 'error') {
     return (
-      <div className="max-w-6xl">
+      <div className="mx-auto w-full max-w-app-page">
         <div className="rounded-app-card border border-app-hairline bg-app-card p-8 text-center">
           <p className="app-body text-app-muted">Could not load this submission.</p>
           <Link
@@ -229,7 +229,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
   const activeDoc = engagement.documents[activeDocTab];
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="mx-auto w-full max-w-app-page space-y-10">
       <Link
         href="/dashboard/lecturer/queue"
         className="app-body inline-flex text-app-muted transition-colors duration-150 hover:text-app-ink"
@@ -340,7 +340,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
           {/* Peer review scores */}
           {peerReview && (
-            <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-4">
+            <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
               <p className="app-label text-app-muted">Peer review scores</p>
               {revealedPeerReview && (
                 <p className="app-meta text-app-faint">
@@ -382,7 +382,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
         {/* Right — review form or success */}
         <div className="md:col-span-5">
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-4">
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
             {submitted ? (
               <div className="space-y-4 py-4 text-center">
                 <div className="flex items-center justify-center gap-2">

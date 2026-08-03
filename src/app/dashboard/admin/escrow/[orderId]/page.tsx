@@ -17,7 +17,7 @@ export default function AdminEscrowDetailPage(): React.ReactElement {
   const orderId = typeof params?.['orderId'] === 'string' ? params['orderId'] : '';
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="mx-auto w-full max-w-app-focus space-y-10">
       <Link
         href="/dashboard/admin/escrow"
         className="app-body inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink print:hidden"
