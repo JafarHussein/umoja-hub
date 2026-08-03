@@ -16,8 +16,11 @@ export function WebsiteNav() {
           <Link href="/auth/login" className="font-body text-read-meta text-fg-muted hover:text-fg">
             Sign in
           </Link>
+          {/* "Get started" is the sign-UP path. It used to point at /auth/login,
+              which sent every new visitor to the returning-user screen and left
+              them to find the create-account link at the bottom of it. */}
           <Link
-            href="/auth/login"
+            href="/onboarding/welcome"
             className="inline-flex min-h-[40px] items-center rounded bg-brand px-3 font-body text-read-meta font-medium text-brand-fg transition-colors duration-150 hover:bg-brand-hover"
           >
             Get started

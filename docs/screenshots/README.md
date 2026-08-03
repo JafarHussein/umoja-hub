@@ -5,7 +5,7 @@ This directory holds the images referenced by the root `README.md`.
 Capture them with the exact filenames listed in [`../SCREENSHOT_PLAN.md`](../SCREENSHOT_PLAN.md):
 
 ```bash
-npm run db:seed && npm run seed:demo   # data
+npm run demo
 npm run dev                            # serve (separate terminal)
 tsx scripts/capture-screenshots.ts     # capture all PNGs into this folder
 ```

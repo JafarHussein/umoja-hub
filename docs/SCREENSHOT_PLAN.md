@@ -15,8 +15,7 @@ Two ways to capture:
 ## Prerequisites
 
 ```bash
-npm run db:seed       # 5 canonical accounts (farmer, buyer, student, lecturer, admin)
-npm run seed:demo     # full ecosystem (adds NGO / Employer / Institution + months of data)
+npm run demo
 npm run dev           # dev server on :3000 (separate terminal)
 npx playwright install chromium
 ```
@@ -31,18 +30,18 @@ BASE_URL=http://localhost:3000 tsx scripts/capture-screenshots.ts
 
 Output lands in `docs/screenshots/`. Dynamic routes (`:listingId`, `:articleSlug`,
 `:portfolioSlug`, `:engagementId`) are resolved automatically from seeded data; if any are
-skipped, run `npm run seed:demo` again so the collections are populated, then re-run.
+skipped, run `npm run demo` again so the collections are populated, then re-run.
 
 ## Demo accounts
 
 | Role | Account | Source |
 |---|---|---|
-| Farmer | `wanjiku.kamau@gmail.com` | `db:seed` |
-| Buyer | `kamau.githinji@gmail.com` | `db:seed` |
-| Student | `brian.otieno@students.uonbi.ac.ke` | `db:seed` |
-| Lecturer | `g.ndungu@uonbi.ac.ke` | `db:seed` |
-| Admin | `umojahub16@gmail.com` | `db:seed` |
-| NGO / Employer / Institution | first user of each role | `seed:demo` (generated emails) |
+| Farmer | `wanjiku.kamau@gmail.com` | `npm run demo` |
+| Buyer | `kamau.githinji@gmail.com` | `npm run demo` |
+| Student | `brian.otieno@students.uonbi.ac.ke` | `npm run demo` |
+| Lecturer | `g.ndungu@uonbi.ac.ke` | `npm run demo` |
+| Admin | `umojahub16@gmail.com` | `npm run demo` |
+| NGO / Employer / Institution | first user of each role | `npm run demo` (generated emails) |
 
 ## Checklist — exact filenames
 

@@ -22,15 +22,27 @@ interface IFieldShellProps {
   label?: string | undefined;
   error?: string | undefined;
   hint?: string | undefined;
+  optional?: boolean | undefined;
   children: React.ReactNode;
 }
 
-function FieldShell({ id, label, error, hint, children }: IFieldShellProps): React.ReactElement {
+function FieldShell({
+  id,
+  label,
+  error,
+  hint,
+  optional,
+  children,
+}: IFieldShellProps): React.ReactElement {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={id} className="app-label text-app-body">
+        <label htmlFor={id} className="app-label flex items-baseline gap-2 text-app-body">
           {label}
+          {/* Marked, not announced. Written into the label rather than appended
+              as "(optional)" text so a column of optional fields reads as a calm
+              list instead of four shouted repetitions of the same word. */}
+          {optional && <span className="app-meta font-normal text-app-faint">Optional</span>}
         </label>
       )}
       {children}
@@ -63,19 +75,21 @@ export interface IInputProps extends React.InputHTMLAttributes<HTMLInputElement>
   label?: string;
   error?: string | undefined;
   hint?: string | undefined;
+  optional?: boolean | undefined;
 }
 
 export function Input({
   label,
   error,
   hint,
+  optional,
   id,
   className,
   ...props
 }: IInputProps): React.ReactElement {
   const fieldId = useFieldId(label, id);
   return (
-    <FieldShell id={fieldId} label={label} error={error} hint={hint}>
+    <FieldShell id={fieldId} label={label} error={error} hint={hint} optional={optional}>
       <input
         {...props}
         id={fieldId}
@@ -91,19 +105,21 @@ export interface ITextareaProps extends React.TextareaHTMLAttributes<HTMLTextAre
   label?: string;
   error?: string | undefined;
   hint?: string | undefined;
+  optional?: boolean | undefined;
 }
 
 export function Textarea({
   label,
   error,
   hint,
+  optional,
   id,
   className,
   ...props
 }: ITextareaProps): React.ReactElement {
   const fieldId = useFieldId(label, id);
   return (
-    <FieldShell id={fieldId} label={label} error={error} hint={hint}>
+    <FieldShell id={fieldId} label={label} error={error} hint={hint} optional={optional}>
       <textarea
         {...props}
         id={fieldId}
@@ -119,12 +135,14 @@ export interface ISelectProps extends React.SelectHTMLAttributes<HTMLSelectEleme
   label?: string;
   error?: string | undefined;
   hint?: string | undefined;
+  optional?: boolean | undefined;
 }
 
 export function Select({
   label,
   error,
   hint,
+  optional,
   id,
   className,
   children,
@@ -132,7 +150,7 @@ export function Select({
 }: ISelectProps): React.ReactElement {
   const fieldId = useFieldId(label, id);
   return (
-    <FieldShell id={fieldId} label={label} error={error} hint={hint}>
+    <FieldShell id={fieldId} label={label} error={error} hint={hint} optional={optional}>
       <select
         {...props}
         id={fieldId}

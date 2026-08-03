@@ -27,6 +27,12 @@ const farmerDataSchema = new Schema(
     primaryLanguage: { type: String },
     // Onboarding Stage 3 (AUTH-05) — Cloudinary URL of a land ownership token.
     landOwnershipToken: { type: String },
+    // Cooperative membership (V3 role setup). Self-declared at onboarding: a
+    // farmer usually knows their cooperative by name long before the platform
+    // has a FarmerGroup record for it, so this is free text rather than a
+    // reference. When a matching group exists, `cooperativeGroupId` links it.
+    cooperativeName: { type: String, trim: true },
+    cooperativeGroupId: { type: Schema.Types.ObjectId, ref: 'FarmerGroup' },
   },
   { _id: false }
 );
@@ -54,6 +60,11 @@ const studentDataSchema = new Schema(
     institutionalEmailPin: { type: String, select: false },
     institutionalEmailPinExpiry: { type: Date },
     academicRegistrationNumber: { type: String, trim: true },
+    // Course of study and expected completion (V3 role setup). The year is a
+    // plain number rather than a date — students know the year, not the day,
+    // and employers filter on it.
+    programme: { type: String, trim: true },
+    graduationYear: { type: Number },
   },
   { _id: false }
 );
@@ -69,6 +80,10 @@ const lecturerDataSchema = new Schema(
     departmentAssignment: { type: String, trim: true },
     academicStaffId: { type: String, trim: true },
     facultyCredentialLetterUrl: { type: String },
+    // Academic position (V3 role setup) — 'Lecturer', 'Senior Lecturer',
+    // 'Professor' and so on. Free text: title ladders differ between Kenyan
+    // institutions, and an enum would reject valid ones.
+    position: { type: String, trim: true },
   },
   { _id: false }
 );
@@ -127,6 +142,11 @@ const buyerDataSchema = new Schema(
     businessRegistrationNumber: { type: String, trim: true },
     corporatePaybill: { type: String, trim: true },
     procurementScale: { type: String, trim: true },
+    // Sourcing preferences (V3 role setup). These shape what the marketplace
+    // surfaces first; they are preferences, never filters — a buyer can always
+    // order outside them.
+    preferredCounties: [{ type: String }],
+    purchaseInterests: [{ type: String }],
   },
   { _id: false }
 );
@@ -227,6 +247,8 @@ export interface IUserDocument extends Document {
     farmSizeAcres?: number;
     primaryLanguage?: string;
     landOwnershipToken?: string;
+    cooperativeName?: string;
+    cooperativeGroupId?: mongoose.Types.ObjectId;
   };
   studentData?: {
     currentTier: string;
@@ -241,6 +263,8 @@ export interface IUserDocument extends Document {
     institutionalEmailPin?: string;
     institutionalEmailPinExpiry?: Date;
     academicRegistrationNumber?: string;
+    programme?: string;
+    graduationYear?: number;
   };
   lecturerData?: {
     universityAffiliation?: string;
@@ -249,6 +273,7 @@ export interface IUserDocument extends Document {
     departmentAssignment?: string;
     academicStaffId?: string;
     facultyCredentialLetterUrl?: string;
+    position?: string;
   };
   buyerData?: {
     verificationStatus: string;
@@ -258,6 +283,8 @@ export interface IUserDocument extends Document {
     businessRegistrationNumber?: string;
     corporatePaybill?: string;
     procurementScale?: string;
+    preferredCounties?: string[];
+    purchaseInterests?: string[];
   };
   ngoData?: {
     organizationId?: mongoose.Types.ObjectId;

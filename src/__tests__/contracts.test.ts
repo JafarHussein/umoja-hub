@@ -79,6 +79,7 @@ const UNSCHEDULED_CRON_ROUTES: Record<string, string> = {
   'cron/cleanup-sessions': 'inlined into weekly-jobs; manual invocation only',
   'cron/impact-summary': 'inlined into weekly-jobs; manual invocation only',
   'cron/market-insight': 'inlined into weekly-jobs; manual invocation only',
+  'cron/prune-pending-accounts': 'inlined into weekly-jobs; manual invocation only',
 };
 
 /**
@@ -105,8 +106,6 @@ const PUBLIC_API_ROUTES: Record<string, string> = {
   health: 'liveness probe',
   'marketplace/[listingId]/fairness': 'buyer price fairness on a public listing page (D14)',
   'marketplace/suggest': 'search suggestions for the public marketplace',
-  'onboarding/draft': 'pre-auth onboarding draft, reconciled at OAuth callback',
-  'onboarding/username-available': 'pre-auth availability check',
   suppliers: 'public verified-supplier directory',
   transparency: 'public transparency figures',
   'webhooks/daraja': 'M-Pesa callback; authenticated by the payment provider, not a session',

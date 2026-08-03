@@ -235,7 +235,7 @@ They are the same mechanism applied to two economies. A **verified identity → 
 
 - **Persisted notifications** — a real notification center (8 types: order, escrow, verification, payout, review, portfolio-view, group, system) with read/unread state.
 - **Semantic design-token system** — one `primitive → semantic → component` token vocabulary that themes are *value-maps* over; ships light today, architected for dark/high-contrast/large-text; reduced-motion aware; colour-blind-safe state colours.
-- **Ecosystem simulation engine** — generate months of internally consistent, fully reversible demo activity (`seed:demo` / `seed:reset` / `seed:rebuild` / `seed:validate`).
+- **Ecosystem simulation engine** — generate months of internally consistent, fully reversible demo activity (a single `npm run demo`).
 
 ---
 
@@ -599,8 +599,7 @@ All figures are measured from the repository, not estimated.
 ### One-time setup
 
 ```bash
-npm run db:seed      # canonical accounts (farmer, buyer, student, lecturer, admin)
-npm run seed:demo    # months of internally consistent activity (~1,150 records)
+npm run demo
 npm run dev          # http://localhost:3000
 ```
 
@@ -615,16 +614,16 @@ npm run dev          # http://localhost:3000
 | 5 | **Admin escrow + mediation + payouts** | `umojahub16@gmail.com` | The platform is *operated*, not assumed. |
 | 6 | **A public verified portfolio** | (none) | The student credential, queryable by anyone. |
 | 7 | **Lecturer review rubric** | `g.ndungu@uonbi.ac.ke` | Verification has a defensible standard. |
-| 8 | **Employer talent search** | (seed:demo employer) | The credential closes the loop into hiring. |
+| 8 | **Employer talent search** | (generated employer account) | The credential closes the loop into hiring. |
 | 9 | **Admin impact analytics** | `umojahub16@gmail.com` | The whole ecosystem, cron-aggregated. |
 
 ### Talking points
 
 - *"No number here is hand-set."* Trust and escrow are **derived** — open any farmer and the score reconciles with the orders beneath it.
 - *"The credential is tamper-evident."* Documents are hashed on receipt; the audit log is append-only; the reviewer is named.
-- *"It's reversible."* `npm run seed:reset` removes exactly the demo records and nothing else — real users are never in the ledger.
+- *"It's reversible."* `npm run demo:reset` removes exactly the demo records and nothing else — real users are never in the ledger.
 
-When you're done: `npm run seed:reset` (clean up) or `npm run seed:rebuild` (a fresh, different ecosystem).
+When you're done: `npm run demo:reset` (clean up) or `npm run demo` (a fresh, different ecosystem).
 
 ---
 
@@ -652,11 +651,10 @@ Every required variable is validated at startup by `src/lib/env.ts` (the app **t
 ### Data commands
 
 ```bash
-npm run db:seed        # baseline accounts + listings + knowledge
-npm run seed:demo      # generate a full simulated ecosystem (tracked + reversible)
-npm run seed:validate  # assert the ecosystem is internally consistent (16 checks)
-npm run seed:reset     # delete exactly the latest demo run's records
-npm run seed:rebuild   # reset + regenerate a fresh, different ecosystem
+npm run demo
+npm run demo:validate  # assert the ecosystem is internally consistent (16 checks)
+npm run demo:reset     # delete exactly the latest demo run's records
+npm run demo   # reset + regenerate a fresh, different ecosystem
 ```
 
 ### Troubleshooting
@@ -665,8 +663,8 @@ npm run seed:rebuild   # reset + regenerate a fresh, different ecosystem
 |---|---|
 | App throws on startup | A required env var is missing — check `src/lib/env.ts`. |
 | `MONGODB_URI` not in example file | Add it manually (it's required but omitted from the example header). |
-| Escrow/trust look empty | Run `npm run seed:demo`. |
-| Demo data piling up | `npm run seed:reset` (or `seed:rebuild`). |
+| Escrow/trust look empty | Run `npm run demo`. |
+| Demo data piling up | `npm run demo:reset`, or just `npm run demo` to rebuild. |
 | Payments in dev | `PAYMENT_PROVIDER=simulation` (default) — never use production M-Pesa keys in dev. |
 
 ---
@@ -679,10 +677,10 @@ npm run lint           # ESLint
 npm run test           # Jest — 71 suites, 777 tests
 npm run test:coverage  # coverage gates (validation 95%, trust 90%)
 npm run test:e2e       # Playwright
-npm run seed:validate  # runtime invariant checks on a seeded ecosystem
+npm run demo:validate  # runtime invariant checks on a seeded ecosystem
 ```
 
-**Coverage focus.** Validation schemas (`src/lib/validation/`, 95%) and the trust engine (`src/lib/trust/`, 90%) carry the highest gates — the two places where a bug is most expensive. Critical workflows under test include order/escrow state transitions, payment simulation, trust calculation, all Zod schemas, RBAC middleware, and the education review pipeline. Beyond unit tests, `seed:validate` runs 16 cross-record invariant checks (no impossible states, escrow reconciliation, trust tier-vs-score bands) against a generated ecosystem.
+**Coverage focus.** Validation schemas (`src/lib/validation/`, 95%) and the trust engine (`src/lib/trust/`, 90%) carry the highest gates — the two places where a bug is most expensive. Critical workflows under test include order/escrow state transitions, payment simulation, trust calculation, all Zod schemas, RBAC middleware, and the education review pipeline. Beyond unit tests, `npm run demo:validate` runs 16 cross-record invariant checks (no impossible states, escrow reconciliation, trust tier-vs-score bands) against a generated ecosystem.
 
 ---
 

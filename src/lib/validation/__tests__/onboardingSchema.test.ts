@@ -2,7 +2,7 @@ import {
   roleSelectionSchema,
   usernameSchema,
   passwordSchema,
-  onboardingDraftSchema,
+  passwordSetupSchema,
   credentialsLoginSchema,
   passwordResetRequestSchema,
   passwordResetConfirmSchema,
@@ -65,23 +65,37 @@ describe('passwordSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
   });
 });
 
-describe('onboardingDraftSchema (AUTH_ONBOARDING_FLOW_V2)', () => {
-  it('accepts a valid farmer draft', () => {
+describe('passwordSetupSchema (AUTH_ONBOARDING_FLOW_V3)', () => {
+  it('accepts a matching username and password pair', () => {
     expect(
-      onboardingDraftSchema.safeParse({
+      passwordSetupSchema.safeParse({
         username: 'wanjiku',
         password: 'Farmer2024',
-        role: 'FARMER',
+        confirmPassword: 'Farmer2024',
       }).success
     ).toBe(true);
   });
 
-  it('rejects an ADMIN role at the schema boundary (security invariant #1)', () => {
+  it('rejects a mismatched confirmation', () => {
+    const result = passwordSetupSchema.safeParse({
+      username: 'wanjiku',
+      password: 'Farmer2024',
+      confirmPassword: 'Farmer2025',
+    });
+    expect(result.success).toBe(false);
+    // The error must land on the confirm field so the form highlights the box
+    // the user has to fix, not the one they got right.
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(['confirmPassword']);
+    }
+  });
+
+  it('rejects a weak password even when both entries match', () => {
     expect(
-      onboardingDraftSchema.safeParse({
-        username: 'sneaky',
-        password: 'Sneaky2024',
-        role: 'ADMIN',
+      passwordSetupSchema.safeParse({
+        username: 'wanjiku',
+        password: 'alllowercase',
+        confirmPassword: 'alllowercase',
       }).success
     ).toBe(false);
   });
@@ -139,7 +153,14 @@ describe('roleSelectionSchema', () => {
   });
 
   it('rejects ADMIN (allowlist only)', () => {
+    // Under V3 role selection happens after OAuth, so this schema is the last
+    // thing standing between a signed-in stranger and an admin account.
     expect(roleSelectionSchema.safeParse({ role: 'ADMIN' }).success).toBe(false);
+  });
+
+  it.each(['NGO', 'EMPLOYER', 'INSTITUTION'])('rejects the provisioned role %s', (role) => {
+    // Organisation accounts are provisioned out of band, never self-claimed.
+    expect(roleSelectionSchema.safeParse({ role }).success).toBe(false);
   });
 
   it('rejects a missing role', () => {
@@ -149,6 +170,20 @@ describe('roleSelectionSchema', () => {
 
 describe('identity schemas', () => {
   const base = { lastName: 'Otieno', phoneNumber: '0712345678', county: 'Kisumu' as const };
+  const student = {
+    ...base,
+    academicRegistrationNumber: 'SCT-001-2024',
+    universityAffiliation: 'University of Nairobi',
+    programme: 'BSc Computer Science',
+    graduationYear: new Date().getFullYear() + 1,
+  };
+  const lecturer = {
+    ...base,
+    departmentAssignment: 'Computer Science',
+    academicStaffId: 'STAFF-9',
+    universityAffiliation: 'JKUAT',
+    position: 'Senior Lecturer',
+  };
 
   it('farmer accepts base fields', () => {
     expect(farmerIdentitySchema.safeParse(base).success).toBe(true);
@@ -175,40 +210,107 @@ describe('identity schemas', () => {
     ).toBe(true);
   });
 
-  it('student requires academicRegistrationNumber and universityAffiliation', () => {
+  it('student requires registration, university, programme and graduation year', () => {
     expect(studentIdentitySchema.safeParse(base).success).toBe(false);
-    expect(
-      studentIdentitySchema.safeParse({
-        ...base,
-        academicRegistrationNumber: 'SCT-001-2024',
-        universityAffiliation: 'University of Nairobi',
-      }).success
-    ).toBe(true);
+    expect(studentIdentitySchema.safeParse(student).success).toBe(true);
   });
 
   it('student schema ignores a hand-typed githubUsername', () => {
-    const result = studentIdentitySchema.safeParse({
-      ...base,
-      academicRegistrationNumber: 'SCT-001-2024',
-      universityAffiliation: 'University of Nairobi',
-      githubUsername: 'attacker',
-    });
+    // githubUsername is OAuth-sourced (UI-12) and must never be client-settable.
+    const result = studentIdentitySchema.safeParse({ ...student, githubUsername: 'attacker' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect('githubUsername' in result.data).toBe(false);
     }
   });
 
-  it('lecturer requires department and staff ID', () => {
+  it('lecturer requires department, staff ID and position', () => {
     expect(lecturerIdentitySchema.safeParse(base).success).toBe(false);
-    expect(
-      lecturerIdentitySchema.safeParse({
-        ...base,
-        departmentAssignment: 'Computer Science',
-        academicStaffId: 'STAFF-9',
-        universityAffiliation: 'JKUAT',
-      }).success
-    ).toBe(true);
+    expect(lecturerIdentitySchema.safeParse(lecturer).success).toBe(true);
+    const { position: _omitted, ...withoutPosition } = lecturer;
+    expect(lecturerIdentitySchema.safeParse(withoutPosition).success).toBe(false);
+  });
+
+  describe('farm details (V3 role setup)', () => {
+    it('accepts produce categories and a farm size', () => {
+      expect(
+        farmerIdentitySchema.safeParse({
+          ...base,
+          cropsGrown: ['VEGETABLES', 'CEREALS'],
+          farmSizeAcres: 3.5,
+          cooperativeName: 'Kirinyaga Growers Cooperative',
+        }).success
+      ).toBe(true);
+    });
+
+    it('leaves an independent farmer free to skip every optional field', () => {
+      // A farmer who has not planted this season must still be able to finish.
+      expect(farmerIdentitySchema.safeParse(base).success).toBe(true);
+    });
+
+    it('rejects a crop outside the shared produce vocabulary', () => {
+      expect(farmerIdentitySchema.safeParse({ ...base, cropsGrown: ['UNOBTAINIUM'] }).success).toBe(
+        false
+      );
+    });
+
+    it('rejects a zero or negative farm size', () => {
+      expect(farmerIdentitySchema.safeParse({ ...base, farmSizeAcres: 0 }).success).toBe(false);
+      expect(farmerIdentitySchema.safeParse({ ...base, farmSizeAcres: -2 }).success).toBe(false);
+    });
+  });
+
+  describe('buyer sourcing preferences (V3 role setup)', () => {
+    const buyer = {
+      ...base,
+      organizationName: 'Mavuno Foods Ltd',
+      businessRegistrationNumber: 'PVT-12345',
+    };
+
+    it('accepts preferred counties and purchase interests', () => {
+      expect(
+        buyerIdentitySchema.safeParse({
+          ...buyer,
+          preferredCounties: ['Kirinyaga', 'Nyandarua'],
+          purchaseInterests: ['VEGETABLES'],
+        }).success
+      ).toBe(true);
+    });
+
+    it('treats both as optional — they rank results, they do not gate them', () => {
+      expect(buyerIdentitySchema.safeParse(buyer).success).toBe(true);
+    });
+
+    it('rejects a county that does not exist', () => {
+      expect(
+        buyerIdentitySchema.safeParse({ ...buyer, preferredCounties: ['Atlantis'] }).success
+      ).toBe(false);
+    });
+  });
+
+  describe('graduation year bounds', () => {
+    const year = new Date().getFullYear();
+
+    it('accepts a year inside the plausible window', () => {
+      expect(studentIdentitySchema.safeParse({ ...student, graduationYear: year }).success).toBe(
+        true
+      );
+    });
+
+    it('rejects a year far in the past or future (typo guard)', () => {
+      expect(
+        studentIdentitySchema.safeParse({ ...student, graduationYear: year - 20 }).success
+      ).toBe(false);
+      expect(
+        studentIdentitySchema.safeParse({ ...student, graduationYear: year + 20 }).success
+      ).toBe(false);
+    });
+
+    it('rejects a non-integer year', () => {
+      expect(
+        studentIdentitySchema.safeParse({ ...student, graduationYear: year + 0.5 }).success
+      ).toBe(false);
+    });
   });
 });
 
