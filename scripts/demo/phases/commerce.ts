@@ -10,12 +10,13 @@ import { createDoc, pushNotification } from '../helpers';
 import { between, daysAgo, daysAfter, hoursAfter } from '../clock';
 import {
   CROPS,
-  LISTING_TEMPLATES,
-  QUALITY_ADJECTIVES,
-  LISTING_HOOKS,
-  FARMING_COUNTIES,
-  type Crop,
+  CROPS_BY_ID,
+  adjectivesFor,
+  hooksFor,
+  cropsGrownIn,
+  type SeedCrop,
 } from '../dictionaries';
+import { listingDescription, pickupDescription } from '../text';
 import { cropImageUrl } from '../images';
 import { priceSeries } from '../priceSeries';
 import { recalculate } from '../../../src/lib/trust/farmerTrustCalculator';
@@ -66,10 +67,42 @@ function buyerWeight(archetype: string): number {
   }
 }
 
-// Listings tell a story rather than naming a crop. Trust-bearing farmers post
-// more "verified" listings; everyone gets a quality adjective + a hook.
-function listingTitle(rng: SimContext['rng'], crop: Crop): string {
-  return `${rng.pick(QUALITY_ADJECTIVES)} ${crop.name} — ${rng.pick(LISTING_HOOKS)}`;
+// Listings tell a story rather than naming a crop. Both the adjective and the
+// hook are drawn from what the crop can honestly claim, so a crate crop
+// advertises crates, milk advertises the morning round, and neither is ever
+// described as hand-picked.
+function listingTitle(rng: SimContext['rng'], crop: SeedCrop): string {
+  return `${rng.pick(adjectivesFor(crop))} ${crop.name} — ${rng.pick(hooksFor(crop))}`;
+}
+
+/**
+ * The crops this farmer posts, in order, cycling if they list more times than
+ * they have crops. Drawn from the produce they declared on their profile so the
+ * marketplace never contradicts the farm — and falling back to their county's
+ * produce for any farmer the world built without a crop list.
+ */
+function cropsFor(farmer: PersonRef): SeedCrop[] {
+  const own = (farmer.crops ?? []).map((id) => CROPS_BY_ID[id]);
+  if (own.length > 0) return own;
+  const local = cropsGrownIn(farmer.county);
+  return local.length > 0 ? local : CROPS;
+}
+
+// How much of a crop one buyer takes at a time, by trading unit. A restaurant
+// buys kale by the sack of kilos and tomatoes by the crate; ordering "3" of
+// each — as a single range across all units did — makes a KES 150 tomato order
+// sit beside a KES 12,000 one for no reason a buyer would recognise.
+const ORDER_SIZE: Readonly<Record<ListingUnit, [number, number]>> = {
+  [ListingUnit.KG]: [20, 150],
+  [ListingUnit.BAG]: [2, 20],
+  [ListingUnit.CRATE]: [2, 15],
+  [ListingUnit.PIECE]: [50, 400],
+  [ListingUnit.LITRE]: [20, 150],
+};
+
+function orderQuantity(rng: SimContext['rng'], crop: SeedCrop, available: number): number {
+  const [min, max] = ORDER_SIZE[crop.unit];
+  return Math.max(1, rng.int(Math.min(min, available), Math.min(max, available)));
 }
 
 // View counts that reflect standing, not noise: established farmers draw more
@@ -118,15 +151,19 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
     let releasable = 0;
 
     const nListings = rng.int(profile.listings[0], profile.listings[1]);
+    const farmerCrops = cropsFor(farmer);
+    // Rotated by listing index rather than re-rolled, so a farmer posting the
+    // same crop twice shows two different photographs of it instead of the same
+    // picture twice down the feed.
+    const imageRotation = rng.int(0, 9999);
     for (let li = 0; li < nListings; li++) {
-      const crop: Crop = rng.pick(CROPS);
+      // Their headline crop first, then the rest — a farmer's own produce, in
+      // the order they would lead with, never a random draw from the catalogue.
+      const crop = farmerCrops[li % farmerCrops.length] as SeedCrop;
       const price = rng.int(crop.priceMin, crop.priceMax);
-      const initialQty = rng.int(30, 220);
+      const initialQty = rng.int(crop.qtyMin, crop.qtyMax);
       const listedAt = clampPast(between(rng, farmer.joinedAt, daysAgo(3)));
-      const description = rng
-        .pick(LISTING_TEMPLATES)
-        .replace('{crop}', crop.name)
-        .replace('{county}', farmer.county);
+      const description = listingDescription(rng, crop, farmer.county);
       const baseViews = baseViewsFor(rng, farmer.archetype, listedAt);
       // Established farmers post verified listings far more often than newcomers.
       const verifiedListing = rng.bool(
@@ -139,13 +176,17 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
           farmerId: farmer.id,
           title: listingTitle(rng, crop),
           cropName: crop.name,
+          // Set from the crop's registry category, never guessed. Listings
+          // seeded without one were invisible to the feed's category browse and
+          // to every category filter.
+          category: crop.category,
           description,
           quantityAvailable: initialQty,
           unit: crop.unit,
           currentPricePerUnit: price,
           pickupCounty: farmer.county,
-          pickupDescription: `Pickup at ${farmer.county} town, along the main road. Call ahead to arrange collection.`,
-          imageUrls: [cropImageUrl(crop.imageKey, rng.int(1, 9999))],
+          pickupDescription: pickupDescription(rng, farmer.county),
+          imageUrls: [cropImageUrl(crop.id, imageRotation + li)],
           listingStatus: ListingStatus.AVAILABLE,
           isVerifiedListing: verifiedListing,
           buyerContactPreference: rng.bool(0.6)
@@ -175,7 +216,7 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
       for (let oi = 0; oi < nOrders; oi++) {
         const buyer: PersonRef = rng.weighted(buyerPool);
         orderViews += rng.int(2, 8);
-        const qty = rng.int(1, Math.min(8, initialQty));
+        const qty = orderQuantity(rng, crop, initialQty);
         const total = qty * price;
         const orderedAt = clampPast(between(rng, laterOf(listedAt, buyer.joinedAt), daysAgo(1)));
         const outcome = rng.weighted<string>([
@@ -352,7 +393,10 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
   // crop-county in the last 7 days for several combinations.
   const combos = rng.sample(CROPS, 4);
   for (const crop of combos) {
-    const county = rng.pick(FARMING_COUNTIES);
+    // Drawn from the counties that grow it, not from every farming county —
+    // price points for a crop the county has never planted are noise the
+    // recommendation engine would have to weigh as though they were real.
+    const county = rng.pick(crop.grownIn);
     for (let k = 0; k < 3; k++) {
       batcher.add(PriceHistory, 'PriceHistory', {
         cropName: crop.name, county, pricePerUnit: rng.int(crop.priceMin, crop.priceMax),

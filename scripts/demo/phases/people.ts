@@ -18,16 +18,19 @@ import {
   LAST_NAMES,
   FARMING_COUNTIES,
   URBAN_COUNTIES,
-  CROPS,
+  FARM_PROFILES,
+  countiesFor,
+  listableCrops,
   KENYAN_UNIVERSITIES,
   NGO_NAMES,
   EMPLOYERS,
   DEPARTMENTS,
-  FARMER_BIOS,
   BUYER_ORGS,
   STUDENT_INTERESTS,
   TECH_STACKS,
   type NamePart,
+  type FarmProfileId,
+  type SeedCrop,
 } from '../dictionaries';
 import {
   Role,
@@ -235,18 +238,53 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
   }
 
   // ---- Farmers ----
+  // A farmer is built specialisation-first: profile, then a county that profile
+  // is actually farmed in, then the crops that profile grows in that county.
+  // Bio, acreage, `cropsGrown` and every later listing all follow from it, so a
+  // dairy farmer in Uasin Gishu never turns up selling avocados from Nyandarua.
   const FARMER_ARCHETYPES: Array<[string, number]> = [
     ['commercial', 3], ['cooperative', 3], ['veteran', 2], ['seasonal', 3], ['new', 2],
   ];
+  const FARM_PROFILE_WEIGHTS: Array<[FarmProfileId, number]> = [
+    ['horticulture', 4], ['highland-roots', 3], ['cereals', 3],
+    ['dairy', 3], ['fruit', 3], ['mixed', 3], ['pulses', 2],
+  ];
+  // Acreage follows the enterprise: a grain farm is not a two-acre plot, and a
+  // vegetable grower on twelve acres would not be a smallholder.
+  const ACREAGE: Record<FarmProfileId, [number, number]> = {
+    horticulture: [2, 6], 'highland-roots': [3, 9], cereals: [8, 40],
+    pulses: [5, 20], dairy: [4, 15], fruit: [3, 12], mixed: [1, 5],
+  };
+
+  // Every profile is dealt once before any is repeated, and those first farmers
+  // are never the unverified 'new' archetype — an unverified farmer cannot list,
+  // so leaving coverage to a weighted draw is how the feed ends up with a fruit
+  // category containing nothing. The remainder is weighted for a realistic mix.
+  const seedProfiles = rng.shuffle(FARM_PROFILE_WEIGHTS.map(([id]) => id));
+  const ESTABLISHED = FARMER_ARCHETYPES.filter(([a]) => a !== 'new');
+
   for (let i = 0; i < 16; i++) {
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
-    const county = rng.pick(FARMING_COUNTIES);
-    const archetype = rng.weighted(FARMER_ARCHETYPES);
+    const guaranteed = i < seedProfiles.length;
+    const profile = guaranteed ? (seedProfiles[i] as FarmProfileId) : rng.weighted(FARM_PROFILE_WEIGHTS);
+    const county = rng.pick(countiesFor(profile));
+    const archetype = rng.weighted(guaranteed ? ESTABLISHED : FARMER_ARCHETYPES);
     const joinedAt = joinDate(rng, 9);
     const isNew = archetype === 'new';
     const email = makeEmail(p.name, last);
-    const crops = rng.sample(CROPS.map((c) => c.name), rng.int(1, 3));
+    // Ordered, not sampled: the defining crop stays first — it is the one they
+    // lead with and the one their bio speaks about — and commerce posts their
+    // listings in this order. Only the secondary crops are shuffled.
+    // Two or three crops, not one to three: a single-crop farmer posts the same
+    // produce every time, and with sixteen of them the feed loses the secondary
+    // vegetables entirely.
+    const available = listableCrops(profile, county);
+    const crops = [available[0] as SeedCrop, ...rng.shuffle(available.slice(1))].slice(
+      0,
+      rng.int(2, 3)
+    );
+    const acres = ACREAGE[profile];
     const user = ledger.track(
       'User',
       await createDoc(User, {
@@ -262,7 +300,7 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         onboardingStage: isNew ? OnboardingStage.VERIFICATION_UPLOAD : OnboardingStage.COMPLETED,
         isEmailVerified: true,
         profilePhotoUrl: nextFace(p.gender),
-        bio: rng.pick(FARMER_BIOS),
+        bio: rng.pick(FARM_PROFILES[profile].bios),
         farmerData: {
           verificationStatus: isNew ? VerificationStatus.PENDING : VerificationStatus.APPROVED,
           isVerified: !isNew,
@@ -271,15 +309,19 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
           // Sample identity document so the admin verification queue has real
           // evidence to review (specimen image, clearly marked, served locally).
           documentImageUrl: '/images/documents/sample-national-id.svg',
-          cropsGrown: crops,
-          farmSizeAcres: rng.int(1, 12),
+          cropsGrown: crops.map((c) => c.name),
+          farmSizeAcres: rng.int(acres[0], acres[1]),
           primaryLanguage: rng.pick(['English', 'Kiswahili', 'Kikuyu', 'Luo', 'Kalenjin']),
         },
         createdAt: joinedAt,
         updatedAt: joinedAt,
       })
     );
-    world.farmers.push(person(p, last, county, archetype, user._id, joinedAt));
+    world.farmers.push({
+      ...person(p, last, county, archetype, user._id, joinedAt),
+      farmProfile: profile,
+      crops: crops.map((c) => c.id),
+    });
   }
 
   // ---- Buyers ----

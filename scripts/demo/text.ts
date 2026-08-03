@@ -3,6 +3,105 @@
 // brief and process documents the OpenAI route would otherwise generate.
 
 import { Rng } from './rng';
+import type { SeedCrop } from './dictionaries';
+
+// ---------------------------------------------------------------------------
+// Listing descriptions
+//
+// The five interpolated templates this replaced produced eight near-identical
+// listings each across a full run, and read like a form letter: "Fresh {crop}
+// harvested this week from my farm in {county}." Scrolling the feed, the repeat
+// was the first thing you noticed.
+//
+// A description is assembled instead from four independent slots — what was
+// harvested and when, how it was prepared and packed, how collection works, and
+// who the farmer wants to hear from. The middle slot is built from the crop's
+// own `preparation` and `packaging` wording, so a bag crop talks about bags and
+// milk talks about the morning milking. Farmers also do not write in tidy
+// prose: some sentences are clipped, some mention the school fees, and none of
+// them advertise. The combinations run to the thousands, so no two listings in
+// a run collide.
+// ---------------------------------------------------------------------------
+
+const HARVEST_OPENERS: readonly string[] = [
+  'Harvested this week and the crop has done well.',
+  'Just finished harvesting and I have more than my usual buyers can take.',
+  'This is from the block I planted in good time, so it came out clean.',
+  'Fresh off the farm — I only cut what I can move.',
+  'The season has been kind and I have a good quantity ready.',
+  'I have stock ready now and would rather move it than hold it.',
+];
+
+const DAIRY_OPENERS: readonly string[] = [
+  'Milk from the morning milking, available every day.',
+  'I am producing more than the cooperative is taking at the moment.',
+  'Daily supply from my own herd — same quantity every morning.',
+  'Looking for a steady buyer rather than selling day to day.',
+];
+
+const LOGISTICS: readonly string[] = [
+  'Pickup is easiest for me, but I can put it on a lorry going that way if you organise it.',
+  'Collection at the farm. The road is passable in the dry and I can meet you at the tarmac if it has rained.',
+  'I can arrange transport for a full load. Anything smaller and you will need to collect.',
+  'Buyers usually collect. Call the day before so I have it ready and weighed.',
+  'I deliver within town myself. Further than that, we agree on transport separately.',
+  'Collection from the farm or the nearest market day, whichever suits you.',
+];
+
+const CLOSERS: readonly string[] = [
+  'Serious buyers only please — I have had people ask and then disappear.',
+  'Price is negotiable if you are taking the lot.',
+  'I would rather sell to someone who will come back next season.',
+  'Ask me anything about it before you commit. I will tell you straight.',
+  'First come first served, and it does not usually last long.',
+  'Happy to send more photos if you want to see it before travelling.',
+  'I have supplied buyers on here before and they can vouch for the quality.',
+];
+
+/**
+ * A listing description in the farmer's own voice, grounded in the crop's real
+ * packaging and the county it was grown in.
+ */
+export function listingDescription(rng: Rng, crop: SeedCrop, county: string): string {
+  const opener = crop.id === 'dairy' ? rng.pick(DAIRY_OPENERS) : rng.pick(HARVEST_OPENERS);
+
+  const detail =
+    crop.id === 'dairy'
+      ? `${capitalise(crop.preparation)} and held in ${crop.packaging}.`
+      : rng.pick([
+          `${capitalise(crop.preparation)}, then packed in ${crop.packaging}.`,
+          `It is ${crop.preparation} and goes out in ${crop.packaging}.`,
+          `Packed in ${crop.packaging} — ${crop.preparation}.`,
+        ]);
+
+  const place = rng.pick([
+    `Grown here in ${county}.`,
+    `This is all from my own farm in ${county}.`,
+    `Farm is in ${county}.`,
+  ]);
+
+  return [opener, place, detail, rng.pick(LOGISTICS), rng.pick(CLOSERS)].join(' ');
+}
+
+/**
+ * Pickup wording, varied per listing rather than one repeated sentence.
+ *
+ * These are rendered after the UI's own "Collect from {county}." lead-in, so
+ * none of them may open with the county — an earlier variant began `${county} —`
+ * and produced "Collect from Kiambu. Kiambu — I load at the farm...".
+ */
+export function pickupDescription(rng: Rng, county: string): string {
+  return rng.pick([
+    `Farm gate collection in ${county}. Call when you are close and I will come to the road to direct you.`,
+    `Collection point is off the main road in ${county} town. Ample space for a lorry to turn.`,
+    `Pickup at my farm in ${county}. Nearest landmark is the shopping centre — I will send directions once we agree.`,
+    `I load at the farm in the morning, or meet buyers at the ${county} market on market day.`,
+  ]);
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export function aiBrief(rng: Rng, title: string, tier: string): Record<string, unknown> {
   return {

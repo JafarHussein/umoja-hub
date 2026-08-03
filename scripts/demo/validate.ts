@@ -11,6 +11,9 @@
 import mongoose from 'mongoose';
 import './registry';
 import { log } from './db';
+import { CROPS_BY_ID, type SeedCropId } from './dictionaries';
+import { cropImageUrls } from './images';
+import { resolveCrop } from '../../src/lib/taxonomy/crops';
 import {
   Role,
   UserStatus,
@@ -270,6 +273,91 @@ export async function validate(): Promise<boolean> {
     $or: [{ imageUrls: { $size: 0 } }, { imageUrls: { $exists: false } }],
   });
   ok('every listing has an image', imagelessListings === 0, `${imagelessListings} without images`);
+
+  // ---- Marketplace data is believable ----
+  // A lecturer looking at this feed judges it on whether the photograph matches
+  // the produce and the produce matches the place. These four checks encode that
+  // judgement, because a run can otherwise stay green while showing a plate of
+  // food under "Fresh Carrots" — which is exactly what it once did.
+  const allListings = await MarketplaceListing.find({ _id: { $in: listingIds } })
+    .select('cropName category imageUrls pickupCounty farmerId unit currentPricePerUnit')
+    .lean();
+
+  // Every image must come from the audited set — one verified photograph per
+  // crop — rather than from any keyword-resolved host.
+  const wrongImage = allListings.filter((l) => {
+    const crop = resolveCrop(l.cropName ?? '');
+    if (!crop || !(crop in CROPS_BY_ID)) return true;
+    const audited = new Set(cropImageUrls(crop as SeedCropId));
+    const urls = l.imageUrls ?? [];
+    return urls.length === 0 || !urls.every((url) => audited.has(url));
+  });
+  ok(
+    'every listing image is the audited photograph for its crop',
+    wrongImage.length === 0,
+    `${wrongImage.length} mismatched`
+  );
+
+  // Without a category the listing exists but cannot be browsed to.
+  const uncategorised = allListings.filter((l) => !l.category);
+  ok('every listing has a category', uncategorised.length === 0, `${uncategorised.length} uncategorised`);
+
+  // A category tab that opens onto nothing reads as a broken marketplace, so
+  // coverage of everything the catalogue can produce is asserted rather than
+  // left to a weighted draw over sixteen farmers.
+  const seededCategories = new Set(Object.values(CROPS_BY_ID).map((c) => c.category));
+  const listedCategories = new Set(allListings.map((l) => String(l.category)));
+  const emptyCategories = [...seededCategories].filter((c) => !listedCategories.has(String(c)));
+  ok(
+    'every category the catalogue sells has listings behind it',
+    emptyCategories.length === 0,
+    emptyCategories.length > 0 ? `empty: ${emptyCategories.join(', ')}` : `${listedCategories.size} categories`
+  );
+
+  // Produce has to come from somewhere that grows it.
+  const wrongCounty = allListings.filter((l) => {
+    const crop = resolveCrop(l.cropName ?? '');
+    if (!crop || !(crop in CROPS_BY_ID)) return true;
+    return !CROPS_BY_ID[crop as SeedCropId].grownIn.includes(l.pickupCounty ?? '');
+  });
+  ok(
+    'every listing is grown in a county that grows it',
+    wrongCounty.length === 0,
+    `${wrongCounty.length} out of region`
+  );
+
+  // A farmer selling produce they never claimed to grow reads as generated.
+  const farmersById = new Map(
+    (await User.find({ _id: { $in: allListings.map((l) => l.farmerId) } })
+      .select('farmerData.cropsGrown')
+      .lean()
+    ).map((u) => [String(u._id), (u.farmerData?.cropsGrown ?? []) as string[]])
+  );
+  const offProfile = allListings.filter((l) => {
+    const grown = farmersById.get(String(l.farmerId)) ?? [];
+    const crop = resolveCrop(l.cropName ?? '');
+    return !grown.some((name) => resolveCrop(name) === crop);
+  });
+  ok(
+    'every listing is a crop its farmer declares they grow',
+    offProfile.length === 0,
+    `${offProfile.length} off-profile`
+  );
+
+  // Prices are per the listing's own unit, so a crate price must not be checked
+  // against a kilo band. Both bounds come from the seed catalogue.
+  const offPrice = allListings.filter((l) => {
+    const crop = resolveCrop(l.cropName ?? '');
+    if (!crop || !(crop in CROPS_BY_ID)) return true;
+    const c = CROPS_BY_ID[crop as SeedCropId];
+    const price = l.currentPricePerUnit ?? 0;
+    return l.unit !== c.unit || price < c.priceMin || price > c.priceMax;
+  });
+  ok(
+    'every listing is priced in its trading unit, within the Kenyan market band',
+    offPrice.length === 0,
+    `${offPrice.length} out of band`
+  );
 
   // ---- No placeholder text ----
   // A guard against exactly the thing the demo must never show a panel.

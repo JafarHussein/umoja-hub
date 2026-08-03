@@ -15,7 +15,7 @@ import type { SimContext, World } from '../world';
 import { createDoc } from '../helpers';
 import { daysAgo, daysAfter, hoursAfter } from '../clock';
 import { farmConversation, mentorConversation } from '../text';
-import { CROPS } from '../dictionaries';
+import { CROPS_BY_ID, cropsGrownIn } from '../dictionaries';
 import {
   PaymentEventType,
   SimulatedOutcome,
@@ -340,7 +340,10 @@ export async function generateOperations(ctx: SimContext, world: World): Promise
 
   for (const farmer of rng.sample(world.farmers, Math.min(9, world.farmers.length))) {
     if (farmer.archetype === 'new') continue;
-    const crop = rng.pick(CROPS);
+    // A farmer watches the price of what they actually grow. Their own crops
+    // first; their county's produce only if the world built them without a list.
+    const watchable = (farmer.crops ?? []).map((id) => CROPS_BY_ID[id]);
+    const crop = rng.pick(watchable.length > 0 ? watchable : cropsGrownIn(farmer.county));
     // A target a little above today's range — the price they are holding out for.
     const target = Math.round(crop.priceMax * rng.float(1.02, 1.18));
     const triggered = rng.bool(0.35);

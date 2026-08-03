@@ -28,7 +28,8 @@ import {
   usernameFor,
   type DemoAccount,
 } from '../content/accounts';
-import { KENYAN_UNIVERSITIES } from '../dictionaries';
+import { KENYAN_UNIVERSITIES, CROPS_BY_ID, cropsGrownIn, type SeedCropId } from '../dictionaries';
+import { resolveCrop } from '../../../src/lib/taxonomy/crops';
 import { Role, InstitutionType } from '../../../src/types';
 
 // The three universities the canonical students and lecturers belong to. Pinned
@@ -38,6 +39,32 @@ const FOUNDATION_UNIVERSITIES = [
   'Strathmore University',
   'Jomo Kenyatta University of Agriculture and Technology',
 ];
+
+/**
+ * What a canonical farmer can legitimately list, derived from the `cropsGrown`
+ * they already declare in accounts.ts rather than from a second map that could
+ * drift from it. Free text ("tomatoes", "irish", "sweet potatoes") is resolved
+ * through the canonical taxonomy, dropped if the platform does not trade it —
+ * Chebet's tea has no marketplace category, and wheat and peas are not in the
+ * registry at all — and then narrowed to what their pinned county actually
+ * grows. Wanjiku is in Kirinyaga and declares tomatoes, rice and capsicum, so
+ * she lists exactly those; Mwea rice is genuinely a Kirinyaga crop.
+ *
+ * A farmer whose declared crops survive none of that falls back to their
+ * county's produce, so the pinned accounts can never end up with nothing to
+ * sell. Demo validation asserts the result stayed consistent.
+ */
+function listableCropsFor(account: DemoAccount): SeedCropId[] {
+  const declared = (account.extra?.['farmerData'] as { cropsGrown?: string[] } | undefined)?.cropsGrown ?? [];
+  const resolved: SeedCropId[] = [];
+  for (const name of declared) {
+    const id = resolveCrop(name);
+    if (!id || !(id in CROPS_BY_ID)) continue;
+    const crop = CROPS_BY_ID[id as SeedCropId];
+    if (crop.grownIn.includes(account.county) && !resolved.includes(crop.id)) resolved.push(crop.id);
+  }
+  return resolved.length > 0 ? resolved : cropsGrownIn(account.county).map((c) => c.id);
+}
 
 // Which institution each canonical academic belongs to, keyed by email.
 const ACCOUNT_INSTITUTION: Record<string, string> = {
@@ -204,6 +231,7 @@ export async function generateFoundation(ctx: SimContext): Promise<FoundationRes
       gender,
       joinedAt,
       archetype: ACCOUNT_ARCHETYPE[account.email] ?? 'average',
+      ...(account.role === Role.FARMER ? { crops: listableCropsFor(account) } : {}),
     };
 
     switch (account.role) {
