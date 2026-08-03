@@ -130,7 +130,10 @@ function StudentVerification(): React.ReactElement {
       steps={VERIFY_STEPS}
       title="Verify you're a student"
       subtitle="We'll email a 6-digit code to your university address."
-      illustration="/illustrations/concepts/concept-verification.svg"
+      note={{
+        title: 'Why a university address?',
+        body: 'It is the one thing that proves you are enrolled without asking you to upload a document. We only use it to confirm enrolment — lecturers and employers see your work, never your inbox.',
+      }}
     >
       {error && <OnboardingError message={error} />}
 
@@ -261,7 +264,10 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
       steps={VERIFY_STEPS}
       title={copy.title}
       subtitle={copy.subtitle}
-      illustration="/illustrations/concepts/concept-data-security.svg"
+      note={{
+        title: 'What happens to your document',
+        body: 'It is stored privately and seen only by the administrator reviewing it. Buyers and other members never see the document itself — only that you passed the check.',
+      }}
     >
       {error && <OnboardingError message={error} />}
 

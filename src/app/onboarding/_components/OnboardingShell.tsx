@@ -13,8 +13,13 @@ export interface IOnboardingShellProps {
   steps?: string[];
   title: string;
   subtitle?: string;
-  /** Optional centered hero illustration (public path), shown above the content. */
-  illustration?: string;
+  /**
+   * A short note on the rail answering the question this step tends to raise —
+   * why we are asking, or what happens to what you hand over. It replaced a
+   * decorative illustration: at the moment someone is deciding whether to give
+   * a platform their ID, an answer is worth more than a picture.
+   */
+  note?: { title: string; body: string };
   children: React.ReactNode;
 }
 
@@ -26,27 +31,29 @@ export function OnboardingShell({
   steps = DEFAULT_STEPS,
   title,
   subtitle,
-  illustration,
+  note,
   children,
 }: IOnboardingShellProps): React.ReactElement {
   return (
     <div className="theme-app grid min-h-screen bg-app-canvas lg:grid-cols-2">
-      {/* Brand rail — desktop only. Wordmark, vertical step progress, and the
-          step illustration framed on the brand surface. */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-app-hairline bg-app-brand-surface px-12 py-12 lg:flex">
+      {/* Brand rail — desktop only. Wordmark, vertical step progress, and a
+          note answering whatever this step tends to make people hesitate over. */}
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-app-hairline bg-app-brand-surface px-12 py-14 lg:flex xl:px-16">
         <div className="max-w-sm">
           <div className="flex items-center gap-1">
             <span className="app-h2 text-app-ink">Umoja</span>
             <span className="app-h2 text-app-brand">Hub</span>
           </div>
-          <h2 className="app-h1 mt-8 text-app-ink">Set up your verified account</h2>
-          <p className="app-body mt-2 text-app-muted">
+          <h2 className="app-h1 mt-10 text-balance text-app-ink">
+            Set up your verified account
+          </h2>
+          <p className="app-body mt-3 text-app-muted">
             A few quick steps. We tailor the rest of the platform to how you will use it.
           </p>
         </div>
 
         <div className="max-w-sm">
-          <ol className="space-y-4" aria-label="Onboarding progress">
+          <ol className="space-y-5" aria-label="Onboarding progress">
             {steps.map((label, i) => {
               const n = i + 1;
               const active = n === step;
@@ -79,15 +86,10 @@ export function OnboardingShell({
             })}
           </ol>
 
-          {illustration && (
-            <div className="mt-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={illustration}
-                alt=""
-                aria-hidden="true"
-                className="h-48 w-auto max-w-full object-contain"
-              />
+          {note && (
+            <div className="mt-10 border-t border-app-brand-border pt-6">
+              <p className="app-body-strong text-app-ink">{note.title}</p>
+              <p className="app-meta mt-2 text-pretty text-app-muted">{note.body}</p>
             </div>
           )}
         </div>
@@ -138,10 +140,10 @@ export function OnboardingShell({
             </ol>
           </div>
 
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-6 sm:p-8">
-            <h1 className="app-h1 mb-1 text-app-ink">{title}</h1>
-            {subtitle && <p className="app-body text-app-muted">{subtitle}</p>}
-            <div className={subtitle ? 'mt-6' : ''}>{children}</div>
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-7 sm:p-9">
+            <h1 className="app-h1 text-balance text-app-ink">{title}</h1>
+            {subtitle && <p className="app-body mt-2 text-pretty text-app-muted">{subtitle}</p>}
+            <div className="mt-8">{children}</div>
           </div>
         </div>
       </main>

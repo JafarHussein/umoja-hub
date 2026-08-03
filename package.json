@@ -16,7 +16,6 @@
     "test:e2e:update": "playwright test --update-snapshots",
     "test:e2e:report": "playwright show-report",
     "test:integration": "jest --config jest.integration.config.ts",
-    "illustrations": "tsx scripts/fetch-illustrations.ts",
     "demo": "tsx scripts/demo/cli.ts demo",
     "demo:reset": "tsx scripts/demo/cli.ts reset",
     "demo:validate": "tsx scripts/demo/cli.ts validate",
