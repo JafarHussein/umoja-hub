@@ -22,6 +22,7 @@ import {
   VerificationBadge,
 } from '@/components/app';
 import { LinkGroupTokenForm } from '@/components/foodhub/LinkGroupTokenForm';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IFarmerData {
   cropsGrown: string[];
@@ -120,7 +121,7 @@ export default function FarmerProfilePage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

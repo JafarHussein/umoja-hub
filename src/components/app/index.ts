@@ -62,3 +62,5 @@ export { Tabs, Tab } from './Tabs';
 export type { ITabProps } from './Tabs';
 export { Modal } from './Modal';
 export type { IModalProps } from './Modal';
+export { AccountNav, MobileAccountLink } from './AccountNav';
+export type { IAccountNavProps } from './AccountNav';

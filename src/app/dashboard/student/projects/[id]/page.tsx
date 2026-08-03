@@ -14,6 +14,7 @@ import { AIUsageTab } from '@/components/education/AIUsageTab';
 import type { DocumentType, IProcessDocument } from '@/components/education/DocumentsTab';
 import type { IBlockerEntry } from '@/components/education/BlockersTab';
 import type { IAIUsageEntry } from '@/components/education/AIUsageTab';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ── Brief type definitions ────────────────────────────────────────────────────
 
@@ -314,7 +315,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

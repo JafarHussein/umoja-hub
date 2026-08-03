@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Page, PageHeader } from '@/components/app';
 import { Role, SupplierVerificationStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IRegistrations {
   kebsNumber?: string;
@@ -84,7 +85,7 @@ export default function AdminSupplierVerificationPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

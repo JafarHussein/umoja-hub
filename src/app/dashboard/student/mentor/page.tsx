@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Role, ProjectTrack } from '@/types';
 import { EmptyState, Page, PageHeader } from '@/components/app';
 import { MentorChat } from '@/components/education/MentorChat';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IEngagementRef {
   _id: string;
@@ -51,7 +52,7 @@ export default function MentorPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

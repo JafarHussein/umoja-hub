@@ -15,6 +15,7 @@ import {
   PageHeader,
 } from '@/components/app';
 import { cn } from '@/lib/cn';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 type FormState = 'form' | 'generating' | 'error';
 
@@ -82,7 +83,7 @@ export default function NewProjectPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated' && session.user.role !== Role.STUDENT) {

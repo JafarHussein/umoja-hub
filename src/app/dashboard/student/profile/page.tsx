@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import IdentityRecords from '@/components/shared/IdentityRecords';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Role } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // UI-12 — Student profile: read-only immutable identity records (Q14). The
 // GitHub username is OAuth-sourced and the institutional fields come from the
@@ -16,7 +17,7 @@ export default function StudentProfilePage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated' && session.user.role !== Role.STUDENT) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { Role, OnboardingStage } from '@/types';
+import { homeForRole } from '@/lib/auth/dashboards';
 
 // ---------------------------------------------------------------------------
 // Daraja IP allowlist
@@ -92,28 +93,9 @@ function onboardingPathForStage(stage: string | undefined): string {
 }
 
 // Known-good landing pages per role (not every role group has an index route).
-function dashboardForRole(role: Role | null): string {
-  switch (role) {
-    case Role.FARMER:
-      return '/dashboard/farmer/listings';
-    case Role.BUYER:
-      return '/marketplace';
-    case Role.STUDENT:
-      return '/dashboard/student';
-    case Role.LECTURER:
-      return '/dashboard/lecturer/queue';
-    case Role.NGO:
-      return '/dashboard/ngo';
-    case Role.EMPLOYER:
-      return '/dashboard/employer';
-    case Role.INSTITUTION:
-      return '/dashboard/institution';
-    case Role.ADMIN:
-      return '/dashboard/admin/verification-queue';
-    default:
-      return '/';
-  }
-}
+// The map lives in `@/lib/auth/dashboards` so the access-denied screen and the
+// account menu land users in exactly the same place this does.
+const dashboardForRole = homeForRole;
 
 // Hard 404 — hides the admin surface from authenticated non-admins. The status
 // code is the security-meaningful part (the resource must appear not to exist).
@@ -164,7 +146,11 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       return NextResponse.next();
     }
     const signInUrl = new URL('/auth/login', req.url);
-    signInUrl.searchParams.set('callbackUrl', req.url);
+    // Record the destination as a relative path, not `req.url`. Behind a proxy
+    // the request URL's host is the internal one, which would not match the
+    // browser's origin — the login screen would reject it as off-site and drop
+    // the user's intent exactly where it matters most (production).
+    signInUrl.searchParams.set('callbackUrl', `${path}${req.nextUrl.search}`);
     return NextResponse.redirect(signInUrl);
   }
 

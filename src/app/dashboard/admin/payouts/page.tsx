@@ -15,6 +15,7 @@ import {
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { Role, WithdrawalRequestStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ---------------------------------------------------------------------------
 // UI-13 — Admin payout-request queue (BE-03).
@@ -127,7 +128,7 @@ export default function AdminPayoutsPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

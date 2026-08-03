@@ -14,6 +14,7 @@ import {
   type StatusState,
 } from '@/components/app';
 import { cn } from '@/lib/cn';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   Role,
   MediationRequestStatus,
@@ -147,7 +148,7 @@ export default function AdminMediationPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

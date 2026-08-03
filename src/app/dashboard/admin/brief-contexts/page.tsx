@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Role } from '@/types';
 import { Button, Alert, Page, PageHeader } from '@/components/app';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IContextEntry {
   id: string;
@@ -84,7 +85,7 @@ export default function BriefContextsPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

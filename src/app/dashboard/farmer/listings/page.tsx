@@ -22,6 +22,7 @@ import {
   type IVerificationLockoutProps,
 } from '@/components/shared/VerificationLockout';
 import { Role, ListingStatus, ListingUnit, VerificationStatus } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IMyListing {
   _id: string;
@@ -109,7 +110,7 @@ export default function FarmerListingsPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

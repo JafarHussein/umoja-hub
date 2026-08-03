@@ -18,6 +18,7 @@ import {
   TD,
 } from '@/components/app';
 import { Role, KnowledgeCategory } from '@/types';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IArticle {
   _id: string;
@@ -94,7 +95,7 @@ export default function AdminKnowledgePage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

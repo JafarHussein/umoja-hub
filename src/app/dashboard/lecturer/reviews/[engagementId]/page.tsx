@@ -8,6 +8,7 @@ import { Role, ProjectTrack, StudentTier } from '@/types';
 import { Alert } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { ReviewScoreForm } from '@/components/education/ReviewScoreForm';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -159,7 +160,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {

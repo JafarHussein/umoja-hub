@@ -30,6 +30,7 @@ import {
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
+import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   MediationPanel,
   MEDIATION_CATEGORY_LABEL,
@@ -163,7 +164,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      router.push(loginUrlWithIntent());
       return;
     }
     if (status === 'authenticated') {
