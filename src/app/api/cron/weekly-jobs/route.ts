@@ -10,6 +10,7 @@ import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
 import StudentPortfolioStatus from '@/lib/models/StudentPortfolioStatus.model';
 import PlatformImpactSummary from '@/lib/models/PlatformImpactSummary.model';
 import { calculatePlatformPremium, getMiddlemanBenchmark } from '@/lib/integrations/priceDataService';
+import { prunePendingAccounts } from '@/lib/auth/pendingAccounts';
 import { logger } from '@/lib/utils';
 import { Role, OrderFulfillmentStatus } from '@/types';
 
@@ -17,10 +18,11 @@ import { Role, OrderFulfillmentStatus } from '@/types';
 // POST /api/cron/weekly-jobs — Consolidated weekly cron (Vercel Hobby: 2-cron limit)
 // Auth: Bearer CRON_SECRET
 // Schedule: Monday 03:00 UTC (06:00 EAT) — configured in vercel.json
-// Runs three sub-tasks sequentially:
-//   1. cleanup-sessions  — belt-and-suspenders for MongoDB TTL indexes
-//   2. market-insight    — aggregate weekly price data per BUSINESS_LOGIC.md §10.2
-//   3. impact-summary    — compute platform metrics per BUSINESS_LOGIC.md §10.3
+// Runs four sub-tasks sequentially:
+//   1. cleanup-sessions       — belt-and-suspenders for MongoDB TTL indexes
+//   2. prune-pending-accounts — reclaim abandoned onboarding accounts (V3 §8)
+//   3. market-insight         — aggregate weekly price data per BUSINESS_LOGIC.md §10.2
+//   4. impact-summary         — compute platform metrics per BUSINESS_LOGIC.md §10.3
 // Individual route files remain at /api/cron/* for manual invocation and testing.
 // ---------------------------------------------------------------------------
 
@@ -56,7 +58,22 @@ async function runCleanupSessions(requestId: string): Promise<{ chatDeleted: num
 }
 
 // ---------------------------------------------------------------------------
-// Sub-task 2: Aggregate weekly market insights from PriceHistory
+// Sub-task 2: Reclaim abandoned onboarding accounts
+// A V3 pending account holds a verified email and a username and nothing else.
+// The sign-in path already reclaims one the moment its owner comes back; this
+// clears the long tail nobody returns to. See lib/auth/pendingAccounts.ts.
+// ---------------------------------------------------------------------------
+async function runPrunePendingAccounts(requestId: string): Promise<{ deleted: number }> {
+  const { deleted } = await prunePendingAccounts();
+  logger.info('cron/weekly-jobs/prune-pending-accounts', 'Pending account sweep complete', {
+    requestId,
+    pendingAccountsDeleted: deleted,
+  });
+  return { deleted };
+}
+
+// ---------------------------------------------------------------------------
+// Sub-task 3: Aggregate weekly market insights from PriceHistory
 // Batch size: 50 crop+county combinations per run (per BUSINESS_LOGIC.md §10.2)
 // ---------------------------------------------------------------------------
 async function runMarketInsight(requestId: string): Promise<{ updated: number; weekOf: string }> {
@@ -138,7 +155,7 @@ async function runMarketInsight(requestId: string): Promise<{ updated: number; w
 }
 
 // ---------------------------------------------------------------------------
-// Sub-task 3: Compute platform-wide impact summary (singleton upsert)
+// Sub-task 4: Compute platform-wide impact summary (singleton upsert)
 // Per BUSINESS_LOGIC.md §10.3 — READ ONLY aggregations, single upsert at end
 // ---------------------------------------------------------------------------
 async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }> {
@@ -238,7 +255,7 @@ async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }
 }
 
 // ---------------------------------------------------------------------------
-// Route handler — runs all three sub-tasks sequentially
+// Route handler — runs all four sub-tasks sequentially
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!verifyCronSecret(req)) {
@@ -251,6 +268,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   logger.info('cron/weekly-jobs', 'Starting weekly jobs', { requestId });
 
   const cleanupResult = await runCleanupSessions(requestId);
+  const pendingResult = await runPrunePendingAccounts(requestId);
   const insightResult = await runMarketInsight(requestId);
   const impactResult = await runImpactSummary(requestId);
 
@@ -259,6 +277,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     data: {
       cleanupSessions: cleanupResult,
+      prunePendingAccounts: pendingResult,
       marketInsight: insightResult,
       impactSummary: { computedAt: impactResult.computedAt },
     },

@@ -8,6 +8,7 @@ import { logger, verifySecret } from '@/lib/utils';
 import { credentialsLoginSchema } from '@/lib/validation/onboardingSchema';
 import { extractOAuthIdentity, resolveUniqueUsername } from '@/lib/auth/oauthIdentity';
 import { sendWelcome } from '@/lib/auth/welcome';
+import { isStalePendingAccount } from '@/lib/auth/pendingAccounts';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, UserStatus, OnboardingStage, OAuthProvider } from '@/types';
 
@@ -279,17 +280,35 @@ export const authOptions: NextAuthOptions = {
         if (existing.status !== UserStatus.ACTIVE) {
           return false;
         }
-        // Account-linking policy: BLOCK and redirect. An email already tied to a
-        // credentials account or the other provider is never auto-linked —
-        // this removes the account-takeover vector via a forged OAuth email.
-        if (existing.oauthProvider !== provider) {
-          return `${LOGIN_PATH}?error=AccountExists`;
+
+        // An abandoned pending account is reclaimed rather than defended
+        // (AUTH_ONBOARDING_FLOW_V3 §8). It holds a verified email and a derived
+        // username and nothing else — no password, no role, no data — so there
+        // is nothing for the linking policy below to protect, and leaving it in
+        // place is what does the damage: someone who abandoned a Google attempt
+        // and returns on GitHub would be told an account already exists and be
+        // unable to get in at all.
+        if (isStalePendingAccount(existing)) {
+          await UserModel.deleteOne({ _id: existing._id });
+          logger.info('auth', 'Reclaimed an abandoned pending account', {
+            userId: String(existing._id),
+            previousProvider: existing.oauthProvider,
+            provider,
+          });
+          // Falls through to create a fresh pending account below.
+        } else {
+          // Account-linking policy: BLOCK and redirect. An email already tied to
+          // a credentials account or the other provider is never auto-linked —
+          // this removes the account-takeover vector via a forged OAuth email.
+          if (existing.oauthProvider !== provider) {
+            return `${LOGIN_PATH}?error=AccountExists`;
+          }
+          // Provider↔role enforcement for an established account.
+          if (!providerAllowsRole(provider, existing.role)) {
+            return `${LOGIN_PATH}?error=ProviderRoleMismatch`;
+          }
+          return true;
         }
-        // Provider↔role enforcement for an established account.
-        if (!providerAllowsRole(provider, existing.role)) {
-          return `${LOGIN_PATH}?error=ProviderRoleMismatch`;
-        }
-        return true;
       }
 
       // New OAuth identity (AUTH_ONBOARDING_FLOW_V3). Allowlisted Google emails

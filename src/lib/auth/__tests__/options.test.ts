@@ -15,6 +15,7 @@ const mockUserFindOne = jest.fn();
 const mockUserCreate = jest.fn().mockResolvedValue({});
 const mockUserExists = jest.fn().mockResolvedValue(null);
 const mockUserFindByIdAndUpdate = jest.fn().mockResolvedValue({});
+const mockUserDeleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
@@ -22,6 +23,7 @@ jest.mock('@/lib/models/User.model', () => ({
     create: (...a: unknown[]) => mockUserCreate(...a),
     exists: (...a: unknown[]) => mockUserExists(...a),
     findByIdAndUpdate: (...a: unknown[]) => mockUserFindByIdAndUpdate(...a),
+    deleteOne: (...a: unknown[]) => mockUserDeleteOne(...a),
   },
 }));
 
@@ -144,6 +146,105 @@ describe('signIn callback — OAuth account lifecycle', () => {
     // a role, and its schema excludes ADMIN.
     expect(mockUserCreate.mock.calls[0][0].role).toBeNull();
     expect(mockUserCreate.mock.calls[0][0].onboardingStage).toBe('PASSWORD_SETUP');
+  });
+
+  describe('abandoned pending accounts (V3 §8)', () => {
+    const stale = () => ({
+      _id: 'pending-1',
+      status: 'ACTIVE',
+      oauthProvider: 'google',
+      role: null,
+      onboardingStage: 'PASSWORD_SETUP',
+      createdAt: new Date(Date.now() - 31 * 60 * 1000),
+    });
+
+    it('reclaims a stale pending account when its owner returns on a DIFFERENT provider', async () => {
+      // The trap this closes: abandon a Google attempt, come back on GitHub, and
+      // the linking policy would otherwise refuse an email whose account holds
+      // nothing — locking the user out of signing up at all.
+      mockUserFindOne.mockResolvedValue(stale());
+      mockUserCreate.mockResolvedValue({ _id: 'fresh' });
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([{ email: 'back@gmail.com', primary: true, verified: true }]),
+      }) as unknown as typeof fetch;
+
+      const res = await signIn({
+        user: { email: 'back@gmail.com' },
+        account: { provider: 'github', access_token: 'gho_x' },
+        profile: { login: 'backagain' },
+      });
+
+      expect(res).toBe(true);
+      expect(mockUserDeleteOne).toHaveBeenCalledWith({ _id: 'pending-1' });
+      expect(mockUserCreate.mock.calls[0][0]).toMatchObject({
+        oauthProvider: 'github',
+        onboardingStage: 'PASSWORD_SETUP',
+        role: null,
+      });
+    });
+
+    it('reclaims a stale pending account on the SAME provider too', async () => {
+      mockUserFindOne.mockResolvedValue(stale());
+      mockUserCreate.mockResolvedValue({ _id: 'fresh' });
+
+      const res = await signIn({
+        user: { email: 'back@gmail.com' },
+        account: { provider: 'google' },
+        profile: googleProfile('back@gmail.com'),
+      });
+
+      expect(res).toBe(true);
+      expect(mockUserDeleteOne).toHaveBeenCalledWith({ _id: 'pending-1' });
+    });
+
+    it('resumes a FRESH pending account instead of deleting it', async () => {
+      // Someone still filling in the password form must keep their account.
+      mockUserFindOne.mockResolvedValue({ ...stale(), createdAt: new Date() });
+
+      const res = await signIn({
+        user: { email: 'midway@gmail.com' },
+        account: { provider: 'google' },
+        profile: googleProfile('midway@gmail.com'),
+      });
+
+      expect(res).toBe(true);
+      expect(mockUserDeleteOne).not.toHaveBeenCalled();
+      expect(mockUserCreate).not.toHaveBeenCalled();
+    });
+
+    it('still refuses a settled account on the wrong provider', async () => {
+      // The linking policy is untouched for accounts that hold something.
+      mockUserFindOne.mockResolvedValue({
+        status: 'ACTIVE',
+        oauthProvider: 'github',
+        role: 'STUDENT',
+        onboardingStage: 'COMPLETED',
+        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+      });
+
+      const res = await signIn({
+        user: { email: 'real@gmail.com' },
+        account: { provider: 'google' },
+        profile: googleProfile('real@gmail.com'),
+      });
+
+      expect(res).toBe('/auth/login?error=AccountExists');
+      expect(mockUserDeleteOne).not.toHaveBeenCalled();
+    });
+
+    it('never reclaims a suspended account', async () => {
+      mockUserFindOne.mockResolvedValue({ ...stale(), status: 'SUSPENDED' });
+
+      const res = await signIn({
+        user: { email: 'sus@gmail.com' },
+        account: { provider: 'google' },
+        profile: googleProfile('sus@gmail.com'),
+      });
+
+      expect(res).toBe(false);
+      expect(mockUserDeleteOne).not.toHaveBeenCalled();
+    });
   });
 
   it('bootstraps an allowlisted Google email straight to ADMIN/COMPLETED', async () => {

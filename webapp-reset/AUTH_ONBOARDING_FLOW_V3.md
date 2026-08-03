@@ -132,13 +132,55 @@ cookie helper. Nothing reads them under V3.
   `/onboarding/welcome`. It had been sending every new visitor to the
   returning-user screen.
 
-## 8. Known gap
+## 8. Abandoned pending accounts — CLOSED 2026-08-03
 
 An account that authenticates but abandons onboarding at `PASSWORD_SETUP` is a
-real row with a verified email and no role. It can reach nothing — middleware
-routes it back to its stage — but it does hold the email and the derived
-username. V2 had no equivalent because it created nothing until the end.
+real row holding a verified email and a derived username, and nothing else — no
+password, no role, no data, no route it can reach. V2 had no equivalent because
+it created nothing until the end: its `OnboardingDraft` was a side record with a
+30-minute Mongo TTL.
 
-Not addressed here. The clean fix is a scheduled sweep of accounts left at
-`PASSWORD_SETUP` beyond some age, mirroring the 30-minute TTL the draft used to
-have. Worth doing before public launch; harmless for the pilot.
+A TTL index cannot be used here — it would sit on the `User` collection, and no
+expiry field can safely be added to real accounts. The cleanup is explicit, in
+`src/lib/auth/pendingAccounts.ts`, and has **two mechanisms** because the problem
+has two halves:
+
+**1. Reclaim on sign-in — the half a user can feel.** The original write-up
+framed this as tidiness, which understated it. The real damage was a lockout:
+someone who abandoned a Google attempt and returned on GitHub met
+`?error=AccountExists` and could not sign up at all, because the linking policy
+was defending an account that held nothing. The `signIn` callback now deletes a
+stale pending row and creates a fresh one for whichever provider they came back
+with. Immediate; no scheduler involved.
+
+**2. The weekly sweep — hygiene.** `prunePendingAccounts()` clears the long tail
+nobody returns to, so abandoned rows stop holding usernames. Weekly is
+sufficient *because* mechanism 1 already covers the user-visible case. It runs as
+a sub-task of `/api/cron/weekly-jobs` (Vercel Hobby allows two cron entries in
+total), with `/api/cron/prune-pending-accounts` available for manual invocation,
+matching how `cleanup-sessions`, `market-insight` and `impact-summary` are wired.
+
+**TTL: 30 minutes** (`PENDING_ACCOUNT_TTL_MS`), matching V2's draft. Comfortably
+longer than filling in a three-field form, so a live signup is never swept
+mid-flow.
+
+**Scope, and why deleting is safe.** The sweep is confined to `PASSWORD_SETUP`:
+stage, age, `role: null`, no `hashedPassword`, and `status: ACTIVE` must all
+hold. An account that reached `ROLE_SELECTION` has a password the user chose — a
+real credential — so it is kept even without a role; they can sign in and finish.
+Anyone whose pending account is removed re-authenticates with the same
+provider-verified email and gets a fresh one, losing nothing they had entered.
+
+Verified against real documents: of four rows differing only in stage, age and
+whether a password was set, the sweep took the abandoned one and left the
+in-progress signup, the password-bearing `ROLE_SELECTION` account, and the
+completed account.
+
+## 9. Remaining gap
+
+An account that sets a password and then abandons at `ROLE_SELECTION` keeps its
+username indefinitely with no role attached. It is deliberately not swept — the
+password is a real credential and the user can sign in and finish at any time —
+but nothing prompts them to. A reminder email after some days would close it.
+Not urgent: the account is reachable and recoverable by its owner, which is the
+opposite of the `PASSWORD_SETUP` case.

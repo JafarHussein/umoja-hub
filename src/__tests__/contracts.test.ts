@@ -79,6 +79,7 @@ const UNSCHEDULED_CRON_ROUTES: Record<string, string> = {
   'cron/cleanup-sessions': 'inlined into weekly-jobs; manual invocation only',
   'cron/impact-summary': 'inlined into weekly-jobs; manual invocation only',
   'cron/market-insight': 'inlined into weekly-jobs; manual invocation only',
+  'cron/prune-pending-accounts': 'inlined into weekly-jobs; manual invocation only',
 };
 
 /**
