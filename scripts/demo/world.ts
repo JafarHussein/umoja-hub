@@ -4,6 +4,7 @@ import type mongoose from 'mongoose';
 import type { Rng } from './rng';
 import type { Ledger } from './ledger';
 import type { Batcher } from './helpers';
+import type { FarmProfileId, SeedCropId } from './dictionaries';
 
 export interface SimContext {
   rng: Rng;
@@ -22,6 +23,15 @@ export interface PersonRef {
   gender: 'm' | 'f';
   joinedAt: Date;
   archetype: string;
+  /** Farmers only — what they specialise in. Drives bio, county and listings. */
+  farmProfile?: FarmProfileId;
+  /**
+   * Farmers only — the crops this person can honestly sell, in the order they
+   * would lead with. Every listing, price alert and price series attributed to
+   * them is drawn from here, so their profile and their marketplace presence
+   * never contradict each other.
+   */
+  crops?: SeedCropId[];
 }
 
 export interface InstitutionRef {

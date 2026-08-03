@@ -25,7 +25,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' res.cloudinary.com https://loremflickr.com https://randomuser.me data: blob:",
+      "img-src 'self' res.cloudinary.com https://randomuser.me data: blob:",
       "connect-src 'self' https://api.groq.com https://api.openai.com",
       "frame-ancestors 'none'",
     ].join('; '),
@@ -48,14 +48,11 @@ const nextConfig: NextConfig = {
         hostname: 'res.cloudinary.com',
         pathname: '/**',
       },
-      // Demo/seed image sources. next/image throws a hard runtime error on an
-      // unconfigured host (it does not degrade gracefully), so any listing or
-      // profile photo from these hosts would crash the page without this.
-      {
-        protocol: 'https',
-        hostname: 'loremflickr.com',
-        pathname: '/**',
-      },
+      // Demo/seed profile photos. next/image throws a hard runtime error on an
+      // unconfigured host (it does not degrade gracefully), so a seeded profile
+      // photo from this host would crash the page without this. Seeded produce
+      // images are served from public/images/produce and need no entry — see the
+      // note in scripts/demo/images.ts on why they are not hot-linked.
       {
         protocol: 'https',
         hostname: 'randomuser.me',
