@@ -1,7 +1,10 @@
 # Education Hub — Vision Reset Audit
 
 **Date**: 2026-08-04
-**Status**: FINDINGS PRESENTED — no deletions performed yet, awaiting approval
+**Status**: **DELETION PASS COMPLETE** (2026-08-04, branch `refactor/education-hub-vision-reset`).
+All six decisions in §6 were approved. §3 is executed except for `StudentTier` and
+`ProjectTrack`, which are **deferred to the rebuild** — see the note at the end of §3.3.
+§4 (rewrite) and the new foundation (§7 step 2) are still outstanding.
 **Directive**: The Education Hub is not a portfolio, credential, or recruitment platform. It is the
 practical execution layer beside a Kenyan CS/IT degree: it turns theoretical coursework into
 continuous, real engineering experience from first semester to graduation.
@@ -73,6 +76,17 @@ survives but its foundation is wrong. **KEEP** = unaffected or newly load-bearin
 | `ProjectTrack` (`types/index.ts:225`) | `AI_BRIEF` vs `OPEN_SOURCE` frames the platform as a project-source menu. Projects now begin with academic context. (`OPEN_SOURCE` may return later as a *mode* of a unit-anchored project — it does not survive as a top-level track.) |
 | `NotificationType.PORTFOLIO_VIEW` (`types/index.ts:472`) + policy line in `src/lib/notifications/notify.ts:24` | Notifies a student that a recruiter looked at them. |
 | `IVerifiedProject`, `IVerifiedSkill`, `ITierProgressionEntry`, `IStudentPortfolioStatus` (`types/education.ts:123-164`) | Interfaces for the above. |
+
+> **Deferred: `StudentTier` and `ProjectTrack` were NOT deleted.** Both are listed above
+> and both should go — but they are the *inputs* to the brief generator, the engagement
+> model, the validation schema, the lecturer queue and the demo pipeline, all of which
+> are §4 **rewrite** items with no replacement built yet. Deleting the enums in this pass
+> would have forced the rebuild to happen inside a deletion commit, or left project
+> creation broken with nothing behind it — and the directive was explicit that the new
+> Education Hub is not implemented in this task. They die with the mechanism that
+> replaces them: difficulty derived from where a student is in their degree, and projects
+> sourced from academic context rather than a track menu. Their portfolio-facing uses
+> (portfolio strength, tier progression, verified-skill tiers) are already gone.
 
 ### 3.4 Aggregation and cron
 
