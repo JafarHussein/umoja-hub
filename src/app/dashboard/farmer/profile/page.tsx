@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Role, VerificationStatus, FarmerTrustTier, DocumentType } from '@/types';
+import { Role, VerificationStatus, FarmerTrustTier, DocumentType, DOCUMENT_TYPE_LABEL } from '@/types';
 import {
   Alert,
   Button,
+  buttonVariants,
   Card,
   DataItem,
   DataList,
@@ -18,7 +20,6 @@ import {
   Page,
   PageHeader,
   PageSection,
-  Select,
   VerificationBadge,
 } from '@/components/app';
 import { LinkGroupTokenForm } from '@/components/foodhub/LinkGroupTokenForm';
@@ -55,15 +56,8 @@ interface IProfileResponse {
   onboarded: boolean;
 }
 
-interface IVerifyForm {
-  documentType: DocumentType;
-  documentNumber: string;
-  documentImageUrl: string;
-}
-
 type PageState = 'loading' | 'ready' | 'error';
 type SubmitState = 'idle' | 'submitting' | 'error';
-type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
 // Verification status rendered as a trust badge (verified/pending/denied) or a
 // neutral "not submitted" pill — status by icon + text, never colour alone.
@@ -94,17 +88,6 @@ export default function FarmerProfilePage(): React.ReactElement {
   const [cropsInput, setCropsInput] = useState('');
   const [cropState, setCropState] = useState<SubmitState>('idle');
   const [cropError, setCropError] = useState<string | null>(null);
-
-  const [verifyForm, setVerifyForm] = useState<IVerifyForm>({
-    documentType: DocumentType.NATIONAL_ID,
-    documentNumber: '',
-    documentImageUrl: '',
-  });
-  const [verifyState, setVerifyState] = useState<SubmitState>('idle');
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-
-  const [uploadState, setUploadState] = useState<UploadState>('idle');
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (): Promise<void> => {
     setPageState('loading');
@@ -161,54 +144,6 @@ export default function FarmerProfilePage(): React.ReactElement {
     } catch (err) {
       setCropError(err instanceof Error ? err.message : 'An error occurred.');
       setCropState('error');
-    }
-  }
-
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadState('uploading');
-    setUploadError(null);
-    setVerifyForm((prev) => ({ ...prev, documentImageUrl: '' }));
-
-    try {
-      // Server-side upload — uses the validated CLOUDINARY_* credentials, so it
-      // works regardless of build-time NEXT_PUBLIC_* configuration.
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'umojahub/verification');
-
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      const data = (await res.json()) as { data?: { url?: string }; error?: string };
-      if (!res.ok || !data.data?.url) throw new Error(data.error ?? 'Upload failed');
-      setVerifyForm((prev) => ({ ...prev, documentImageUrl: data.data!.url! }));
-      setUploadState('done');
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed. Try again.');
-      setUploadState('error');
-    }
-  }
-
-  async function handleVerifySubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
-    e.preventDefault();
-    setVerifyError(null);
-    setVerifyState('submitting');
-    try {
-      const res = await fetch('/api/farmers/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(verifyForm),
-      });
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        throw new Error(body.error ?? 'Submission failed.');
-      }
-      setVerifyState('idle');
-      void fetchProfile();
-    } catch (err) {
-      setVerifyError(err instanceof Error ? err.message : 'An error occurred.');
-      setVerifyState('error');
     }
   }
 
@@ -324,7 +259,8 @@ export default function FarmerProfilePage(): React.ReactElement {
       >
         {farmerData.verificationStatus === VerificationStatus.APPROVED && (
           <Alert tone="success">
-            Verified. Document on file: {farmerData.documentType ?? '—'}
+            Verified. Document on file:{' '}
+            {farmerData.documentType ? DOCUMENT_TYPE_LABEL[farmerData.documentType] : '—'}
           </Alert>
         )}
 
@@ -335,77 +271,24 @@ export default function FarmerProfilePage(): React.ReactElement {
           </Alert>
         )}
 
+        {/* The form itself lives at /dashboard/verify — one screen, shared by
+            every role, so the document request cannot drift between the places
+            that make it. This section states where the account stands and sends
+            the farmer there when there is something to do. */}
         {canSubmitVerification && (
           <Card>
-            <form className="space-y-6" onSubmit={(e) => void handleVerifySubmit(e)}>
-            {farmerData.verificationStatus === VerificationStatus.REJECTED && (
-              <Alert tone="danger">
-                Previous submission was rejected. Please resubmit with a valid document.
-              </Alert>
-            )}
-
-            <Select
-              label="Document type"
-              value={verifyForm.documentType}
-              onChange={(e) =>
-                setVerifyForm((prev) => ({
-                  ...prev,
-                  documentType: e.target.value as DocumentType,
-                }))
-              }
-            >
-              <option value={DocumentType.NATIONAL_ID}>National ID</option>
-              <option value={DocumentType.COOPERATIVE_CARD}>Cooperative Card</option>
-              <option value={DocumentType.PASSPORT}>Passport</option>
-            </Select>
-
-            <Input
-              label="Document number"
-              type="text"
-              value={verifyForm.documentNumber}
-              onChange={(e) =>
-                setVerifyForm((prev) => ({ ...prev, documentNumber: e.target.value }))
-              }
-              required
-            />
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="documentImage" className="app-label text-app-body">
-                Document image
-              </label>
-              <input
-                id="documentImage"
-                type="file"
-                accept="image/*"
-                onChange={(e) => void handleFileUpload(e)}
-                disabled={uploadState === 'uploading'}
-                className="app-body text-app-body file:mr-3 file:rounded-app-control file:border file:border-app-border-strong file:bg-app-card file:px-3 file:py-2 file:text-app-ink hover:file:bg-app-sunken"
-              />
-              {uploadState === 'uploading' && (
-                <p className="app-meta text-app-muted">Uploading...</p>
-              )}
-              {uploadState === 'done' && (
-                <p className="app-meta text-app-success">Upload complete.</p>
-              )}
-              {uploadError !== null && (
-                <p role="alert" className="app-meta text-app-danger">
-                  {uploadError}
-                </p>
-              )}
+            <p className="app-body text-app-body">
+              {farmerData.verificationStatus === VerificationStatus.REJECTED
+                ? 'Your last submission was not accepted. You can submit a new document at any time.'
+                : 'You have not submitted a document yet. Until you do, you can browse and plan but not publish produce.'}
+            </p>
+            <div className="mt-5">
+              <Link href="/dashboard/verify" className={buttonVariants({ variant: 'primary' })}>
+                {farmerData.verificationStatus === VerificationStatus.REJECTED
+                  ? 'Submit a new document'
+                  : 'Verify my identity'}
+              </Link>
             </div>
-
-            {verifyError !== null && <Alert tone="danger">{verifyError}</Alert>}
-
-            <FormActions note="An administrator reviews every submission by hand. You will be emailed with the decision.">
-              <Button
-                type="submit"
-                isLoading={verifyState === 'submitting'}
-                disabled={uploadState === 'uploading' || verifyForm.documentImageUrl === ''}
-              >
-                Submit for verification
-              </Button>
-            </FormActions>
-            </form>
           </Card>
         )}
       </PageSection>

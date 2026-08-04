@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Modal, Input, VerificationBadge } from '@/components/app';
-import { Role, DocumentType, VerificationStatus } from '@/types';
+import { Role, DocumentType, DOCUMENT_TYPE_LABEL, VerificationStatus } from '@/types';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IFarmerDetail {
@@ -33,12 +33,6 @@ interface IFarmerDetail {
 
 type PageState = 'loading' | 'ready' | 'not-found' | 'error';
 type ActiveModal = 'approve' | 'reject' | null;
-
-const DOC_TYPE_LABELS: Record<DocumentType, string> = {
-  [DocumentType.NATIONAL_ID]: 'National ID',
-  [DocumentType.COOPERATIVE_CARD]: 'Cooperative Card',
-  [DocumentType.PASSPORT]: 'Passport',
-};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-KE', {
@@ -313,7 +307,7 @@ export default function AdminFarmerDetailPage(): React.ReactElement {
       <Section title="Verification document">
         {farmer.farmerData?.documentType ? (
           <>
-            <InfoRow label="Type">{DOC_TYPE_LABELS[farmer.farmerData.documentType]}</InfoRow>
+            <InfoRow label="Type">{DOCUMENT_TYPE_LABEL[farmer.farmerData.documentType]}</InfoRow>
             {farmer.farmerData.documentNumber && (
               <InfoRow label="Number" mono>
                 {farmer.farmerData.documentNumber}

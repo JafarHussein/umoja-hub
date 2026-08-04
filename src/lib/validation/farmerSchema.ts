@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { KENYAN_COUNTIES, ListingUnit, ListingCategory, ListingStatus, DocumentType } from '@/types';
+import { KENYAN_COUNTIES, ListingUnit, ListingCategory, ListingStatus } from '@/types';
 
 const kenyanPhoneRegex = /^(?:\+254|0)[17]\d{8}$/;
 const cloudinaryUrlRegex = /^https:\/\/res\.cloudinary\.com\//;
@@ -16,17 +16,10 @@ export const farmerProfileSchema = z.object({
     .regex(kenyanPhoneRegex, 'Invalid Kenyan phone number'),
 });
 
-export const verificationDocSchema = z.object({
-  documentType: z.enum([
-    DocumentType.NATIONAL_ID,
-    DocumentType.COOPERATIVE_CARD,
-    DocumentType.PASSPORT,
-  ]),
-  documentNumber: z.string().trim().min(1, 'Document number is required'),
-  documentImageUrl: z
-    .string()
-    .regex(cloudinaryUrlRegex, 'Image must be uploaded to Cloudinary'),
-});
+// Farmer verification submissions are validated by
+// `farmerOnboardingVerificationSchema` in `onboardingSchema.ts`. There was a
+// near-identical copy here, used only by the farmer-profile submission path, so
+// the same request had two contracts that could drift apart. One remains.
 
 export const cropListingSchema = z.object({
   title: z.string().trim().min(5, 'Title must be at least 5 characters').max(100),
@@ -86,7 +79,6 @@ export const adminVerifyFarmerSchema = z.object({
 });
 
 export type FarmerProfileInput = z.infer<typeof farmerProfileSchema>;
-export type VerificationDocInput = z.infer<typeof verificationDocSchema>;
 export type CropListingInput = z.infer<typeof cropListingSchema>;
 export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 export type AdminVerifyFarmerInput = z.infer<typeof adminVerifyFarmerSchema>;

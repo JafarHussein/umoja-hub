@@ -8,7 +8,8 @@ import { isAllowedUniversityDomain } from '@/lib/auth/universityDomains';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { sendInstitutionalEmailPin } from '@/lib/integrations/emailService';
 import { AppError, handleApiError, hashSecret, logger } from '@/lib/utils';
-import { Role, OnboardingStage } from '@/types';
+import { Role } from '@/types';
+import { isOnboardingComplete } from '@/lib/auth/onboarding';
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/institutional-email — Stage 3 for STUDENT (AUTH-05)
@@ -60,8 +61,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (user.role !== Role.STUDENT) {
       throw new AppError('This step does not apply to your account.', 409, 'ONBOARDING_WRONG_ROLE');
     }
-    if (user.onboardingStage !== OnboardingStage.VERIFICATION_UPLOAD) {
-      throw new AppError('Complete the previous step first.', 409, 'ONBOARDING_INVALID_STAGE');
+    // Verification is demand-driven: a student reaches this from
+    // /dashboard/verify, after setup has completed, not as a funnel step. The
+    // guard is that setup *is* done — an account still choosing a role has no
+    // institution to check an address against.
+    if (!isOnboardingComplete(user.onboardingStage)) {
+      throw new AppError('Finish setting up your account first.', 409, 'ONBOARDING_INVALID_STAGE');
     }
 
     const pin = String(randomInt(0, 1_000_000)).padStart(6, '0');

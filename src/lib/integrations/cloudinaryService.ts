@@ -6,12 +6,15 @@
 
 import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
+import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES, formatBytes } from '@/lib/uploads';
 
 // Verification documents are uploaded here too (ID photos, tax certificates,
 // faculty credential letters) — those are commonly PDFs, which Cloudinary
 // accepts on the image endpoint (resource_type "image", deliverable as a page).
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB — Vercel payload ceiling is 4.5MB
+// The limits come from `@/lib/uploads` so the browser can enforce the same ones
+// before spending the user's bandwidth. This side stays authoritative.
+const ALLOWED_MIME_TYPES: readonly string[] = ALLOWED_UPLOAD_MIME_TYPES;
+const MAX_FILE_SIZE_BYTES = MAX_UPLOAD_BYTES;
 
 interface IUploadResult {
   url: string;
@@ -38,7 +41,7 @@ export async function uploadImage(file: File, folder: string): Promise<IUploadRe
   // File size validation
   if (file.size > MAX_FILE_SIZE_BYTES) {
     throw new AppError(
-      'Image must be smaller than 4MB.',
+      `File must be smaller than ${formatBytes(MAX_FILE_SIZE_BYTES)}.`,
       400,
       'EXT_CLOUDINARY_FILE_TOO_LARGE'
     );

@@ -1,44 +1,4 @@
-import { buyerVerificationDocSchema, adminVerifyBuyerSchema } from '../buyerSchema';
-
-// ---------------------------------------------------------------------------
-// buyerVerificationDocSchema
-// ---------------------------------------------------------------------------
-
-describe('buyerVerificationDocSchema', () => {
-  const validUrl = 'https://res.cloudinary.com/umojahub/image/upload/tcc.pdf';
-
-  it('accepts a valid Cloudinary certificate URL', () => {
-    expect(
-      buyerVerificationDocSchema.safeParse({ taxComplianceCertificate: validUrl }).success
-    ).toBe(true);
-  });
-
-  it('rejects a non-Cloudinary URL', () => {
-    expect(
-      buyerVerificationDocSchema.safeParse({
-        taxComplianceCertificate: 'https://example.com/tcc.pdf',
-      }).success
-    ).toBe(false);
-  });
-
-  it('rejects an http (non-https) Cloudinary URL', () => {
-    expect(
-      buyerVerificationDocSchema.safeParse({
-        taxComplianceCertificate: 'http://res.cloudinary.com/umojahub/tcc.pdf',
-      }).success
-    ).toBe(false);
-  });
-
-  it('rejects an empty certificate', () => {
-    expect(
-      buyerVerificationDocSchema.safeParse({ taxComplianceCertificate: '' }).success
-    ).toBe(false);
-  });
-
-  it('rejects a missing certificate', () => {
-    expect(buyerVerificationDocSchema.safeParse({}).success).toBe(false);
-  });
-});
+import { adminVerifyBuyerSchema } from '../buyerSchema';
 
 // ---------------------------------------------------------------------------
 // adminVerifyBuyerSchema

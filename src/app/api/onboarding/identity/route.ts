@@ -13,11 +13,17 @@ import { Role, OnboardingStage } from '@/types';
 import type { ZodType } from 'zod';
 
 // ---------------------------------------------------------------------------
-// POST /api/onboarding/identity — Stage 2: role-conditional identity (AUTH-05)
+// POST /api/onboarding/identity — the last step of account setup (AUTH-05).
 // Auth: onboarding user with a role set (stage must be IDENTITY_INPUT).
 // Fills the common identity columns (lastName/phoneNumber/county) plus the
-// role-specific sub-document fields, then advances to VERIFICATION_UPLOAD.
+// role-specific sub-document fields, then completes onboarding.
 // githubUsername is never accepted here — it is OAuth-sourced (UI-12).
+//
+// Setup ends here because this is the point at which the platform knows who the
+// user is and what they came to do. Identity *verification* is a separate axis
+// (`verificationStatus` / `isVerified`) collected on demand at /dashboard/verify
+// and enforced at the restricted action, not at the door — see
+// `src/lib/auth/onboarding.ts`.
 // ---------------------------------------------------------------------------
 
 const SCHEMA_BY_ROLE: Record<string, ZodType> = {
@@ -109,7 +115,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
         county: data.county,
-        onboardingStage: OnboardingStage.VERIFICATION_UPLOAD,
+        onboardingStage: OnboardingStage.COMPLETED,
         ...roleIdentityUpdate(user.role as string, data),
       },
     });
@@ -120,7 +126,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({
-      data: { onboardingStage: OnboardingStage.VERIFICATION_UPLOAD },
+      data: { onboardingStage: OnboardingStage.COMPLETED },
     });
   } catch (error) {
     return handleApiError(error);

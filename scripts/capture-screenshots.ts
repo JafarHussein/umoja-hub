@@ -61,7 +61,7 @@ const SHOTS: Shot[] = [
   // Onboarding needs a not-yet-onboarded session, else it redirects to login.
   { file: 'onboarding-role-selection', path: '/onboarding/role-selection', role: 'onboarding' },
   { file: 'onboarding-identity', path: '/onboarding/identity-input', role: 'onboarding' },
-  { file: 'onboarding-verification-upload', path: '/onboarding/verification-upload', role: 'onboarding' },
+  { file: 'verification-submission', path: '/dashboard/verify', role: Role.FARMER },
   { file: 'marketplace-feed', path: '/marketplace', role: 'public' },
   { file: 'marketplace-listing-detail', path: '/marketplace/:listingId', role: 'public' },
   { file: 'knowledge-hub', path: '/knowledge', role: 'public' },

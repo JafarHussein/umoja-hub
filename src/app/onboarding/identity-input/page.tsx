@@ -14,6 +14,7 @@ import {
 } from '@/components/app';
 import { Role, KENYAN_COUNTIES, ListingCategory, BuyerType, BUYER_TYPE_LABEL } from '@/types';
 import { GRADUATION_YEARS } from '@/lib/validation/onboardingSchema';
+import { homeForRole } from '@/lib/auth/dashboards';
 import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
 // SCR-ONB-002 — role-conditional identity (Stage 2). Common identity fields plus
@@ -93,7 +94,10 @@ export default function IdentityInputPage(): React.ReactElement {
         return;
       }
       await update();
-      router.push('/onboarding/verification-upload');
+      // Setup is finished here. Verification is collected later, on demand, at
+      // /dashboard/verify — so a new member lands in the product rather than at
+      // a document upload they may not be able to satisfy today.
+      router.push(homeForRole(role));
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {

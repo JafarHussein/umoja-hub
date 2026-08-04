@@ -71,13 +71,13 @@ describe('POST /api/onboarding/identity', () => {
     expect(res.status).toBe(400);
   });
 
-  it('writes farmer identity and advances to VERIFICATION_UPLOAD', async () => {
+  it('writes farmer identity and completes setup', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(SESSION);
     userLean({ role: 'FARMER', onboardingStage: 'IDENTITY_INPUT' });
     const res = await POST(postReq({ ...BASE, primaryLanguage: 'Kiswahili' }));
     expect(res.status).toBe(200);
     const set = mockUserFindByIdAndUpdate.mock.calls[0][1].$set;
-    expect(set).toMatchObject({ lastName: 'Otieno', county: 'Kisumu', onboardingStage: 'VERIFICATION_UPLOAD' });
+    expect(set).toMatchObject({ lastName: 'Otieno', county: 'Kisumu', onboardingStage: 'COMPLETED' });
     expect(set['farmerData.primaryLanguage']).toBe('Kiswahili');
   });
 

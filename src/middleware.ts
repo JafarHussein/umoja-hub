@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { Role, OnboardingStage } from '@/types';
+import { Role } from '@/types';
 import { homeForRole } from '@/lib/auth/dashboards';
+import { isOnboardingComplete, onboardingPathForStage } from '@/lib/auth/onboarding';
 
 // ---------------------------------------------------------------------------
 // Daraja IP allowlist
@@ -75,21 +76,6 @@ function isPreAuthOnboarding(path: string): boolean {
   return PRE_AUTH_ONBOARDING_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
-// Onboarding funnel target for a given stage (Decision 02-A). The /onboarding
-// route group is built by AUTH-06; these slugs are the contract it must honour.
-function onboardingPathForStage(stage: string | undefined): string {
-  switch (stage) {
-    case OnboardingStage.PASSWORD_SETUP:
-      return '/onboarding/password';
-    case OnboardingStage.IDENTITY_INPUT:
-      return '/onboarding/identity-input';
-    case OnboardingStage.VERIFICATION_UPLOAD:
-      return '/onboarding/verification-upload';
-    default:
-      return '/onboarding/role-selection';
-  }
-}
-
 // Known-good landing pages per role (not every role group has an index route).
 // The map lives in `@/lib/auth/dashboards` so the access-denied screen and the
 // account menu land users in exactly the same place this does.
@@ -153,8 +139,12 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   }
 
   const role = (token.role as Role | null | undefined) ?? null;
-  const isOnboarded = Boolean(token.isOnboarded);
   const stage = token.onboardingStage as string | undefined;
+  // Derived from the stage claim rather than read from `token.isOnboarded`, so
+  // a token minted before setup and verification were separated is re-judged
+  // under the current rule instead of being trapped by the boolean it was
+  // stamped with. The two claims are computed by the same helper.
+  const isOnboarded = isOnboardingComplete(stage);
   const isAdminRoute = path.startsWith('/dashboard/admin') || path.startsWith('/api/admin');
 
   // 5. Admin routes: an authenticated non-admin must not learn they exist.
