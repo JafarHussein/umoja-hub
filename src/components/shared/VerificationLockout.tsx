@@ -47,6 +47,13 @@ export function VerificationLockout({
           toneClasses.border,
         ].join(' ')}
         role="status"
+        // A stable handle for the end-to-end suite. Those specs asserted the
+        // lockout's presence and absence by quoting its sentences, so a copy
+        // change broke CI without anything being wrong — and the negative
+        // assertions ("this text is not present") would have quietly stopped
+        // proving anything at all if the wording had drifted the other way.
+        data-testid="verification-lockout"
+        data-lockout-tone={tone}
       >
         <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-app-control border border-app-hairline bg-app-sunken">
           <svg
