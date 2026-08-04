@@ -487,3 +487,46 @@ describe('institutionalEmailVerifySchema', () => {
     expect(institutionalEmailVerifySchema.safeParse({ pin: '12345a' }).success).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Error copy — what an empty form actually says
+// ---------------------------------------------------------------------------
+
+describe('required-field messages are written for the person reading them', () => {
+  // These strings are not internal. The API returns them in `fieldErrors` and
+  // the form renders each one under its input, so Zod's defaults were reaching
+  // users: a missing name said "Invalid input: expected string, received
+  // undefined", and a blank county listed all forty-seven counties in one line.
+  const SCHEMAS: Array<[string, { safeParse: (v: unknown) => { success: boolean; error?: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } } } }]> = [
+    ['farmer identity', farmerIdentitySchema],
+    ['buyer identity', buyerIdentitySchema],
+    ['student identity', studentIdentitySchema],
+    ['lecturer identity', lecturerIdentitySchema],
+    ['farmer verification', farmerOnboardingVerificationSchema],
+    ['buyer verification', buyerOnboardingVerificationSchema],
+    ['lecturer verification', lecturerOnboardingVerificationSchema],
+  ];
+
+  it.each(SCHEMAS)('%s never leaks Zod internals on an empty submit', (_name, schema) => {
+    const parsed = schema.safeParse({});
+    expect(parsed.success).toBe(false);
+    const messages = Object.values(parsed.error!.flatten().fieldErrors).flatMap((m) => m ?? []);
+    expect(messages.length).toBeGreaterThan(0);
+    for (const m of messages) {
+      expect(m).not.toMatch(/expected .*, received/i);
+      expect(m).not.toMatch(/^Invalid input$/i);
+      expect(m).not.toMatch(/Invalid option/i);
+      // A message that recites the whole option list is not a message.
+      expect(m.length).toBeLessThan(120);
+    }
+  });
+
+  it('names the county field rather than reciting every county', () => {
+    const parsed = farmerIdentitySchema.safeParse({
+      lastName: 'Otieno',
+      phoneNumber: '0712345678',
+    });
+    expect(parsed.success).toBe(false);
+    expect(parsed.error!.flatten().fieldErrors['county']).toEqual(['Select your county']);
+  });
+});

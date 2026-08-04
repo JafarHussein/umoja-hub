@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
-import {
-  farmerIdentitySchema,
-  buyerIdentitySchema,
-  studentIdentitySchema,
-  lecturerIdentitySchema,
-} from '@/lib/validation/onboardingSchema';
+import { identitySchemaForRole } from '@/lib/validation/onboardingSchema';
 import { AppError, handleApiError, logger } from '@/lib/utils';
 import { Role, OnboardingStage } from '@/types';
-import type { ZodType } from 'zod';
 
 // ---------------------------------------------------------------------------
 // POST /api/onboarding/identity — the last step of account setup (AUTH-05).
@@ -25,13 +19,6 @@ import type { ZodType } from 'zod';
 // and enforced at the restricted action, not at the door — see
 // `src/lib/auth/onboarding.ts`.
 // ---------------------------------------------------------------------------
-
-const SCHEMA_BY_ROLE: Record<string, ZodType> = {
-  [Role.FARMER]: farmerIdentitySchema,
-  [Role.BUYER]: buyerIdentitySchema,
-  [Role.STUDENT]: studentIdentitySchema,
-  [Role.LECTURER]: lecturerIdentitySchema,
-};
 
 // Maps the role-specific identity fields onto their sub-document paths.
 function roleIdentityUpdate(role: string, data: Record<string, unknown>): Record<string, unknown> {
@@ -94,7 +81,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw new AppError('Complete the previous step first.', 409, 'ONBOARDING_INVALID_STAGE');
     }
 
-    const schema = user.role ? SCHEMA_BY_ROLE[user.role] : undefined;
+    const schema = identitySchemaForRole(user.role as Role | null);
     if (!schema) {
       throw new AppError('Select a role before submitting identity.', 409, 'ONBOARDING_NO_ROLE');
     }

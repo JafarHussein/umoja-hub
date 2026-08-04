@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import type { ZodType } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
@@ -13,8 +14,9 @@ import {
   ChoiceCardGroup,
 } from '@/components/app';
 import { Role, KENYAN_COUNTIES, ListingCategory, BuyerType, BUYER_TYPE_LABEL } from '@/types';
-import { GRADUATION_YEARS } from '@/lib/validation/onboardingSchema';
+import { GRADUATION_YEARS, identitySchemaForRole } from '@/lib/validation/onboardingSchema';
 import { homeForRole } from '@/lib/auth/dashboards';
+import { useZodForm, focusFirstInvalid } from '@/hooks/useZodForm';
 import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
 // SCR-ONB-002 — role-conditional identity (Stage 2). Common identity fields plus
@@ -36,74 +38,14 @@ const PRODUCE_OPTIONS = Object.values(ListingCategory).map((value) => ({
 // numeric fields are sent as numbers, because the Zod schema expects them that
 // way rather than as coerced strings.
 type FieldValue = string | string[] | number | undefined;
-type FormState = Record<string, FieldValue>;
 
 export default function IdentityInputPage(): React.ReactElement {
   const router = useRouter();
-  const { data: session, update, status } = useSession();
+  const { data: session, status } = useSession();
   const role = session?.user?.role ?? null;
-
-  const [form, setForm] = useState<FormState>({});
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Reading a value back out of the widened state. The text inputs need a
-  // string and the multi-selects need an array; keeping the narrowing here
-  // stops every call site from repeating a cast.
-  function text(field: string): string {
-    const v = form[field];
-    return typeof v === 'string' ? v : '';
-  }
-  function list(field: string): string[] {
-    const v = form[field];
-    return Array.isArray(v) ? v : [];
-  }
-  function toggle(field: string, value: string): void {
-    const current = list(field);
-    set(field, current.includes(value) ? current.filter((v) => v !== value) : [...current, value]);
-  }
-
-  function set(field: string, value: FieldValue): void {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (fieldErrors[field]) {
-      setFieldErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
-    e.preventDefault();
-    setError('');
-    setFieldErrors({});
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/onboarding/identity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data: unknown = await res.json();
-      if (!res.ok) {
-        const body = data as { error?: string; details?: { fieldErrors?: Record<string, string[]> } };
-        if (body.details?.fieldErrors) setFieldErrors(body.details.fieldErrors);
-        else setError(body.error ?? 'Could not save your details.');
-        return;
-      }
-      await update();
-      // Setup is finished here. Verification is collected later, on demand, at
-      // /dashboard/verify — so a new member lands in the product rather than at
-      // a document upload they may not be able to satisfy today.
-      router.push(homeForRole(role));
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  // Resolved here rather than inside the form so the form can hold a hook that
+  // needs it, unconditionally, with no fallback schema to keep in step.
+  const schema = identitySchemaForRole(role);
 
   // Two different states used to share one message. While the session is still
   // resolving there is nothing wrong, so saying "if this persists, go back"
@@ -119,9 +61,9 @@ export default function IdentityInputPage(): React.ReactElement {
     );
   }
 
-  // Genuinely no role: the middleware should not have allowed this, so offer
-  // the way back.
-  if (role === null) {
+  // Genuinely no role, or a role with no setup step: the middleware should not
+  // have allowed this, so offer the way back.
+  if (role === null || !schema) {
     return (
       <OnboardingShell step={3} title="Tell us about you">
         <p className="app-body text-app-muted">
@@ -139,17 +81,101 @@ export default function IdentityInputPage(): React.ReactElement {
     );
   }
 
+  return <IdentityForm role={role} schema={schema} />;
+}
+
+function IdentityForm({ role, schema }: { role: Role; schema: ZodType }): React.ReactElement {
+  const router = useRouter();
+  const { update } = useSession();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // The same schema the API route validates with. It stops being a gate the
+  // user discovers by failing and becomes something that answers them here.
+  const form = useZodForm(schema, {});
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Reading a value back out of the widened state. The text inputs need a
+  // string and the multi-selects need an array; keeping the narrowing here
+  // stops every call site from repeating a cast.
+  function text(field: string): string {
+    const v = form.values[field];
+    return typeof v === 'string' ? v : '';
+  }
+  function list(field: string): string[] {
+    const v = form.values[field];
+    return Array.isArray(v) ? v : [];
+  }
+  // Numeric inputs hold a string in the DOM but must reach the schema as a
+  // number, so the empty case is `undefined` rather than 0 or ''.
+  function num(field: string): string {
+    const v = form.values[field];
+    return typeof v === 'number' ? String(v) : '';
+  }
+  function toggle(field: string, value: string): void {
+    const current = list(field);
+    set(field, current.includes(value) ? current.filter((v) => v !== value) : [...current, value]);
+  }
+
+  function set(field: string, value: FieldValue): void {
+    form.setValue(field, value);
+  }
+
+  const err = form.errorFor;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault();
+    setError('');
+
+    // Checked here first, so a missing county costs nothing and lands the
+    // cursor on the field rather than a scroll to the top of the page.
+    const checked = form.submit();
+    if (!checked.ok) {
+      focusFirstInvalid(formRef.current);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/onboarding/identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checked.data),
+      });
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const body = data as { error?: string; details?: { fieldErrors?: Record<string, string[]> } };
+        if (body.details?.fieldErrors) {
+          form.setServerErrors(body.details.fieldErrors);
+          focusFirstInvalid(formRef.current);
+        } else {
+          setError(body.error ?? 'Could not save your details.');
+        }
+        return;
+      }
+      await update();
+      // Setup is finished here. Verification is collected later, on demand, at
+      // /dashboard/verify — so a new member lands in the product rather than at
+      // a document upload they may not be able to satisfy today.
+      router.push(homeForRole(role));
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <OnboardingShell step={3} title="Tell us about you" subtitle="A few details so we can set up your account.">
       {error && <OnboardingError message={error} />}
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         <Input
           label="Last name"
           placeholder="Kamau"
           value={text('lastName')}
           onChange={(e) => set('lastName', e.target.value)}
-          error={fieldErrors['lastName']?.[0]}
+          error={err('lastName')}
           autoComplete="family-name"
           required
         />
@@ -161,7 +187,7 @@ export default function IdentityInputPage(): React.ReactElement {
           hint="+254 format also accepted"
           value={text('phoneNumber')}
           onChange={(e) => set('phoneNumber', e.target.value)}
-          error={fieldErrors['phoneNumber']?.[0]}
+          error={err('phoneNumber')}
           autoComplete="tel"
           required
         />
@@ -171,7 +197,7 @@ export default function IdentityInputPage(): React.ReactElement {
           label="County"
           value={text('county')}
           onChange={(e) => set('county', e.target.value)}
-          error={fieldErrors['county']?.[0]}
+          error={err('county')}
           required
         >
           <option value="">Select your county</option>
@@ -191,7 +217,7 @@ export default function IdentityInputPage(): React.ReactElement {
               options={PRODUCE_OPTIONS}
               selected={list('cropsGrown')}
               onToggle={(v) => toggle('cropsGrown', v)}
-              error={fieldErrors['cropsGrown']?.[0]}
+              error={err('cropsGrown')}
             />
             <Input
               type="number"
@@ -201,11 +227,11 @@ export default function IdentityInputPage(): React.ReactElement {
               label="Farm size in acres"
               optional
               placeholder="e.g. 3"
-              value={typeof form.farmSizeAcres === 'number' ? String(form.farmSizeAcres) : ''}
+              value={num('farmSizeAcres')}
               onChange={(e) =>
                 set('farmSizeAcres', e.target.value === '' ? undefined : Number(e.target.value))
               }
-              error={fieldErrors['farmSizeAcres']?.[0]}
+              error={err('farmSizeAcres')}
             />
             <Input
               label="Cooperative"
@@ -214,7 +240,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="e.g. Kirinyaga Growers Cooperative"
               value={text('cooperativeName')}
               onChange={(e) => set('cooperativeName', e.target.value)}
-              error={fieldErrors['cooperativeName']?.[0]}
+              error={err('cooperativeName')}
             />
             <Input
               label="Primary language"
@@ -222,7 +248,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="e.g. Kiswahili"
               value={text('primaryLanguage')}
               onChange={(e) => set('primaryLanguage', e.target.value)}
-              error={fieldErrors['primaryLanguage']?.[0]}
+              error={err('primaryLanguage')}
             />
           </>
         )}
@@ -251,8 +277,8 @@ export default function IdentityInputPage(): React.ReactElement {
                   onSelect={() => set('buyerType', BuyerType.BUSINESS)}
                 />
               </ChoiceCardGroup>
-              {fieldErrors['buyerType']?.[0] && (
-                <p className="app-meta text-app-danger">{fieldErrors['buyerType'][0]}</p>
+              {err('buyerType') && (
+                <p className="app-meta text-app-danger">{err('buyerType')}</p>
               )}
             </div>
 
@@ -263,7 +289,7 @@ export default function IdentityInputPage(): React.ReactElement {
                   placeholder="Mavuno Foods Ltd"
                   value={text('organizationName')}
                   onChange={(e) => set('organizationName', e.target.value)}
-                  error={fieldErrors['organizationName']?.[0]}
+                  error={err('organizationName')}
                   required
                 />
                 <Input
@@ -271,7 +297,7 @@ export default function IdentityInputPage(): React.ReactElement {
                   placeholder="PVT-XXXXXX"
                   value={text('businessRegistrationNumber')}
                   onChange={(e) => set('businessRegistrationNumber', e.target.value)}
-                  error={fieldErrors['businessRegistrationNumber']?.[0]}
+                  error={err('businessRegistrationNumber')}
                   required
                 />
                 <Input
@@ -280,7 +306,7 @@ export default function IdentityInputPage(): React.ReactElement {
                   placeholder="e.g. 400200"
                   value={text('corporatePaybill')}
                   onChange={(e) => set('corporatePaybill', e.target.value)}
-                  error={fieldErrors['corporatePaybill']?.[0]}
+                  error={err('corporatePaybill')}
                 />
                 <Input
                   label="Procurement scale"
@@ -288,7 +314,7 @@ export default function IdentityInputPage(): React.ReactElement {
                   placeholder="e.g. 5–10 tonnes / month"
                   value={text('procurementScale')}
                   onChange={(e) => set('procurementScale', e.target.value)}
-                  error={fieldErrors['procurementScale']?.[0]}
+                  error={err('procurementScale')}
                 />
               </>
             )}
@@ -299,7 +325,7 @@ export default function IdentityInputPage(): React.ReactElement {
               options={PRODUCE_OPTIONS}
               selected={list('purchaseInterests')}
               onToggle={(v) => toggle('purchaseInterests', v)}
-              error={fieldErrors['purchaseInterests']?.[0]}
+              error={err('purchaseInterests')}
             />
             <TokenSelect
               id="preferredCounties"
@@ -310,7 +336,7 @@ export default function IdentityInputPage(): React.ReactElement {
               options={KENYAN_COUNTIES}
               selected={list('preferredCounties')}
               onChange={(next) => set('preferredCounties', next)}
-              error={fieldErrors['preferredCounties']?.[0]}
+              error={err('preferredCounties')}
             />
           </>
         )}
@@ -322,7 +348,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="University of Nairobi"
               value={text('universityAffiliation')}
               onChange={(e) => set('universityAffiliation', e.target.value)}
-              error={fieldErrors['universityAffiliation']?.[0]}
+              error={err('universityAffiliation')}
               required
             />
             <Input
@@ -330,7 +356,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="e.g. SCT221-0001/2024"
               value={text('academicRegistrationNumber')}
               onChange={(e) => set('academicRegistrationNumber', e.target.value)}
-              error={fieldErrors['academicRegistrationNumber']?.[0]}
+              error={err('academicRegistrationNumber')}
               required
             />
             <Input
@@ -338,17 +364,17 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="e.g. BSc Computer Science"
               value={text('programme')}
               onChange={(e) => set('programme', e.target.value)}
-              error={fieldErrors['programme']?.[0]}
+              error={err('programme')}
               required
             />
             <Select
               id="graduationYear"
               label="Expected graduation year"
-              value={typeof form.graduationYear === 'number' ? String(form.graduationYear) : ''}
+              value={num('graduationYear')}
               onChange={(e) =>
                 set('graduationYear', e.target.value === '' ? undefined : Number(e.target.value))
               }
-              error={fieldErrors['graduationYear']?.[0]}
+              error={err('graduationYear')}
               required
             >
               <option value="">Select a year</option>
@@ -364,7 +390,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="e.g. Backend engineering"
               value={text('primaryInterest')}
               onChange={(e) => set('primaryInterest', e.target.value)}
-              error={fieldErrors['primaryInterest']?.[0]}
+              error={err('primaryInterest')}
             />
           </>
         )}
@@ -376,7 +402,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="JKUAT"
               value={text('universityAffiliation')}
               onChange={(e) => set('universityAffiliation', e.target.value)}
-              error={fieldErrors['universityAffiliation']?.[0]}
+              error={err('universityAffiliation')}
               required
             />
             <Input
@@ -384,7 +410,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="Computer Science"
               value={text('departmentAssignment')}
               onChange={(e) => set('departmentAssignment', e.target.value)}
-              error={fieldErrors['departmentAssignment']?.[0]}
+              error={err('departmentAssignment')}
               required
             />
             <Input
@@ -393,7 +419,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="e.g. Senior Lecturer"
               value={text('position')}
               onChange={(e) => set('position', e.target.value)}
-              error={fieldErrors['position']?.[0]}
+              error={err('position')}
               required
             />
             <Input
@@ -401,7 +427,7 @@ export default function IdentityInputPage(): React.ReactElement {
               placeholder="STAFF-XXXX"
               value={text('academicStaffId')}
               onChange={(e) => set('academicStaffId', e.target.value)}
-              error={fieldErrors['academicStaffId']?.[0]}
+              error={err('academicStaffId')}
               required
             />
           </>
