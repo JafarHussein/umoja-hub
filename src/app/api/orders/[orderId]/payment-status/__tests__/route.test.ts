@@ -22,6 +22,12 @@ jest.mock('@/lib/payments/reconcile', () => ({
   reconcileStuckPayments: (...a: unknown[]) => mockReconcile(...a),
 }));
 
+const mockPaymentEventFind = jest.fn();
+jest.mock('@/lib/models/PaymentEventLog.model', () => ({
+  __esModule: true,
+  default: { find: (...a: unknown[]) => mockPaymentEventFind(...a) },
+}));
+
 const mockDispatch = jest.fn();
 jest.mock('@/lib/payments/dispatcher', () => ({
   dispatchDuePayments: (...a: unknown[]) => mockDispatch(...a),
@@ -135,5 +141,78 @@ describe('GET /api/orders/[orderId]/payment-status', () => {
 
     const body = await (await GET(req(), params())).json();
     expect(body.isSimulated).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Payment-session narration
+//
+// Checkout was built on a request/response model: submit, spin, render an
+// outcome. The backend had recorded a full event stream the whole time and the
+// endpoint returned none of it, so the waiting screen could not tell a buyer
+// anything except "still waiting" — the same thing a mock would produce.
+// ---------------------------------------------------------------------------
+
+describe('payment session narration', () => {
+  beforeEach(() => {
+    (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
+    mockIsSimulationActive.mockReturnValue(false);
+    mockReconcile.mockResolvedValue(0);
+  });
+
+  it('returns the recorded events in the words the receipt uses', async () => {
+    mockOrderFindById.mockReturnValue(selectLean(order({ paymentStatus: 'PAID' })));
+    mockPaymentEventFind.mockReturnValue({
+      select: () => ({
+        sort: () => ({
+          lean: () =>
+            Promise.resolve([
+              { eventType: 'INITIATED', occurredAt: '2026-08-04T10:00:00Z' },
+              { eventType: 'CALLBACK_RECEIVED', resultCode: 0, occurredAt: '2026-08-04T10:00:07Z' },
+              { eventType: 'SUCCESS', occurredAt: '2026-08-04T10:00:07Z' },
+            ]),
+        }),
+      }),
+    });
+
+    const body = (await (await GET(req(), params())).json()) as {
+      events: Array<{ label: string; detail: string | null }>;
+    };
+    expect(body.events.map((e) => e.label)).toEqual([
+      'Payment request sent',
+      'M-Pesa responded',
+      'Payment received',
+    ]);
+    // The result code is translated, so a failure explains itself.
+    expect(body.events[1]?.detail).toBe('Processed successfully');
+  });
+
+  it('surfaces the M-Pesa receipt number once the payment lands', async () => {
+    mockOrderFindById.mockReturnValue(
+      selectLean(order({ paymentStatus: 'PAID', mpesaTransactionId: 'SGH4K2M9QT' }))
+    );
+    mockPaymentEventFind.mockReturnValue({
+      select: () => ({ sort: () => ({ lean: () => Promise.resolve([]) }) }),
+    });
+
+    const body = (await (await GET(req(), params())).json()) as { mpesaTransactionId: string };
+    // The platform minted and stored this and never once showed it to the
+    // person whose money it accounted for.
+    expect(body.mpesaTransactionId).toBe('SGH4K2M9QT');
+  });
+
+  it('still answers the poll when the event log cannot be read', async () => {
+    // The narration is decoration over the status. It must never break the poll
+    // the buyer depends on to learn whether their money moved.
+    mockOrderFindById.mockReturnValue(selectLean(order({ paymentStatus: 'PAID' })));
+    mockPaymentEventFind.mockImplementation(() => {
+      throw new Error('log unavailable');
+    });
+
+    const res = await GET(req(), params());
+    const body = (await res.json()) as { paymentStatus: string; events: unknown[] };
+    expect(res.status).toBe(200);
+    expect(body.paymentStatus).toBe('PAID');
+    expect(body.events).toEqual([]);
   });
 });

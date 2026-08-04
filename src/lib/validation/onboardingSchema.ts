@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, type ZodType } from 'zod';
 import { Role, KENYAN_COUNTIES, DocumentType, ListingCategory, BuyerType } from '@/types';
 
 const kenyanPhoneRegex = /^(?:\+254|0)[17]\d{8}$/;
@@ -17,12 +17,27 @@ const PLACEHOLDER_ANSWER =
   /^(?:n\.?\/?a\.?|not[\s-]*applicable|none|nil|null|unknown|test|asdf|x+|-+|\.+|0+)$/i;
 
 /**
+ * Required free text, with the same sentence for "you left this blank" and "the
+ * field never arrived".
+ *
+ * Zod's default for a missing key is `Invalid input: expected string, received
+ * undefined`. Those strings are not internal: the API returns them in
+ * `fieldErrors` and the form renders them next to the input, so someone who
+ * submitted an empty onboarding form was told, in as many words, what type
+ * TypeScript was expecting. Every required field below carries a `message` for
+ * exactly that reason.
+ */
+function requiredText(max: number, message: string) {
+  return z.string({ message }).trim().min(1, message).max(max);
+}
+
+/**
  * Trimmed, length-bounded text that must actually say something. Use for
  * identity-bearing fields an administrator will later read as fact.
  */
 function meaningfulText(min: number, max: number, requiredMessage: string) {
   return z
-    .string()
+    .string({ message: requiredMessage })
     .trim()
     .min(min, requiredMessage)
     .max(max)
@@ -37,7 +52,9 @@ function meaningfulText(min: number, max: number, requiredMessage: string) {
 // oauthProvider (GitHub → STUDENT only).
 // ---------------------------------------------------------------------------
 export const roleSelectionSchema = z.object({
-  role: z.enum([Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER]),
+  role: z.enum([Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER], {
+    message: 'Choose how you will use UmojaHub',
+  }),
 });
 
 // ---------------------------------------------------------------------------
@@ -116,9 +133,14 @@ export const passwordResetConfirmSchema = z.object({
 // githubUsername is OAuth-sourced and is never accepted from the client (UI-12).
 // ---------------------------------------------------------------------------
 const baseIdentitySchema = z.object({
-  lastName: z.string().trim().min(1, 'Last name is required').max(50),
-  phoneNumber: z.string().trim().regex(kenyanPhoneRegex, 'Invalid Kenyan phone number'),
-  county: z.enum(KENYAN_COUNTIES),
+  lastName: requiredText(50, 'Last name is required'),
+  phoneNumber: z
+    .string({ message: 'Phone number is required' })
+    .trim()
+    .regex(kenyanPhoneRegex, 'Enter a Kenyan number, like 0712 345 678'),
+  // Without a message, a blank county was reported by listing all forty-seven
+  // of them in a single error line under the field.
+  county: z.enum(KENYAN_COUNTIES, { message: 'Select your county' }),
 });
 
 // Produce categories double as the farmer's "what do you grow" list and the
@@ -176,13 +198,13 @@ export const buyerIdentitySchema = z.discriminatedUnion('buyerType', [
     procurementScale: z.string().trim().max(60).optional(),
     ...buyerPreferences,
   }),
-]);
+], { message: 'Tell us what kind of buyer you are' });
 
 export const studentIdentitySchema = baseIdentitySchema.extend({
-  academicRegistrationNumber: z.string().trim().min(2, 'Registration number is required').max(60),
-  universityAffiliation: z.string().trim().min(2, 'University is required').max(120),
+  academicRegistrationNumber: requiredText(60, 'Registration number is required'),
+  universityAffiliation: requiredText(120, 'University is required'),
   primaryInterest: z.string().trim().max(120).optional(),
-  programme: z.string().trim().min(2, 'Programme is required').max(120),
+  programme: requiredText(120, 'Programme is required'),
   graduationYear: z
     .number({ message: 'Select your graduation year' })
     .int()
@@ -191,13 +213,35 @@ export const studentIdentitySchema = baseIdentitySchema.extend({
 });
 
 export const lecturerIdentitySchema = baseIdentitySchema.extend({
-  departmentAssignment: z.string().trim().min(2, 'Department is required').max(120),
-  academicStaffId: z.string().trim().min(2, 'Staff ID is required').max(60),
-  universityAffiliation: z.string().trim().min(2, 'University is required').max(120),
+  departmentAssignment: requiredText(120, 'Department is required'),
+  academicStaffId: requiredText(60, 'Staff ID is required'),
+  universityAffiliation: requiredText(120, 'University is required'),
   // Free text: academic title ladders differ between Kenyan institutions and an
   // enum would reject valid positions.
-  position: z.string().trim().min(2, 'Position is required').max(80),
+  position: requiredText(80, 'Position is required'),
 });
+
+/**
+ * The identity schema for a role — the one map, used by the API route to
+ * validate and by the identity form to guide. Sharing it is the point: the
+ * contract was already written, it was simply not visible to the client, so
+ * every mistake cost a round-trip and the user learned nothing while typing.
+ * Returns undefined for roles that do not complete this step.
+ */
+export function identitySchemaForRole(role: Role | null | undefined): ZodType | undefined {
+  switch (role) {
+    case Role.FARMER:
+      return farmerIdentitySchema;
+    case Role.BUYER:
+      return buyerIdentitySchema;
+    case Role.STUDENT:
+      return studentIdentitySchema;
+    case Role.LECTURER:
+      return lecturerIdentitySchema;
+    default:
+      return undefined;
+  }
+}
 
 export const GRADUATION_YEARS: number[] = Array.from(
   { length: GRADUATION_YEAR_MAX - GRADUATION_YEAR_MIN + 1 },
@@ -209,13 +253,14 @@ export const GRADUATION_YEARS: number[] = Array.from(
 // via the institutional-email pin flow instead.
 // ---------------------------------------------------------------------------
 export const farmerOnboardingVerificationSchema = z.object({
-  documentType: z.enum([
-    DocumentType.NATIONAL_ID,
-    DocumentType.COOPERATIVE_CARD,
-    DocumentType.PASSPORT,
-  ]),
-  documentNumber: z.string().trim().min(1, 'Document number is required'),
-  documentImageUrl: z.string().regex(cloudinaryUrlRegex, 'Image must be uploaded to Cloudinary'),
+  documentType: z.enum(
+    [DocumentType.NATIONAL_ID, DocumentType.COOPERATIVE_CARD, DocumentType.PASSPORT],
+    { message: 'Select the document you are uploading' }
+  ),
+  documentNumber: requiredText(60, 'Document number is required'),
+  documentImageUrl: z
+    .string({ message: 'Upload a photo of your document' })
+    .regex(cloudinaryUrlRegex, 'Image must be uploaded to Cloudinary'),
   landOwnershipToken: z
     .string()
     .regex(cloudinaryUrlRegex, 'Land document must be uploaded to Cloudinary')
@@ -231,21 +276,25 @@ export const farmerOnboardingVerificationSchema = z.object({
 export const buyerOnboardingVerificationSchema = z.discriminatedUnion('buyerType', [
   z.object({
     buyerType: z.literal(BuyerType.INDIVIDUAL),
-    documentType: z.enum([DocumentType.NATIONAL_ID, DocumentType.PASSPORT]),
-    documentNumber: z.string().trim().min(1, 'Document number is required'),
-    documentImageUrl: z.string().regex(cloudinaryUrlRegex, 'Image must be uploaded to Cloudinary'),
+    documentType: z.enum([DocumentType.NATIONAL_ID, DocumentType.PASSPORT], {
+      message: 'Select the document you are uploading',
+    }),
+    documentNumber: requiredText(60, 'Document number is required'),
+    documentImageUrl: z
+      .string({ message: 'Upload a photo of your document' })
+      .regex(cloudinaryUrlRegex, 'Image must be uploaded to Cloudinary'),
   }),
   z.object({
     buyerType: z.literal(BuyerType.BUSINESS),
     taxComplianceCertificate: z
-      .string()
+      .string({ message: 'Upload your tax compliance certificate' })
       .regex(cloudinaryUrlRegex, 'Certificate must be uploaded to Cloudinary'),
   }),
-]);
+], { message: 'Tell us what kind of buyer you are' });
 
 export const lecturerOnboardingVerificationSchema = z.object({
   facultyCredentialLetterUrl: z
-    .string()
+    .string({ message: 'Upload your faculty credential letter' })
     .regex(cloudinaryUrlRegex, 'Letter must be uploaded to Cloudinary'),
 });
 
@@ -254,11 +303,18 @@ export const lecturerOnboardingVerificationSchema = z.object({
 // route (universityDomains), not here.
 // ---------------------------------------------------------------------------
 export const institutionalEmailSchema = z.object({
-  institutionalEmail: z.string().trim().toLowerCase().email('Invalid email address'),
+  institutionalEmail: z
+    .string({ message: 'Enter your university email address' })
+    .trim()
+    .toLowerCase()
+    .email('Enter a valid email address'),
 });
 
 export const institutionalEmailVerifySchema = z.object({
-  pin: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code'),
+  pin: z
+    .string({ message: 'Enter the 6-digit code' })
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code'),
 });
 
 export type RoleSelectionInput = z.infer<typeof roleSelectionSchema>;

@@ -151,7 +151,13 @@ describe('POST /api/orders — atomic inventory reservation', () => {
     expect(res.status).toBe(201);
     expect(body.data.orderReferenceId).toBe('UMJ-2026-000001');
 
-    // Verify atomic update was called with correct filter and pipeline
+    // Verify atomic update was called with correct filter and pipeline.
+    //
+    // `updatePipeline: true` is load-bearing, not decoration. Mongoose 9 refuses
+    // an array update without it, so its absence threw on every single order and
+    // the entire purchase path was dead — while this test passed, because it
+    // asserted the options object the code happened to pass rather than the one
+    // the driver requires. Mocking the model means only this line can catch it.
     expect(mockListingFindOneAndUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         _id: LISTING_ID,
@@ -159,7 +165,7 @@ describe('POST /api/orders — atomic inventory reservation', () => {
         quantityAvailable: { $gte: 10 },
       }),
       expect.any(Array), // pipeline update
-      { new: true }
+      { new: true, updatePipeline: true }
     );
   });
 

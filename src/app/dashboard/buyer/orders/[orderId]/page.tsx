@@ -523,6 +523,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           paidAt={order.paidAt}
           confirmedByFarmerAt={order.confirmedByFarmerAt}
           receivedByBuyerAt={order.receivedByBuyerAt}
+          viewer="BUYER"
         />
       </div>
 

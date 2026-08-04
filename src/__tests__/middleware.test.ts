@@ -108,6 +108,45 @@ describe('middleware', () => {
     expect(location(res)).toContain('/onboarding/role-selection');
   });
 
+  it('lets a token minted before the verification split into the product', async () => {
+    // Regression: tokens issued while VERIFICATION_UPLOAD was a live funnel
+    // stage carry `isOnboarded: false` and cannot be re-minted without a
+    // sign-in. The gate reads the *stage* through `isOnboardingComplete` rather
+    // than trusting the stamped boolean, so these sessions are admitted — and,
+    // critically, are never sent to `/onboarding/verification-upload`, a route
+    // that no longer exists and whose redirect would re-trigger this same gate.
+    mockGetToken.mockResolvedValue({
+      role: 'FARMER',
+      isOnboarded: false,
+      onboardingStage: 'VERIFICATION_UPLOAD',
+    });
+    const res = await run('/dashboard/farmer/listings');
+    expect(res.status).toBe(200);
+    expect(location(res)).toBeNull();
+  });
+
+  it('bounces a legacy-stage user off the onboarding pages too', async () => {
+    mockGetToken.mockResolvedValue({
+      role: 'FARMER',
+      isOnboarded: false,
+      onboardingStage: 'VERIFICATION_UPLOAD',
+    });
+    expect(location(await run('/onboarding/role-selection'))).toContain(
+      '/dashboard/farmer/listings'
+    );
+  });
+
+  it('lets any authenticated role reach the verification destination', async () => {
+    // /dashboard/verify is role-agnostic on purpose — it is the one screen where
+    // an account proves who it is — so it must not collide with the role-prefix
+    // enforcement that guards /dashboard/farmer, /dashboard/buyer and the rest.
+    for (const role of ['FARMER', 'BUYER', 'LECTURER', 'STUDENT']) {
+      mockGetToken.mockResolvedValue({ role, isOnboarded: true, onboardingStage: 'COMPLETED' });
+      const res = await run('/dashboard/verify');
+      expect(location(res)).toBeNull();
+    }
+  });
+
   it('bounces an onboarded user off the onboarding pages to their dashboard', async () => {
     mockGetToken.mockResolvedValue({ role: 'FARMER', isOnboarded: true, onboardingStage: 'COMPLETED' });
     const res = await run('/onboarding/role-selection');

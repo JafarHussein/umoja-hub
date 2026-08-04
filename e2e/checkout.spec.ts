@@ -109,7 +109,10 @@ test('awaiting payment shows the 90-s ticker and times out explicitly', async ({
   await expect(page.getByText('90s', { exact: true })).toBeVisible();
 
   // Run out the bounded window → explicit timeout, never an indefinite lock.
+  // The copy says what a buyer needs to know before deciding to retry: that no
+  // money left their account. "Payment timed out" alone left that open.
   await page.clock.fastForward(91_000);
-  await expect(page.getByText(/payment timed out/i)).toBeVisible();
+  await expect(page.getByText(/no confirmation arrived/i)).toBeVisible();
+  await expect(page.getByText(/nothing has been charged/i)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
 });

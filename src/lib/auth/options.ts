@@ -9,6 +9,7 @@ import { credentialsLoginSchema } from '@/lib/validation/onboardingSchema';
 import { extractOAuthIdentity, resolveUniqueUsername } from '@/lib/auth/oauthIdentity';
 import { sendWelcome } from '@/lib/auth/welcome';
 import { isStalePendingAccount } from '@/lib/auth/pendingAccounts';
+import { isOnboardingComplete } from '@/lib/auth/onboarding';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { Role, UserStatus, OnboardingStage, OAuthProvider } from '@/types';
 
@@ -397,7 +398,7 @@ export const authOptions: NextAuthOptions = {
           token.role = (dbUser.role as Role | null) ?? null;
           token.firstName = dbUser.firstName;
           token.onboardingStage = dbUser.onboardingStage as OnboardingStage;
-          token.isOnboarded = dbUser.onboardingStage === OnboardingStage.COMPLETED;
+          token.isOnboarded = isOnboardingComplete(dbUser.onboardingStage);
           token.isVerified = computeIsVerified(dbUser);
         }
       }

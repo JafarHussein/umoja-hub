@@ -82,7 +82,7 @@ export interface IReceiptEvent {
   reference: string | null;
 }
 
-const PAYMENT_LABEL: Record<string, string> = {
+export const PAYMENT_LABEL: Record<string, string> = {
   [PaymentEventType.INITIATED]: 'Payment request sent',
   [PaymentEventType.CALLBACK_RECEIVED]: 'M-Pesa responded',
   [PaymentEventType.SUCCESS]: 'Payment received',
@@ -95,7 +95,7 @@ const PAYMENT_LABEL: Record<string, string> = {
 
 // Result codes Safaricom actually returns — surfaced so the trail explains
 // *why* a payment failed rather than just that it did.
-const RESULT_CODE_DETAIL: Record<number, string> = {
+export const RESULT_CODE_DETAIL: Record<number, string> = {
   0: 'Processed successfully',
   1: 'Insufficient M-Pesa balance',
   1001: 'Another transaction is already in process on this line',

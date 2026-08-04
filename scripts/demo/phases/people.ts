@@ -245,7 +245,10 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         role: Role.FARMER,
         county,
         status: UserStatus.ACTIVE,
-        onboardingStage: isNew ? OnboardingStage.VERIFICATION_UPLOAD : OnboardingStage.COMPLETED,
+        // A new farmer has finished setup like everyone else — what differs is
+        // that their verification is still with an administrator, which is the
+        // `verificationStatus` below, not an unfinished account.
+        onboardingStage: OnboardingStage.COMPLETED,
         isEmailVerified: true,
         profilePhotoUrl: nextFace(p.gender),
         bio: rng.pick(FARM_PROFILES[profile].bios),

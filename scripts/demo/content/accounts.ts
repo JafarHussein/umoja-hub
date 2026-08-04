@@ -145,7 +145,10 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     purpose:
       'PENDING verification — the farmer sitting in the admin verification queue for the live approval demo.',
     extra: {
-      onboardingStage: OnboardingStage.VERIFICATION_UPLOAD,
+      // Setup is finished; it is the *verification* that is pending. The two are
+      // separate axes — an account waiting on an administrator is a full member
+      // of the product, it just cannot publish produce yet.
+      onboardingStage: OnboardingStage.COMPLETED,
       bio: 'Four acres in Kericho — tea on the slope, maize on the flat, and a few dairy cows. New here and still getting my documents in order.',
       farmerData: {
         verificationStatus: VerificationStatus.PENDING,

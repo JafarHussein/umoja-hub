@@ -60,6 +60,13 @@ export enum OnboardingStage {
   PASSWORD_SETUP = 'PASSWORD_SETUP',
   ROLE_SELECTION = 'ROLE_SELECTION',
   IDENTITY_INPUT = 'IDENTITY_INPUT',
+  /**
+   * @deprecated Legacy terminal stage — never written by any route. Setup now
+   * completes at IDENTITY_INPUT, because holding the whole product behind a
+   * document upload locked out users who did not have one to hand. Kept so rows
+   * and unexpired tokens created before that change still resolve; treated as
+   * complete by `isOnboardingComplete`.
+   */
   VERIFICATION_UPLOAD = 'VERIFICATION_UPLOAD',
   COMPLETED = 'COMPLETED',
 }
@@ -200,6 +207,19 @@ export enum DocumentType {
   COOPERATIVE_CARD = 'COOPERATIVE_CARD',
   PASSPORT = 'PASSPORT',
 }
+
+/**
+ * How a document type is written for a person to read. Lives here beside the
+ * enum because it was previously declared three times — once in the admin
+ * farmer detail, once inside a render function in the verification queue, and
+ * not at all on the farmer's own profile, which showed them the raw
+ * `NATIONAL_ID`.
+ */
+export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
+  [DocumentType.NATIONAL_ID]: 'National ID',
+  [DocumentType.COOPERATIVE_CARD]: 'Cooperative card',
+  [DocumentType.PASSPORT]: 'Passport',
+};
 
 export enum FarmerTrustTier {
   NEW = 'NEW',

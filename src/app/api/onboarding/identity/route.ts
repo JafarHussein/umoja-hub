@@ -2,30 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
-import {
-  farmerIdentitySchema,
-  buyerIdentitySchema,
-  studentIdentitySchema,
-  lecturerIdentitySchema,
-} from '@/lib/validation/onboardingSchema';
+import { identitySchemaForRole } from '@/lib/validation/onboardingSchema';
 import { AppError, handleApiError, logger } from '@/lib/utils';
 import { Role, OnboardingStage } from '@/types';
-import type { ZodType } from 'zod';
 
 // ---------------------------------------------------------------------------
-// POST /api/onboarding/identity — Stage 2: role-conditional identity (AUTH-05)
+// POST /api/onboarding/identity — the last step of account setup (AUTH-05).
 // Auth: onboarding user with a role set (stage must be IDENTITY_INPUT).
 // Fills the common identity columns (lastName/phoneNumber/county) plus the
-// role-specific sub-document fields, then advances to VERIFICATION_UPLOAD.
+// role-specific sub-document fields, then completes onboarding.
 // githubUsername is never accepted here — it is OAuth-sourced (UI-12).
+//
+// Setup ends here because this is the point at which the platform knows who the
+// user is and what they came to do. Identity *verification* is a separate axis
+// (`verificationStatus` / `isVerified`) collected on demand at /dashboard/verify
+// and enforced at the restricted action, not at the door — see
+// `src/lib/auth/onboarding.ts`.
 // ---------------------------------------------------------------------------
-
-const SCHEMA_BY_ROLE: Record<string, ZodType> = {
-  [Role.FARMER]: farmerIdentitySchema,
-  [Role.BUYER]: buyerIdentitySchema,
-  [Role.STUDENT]: studentIdentitySchema,
-  [Role.LECTURER]: lecturerIdentitySchema,
-};
 
 // Maps the role-specific identity fields onto their sub-document paths.
 function roleIdentityUpdate(role: string, data: Record<string, unknown>): Record<string, unknown> {
@@ -88,7 +81,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw new AppError('Complete the previous step first.', 409, 'ONBOARDING_INVALID_STAGE');
     }
 
-    const schema = user.role ? SCHEMA_BY_ROLE[user.role] : undefined;
+    const schema = identitySchemaForRole(user.role as Role | null);
     if (!schema) {
       throw new AppError('Select a role before submitting identity.', 409, 'ONBOARDING_NO_ROLE');
     }
@@ -109,7 +102,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
         county: data.county,
-        onboardingStage: OnboardingStage.VERIFICATION_UPLOAD,
+        onboardingStage: OnboardingStage.COMPLETED,
         ...roleIdentityUpdate(user.role as string, data),
       },
     });
@@ -120,7 +113,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({
-      data: { onboardingStage: OnboardingStage.VERIFICATION_UPLOAD },
+      data: { onboardingStage: OnboardingStage.COMPLETED },
     });
   } catch (error) {
     return handleApiError(error);

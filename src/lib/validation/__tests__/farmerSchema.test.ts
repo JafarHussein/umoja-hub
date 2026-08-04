@@ -1,6 +1,5 @@
 import {
   farmerProfileSchema,
-  verificationDocSchema,
   cropListingSchema,
   listingUpdateSchema,
   adminVerifyFarmerSchema,
@@ -126,60 +125,6 @@ describe('listingUpdateSchema', () => {
 
   it('accepts an empty object (no-op update)', () => {
     expect(listingUpdateSchema.safeParse({}).success).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// verificationDocSchema
-// ---------------------------------------------------------------------------
-
-describe('verificationDocSchema', () => {
-  const valid = {
-    documentType: 'NATIONAL_ID' as const,
-    documentNumber: 'ID-123456',
-    documentImageUrl: 'https://res.cloudinary.com/dqs2dwrjx/image/upload/v1/doc.jpg',
-  };
-
-  it('accepts a valid verification document', () => {
-    expect(verificationDocSchema.safeParse(valid).success).toBe(true);
-  });
-
-  it('accepts COOPERATIVE_CARD type', () => {
-    expect(
-      verificationDocSchema.safeParse({ ...valid, documentType: 'COOPERATIVE_CARD' }).success
-    ).toBe(true);
-  });
-
-  it('accepts PASSPORT type', () => {
-    expect(
-      verificationDocSchema.safeParse({ ...valid, documentType: 'PASSPORT' }).success
-    ).toBe(true);
-  });
-
-  it('rejects invalid document type', () => {
-    expect(
-      verificationDocSchema.safeParse({ ...valid, documentType: 'DRIVERS_LICENSE' }).success
-    ).toBe(false);
-  });
-
-  it('rejects empty document number', () => {
-    expect(
-      verificationDocSchema.safeParse({ ...valid, documentNumber: '' }).success
-    ).toBe(false);
-  });
-
-  it('rejects non-Cloudinary image URL', () => {
-    expect(
-      verificationDocSchema.safeParse({
-        ...valid,
-        documentImageUrl: 'https://example.com/image.jpg',
-      }).success
-    ).toBe(false);
-  });
-
-  it('rejects missing documentType', () => {
-    const { documentType: _, ...noType } = valid;
-    expect(verificationDocSchema.safeParse(noType).success).toBe(false);
   });
 });
 

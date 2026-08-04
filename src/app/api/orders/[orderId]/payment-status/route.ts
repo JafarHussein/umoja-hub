@@ -7,12 +7,61 @@ import { AppError, handleApiError } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
 import { dispatchDuePayments } from '@/lib/payments/dispatcher';
 import { reconcileStuckPayments } from '@/lib/payments/reconcile';
+import { PAYMENT_LABEL, RESULT_CODE_DETAIL } from '@/lib/foodhub/receipt';
 import { OrderPaymentStatus, Role } from '@/types';
 
 // ---------------------------------------------------------------------------
-// GET /api/orders/[orderId]/payment-status — Poll payment + fulfillment status
-// Auth: BUYER or FARMER who owns this order
+// GET /api/orders/[orderId]/payment-status — the state of one payment session.
+// Auth: BUYER or FARMER who owns this order.
+//
+// This used to return a terminal status and nothing else, so checkout could
+// only ever be "spinner, then result" — the same thing a mock would produce.
+// The backend has always recorded a stream: PaymentEventLog rows written by the
+// order route and the shared callback processor, identical under real Daraja
+// and the simulator. It returns that stream now, so the waiting screen narrates
+// what actually happened and when, rather than animating a guess.
 // ---------------------------------------------------------------------------
+
+/** One recorded step of the payment session, in the words the receipt uses. */
+export interface IPaymentSessionEvent {
+  type: string;
+  label: string;
+  detail: string | null;
+  occurredAt: string;
+}
+
+interface IPaymentEventLean {
+  eventType: string;
+  resultCode?: number | null;
+  occurredAt?: Date | string | null;
+}
+
+// The vocabulary comes from the receipt so the live session and the permanent
+// record describe the same event with the same sentence. A buyer who watched
+// "M-Pesa responded" go by should find that exact line on the receipt later.
+function narrate(events: IPaymentEventLean[]): IPaymentSessionEvent[] {
+  return events.map((e) => ({
+    type: e.eventType,
+    label: PAYMENT_LABEL[e.eventType] ?? e.eventType,
+    detail: typeof e.resultCode === 'number' ? (RESULT_CODE_DETAIL[e.resultCode] ?? null) : null,
+    occurredAt: new Date(e.occurredAt ?? Date.now()).toISOString(),
+  }));
+}
+
+async function sessionEvents(orderId: string): Promise<IPaymentSessionEvent[]> {
+  try {
+    const { default: PaymentEventLog } = await import('@/lib/models/PaymentEventLog.model');
+    const rows = (await PaymentEventLog.find({ orderId })
+      .select('eventType resultCode occurredAt')
+      .sort({ occurredAt: 1 })
+      .lean()) as unknown as IPaymentEventLean[];
+    return narrate(rows);
+  } catch {
+    // The narration is decoration over the status. Never let it break the poll
+    // the buyer is depending on to learn whether their money moved.
+    return [];
+  }
+}
 
 export async function GET(
   _req: Request,
@@ -33,10 +82,11 @@ export async function GET(
       fulfillmentStatus: string;
       buyerId: { toString(): string };
       farmerId: { toString(): string };
+      mpesaTransactionId?: string | null;
     };
 
     const order = (await Order.findById(orderId)
-      .select('paymentStatus fulfillmentStatus buyerId farmerId')
+      .select('paymentStatus fulfillmentStatus buyerId farmerId mpesaTransactionId')
       .lean()) as unknown as OrderStatusLean | null;
 
     if (!order) {
@@ -70,6 +120,8 @@ export async function GET(
             paymentStatus: OrderPaymentStatus.FAILED,
             fulfillmentStatus: order.fulfillmentStatus,
             isSimulated: isSimulationActive(),
+            mpesaTransactionId: null,
+            events: await sessionEvents(orderId),
           });
         }
       } catch {
@@ -86,16 +138,21 @@ export async function GET(
         const delivered = await dispatchDuePayments({ orderId });
         if (delivered > 0) {
           const fresh = (await Order.findById(orderId)
-            .select('paymentStatus fulfillmentStatus')
+            .select('paymentStatus fulfillmentStatus mpesaTransactionId')
             .lean()) as unknown as Pick<
             OrderStatusLean,
-            'paymentStatus' | 'fulfillmentStatus'
+            'paymentStatus' | 'fulfillmentStatus' | 'mpesaTransactionId'
           > | null;
           if (fresh) {
             return NextResponse.json({
               paymentStatus: fresh.paymentStatus,
               fulfillmentStatus: fresh.fulfillmentStatus,
               isSimulated: true,
+              // The simulator mints a realistic 10-character M-Pesa receipt and
+              // the platform stored it without ever showing it. It is the one
+              // thing a Kenyan buyer checks a payment against.
+              mpesaTransactionId: fresh.mpesaTransactionId ?? null,
+              events: await sessionEvents(orderId),
             });
           }
         }
@@ -111,6 +168,8 @@ export async function GET(
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
       isSimulated: isSimulationActive(),
+      mpesaTransactionId: order.mpesaTransactionId ?? null,
+      events: await sessionEvents(orderId),
     });
   } catch (error) {
     return handleApiError(error);

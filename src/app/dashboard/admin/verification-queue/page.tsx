@@ -16,7 +16,7 @@ import {
   TR,
   TD,
 } from '@/components/app';
-import { Role, DocumentType, VerificationStatus } from '@/types';
+import { Role, DocumentType, DOCUMENT_TYPE_LABEL, VerificationStatus } from '@/types';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 interface IVerificationDocument {
@@ -229,15 +229,6 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
     });
   }
 
-  function docTypeLabel(type: DocumentType): string {
-    const labels: Record<DocumentType, string> = {
-      [DocumentType.NATIONAL_ID]: 'National ID',
-      [DocumentType.COOPERATIVE_CARD]: 'Cooperative Card',
-      [DocumentType.PASSPORT]: 'Passport',
-    };
-    return labels[type];
-  }
-
   // ── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
@@ -324,7 +315,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                 <TD className="text-app-muted">{farmer.county}</TD>
                 <TD className="font-app-mono text-app-muted">
                   {farmer.farmerData.verificationDocument
-                    ? docTypeLabel(farmer.farmerData.verificationDocument.documentType)
+                    ? DOCUMENT_TYPE_LABEL[farmer.farmerData.verificationDocument.documentType]
                     : '—'}
                 </TD>
                 <TD className="text-app-faint">
@@ -512,7 +503,7 @@ export default function AdminVerificationQueuePage(): React.ReactElement {
                 <p className="app-label text-app-muted">Verification document</p>
                 <div className="grid grid-cols-2 gap-3">
                   <DetailTile label="Type">
-                    {docTypeLabel(selectedFarmer.farmerData.verificationDocument.documentType)}
+                    {DOCUMENT_TYPE_LABEL[selectedFarmer.farmerData.verificationDocument.documentType]}
                   </DetailTile>
                   <DetailTile label="Number">
                     <span className="font-app-mono">

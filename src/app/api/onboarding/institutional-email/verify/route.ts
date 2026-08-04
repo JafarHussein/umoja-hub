@@ -6,6 +6,7 @@ import { institutionalEmailVerifySchema } from '@/lib/validation/onboardingSchem
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AppError, handleApiError, verifySecret, logger } from '@/lib/utils';
 import { Role, OnboardingStage, NotificationType } from '@/types';
+import { isOnboardingComplete } from '@/lib/auth/onboarding';
 import { notify } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
@@ -50,8 +51,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (user.role !== Role.STUDENT) {
       throw new AppError('This step does not apply to your account.', 409, 'ONBOARDING_WRONG_ROLE');
     }
-    if (user.onboardingStage !== OnboardingStage.VERIFICATION_UPLOAD) {
-      throw new AppError('Complete the previous step first.', 409, 'ONBOARDING_INVALID_STAGE');
+    if (!isOnboardingComplete(user.onboardingStage)) {
+      throw new AppError('Finish setting up your account first.', 409, 'ONBOARDING_INVALID_STAGE');
     }
 
     const hashedPin = user.studentData?.institutionalEmailPin;
