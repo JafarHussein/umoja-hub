@@ -190,7 +190,10 @@ export function OrderTimelineDetailed({
     {
       key: 'ordered',
       label: 'Order placed',
-      detail: 'Awaiting M-Pesa confirmation',
+      // Only while it is true. Once payment lands, "Awaiting M-Pesa
+      // confirmation" sat under a completed step describing a state that had
+      // already passed — the timestamp on the next step says the rest.
+      ...(isPaid ? {} : { detail: 'Awaiting M-Pesa confirmation' }),
       isComplete: true,
       isActive: !isPaid,
       party: who(viewer, 'BUYER'),
@@ -261,7 +264,13 @@ export function OrderTimelineDetailed({
         ? 'Released to the farmer from escrow'
         : isDisputed
           ? 'On hold until the review concludes'
-          : 'Held in escrow until the buyer confirms receipt',
+          : // Addressed to whoever is reading. This step and "Buyer received"
+            // describe the same act by the same person, and saying "you" on one
+            // and "the buyer" on the other made a single timeline sound like it
+            // was written about two different people.
+            viewer === 'BUYER'
+            ? 'Held in escrow until you confirm receipt'
+            : 'Held in escrow until the buyer confirms receipt',
       isComplete: isCompleted,
       isActive: isCompleted,
       party: 'UmojaHub',

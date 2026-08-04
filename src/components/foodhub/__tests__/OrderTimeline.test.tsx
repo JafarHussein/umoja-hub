@@ -68,4 +68,32 @@ describe('OrderTimelineDetailed', () => {
     render(<OrderTimelineDetailed {...PAID} viewer="FARMER" />);
     expect(screen.getByText('· UmojaHub holds the funds')).toBeInTheDocument();
   });
+
+  it('addresses the buyer the same way in both steps that describe their act', () => {
+    // "Confirm receipt once the produce reaches you" and "held in escrow until
+    // the buyer confirms receipt" describe one act by one person. Mixing the
+    // second and third person across two adjacent steps made a single timeline
+    // read as though it were written about someone else halfway down.
+    render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
+    expect(screen.getByText(/Held in escrow until you confirm receipt/)).toBeInTheDocument();
+    expect(screen.queryByText(/until the buyer confirms receipt/)).not.toBeInTheDocument();
+  });
+
+  it('stops saying a paid order is awaiting payment', () => {
+    // The detail under "Order placed" was static, so a completed first step
+    // went on describing a state that had already passed.
+    render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
+    expect(screen.queryByText('Awaiting M-Pesa confirmation')).not.toBeInTheDocument();
+  });
+
+  it('still says so while payment is genuinely outstanding', () => {
+    render(
+      <OrderTimelineDetailed
+        paymentStatus={OrderPaymentStatus.PENDING_PAYMENT}
+        fulfillmentStatus={OrderFulfillmentStatus.AWAITING_PAYMENT}
+        viewer="BUYER"
+      />
+    );
+    expect(screen.getByText('Awaiting M-Pesa confirmation')).toBeInTheDocument();
+  });
 });
