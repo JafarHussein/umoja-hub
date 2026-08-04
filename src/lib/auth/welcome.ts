@@ -18,7 +18,7 @@ function welcomeBodyFor(role: Role): string {
     case Role.BUYER:
       return 'Your account is ready. Browse verified produce and source directly from trusted farmers — every order is escrow-protected.';
     case Role.STUDENT:
-      return 'Your account is ready. Verify your university email and start building the public portfolio employers can see.';
+      return 'Your account is ready. Verify your university email so your coursework can shape the engineering work you take on here.';
     case Role.LECTURER:
       return 'Your reviewer account is ready and pending verification. Once approved, student work will arrive in your review queue.';
     case Role.ADMIN:

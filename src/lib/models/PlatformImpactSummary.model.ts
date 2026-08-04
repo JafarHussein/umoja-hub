@@ -16,8 +16,6 @@ const platformImpactSummarySchema = new Schema({
     registeredStudentCount: { type: Number, default: 0 },
     verifiedProjectCount: { type: Number, default: 0 },
     activeStudentCount: { type: Number, default: 0 },
-    averageProjectScore: { type: Number, default: 0 },
-    skillsIssuedCount: { type: Number, default: 0 },
     lecturerCount: { type: Number, default: 0 },
     universitiesRepresented: { type: Number, default: 0 },
   },

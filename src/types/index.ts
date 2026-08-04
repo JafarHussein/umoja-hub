@@ -215,13 +215,6 @@ export enum StudentTier {
   ADVANCED = 'ADVANCED',
 }
 
-export enum PortfolioStrength {
-  BUILDING = 'BUILDING',
-  DEVELOPING = 'DEVELOPING',
-  STRONG = 'STRONG',
-  EXCEPTIONAL = 'EXCEPTIONAL',
-}
-
 export enum ProjectTrack {
   OPEN_SOURCE = 'OPEN_SOURCE',
   AI_BRIEF = 'AI_BRIEF',
@@ -453,13 +446,6 @@ export enum InstitutionType {
   TVET = 'TVET',
 }
 
-// Whether a student portfolio is reachable by its public slug (employers) or
-// private to the student.
-export enum PortfolioVisibility {
-  PRIVATE = 'PRIVATE',
-  PUBLIC = 'PUBLIC',
-}
-
 // Persisted in-app notification taxonomy. The channel records how it was also
 // delivered out-of-band (the existing fire-and-forget SMS/email), if at all.
 export enum NotificationType {
@@ -469,7 +455,6 @@ export enum NotificationType {
   VERIFICATION_UPDATE = 'VERIFICATION_UPDATE',
   PAYOUT_UPDATE = 'PAYOUT_UPDATE',
   REVIEW_UPDATE = 'REVIEW_UPDATE',
-  PORTFOLIO_VIEW = 'PORTFOLIO_VIEW',
   GROUP_UPDATE = 'GROUP_UPDATE',
   SYSTEM = 'SYSTEM',
 }

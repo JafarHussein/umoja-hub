@@ -1,6 +1,5 @@
 import type {
   StudentTier,
-  PortfolioStrength,
   ProjectTrack,
   ProjectStatus,
   LecturerDecision,
@@ -112,53 +111,6 @@ export interface ILecturerReview {
     overallFeedback?: string;
   };
   rejectionReason?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ---------------------------------------------------------------------------
-// Student Portfolio Status
-// ---------------------------------------------------------------------------
-
-export interface IVerifiedProject {
-  engagementId: string;
-  title: string;
-  tier: StudentTier;
-  techStack: string[];
-  verifiedAt: Date;
-  averageScore: number;
-  lecturerInstitution: string;
-}
-
-export interface IVerifiedSkill {
-  skillName: string;
-  category: string;
-  tierDemonstrated: StudentTier;
-  firstVerifiedAt: Date;
-  projectTitle: string;
-  engagementId: string;
-}
-
-export interface ITierProgressionEntry {
-  tier: StudentTier;
-  unlockedAt: Date;
-}
-
-export interface IStudentPortfolioStatus {
-  _id: string;
-  studentId: string;
-  currentTier: StudentTier;
-  portfolioStrength: PortfolioStrength;
-  verifiedProjects: IVerifiedProject[];
-  verifiedSkills: IVerifiedSkill[];
-  tierProgressionTimeline: ITierProgressionEntry[];
-  stats: {
-    verifiedProjectCount: number;
-    totalProjectCount: number;
-    techStacksUsed: string[];
-    reviewerInstitutions: string[];
-  };
-  lastRecalculatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

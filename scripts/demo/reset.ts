@@ -93,13 +93,11 @@ export async function clearRetiredSeedData(): Promise<number> {
     ['EscrowEventLog', ['farmerId', 'buyerId']],
     ['WithdrawalRequest', ['farmerId']],
     ['MediationRequest', ['farmerId', 'buyerId']],
-    ['StudentPortfolioStatus', ['studentId']],
     ['ProjectEngagement', ['studentId']],
     ['PeerReview', ['reviewerId']],
     ['LecturerReview', ['lecturerId']],
     ['LecturerEffectiveness', ['lecturerId']],
     ['VerificationAuditLog', ['studentId', 'lecturerId']],
-    ['PortfolioView', ['studentId', 'viewerId']],
     ['Notification', ['userId']],
     ['AdminAuditLog', ['adminId']],
   ];

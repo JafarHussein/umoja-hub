@@ -4,10 +4,10 @@ import User from '@/lib/models/User.model';
 import Order from '@/lib/models/Order.model';
 import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
 import MarketInsight from '@/lib/models/MarketInsight.model';
-import StudentPortfolioStatus from '@/lib/models/StudentPortfolioStatus.model';
+import ProjectEngagement from '@/lib/models/ProjectEngagement.model';
 import PlatformImpactSummary from '@/lib/models/PlatformImpactSummary.model';
 import { logger } from '@/lib/utils';
-import { Role, OrderFulfillmentStatus } from '@/types';
+import { Role, OrderFulfillmentStatus, ProjectStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // POST /api/cron/impact-summary — Hourly platform impact summary
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     trustScores,
     latestInsight,
     registeredStudentCount,
-    portfolioStatuses,
+    verifiedEngagements,
     lecturerCount,
   ] = await Promise.all([
     User.countDocuments({ role: Role.FARMER, 'farmerData.isVerified': true }),
@@ -63,18 +63,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { $group: { _id: null, avgPremium: { $avg: '$pricing.platformPremium' } } },
     ]),
     User.countDocuments({ role: Role.STUDENT }),
-    StudentPortfolioStatus.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalVerifiedProjects: { $sum: '$stats.verifiedProjectCount' },
-          activeCount: {
-            $sum: { $cond: [{ $gt: ['$stats.verifiedProjectCount', 0] }, 1, 0] },
-          },
-          avgScore: { $avg: '$stats.averageScore' },
-          totalSkills: { $sum: { $size: '$verifiedSkills' } },
-        },
-      },
+    // Verified engagements, and how many distinct students hold at least one.
+    ProjectEngagement.aggregate([
+      { $match: { status: ProjectStatus.VERIFIED } },
+      { $group: { _id: '$studentId', count: { $sum: 1 } } },
+      { $group: { _id: null, activeCount: { $sum: 1 }, totalVerified: { $sum: '$count' } } },
     ]),
     User.countDocuments({ role: Role.LECTURER }),
   ]);
@@ -82,12 +75,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const completedOrdersData = completedOrders[0] ?? { count: 0, totalVolume: 0 };
   const avgTrustScore = trustScores[0]?.avg ?? 0;
   const avgPlatformPremium = latestInsight[0]?.avgPremium ?? 0;
-  const portfolioData = portfolioStatuses[0] ?? {
-    totalVerifiedProjects: 0,
-    activeCount: 0,
-    avgScore: 0,
-    totalSkills: 0,
-  };
+  const engagementData = verifiedEngagements[0] ?? { totalVerified: 0, activeCount: 0 };
 
   // Count unique counties from verified farmers
   const countiesResult = await User.distinct('county', {
@@ -118,10 +106,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     },
     education: {
       registeredStudentCount,
-      verifiedProjectCount: portfolioData.totalVerifiedProjects,
-      activeStudentCount: portfolioData.activeCount,
-      averageProjectScore: Math.round((portfolioData.avgScore ?? 0) * 10) / 10,
-      skillsIssuedCount: portfolioData.totalSkills,
+      verifiedProjectCount: engagementData.totalVerified,
+      activeStudentCount: engagementData.activeCount,
       lecturerCount,
       universitiesRepresented: universitiesResult.length,
     },

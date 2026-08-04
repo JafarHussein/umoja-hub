@@ -7,14 +7,13 @@
 //   foundation → the pinned demo accounts and authored content everything hangs off
 //   people     → the generated population around them
 //   commerce   → listings, orders, escrow, trust (derived with the real calculator)
-//   education  → engagements, reviews, portfolios
+//   education  → engagements, peer reviews, lecturer reviews
 //   operations → the payment trail, audit history and assistant history that the
 //                first four phases imply but do not themselves write
 //
 // The relationship graph is not a separate pass — it emerges from the phases,
-// which deliberately cluster cooperatives by county, sponsor some via NGOs, tie
-// every student to an institution + peer reviewer + lecturer, and route employer
-// views at public portfolios. After generation we derive a couple of
+// which deliberately cluster cooperatives by county and tie every student to an
+// institution + peer reviewer + lecturer. After generation we derive a couple of
 // human-readable "stories" and store them on the run.
 
 import './registry'; // side-effect: register every model the run touches
@@ -59,7 +58,7 @@ function narrativeNotes(world: World): string {
   if (world.students[0] && lecturer) {
     lines.push(
       `Education thread: students at ${world.institutions[0]?.name ?? 'a partner university'} ` +
-        `move work through peer review and ${lecturer.fullName}'s verification into public portfolios employers browse.`
+        `move work through peer review into ${lecturer.fullName}'s engineering review and sign-off.`
     );
   }
   return lines.join(' ');
@@ -96,7 +95,7 @@ export async function runSimulation(runId: string = newRunId()): Promise<RunResu
     await generateCommerce(ctx, world);
     await batcher.flush();
 
-    log('education: engagements, reviews and portfolios...');
+    log('education: engagements, peer reviews and lecturer reviews...');
     await generateEducation(ctx, world);
     await batcher.flush();
 

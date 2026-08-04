@@ -8,14 +8,14 @@ import crypto from 'crypto';
 import type { SimContext, World } from '../world';
 import { createDoc, pushNotification } from '../helpers';
 import { between, daysAgo, daysAfter } from '../clock';
-import { PROJECT_TITLES, TECH_STACKS, SKILL_CATEGORIES } from '../dictionaries';
+import { PROJECT_TITLES, TECH_STACKS } from '../dictionaries';
 import {
   aiBrief, problemBreakdown, approachPlan, finalReflection,
   blockerEntry, aiUsageEntry, lecturerComment, peerComment,
 } from '../text';
 import {
   ProjectTrack, ProjectStatus, PeerReviewStatus, LecturerDecision,
-  StudentTier, PortfolioStrength, PortfolioVisibility, NotificationType,
+  StudentTier, NotificationType,
 } from '../../../src/types';
 
 function sha256(s: string): string {
@@ -26,26 +26,17 @@ interface StudentActivity { engagements: [number, number]; verifyRate: number; }
 function activityFor(archetype: string): StudentActivity {
   switch (archetype) {
     case 'high': return { engagements: [2, 4], verifyRate: 0.85 };
-    case 'portfolio': return { engagements: [3, 4], verifyRate: 0.9 };
+    case 'prolific': return { engagements: [3, 4], verifyRate: 0.9 };
     case 'average': return { engagements: [1, 3], verifyRate: 0.6 };
     case 'revision': return { engagements: [1, 2], verifyRate: 0.3 };
     default: return { engagements: [0, 1], verifyRate: 0 }; // 'new'
   }
 }
 
-function strengthFor(count: number): string {
-  if (count >= 5) return PortfolioStrength.EXCEPTIONAL;
-  if (count >= 3) return PortfolioStrength.STRONG;
-  if (count >= 1) return PortfolioStrength.DEVELOPING;
-  return PortfolioStrength.BUILDING;
-}
-
 interface LecturerStat {
   total: number; verified: number; revision: number; denied: number;
   scoreSum: number; scoreCount: number; lastAt: Date;
 }
-
-let slugSeq = 0;
 
 export async function generateEducation(ctx: SimContext, world: World): Promise<void> {
   const { rng, ledger, batcher } = ctx;
@@ -56,7 +47,6 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   const { default: PeerReview } = await import('../../../src/lib/models/PeerReview.model');
   const { default: LecturerReview } = await import('../../../src/lib/models/LecturerReview.model');
   const { default: LecturerEffectiveness } = await import('../../../src/lib/models/LecturerEffectiveness.model');
-  const { default: StudentPortfolioStatus } = await import('../../../src/lib/models/StudentPortfolioStatus.model');
   const { default: VerificationAuditLog } = await import('../../../src/lib/models/VerificationAuditLog.model');
 
   const lecturerStats = new Map<string, LecturerStat>();
@@ -64,11 +54,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   for (const student of world.students) {
     const activity = activityFor(student.archetype);
     const tier = rng.pick([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]);
-    const verifiedProjects: Record<string, unknown>[] = [];
-    const verifiedSkills: Record<string, unknown>[] = [];
-    const techStacksUsed = new Set<string>();
-    const reviewerInstitutions = new Set<string>();
-    const scores: number[] = [];
+    let verifiedCount = 0;
 
     const n = rng.int(activity.engagements[0], activity.engagements[1]);
     for (let e = 0; e < n; e++) {
@@ -184,46 +170,14 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       await pushNotification(batcher, {
         userId: student.id, type: NotificationType.REVIEW_UPDATE,
         title: verified ? 'Project verified' : decision === LecturerDecision.DENIED ? 'Project not verified' : 'Revision requested',
-        body: verified ? 'A lecturer verified your project. It now counts toward your portfolio.' : 'A lecturer reviewed your project — see the feedback.',
+        body: verified ? 'A lecturer signed off your project.' : 'A lecturer reviewed your project — see the feedback.',
         relatedEntity: { kind: 'ProjectEngagement', id: engagement._id }, createdAt: lecAt,
       });
 
-      if (verified) {
-        const lecturerInstitution = world.institutions.find((i) => i.county === lecturer.county)?.name ?? world.institutions[0]?.name;
-        verifiedProjects.push({ engagementId: engagement._id, title, tier, techStack: stack, verifiedAt: daysAfter(frAt, rng.int(2, 6)), averageScore: Math.round(avgSc * 10) / 10, lecturerInstitution });
-        for (const skill of stack) {
-          techStacksUsed.add(skill);
-          if (!verifiedSkills.some((s) => s.skillName === skill)) {
-            verifiedSkills.push({ skillName: skill, category: SKILL_CATEGORIES[skill] ?? 'General', tierDemonstrated: tier, firstVerifiedAt: daysAfter(frAt, rng.int(2, 6)), projectTitle: title, engagementId: engagement._id });
-          }
-        }
-        if (lecturerInstitution) reviewerInstitutions.add(lecturerInstitution);
-        scores.push(avgSc);
-      }
+      if (verified) verifiedCount++;
     }
 
-    // Portfolio status.
-    const verifiedCount = verifiedProjects.length;
-    const isPublic = verifiedCount > 0;
-    slugSeq++;
-    const slug = `${student.firstName}-${student.lastName}-${slugSeq}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    ledger.track('StudentPortfolioStatus', await createDoc(StudentPortfolioStatus, {
-      studentId: student.id, currentTier: tier, portfolioStrength: strengthFor(verifiedCount),
-      verifiedProjects, verifiedSkills,
-      tierProgressionTimeline: [{ tier: StudentTier.BEGINNER, unlockedAt: student.joinedAt }],
-      stats: {
-        verifiedProjectCount: verifiedCount, totalProjectCount: n,
-        averageScore: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0,
-        techStacksUsed: [...techStacksUsed], reviewerInstitutions: [...reviewerInstitutions],
-      },
-      visibility: isPublic ? PortfolioVisibility.PUBLIC : PortfolioVisibility.PRIVATE,
-      publicSlug: isPublic ? slug : undefined,
-      lastRecalculatedAt: new Date(),
-      createdAt: student.joinedAt, updatedAt: new Date(),
-    }));
-
     await User.updateOne({ _id: student.id }, { $set: { 'studentData.completedProjectCount': verifiedCount, 'studentData.currentTier': tier } });
-
   }
 
   // Write lecturer effectiveness aggregates.

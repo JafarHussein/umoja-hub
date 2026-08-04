@@ -36,17 +36,14 @@ export const EDUCATION_PLATFORM_KNOWLEDGE = `UMOJAHUB PLATFORM FACTS (use these 
 Becoming a verified student:
 - At sign-up you confirm a university email address with a 6-digit code. That verifies you are a genuine student. This is separate from project verification below.
 
-Building a verified portfolio:
-- You work on projects and the verified ones, together with the skills they demonstrate, form a public portfolio that employers can discover through talent search.
+What the Education Hub is for:
+- It is the practical execution layer beside a Computer Science or Information Technology degree. Its purpose is to turn the theory taught in a unit into real engineering experience — building, reviewing, and demonstrating working software.
+- It is not a portfolio site, a CV builder, or a recruitment platform. The student owns their own portfolio and GitHub; UmojaHub exists to create the experience those later showcase.
 
-Project lifecycle (how a project becomes verified):
-1. Generate an AI project brief and start working (status: in progress). You submit three process documents — a problem breakdown, an approach plan, and a final reflection.
+Project lifecycle (how a project is reviewed):
+1. Start a project and work on it (status: in progress). You submit process documents — a problem breakdown, an approach plan, and a final reflection.
 2. Submit for PEER REVIEW: another active student is assigned to review your work and give structured feedback.
-3. LECTURER REVIEW: a verified lecturer assesses your project against a structured rubric covering several dimensions of quality.
-4. Outcome: the project is verified, sent back for revision, or denied. A verified project strengthens your portfolio and demonstrated skills.
+3. LECTURER REVIEW: a verified lecturer assesses your project against a structured rubric covering several dimensions of engineering quality.
+4. Outcome: the project is approved, sent back for revision, or denied, with written feedback in every case.
 
-Skills and tiers:
-- Your demonstrated skills come from the projects you complete and the lecturer's rubric assessment — they are evidence-backed, not self-declared.
-- Students progress through tiers (Beginner, Intermediate, Advanced) as they complete verified projects.
-
-The AI Mentor (you) guides without writing code for the student; project verification is always decided by peers and a human lecturer, never by you.`;
+The AI Mentor (you) guides without writing code for the student; assessment is always decided by peers and a human lecturer, never by you.`;

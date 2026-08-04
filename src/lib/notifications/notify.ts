@@ -21,8 +21,8 @@ export interface NotifyInput {
   channel?: NotificationChannel;
 }
 
-// Per-type email policy. PORTFOLIO_VIEW is intentionally in-app only (a portfolio
-// can be viewed many times a day — emailing each view would be spam).
+// Per-type email policy. A type with no entry here is in-app only — high-volume
+// or low-signal notifications opt out of email rather than becoming spam.
 const EMAIL_NEXT_STEP: Partial<Record<NotificationType, string>> = {
   [NotificationType.WELCOME]: 'Open your dashboard to take your first step.',
   [NotificationType.ORDER_UPDATE]: 'Open your orders to see the latest status.',
@@ -60,7 +60,7 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
   // would raise Jest's "import outside the scope of the test" error.
   if (!process.env['SMTP_HOST'] || process.env['NODE_ENV'] === 'test') return;
   const nextStep = EMAIL_NEXT_STEP[input.type];
-  if (nextStep === undefined) return; // type opts out of email (e.g. PORTFOLIO_VIEW)
+  if (nextStep === undefined) return; // type opts out of email
 
   const { isEmailConfigured, sendLifecycleEmail } = await import(
     '@/lib/integrations/emailService'

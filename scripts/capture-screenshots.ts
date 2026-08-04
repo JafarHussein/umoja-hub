@@ -37,7 +37,7 @@ const VIEWPORT = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
 
 // Preferred seeded account per role; falls back to the first user of that role
-// (the NGO / employer / institution roles have generated emails).
+// (the institution role has a generated email).
 const ROLE_EMAIL: Partial<Record<Role, string>> = {
   [Role.FARMER]: 'wanjiku.kamau@gmail.com',
   [Role.BUYER]: 'kamau.githinji@gmail.com',
@@ -66,7 +66,6 @@ const SHOTS: Shot[] = [
   { file: 'marketplace-listing-detail', path: '/marketplace/:listingId', role: 'public' },
   { file: 'knowledge-hub', path: '/knowledge', role: 'public' },
   { file: 'knowledge-article', path: '/knowledge/:articleSlug', role: 'public' },
-  { file: 'portfolio-public', path: '/portfolio/:portfolioSlug', role: 'public' },
   { file: 'mobile-marketplace', path: '/marketplace', role: 'public', viewport: MOBILE },
   // Farmer
   { file: 'farmer-listings', path: '/dashboard/farmer/listings', role: Role.FARMER },
@@ -81,7 +80,6 @@ const SHOTS: Shot[] = [
   { file: 'buyer-suppliers', path: '/dashboard/buyer/suppliers', role: Role.BUYER },
   // Student
   { file: 'student-dashboard', path: '/dashboard/student', role: Role.STUDENT },
-  { file: 'student-portfolio', path: '/dashboard/student/portfolio', role: Role.STUDENT },
   { file: 'student-project-new', path: '/dashboard/student/projects/new', role: Role.STUDENT },
   { file: 'student-peer-review', path: '/dashboard/student/peer-review', role: Role.STUDENT },
   { file: 'student-mentor', path: '/dashboard/student/mentor', role: Role.STUDENT },
@@ -104,16 +102,14 @@ function logLine(msg: string): void {
 }
 
 async function resolveDynamicParams(): Promise<Record<string, string>> {
-  const [{ default: MarketplaceListing }, { default: KnowledgeArticle }, { default: StudentPortfolioStatus }, { default: ProjectEngagement }] =
+  const [{ default: MarketplaceListing }, { default: KnowledgeArticle }, { default: ProjectEngagement }] =
     await Promise.all([
       import('../src/lib/models/MarketplaceListing.model'),
       import('../src/lib/models/KnowledgeArticle.model'),
-      import('../src/lib/models/StudentPortfolioStatus.model'),
       import('../src/lib/models/ProjectEngagement.model'),
     ]);
   const listing = await MarketplaceListing.findOne().select('_id').lean();
   const article = await KnowledgeArticle.findOne({ isPublished: true }).select('slug').lean();
-  const portfolio = await StudentPortfolioStatus.findOne({ publicSlug: { $exists: true, $ne: null } }).select('publicSlug').lean();
   // Prefer an engagement still pending lecturer review, so the review page renders
   // the rubric rather than "already reviewed".
   const engagement =
@@ -122,7 +118,6 @@ async function resolveDynamicParams(): Promise<Record<string, string>> {
   return {
     ':listingId': listing ? String(listing._id) : '',
     ':articleSlug': article?.slug ?? '',
-    ':portfolioSlug': portfolio?.publicSlug ?? '',
     ':engagementId': engagement ? String(engagement._id) : '',
   };
 }

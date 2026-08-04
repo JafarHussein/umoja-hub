@@ -353,7 +353,7 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
 
   // ---- Students (assigned to institutions) ----
   const STUDENT_ARCHETYPES: Array<[string, number]> = [
-    ['high', 3], ['average', 4], ['portfolio', 2], ['revision', 2], ['new', 2],
+    ['high', 3], ['average', 4], ['prolific', 2], ['revision', 2], ['new', 2],
   ];
   for (let i = 0; i < 12; i++) {
     const p = rng.pick(FIRST_NAMES);

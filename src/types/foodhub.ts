@@ -306,8 +306,6 @@ export interface IPlatformImpactSummary {
     registeredStudentCount: number;
     verifiedProjectCount: number;
     activeStudentCount: number;
-    averageProjectScore: number;
-    skillsIssuedCount: number;
     lecturerCount: number;
     universitiesRepresented: number;
   };

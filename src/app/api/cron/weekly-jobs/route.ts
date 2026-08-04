@@ -7,12 +7,12 @@ import MarketInsight from '@/lib/models/MarketInsight.model';
 import User from '@/lib/models/User.model';
 import Order from '@/lib/models/Order.model';
 import FarmerTrustScore from '@/lib/models/FarmerTrustScore.model';
-import StudentPortfolioStatus from '@/lib/models/StudentPortfolioStatus.model';
+import ProjectEngagement from '@/lib/models/ProjectEngagement.model';
 import PlatformImpactSummary from '@/lib/models/PlatformImpactSummary.model';
 import { calculatePlatformPremium, getMiddlemanBenchmark } from '@/lib/integrations/priceDataService';
 import { prunePendingAccounts } from '@/lib/auth/pendingAccounts';
 import { logger } from '@/lib/utils';
-import { Role, OrderFulfillmentStatus } from '@/types';
+import { Role, OrderFulfillmentStatus, ProjectStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // POST /api/cron/weekly-jobs — Consolidated weekly cron (Vercel Hobby: 2-cron limit)
@@ -166,7 +166,7 @@ async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }
     trustScores,
     latestInsight,
     registeredStudentCount,
-    portfolioStatuses,
+    verifiedEngagements,
     lecturerCount,
   ] = await Promise.all([
     User.countDocuments({ role: Role.FARMER, 'farmerData.isVerified': true }),
@@ -184,18 +184,11 @@ async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }
       { $group: { _id: null, avgPremium: { $avg: '$pricing.platformPremium' } } },
     ]),
     User.countDocuments({ role: Role.STUDENT }),
-    StudentPortfolioStatus.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalVerifiedProjects: { $sum: '$stats.verifiedProjectCount' },
-          activeCount: {
-            $sum: { $cond: [{ $gt: ['$stats.verifiedProjectCount', 0] }, 1, 0] },
-          },
-          avgScore: { $avg: '$stats.averageScore' },
-          totalSkills: { $sum: { $size: '$verifiedSkills' } },
-        },
-      },
+    // Verified engagements, and how many distinct students hold at least one.
+    ProjectEngagement.aggregate([
+      { $match: { status: ProjectStatus.VERIFIED } },
+      { $group: { _id: '$studentId', count: { $sum: 1 } } },
+      { $group: { _id: null, activeCount: { $sum: 1 }, totalVerified: { $sum: '$count' } } },
     ]),
     User.countDocuments({ role: Role.LECTURER }),
   ]);
@@ -203,12 +196,7 @@ async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }
   const completedOrdersData = completedOrders[0] ?? { count: 0, totalVolume: 0 };
   const avgTrustScore = trustScores[0]?.avg ?? 0;
   const avgPlatformPremium = latestInsight[0]?.avgPremium ?? 0;
-  const portfolioData = portfolioStatuses[0] ?? {
-    totalVerifiedProjects: 0,
-    activeCount: 0,
-    avgScore: 0,
-    totalSkills: 0,
-  };
+  const engagementData = verifiedEngagements[0] ?? { totalVerified: 0, activeCount: 0 };
 
   const [countiesResult, universitiesResult, activeCropResult] = await Promise.all([
     User.distinct('county', { role: Role.FARMER, 'farmerData.isVerified': true }),
@@ -233,10 +221,8 @@ async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }
     },
     education: {
       registeredStudentCount,
-      verifiedProjectCount: portfolioData.totalVerifiedProjects,
-      activeStudentCount: portfolioData.activeCount,
-      averageProjectScore: Math.round((portfolioData.avgScore ?? 0) * 10) / 10,
-      skillsIssuedCount: portfolioData.totalSkills,
+      verifiedProjectCount: engagementData.totalVerified,
+      activeStudentCount: engagementData.activeCount,
       lecturerCount,
       universitiesRepresented: universitiesResult.length,
     },
