@@ -8,7 +8,13 @@ import { createOrderSchema } from '@/lib/validation/orderSchema';
 import { generateOrderReferenceId } from '@/lib/foodhub/orderUtils';
 import { getPaymentProvider, getActiveProviderName } from '@/lib/payments';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { checkRateLimit } from '@/lib/rateLimit';
+import { checkRateLimit, peekRateLimit, recordRateLimitUse } from '@/lib/rateLimit';
+
+// A buyer's hourly allowance, and the far looser guard on how hard they may
+// knock. The window is shared so both reset together.
+const ORDER_WINDOW_MS = 60 * 60 * 1000;
+const ORDER_LIMIT_PER_WINDOW = 5;
+const ORDER_ATTEMPT_LIMIT = 30;
 import mongoose from 'mongoose';
 import {
   Role,
@@ -221,9 +227,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const session = await getServerSession(authOptions);
     requireRole(session, Role.BUYER);
 
-    if (!(await checkRateLimit(`orders:${session!.user.id}`, 5, 60 * 60 * 1000)).allowed) {
+    // Two limits, because two different things are being protected.
+    //
+    // The endpoint guard counts requests: every attempt costs database reads
+    // whatever its outcome, so hammering has to be bounded. It is deliberately
+    // generous — it exists to stop abuse, not to ration buying.
+    //
+    // The order cap counts orders, and is charged further down only once one
+    // exists. One counter used to do both jobs, and it did the second one
+    // wrongly: the message promised "maximum 5 orders per hour" while the code
+    // counted requests, so five validation errors, five sold-out listings, or
+    // five server faults of ours locked a buyer out for an hour having bought
+    // nothing. A cap on outcomes must be spent on outcomes.
+    const orderCapKey = `orders:${session!.user.id}`;
+
+    if (
+      !(await checkRateLimit(`orders:attempt:${session!.user.id}`, ORDER_ATTEMPT_LIMIT, ORDER_WINDOW_MS))
+        .allowed
+    ) {
       return NextResponse.json(
-        { error: 'Rate limit reached. Maximum 5 orders per hour.', code: 'RATE_LIMIT_EXCEEDED' },
+        {
+          error: 'Too many attempts. Please wait a few minutes and try again.',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+        { status: 429 }
+      );
+    }
+
+    if (!(await peekRateLimit(orderCapKey, ORDER_LIMIT_PER_WINDOW)).allowed) {
+      return NextResponse.json(
+        {
+          error: `You have placed the maximum of ${ORDER_LIMIT_PER_WINDOW} orders this hour. You can order again shortly.`,
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
         { status: 429 }
       );
     }
@@ -338,6 +374,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // order's age (a retry reopens the session on an older order).
       paymentRequestedAt: new Date(),
     });
+
+    // The allowance is spent here, on the order, and nowhere else. Stock has
+    // been reserved and the row exists, so this is the first moment a buyer has
+    // actually consumed one of their five. Everything that can still fail below
+    // — the STK push, the audit write — leaves the order standing, so it is
+    // rightly charged even then.
+    await recordRateLimitUse(orderCapKey, ORDER_WINDOW_MS);
 
     // Initiate payment via the active provider (simulation or Daraja). The
     // contract is identical: returns a checkout request id; the outcome arrives
