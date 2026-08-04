@@ -159,7 +159,10 @@ describe('roleSelectionSchema', () => {
   });
 
   it.each(['NGO', 'EMPLOYER', 'INSTITUTION'])('rejects the provisioned role %s', (role) => {
-    // Organisation accounts are provisioned out of band, never self-claimed.
+    // Organisation accounts are administrator-provisioned, never self-claimed —
+    // confirmed as policy on 2026-08-05, not merely a defensive default.
+    // NGO and EMPLOYER no longer exist as roles; they stay in this list so that
+    // reintroducing either cannot quietly make it self-selectable.
     expect(roleSelectionSchema.safeParse({ role }).success).toBe(false);
   });
 

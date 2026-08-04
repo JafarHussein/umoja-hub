@@ -74,7 +74,13 @@ jest.mock('@/lib/models/User.model', () => ({
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/options', () => ({ authOptions: {} }));
-jest.mock('@/lib/rateLimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue({ allowed: true }) }));
+const mockPeekRateLimit = jest.fn().mockResolvedValue({ allowed: true });
+const mockRecordRateLimitUse = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/rateLimit', () => ({
+  checkRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
+  peekRateLimit: (...a: unknown[]) => mockPeekRateLimit(...a),
+  recordRateLimitUse: (...a: unknown[]) => mockRecordRateLimitUse(...a),
+}));
 
 import { getServerSession } from 'next-auth';
 import { POST } from '../route';
@@ -274,5 +280,81 @@ describe('POST /api/orders — atomic inventory reservation', () => {
     const res = await POST(makeOrderRequest(validOrderBody));
 
     expect(res.status).toBe(403);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The hourly allowance is a cap on orders, not on attempts
+//
+// One counter used to serve both, incremented before validation, so a buyer who
+// hit five errors had spent an hour's allowance having bought nothing. That is
+// not hypothetical: five 500s from a broken reservation query locked a live
+// account out, and the message it showed — "Maximum 5 orders per hour" —
+// described a rule the code did not implement.
+// ---------------------------------------------------------------------------
+
+describe('POST /api/orders — order allowance', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockPeekRateLimit.mockResolvedValue({ allowed: true });
+    mockRecordRateLimitUse.mockResolvedValue(undefined);
+    (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
+  });
+
+  it('charges the allowance once an order exists', async () => {
+    mockListingFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockAvailableListing) }),
+    });
+    mockListingFindOneAndUpdate.mockResolvedValue(mockReservedListing);
+    mockOrderCreate.mockResolvedValue(mockCreatedOrder);
+    mockInitiatePayment.mockResolvedValue({
+      checkoutRequestId: 'chk-001',
+      merchantRequestId: 'mer-001',
+      customerMessage: 'Request accepted',
+    });
+    mockOrderFindByIdAndUpdate.mockResolvedValue({});
+
+    const res = await POST(makeOrderRequest(validOrderBody));
+    expect(res.status).toBe(201);
+    expect(mockRecordRateLimitUse).toHaveBeenCalledTimes(1);
+    expect(mockRecordRateLimitUse).toHaveBeenCalledWith('orders:buyer-001', 60 * 60 * 1000);
+  });
+
+  it('does not charge it for a request that was rejected before any order existed', async () => {
+    // A validation failure costs the buyer nothing. This is the case that
+    // locked someone out for an hour.
+    const res = await POST(makeOrderRequest({ ...validOrderBody, quantityOrdered: -1 }));
+    expect(res.status).toBe(400);
+    expect(mockRecordRateLimitUse).not.toHaveBeenCalled();
+  });
+
+  it('does not charge it when the listing is gone', async () => {
+    mockListingFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    });
+    const res = await POST(makeOrderRequest(validOrderBody));
+    expect(res.status).toBe(404);
+    expect(mockRecordRateLimitUse).not.toHaveBeenCalled();
+  });
+
+  it('does not charge it when another buyer wins the stock race', async () => {
+    mockListingFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockAvailableListing) }),
+    });
+    mockListingFindOneAndUpdate.mockResolvedValue(null);
+    const res = await POST(makeOrderRequest(validOrderBody));
+    expect(res.status).toBe(409);
+    expect(mockRecordRateLimitUse).not.toHaveBeenCalled();
+  });
+
+  it('refuses a sixth order and says so in terms of orders', async () => {
+    mockPeekRateLimit.mockResolvedValue({ allowed: false });
+    const res = await POST(makeOrderRequest(validOrderBody));
+    const body = (await res.json()) as { error: string; code: string };
+    expect(res.status).toBe(429);
+    expect(body.code).toBe('RATE_LIMIT_EXCEEDED');
+    expect(body.error).toMatch(/placed the maximum of 5 orders/);
+    // Refusing costs nothing either — the counter is read, never touched.
+    expect(mockRecordRateLimitUse).not.toHaveBeenCalled();
   });
 });
