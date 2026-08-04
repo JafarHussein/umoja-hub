@@ -687,9 +687,23 @@ this change wants a stable, well-understood surrounding before it lands. Steps
 1. ~~**Issue 4** — which account received the email?~~ **ANSWERED 2026-08-04:**
    `jafarhussein251@gmail.com`, role BUYER. Diagnosed from the database record;
    see Issue 4. My `notifyAdmins` hypothesis was wrong and has been retracted.
-2. **§6 —** how should NGO / EMPLOYER / INSTITUTION accounts come into
-   existence — self-service, invite-only, or admin-provisioned? They have full
-   dashboards but no way for a real person to become one.
+2. ~~**§6 —** how should NGO / EMPLOYER / INSTITUTION accounts come into
+   existence?~~ **ANSWERED 2026-08-05: admin-provisioned.** NGO and EMPLOYER
+   have since been deleted from the platform (`8343c6f`), so this resolves to
+   INSTITUTION alone.
+
+   Half of the decision is already enforced and needs nothing: `roleSelectionSchema`
+   excludes INSTITUTION, so no one can self-select it, and
+   `onboardingSchema.test.ts` pins that exclusion by name. An institution
+   account cannot come into existence through the funnel today.
+
+   The other half — the administrator's ability to *create* one — does not
+   exist. Institution accounts are reachable only by seeding. Building that
+   capability is Education Hub surface (an institution hosts students and
+   lecturers), and the Education Hub is frozen under the 2026-08-04 directive
+   until the Food Hub reaches production quality. So it is **decided but not
+   scheduled**: the answer is recorded here, and the work waits for the freeze
+   to lift rather than being smuggled in under a Food Hub branch.
 3. **Buyer archetypes —** confirm that "individual buyer" is a real, supported
    archetype and not an oversight. The whole Issue 4 fix rests on it. If every
    buyer genuinely must be a registered business, the correct fix is the
