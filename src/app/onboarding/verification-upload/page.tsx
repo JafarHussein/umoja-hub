@@ -163,7 +163,7 @@ function StudentVerification(): React.ReactElement {
       subtitle="We'll email a 6-digit code to your university address."
       note={{
         title: 'Why a university address?',
-        body: 'It is the one thing that proves you are enrolled without asking you to upload a document. We only use it to confirm enrolment — lecturers and employers see your work, never your inbox.',
+        body: 'It is the one thing that proves you are enrolled without asking you to upload a document. We only use it to confirm enrolment — lecturers see your work, never your inbox.',
       }}
     >
       {error && <OnboardingError message={error} />}

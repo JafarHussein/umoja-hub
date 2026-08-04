@@ -36,7 +36,7 @@
 2. **Developer log workbench** (per engagement): **3 hashed document editors** plus **2 structured-entry logs** — a blocker log and an AI-usage log (`/api/education/engagements/[id]/documents | blockers | ai-usage`). Drafts auto-save.
 3. **Finalize** — "Finalize & Hash for Review" is gated on all 3 documents; finalization produces **three per-document hash strings** (no compiled hash). Submission (`/submit`) sends the engagement for lecturer review.
 4. **Peer review** — anonymized split-pane rubric; preset criteria serialize to canonical comment strings; numeric 1–5 scores.
-5. **Portfolio** — completed, verified engagements accrue to a read-only portfolio.
+5. **Feedback** — the lecturer's written engineering review is returned to the student; a signed-off project increments their completed-project count.
 
 ## 4. Lecturer journey
 

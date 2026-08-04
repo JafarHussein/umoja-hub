@@ -24,7 +24,7 @@
       · Language       (also a real access decision — Foundation §15)
       · Location       (county — "to connect you with people near you")
       · "What brings you here?"   (sell produce / buy produce / build a verified
-                                   portfolio / review student work) — intent surfaces
+                                   build real projects / review student work) — intent surfaces
                                    the role WITHOUT a cold "pick a role"
 3. Education interludes   short illustrated explainers, tailored as intent clarifies
                           (how trust works · what verification gives you · honest limits)

@@ -78,16 +78,6 @@ export const streamTopics: StreamTopic[] = [
   },
   {
     n: 5,
-    id: 'education',
-    title: 'The student verification engine',
-    sections: [
-      { id: 'education-process', title: 'Process over artifact' },
-      { id: 'education-review', title: 'Peer review, then lecturer' },
-      { id: 'education-outcomes', title: 'The three outcomes' },
-    ],
-  },
-  {
-    n: 6,
     id: 'identity',
     title: 'Verification & identity',
     sections: [
@@ -97,7 +87,7 @@ export const streamTopics: StreamTopic[] = [
     ],
   },
   {
-    n: 7,
+    n: 6,
     id: 'governance',
     title: 'Governance & accountability',
     sections: [
@@ -107,7 +97,7 @@ export const streamTopics: StreamTopic[] = [
     ],
   },
   {
-    n: 8,
+    n: 7,
     id: 'evidence',
     title: 'Evidence & metrics',
     sections: [
@@ -116,7 +106,7 @@ export const streamTopics: StreamTopic[] = [
     ],
   },
   {
-    n: 9,
+    n: 8,
     id: 'services',
     title: 'Third-party services & data',
     sections: [
@@ -125,13 +115,13 @@ export const streamTopics: StreamTopic[] = [
     ],
   },
   {
-    n: 10,
+    n: 9,
     id: 'risks',
     title: 'Risks & recourse, by audience',
     sections: [
       { id: 'risks-farmers', title: 'Farmers' },
       { id: 'risks-buyers', title: 'Buyers' },
-      { id: 'risks-students', title: 'Students & employers' },
+      { id: 'risks-students', title: 'Students' },
     ],
   },
 ];

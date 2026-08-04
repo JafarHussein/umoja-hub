@@ -1,6 +1,11 @@
 # Information Architecture — Web App V1
 
-**Gate: Information Architecture.** Status: **DRAFT — awaiting approval.** Governed by [UMOJAHUB_WEBAPP_FOUNDATION_V1.md](UMOJAHUB_WEBAPP_FOUNDATION_V1.md) (approved). **This is structure, not visuals** — no layout, colour, or type decisions here. Grounded in the *actual current routes* (`src/app/**`), re-organized to the Foundation's principles.
+**Gate: Information Architecture.** Status: **DRAFT — awaiting approval.** Governed by [UMOJAHUB_WEBAPP_FOUNDATION_V1.md](UMOJAHUB_WEBAPP_FOUNDATION_V1.md) (approved, as amended by A1). **This is structure, not visuals** — no layout, colour, or type decisions here. Grounded in the *actual current routes* (`src/app/**`), re-organized to the Foundation's principles.
+
+> **Education Hub vision reset (2026-08-04).** The STUDENT and LECTURER sections below
+> reflect the *current* routes, which are being rebuilt. The student portfolio has been
+> deleted. The authoritative structure for the Education Hub is
+> `EDUCATION_HUB_FOUNDATION_V2.md`, not this document.
 
 ## 1. The two zones
 
@@ -39,12 +44,11 @@
 ### STUDENT — workspace (serious tool, evidence-rich)
 - **Home** (`/student`) — active project / next step.
 - **Projects** (`/student/projects`, `/projects/new`, `/projects/[id]`) — the workspace: documents, AI-usage log, blockers, submission.
-- **Portfolio** (`/student/portfolio`) — the showable, verified artifact.
 - **Peer Review** (`/student/peer-review`, `/peer-review/[id]`) — review queue + submission.
 - **Mentor** (`/student/mentor`) — AI mentor.
 - **Profile**.
 
-### LECTURER — verifier (evidence-first, fast, dense)
+### LECTURER — engineering mentor (evidence-first, fast, dense)
 - **Home** (`/lecturer`) — routes to the queue / active review.
 - **Review Queue** (`/lecturer/queue`) — pending engagements; clear SLA/priority.
 - **Review workspace** (`/lecturer/reviews/[id]`) — student evidence first, rubric + forced justification, decision.
@@ -73,7 +77,7 @@
 1. **Entry:** Sign in (OAuth) → onboarding wizard (if new) → role home. (Middleware already routes onboarded users to their dashboard.)
 2. **Farmer sell:** Home → Listings → create listing → receive order → fulfill → see payment in Ledger.
 3. **Buyer buy:** Browse → evaluate listing (trust) → purchase → pay (M-Pesa) → track order.
-4. **Student verify:** Home → create/continue project → produce evidence → submit → peer review → lecturer decision → outcome (VERIFIED / REVISION / DENIED) → portfolio.
+4. **Student build:** Home → create/continue project → build + produce evidence → submit → peer review → lecturer engineering review → outcome (VERIFIED / REVISION / DENIED) with written feedback.
 5. **Lecturer review:** Home → queue → review workspace (evidence + rubric) → decision.
 6. **Admin adjudicate:** Overview → queue → case (evidence) → decision (recorded, attributed).
 

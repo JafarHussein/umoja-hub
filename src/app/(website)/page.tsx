@@ -3,7 +3,6 @@ import { TopicTrust } from '@/components/website/topics/TopicTrust';
 import { TopicProducer } from '@/components/website/topics/TopicProducer';
 import { TopicBuyer } from '@/components/website/topics/TopicBuyer';
 import { TopicPayments } from '@/components/website/topics/TopicPayments';
-import { TopicEducation } from '@/components/website/topics/TopicEducation';
 import { TopicIdentity } from '@/components/website/topics/TopicIdentity';
 import { TopicGovernance } from '@/components/website/topics/TopicGovernance';
 import { TopicEvidence } from '@/components/website/topics/TopicEvidence';
@@ -49,7 +48,6 @@ export default function WebsiteHome() {
       <TopicProducer />
       <TopicBuyer />
       <TopicPayments />
-      <TopicEducation />
       <TopicIdentity />
       <TopicGovernance />
       <TopicEvidence />

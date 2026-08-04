@@ -35,17 +35,17 @@ export function TopicRisks() {
         </Limitation>
       </Sub>
 
-      <Sub id="risks-students" title="Students & employers">
+      <Sub id="risks-students" title="Students">
         <P>
-          A student&rsquo;s verified project is a named lecturer&rsquo;s decision backed by hashed
-          evidence. An employer&rsquo;s assurance is that the decision was made by a
-          credential-verified human against recorded criteria — not a self-reported claim.
+          A student&rsquo;s reviewed project carries a named lecturer&rsquo;s decision and their
+          written reasoning. The value is the feedback and the engineering practice it forces — not
+          a badge.
         </P>
         <Limitation>
           <p>
-            Today a student cannot resubmit after REVISION_REQUIRED, and there is no public link or
-            page for an employer to verify a result independently yet — the verified record is shown
-            within the platform. Appeals beyond resubmission are handled by email.
+            The Education Hub is being rebuilt from its foundations, so what is described here will
+            change. Today a student cannot resubmit after REVISION_REQUIRED. Appeals are handled by
+            email. UmojaHub makes no claim to an employer on a student&rsquo;s behalf.
           </p>
         </Limitation>
       </Sub>

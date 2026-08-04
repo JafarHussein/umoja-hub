@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Verification infrastructure for Kenyan farmers and software students.</strong><br/>
-  A trust-first marketplace and a tamper-evident talent credential — two products, one codebase, one conviction.
+  A trust-first marketplace and a practical engineering layer beside a CS degree — two products, one codebase, one conviction.
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/React-19-149ECA?logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript" alt="TypeScript strict" />
   <img src="https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/tests-777%20passing-success?logo=jest" alt="777 tests" />
+  <img src="https://img.shields.io/badge/tests-1125%20passing-success?logo=jest" alt="1125 tests" />
   <img src="https://img.shields.io/badge/deploy-Vercel-000000?logo=vercel" alt="Vercel" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
 </p>
@@ -39,22 +39,24 @@
 UmojaHub is **two products that share one codebase and one idea: Kenyan farmers and Kenyan software developers are both underserved by the infrastructure available to them.**
 
 - The **Food Security Hub** gives smallholder farmers a verified marketplace, escrow-protected M-Pesa payments, real-time price intelligence, and an AI farming assistant — built to work on 3G.
-- The **Education Hub** gives software students a structured project-verification pipeline that produces a **tamper-evident, employer-queryable credential**, signed by a credentialed academic.
+- The **Education Hub** is the practical execution layer beside a Kenyan Computer Science or Information Technology degree: it turns theoretical coursework into continuous, real engineering experience, from the first semester to graduation.
 
-Both are **infrastructure**, not a directory and not a learning app. What ties them together is the platform's signature primitive: **earned, inspectable trust** — a farmer's reputation and a student's credential are each derived from real, auditable activity, never self-asserted and never bought.
+Both are **infrastructure**, not a directory and not a learning app.
+
+> **The Education Hub is under a vision reset (2026-08-04).** It was previously built as a portfolio and credential platform for employers; that direction has been retired and the surface deleted. It is *not* a portfolio builder, an LMS, or a recruitment platform — students own their own portfolios and GitHub. The audit is in [`context/EDUCATION_HUB_VISION_RESET_AUDIT.md`](context/EDUCATION_HUB_VISION_RESET_AUDIT.md); the sections below describe only what still stands.
 
 <div align="center">
 
 | | |
 |---|---|
-| **8** user roles | **37** database models |
-| **86** API route modules | **60** application pages |
-| **62** React components | **41** domain enums |
-| **71** test suites · **777** tests | **~52,900** lines of TypeScript |
+| **6** user roles | **33** database models |
+| **90** API route modules | **56** application pages |
+| **81** React components | **43** domain enums |
+| **96** test suites · **1,125** tests | **~52,900** lines of TypeScript |
 
 </div>
 
-> **Note on this README.** It is written to be the single source of truth for the project — a lecturer, recruiter, judge, or future contributor should be able to understand the entire system without opening the code. Every statistic and behaviour described here is drawn from the actual codebase. The screenshot slots are populated by running `scripts/capture-screenshots.ts` (see the [Screenshot Showcase](#-screenshot-showcase) and [`docs/SCREENSHOT_PLAN.md`](docs/SCREENSHOT_PLAN.md)).
+> **Note on this README.** It is written to be the single source of truth for the project — a lecturer, judge, or future contributor should be able to understand the entire system without opening the code. Every statistic and behaviour described here is drawn from the actual codebase. The screenshot slots are populated by running `scripts/capture-screenshots.ts` (see the [Screenshot Showcase](#-screenshot-showcase) and [`docs/SCREENSHOT_PLAN.md`](docs/SCREENSHOT_PLAN.md)).
 
 ---
 
@@ -77,9 +79,8 @@ flowchart LR
   subgraph EH["🎓 Education Hub"]
     B1[Project Briefs]
     B2[Peer + Lecturer Review]
-    B3[Verified Portfolios]
-    B4[Employer Discovery]
-    B5[AI Mentor]
+    B3[Institution Integration]
+    B4[AI Mentor]
   end
   TRUST(("🛡️ Shared Trust &<br/>Verification Layer"))
   FH --- TRUST
@@ -94,12 +95,12 @@ flowchart LR
 | Farmers lose margin to middlemen and have **no trustworthy price benchmark**. | A direct marketplace with a **Platform Premium** calculation vs. wholesale market rates. |
 | Buyers risk paying a farmer who **never dispatches**. | **Escrow**: funds are released on confirmed *fulfilment*, not on payment. |
 | Farmers risk **counterfeit inputs** and bad advice. | A **verified supplier directory** + a sourced **knowledge hub** + an AI assistant grounded in the farmer's context. |
-| Students do real work that is **not verifiable** by employers. | A signed, hashed, **public credential** reviewed by a real lecturer. |
+| CS students are taught **theory examined on paper** and reach industrial attachment having never built real software. | Projects grounded in the units they are studying, reviewed by a real lecturer as an engineer would review them. |
 | Reputation online is **self-asserted and gameable**. | Trust is **derived from auditable activity** — orders, ratings, reliability, verification — never set by hand. |
 
 ### Why the two hubs are connected
 
-They are the same mechanism applied to two economies. A **verified identity → real activity → derived reputation → an inspectable, portable signal** loop powers both: a farmer's trust tier and a student's verified portfolio are each *provenance you can click into*. The Trust & Verification layer, the notification system, the admin tooling, the RBAC, and the design system are all shared.
+Both rest on the same spine: **a verified identity, real recorded activity, and a named human accountable for every decision.** A farmer's trust tier is derived from auditable orders; a student's work is signed off by a credential-verified lecturer. The Trust & Verification layer, the notification system, the admin tooling, the RBAC, and the design system are all shared.
 
 ---
 
@@ -119,7 +120,6 @@ They are the same mechanism applied to two economies. A **verified identity → 
 | ![Marketplace](docs/screenshots/marketplace-feed.png) `marketplace-feed.png` | Produce listings with farmer trust badges and full-text search. | Trust is surfaced *before* a buyer commits. |
 | ![Listing](docs/screenshots/marketplace-listing-detail.png) `marketplace-listing-detail.png` | A single listing: price, pickup, farmer trust tier and history. | Confidence over speed — the buyer evaluates a person, not a SKU. |
 | ![Knowledge](docs/screenshots/knowledge-hub.png) `knowledge-hub.png` | The knowledge library, every article attributed to KALRO/FAO/KEBS. | No anonymous advice. |
-| ![Portfolio](docs/screenshots/portfolio-public.png) `portfolio-public.png` | A **public verified portfolio** — the student credential, no login required. | The credential is the product; it is queryable by anyone. |
 
 ### Act II — Onboarding & identity
 
@@ -148,24 +148,21 @@ They are the same mechanism applied to two economies. A **verified identity → 
 | ![Suppliers](docs/screenshots/buyer-suppliers.png) `buyer-suppliers.png` | Verified supplier directory. | Counterfeit-input protection. |
 | ![Admin escrow](docs/screenshots/admin-escrow.png) `admin-escrow.png` | The platform escrow ledger from the admin's seat. | Escrow is operated, not assumed. |
 
-### Act V — The student's credential
+### Act V — The student's workspace
 
 | Screen | What you're seeing | Why it matters |
 |---|---|---|
-| ![Student home](docs/screenshots/student-dashboard.png) `student-dashboard.png` | The student workspace. | Where work becomes a credential. |
+| ![Student home](docs/screenshots/student-dashboard.png) `student-dashboard.png` | The student workspace. | Where coursework becomes working software. |
 | ![New project](docs/screenshots/student-project-new.png) `student-project-new.png` | Generating a project brief (AI scenario or open-source). | Real work, framed around a real Kenyan problem. |
-| ![Portfolio](docs/screenshots/student-portfolio.png) `student-portfolio.png` | Verified projects + verified skills + reviewer institutions. | A portfolio that is hard to fake. |
 | ![Peer review](docs/screenshots/student-peer-review.png) `student-peer-review.png` | The peer review queue. | Peers gate before lecturers do. |
 | ![Mentor](docs/screenshots/student-mentor.png) `student-mentor.png` | The AI mentor. | Guidance without doing the work for the student. |
 
-### Act VI — Reviewers, employers, partners
+### Act VI — Reviewers
 
 | Screen | What you're seeing | Why it matters |
 |---|---|---|
-| ![Queue](docs/screenshots/lecturer-queue.png) `lecturer-queue.png` | The lecturer's review queue. | Scarce, credentialed reviewers. |
+| ![Queue](docs/screenshots/lecturer-queue.png) `lecturer-queue.png` | The lecturer's review queue. | Scarce, credentialed engineering mentors. |
 | ![Review](docs/screenshots/lecturer-review.png) `lecturer-review.png` | The 4-dimension rubric with enforced comment depth. | Verification has a defensible standard. |
-| ![Talent](docs/screenshots/employer-talent-search.png) `employer-talent-search.png` | Employer search across verified students by skill/tier. | The credential closes the loop into hiring. |
-| ![NGO](docs/screenshots/ngo-dashboard.png) `ngo-dashboard.png` | NGO view of sponsored cooperatives. | Ecosystem partners, modelled as first-class roles. |
 
 ### Act VII — Administration & analytics
 
@@ -206,8 +203,6 @@ They are the same mechanism applied to two economies. A **verified identity → 
 | **Process documentation** | Required **Problem Breakdown**, **Approach Plan**, **Final Reflection**, plus a blocker log and an AI-usage log — each hashed on receipt. | Students |
 | **Peer review** | A *different* student reviews across 2 dimensions (code quality, documentation clarity). | Students |
 | **Lecturer review** | An **admin-verified** lecturer reviews against a 4-dimension rubric (problem understanding, solution quality, process quality, AI usage) with enforced minimum comment depth. | Lecturers |
-| **Verified portfolios** | On approval, a permanent signed record: a **public URL** + structured data an employer can query without logging in. Verified projects, verified skills, reviewer institutions. | Students, Employers |
-| **Employer discovery** | Search verified students by skill and tier; viewing a portfolio records a `PortfolioView` and notifies the student. | Employers |
 | **AI mentor** | A Groq-powered mentor that guides without doing the work; disclosed and logged. | Students |
 | **Lecturer effectiveness** | Aggregates of each lecturer's review volume, decisions, and scoring. | Admin, Institutions |
 
@@ -233,7 +228,7 @@ They are the same mechanism applied to two economies. A **verified identity → 
 
 ### 🔔 Cross-cutting
 
-- **Persisted notifications** — a real notification center (8 types: order, escrow, verification, payout, review, portfolio-view, group, system) with read/unread state.
+- **Persisted notifications** — a real notification center (7 types: order, escrow, verification, payout, review, group, system) with read/unread state.
 - **Semantic design-token system** — one `primitive → semantic → component` token vocabulary that themes are *value-maps* over; ships light today, architected for dark/high-contrast/large-text; reduced-motion aware; colour-blind-safe state colours.
 - **Ecosystem simulation engine** — generate months of internally consistent, fully reversible demo activity (a single `npm run demo`).
 
@@ -241,20 +236,18 @@ They are the same mechanism applied to two economies. A **verified identity → 
 
 ## 👥 User roles
 
-UmojaHub has **8 roles**, each with a role-data sub-document on `User`, RBAC-guarded dashboards, and distinct workflows.
+UmojaHub has **6 roles**, each with a role-data sub-document on `User`, RBAC-guarded dashboards, and distinct workflows.
 
 | Role | Purpose | Key capabilities | Primary screens |
 |---|---|---|---|
 | **Farmer** | Sell produce, build reputation. | Create listings, fulfil orders, request payouts, view trust score & prices, use the AI assistant, join groups. | `/dashboard/farmer/*` |
 | **Buyer** | Source produce safely. | Browse marketplace, pay via M-Pesa, confirm receipt, raise disputes, browse verified suppliers. | `/dashboard/buyer/*`, `/marketplace` |
-| **Student** | Turn real work into a credential. | Generate briefs, submit process docs, peer-review, build a public portfolio, use the AI mentor. | `/dashboard/student/*` |
-| **Lecturer** | Verify student work. | Review a queue against a 4-dimension rubric, issue VERIFIED/REVISION/DENIED decisions. | `/dashboard/lecturer/*` |
-| **Employer** | Discover verified talent. | Search students by skill/tier, view portfolios (recorded + notified). | `/dashboard/employer/*` |
-| **NGO** | Sponsor cooperatives. | View sponsored farmer groups and their counties/focus areas. | `/dashboard/ngo` |
+| **Student** | Turn coursework into real engineering. | Generate briefs, submit process docs, peer-review, use the AI mentor. | `/dashboard/student/*` |
+| **Lecturer** | Mentor and review student engineering. | Review a queue against a 4-dimension rubric, issue VERIFIED/REVISION/DENIED decisions. | `/dashboard/lecturer/*` |
 | **Institution** | Host students & lecturers. | View affiliated members and outcomes. | `/dashboard/institution` |
 | **Admin** | Operate the platform. | Verification, escrow settlement, payouts, mediation, knowledge, analytics. | `/dashboard/admin/*` |
 
-> **Cooperatives** are modelled as `FarmerGroup`s (optionally `sponsoredByNgoId`), not a login role — a group is composed of farmer members with a founder.
+> **Cooperatives** are modelled as `FarmerGroup`s, not a login role — a group is composed of farmer members with a founder.
 
 Access control is enforced in `src/middleware.ts` (guards `/dashboard/*` and `/api/admin/*`) and at every API route via `requireRole(session, ...allowedRoles)`.
 
@@ -294,7 +287,7 @@ flowchart LR
   DISPUTE --> ADMIN[Admin resolves: refund or release]
 ```
 
-### Student — from a brief to a verified credential
+### Student — from a brief to a reviewed project
 
 ```mermaid
 flowchart LR
@@ -303,10 +296,9 @@ flowchart LR
   BUILD --> HASH[Docs hashed on receipt]
   HASH --> PEER[Peer review · 2 dimensions]
   PEER --> LEC[Lecturer review · 4 dimensions]
-  LEC -->|approved| VER[VERIFIED → public portfolio + JSON]
+  LEC -->|approved| VER[VERIFIED · written engineering feedback]
   LEC -->|revision| BUILD
   LEC -->|denied| END[Recorded, not certified]
-  VER --> EMP[Employer discovers + views]
 ```
 
 ---
@@ -379,7 +371,7 @@ Errors flow through `AppError` + `handleApiError`. Environment access goes throu
 - **Derived, never stored** — trust and escrow balances are computed from source records on read, so a dashboard total always reconciles with the orders/ratings/events beneath it.
 - **Single source of truth for money** — `processStkCallback()` is the only writer of the `PAID` transition and the only place an `EscrowEventLog HELD` is written.
 - **Append-only where it matters** — the verification audit log rejects everything but inserts, at both the application and (intended) collection-validator level.
-- **Additive evolution** — the NGO/Employer/Institution roles, notifications, and public portfolios were added without touching existing platform logic.
+- **Additive evolution** — the Institution role and the notification system were added without touching existing platform logic.
 
 ---
 
@@ -403,12 +395,9 @@ erDiagram
   PROJECT_ENGAGEMENT ||--|| PEER_REVIEW : "gets"
   PROJECT_ENGAGEMENT ||--|| LECTURER_REVIEW : "gets"
   PROJECT_ENGAGEMENT ||--o{ VERIFICATION_AUDIT_LOG : "records"
-  USER ||--|| STUDENT_PORTFOLIO_STATUS : "builds"
-  STUDENT_PORTFOLIO_STATUS ||--o{ PORTFOLIO_VIEW : "viewed by employer"
   USER ||--o{ LECTURER_EFFECTIVENESS : "aggregates"
 
   INSTITUTION ||--o{ USER : "hosts"
-  NGO_ORGANIZATION ||--o{ FARMER_GROUP : "sponsors"
   FARMER_GROUP ||--o{ USER : "has members"
   USER ||--o{ NOTIFICATION : "receives"
   SIMULATION_RUN ||--o{ USER : "tracks (demo only)"
@@ -416,13 +405,13 @@ erDiagram
 
 **Model groups**
 
-- **Identity & access** — `User` (8 role sub-documents), `OnboardingDraft`, `PasswordResetToken`, `Counter`.
+- **Identity & access** — `User` (6 role sub-documents), `OnboardingDraft`, `PasswordResetToken`, `Counter`.
 - **Marketplace & escrow** — `MarketplaceListing`, `Order`, `EscrowEventLog`, `Rating`, `WithdrawalRequest`, `MediationRequest`, `PriceHistory`, `PriceAlert`, `MarketInsight`, `VerifiedSupplier`, `FarmerGroup`, `GroupOrder`, `GroupJoinToken`.
 - **Trust** — `FarmerTrustScore`, `VerificationAuditLog`, `AdminAuditLog`.
-- **Education** — `ProjectEngagement`, `PeerReview`, `LecturerReview`, `LecturerEffectiveness`, `StudentPortfolioStatus`, `PortfolioView`, `BriefContextLibrary`.
+- **Education** — `ProjectEngagement`, `PeerReview`, `LecturerReview`, `LecturerEffectiveness`, `BriefContextLibrary`.
 - **Payments** — `SimulatedPayment`, `PaymentEventLog`.
 - **Knowledge & AI** — `KnowledgeArticle`, `ChatSession`, `MentorSession`.
-- **Ecosystem & ops** — `Institution`, `NgoOrganization`, `Notification`, `PlatformImpactSummary`, `SimulationRun`.
+- **Ecosystem & ops** — `Institution`, `Notification`, `PlatformImpactSummary`, `SimulationRun`.
 
 ---
 
@@ -452,12 +441,12 @@ flowchart LR
 | **Rating** | 20 | Average buyer rating, linear (1.0★ → 4 pts, 5.0★ → 20 pts) |
 | **Reliability** | 15 | On-time dispatch confirmation rate (≤24 h) minus dispute penalties |
 
-Because every input is a real record, a lecturer or recruiter can **click from the score into the orders, ratings, and disputes that produced it**. New farmers are given the benefit of the doubt on reliability until they have paid orders.
+Because every input is a real record, a buyer or an auditor can **click from the score into the orders, ratings, and disputes that produced it**. New farmers are given the benefit of the doubt on reliability until they have paid orders.
 
 ### Verification & audit integrity
 
 - Identity documents are uploaded and reviewed by an admin; the decision is recorded with **document hashes** and the reviewer's identity in an **append-only** `VerificationAuditLog`.
-- For students, the same idea produces the credential: every submitted process document is **SHA-256 hashed on receipt**, and the verification record names the **reviewing lecturer, their title, and their institution**.
+- For students, the same idea holds: every submitted process document is **SHA-256 hashed on receipt**, and the verification record names the **reviewing lecturer, their title, and their institution**.
 
 ---
 
@@ -612,10 +601,8 @@ npm run dev          # http://localhost:3000
 | 3 | **The farmer's escrow ledger** | same | Held vs. releasable vs. available — money with a story. |
 | 4 | **A buyer's orders** | `kamau.githinji@gmail.com` | Escrow + payment status, buyer's-eye view. |
 | 5 | **Admin escrow + mediation + payouts** | `umojahub16@gmail.com` | The platform is *operated*, not assumed. |
-| 6 | **A public verified portfolio** | (none) | The student credential, queryable by anyone. |
-| 7 | **Lecturer review rubric** | `g.ndungu@uonbi.ac.ke` | Verification has a defensible standard. |
-| 8 | **Employer talent search** | (generated employer account) | The credential closes the loop into hiring. |
-| 9 | **Admin impact analytics** | `umojahub16@gmail.com` | The whole ecosystem, cron-aggregated. |
+| 6 | **Lecturer review rubric** | `g.ndungu@uonbi.ac.ke` | Verification has a defensible standard. |
+| 7 | **Admin impact analytics** | `umojahub16@gmail.com` | The whole ecosystem, cron-aggregated. |
 
 ### Talking points
 
@@ -692,7 +679,6 @@ Realistic next steps, in rough priority order:
 - **Authed visual QA in CI** — automate the per-role dashboard screenshots (the capture script exists) as a visual-regression gate.
 - **Hi-fi app design** — complete the gated, Figma-led redesign of the dashboard presentation layer.
 - **Notification delivery channels** — extend the persisted notification center with email/SMS fan-out using the existing services.
-- **Richer employer tooling** — saved searches and shortlists over verified portfolios.
 - **Institution analytics** — cohort-level outcome dashboards for partner universities.
 
 ---
@@ -701,9 +687,9 @@ Realistic next steps, in rough priority order:
 
 - **Derive, don't store.** Making trust and escrow computed-on-read (not stored balances) eliminated a whole class of drift bugs — a dashboard total can never disagree with the records beneath it.
 - **One condition makes escrow escrow.** ~80% of the escrow system already existed; the missing 20% was gating release on *fulfilment* rather than *payment*. Naming the invariant precisely was most of the work.
-- **A credential's value is its provenance.** The Education Hub is convincing because every claim links back to a hashed document and a named reviewer — verification is about *traceability*, not certifying the absence of AI.
+- **A review's value is its provenance.** Education Hub feedback carries weight because every decision links back to a submitted document and a named, credential-verified reviewer.
 - **Simulate the ecosystem, don't seed rows.** Generating months of internally consistent activity that passes the same invariants as production data is what makes a demo believable — and tracking every created record made it perfectly reversible.
-- **Additive evolution scales.** New roles, notifications, and public portfolios were added without touching auth, payments, or trust — strict boundaries (lazy model imports, one API pattern, derived state) made large additions low-risk.
+- **Additive evolution scales.** New roles and the notification system were added without touching auth, payments, or trust — strict boundaries (lazy model imports, one API pattern, derived state) made large additions low-risk.
 - **The build must stay green across two surfaces.** Shipping a public website and an app under redesign in one deployment forced disciplined token architecture and a non-negotiable CI gate.
 
 ---

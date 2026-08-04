@@ -87,7 +87,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       userId: session.user.id,
       type: NotificationType.VERIFICATION_UPDATE,
       title: 'Welcome to UmojaHub — your student account is verified',
-      body: 'Your university email is confirmed and your student account is verified. Generate your first project brief and start building a verified portfolio that employers can trust.',
+      body: 'Your university email is confirmed and your student account is verified. Start your first project and put what you are studying into working software.',
       relatedEntity: { kind: 'User', id: session.user.id },
     });
 
