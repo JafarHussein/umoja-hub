@@ -1,8 +1,7 @@
 // Education hub generator. Walks each student's engagements through the real
 // state machine shape (brief → documents → peer review → lecturer review →
-// verified/revision/denied), then materialises the portfolio + lecturer
-// effectiveness (which no live route fully populates) and employer portfolio
-// views. All backdated and causally ordered.
+// verified/revision/denied), then materialises lecturer effectiveness (which no
+// live route fully populates). All backdated and causally ordered.
 
 import crypto from 'crypto';
 import type { SimContext, World } from '../world';

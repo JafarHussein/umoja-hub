@@ -243,7 +243,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     role: Role.STUDENT,
     phoneNumber: '+254701234567',
     county: 'Nairobi',
-    purpose: 'Intermediate student with a fuller portfolio — the employer-facing view.',
+    purpose: 'Intermediate student with several projects already signed off.',
     extra: {
       studentData: {
         currentTier: StudentTier.INTERMEDIATE,

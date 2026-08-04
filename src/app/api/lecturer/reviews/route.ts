@@ -13,7 +13,7 @@ import type { LecturerReviewDoc } from '@/lib/models/LecturerReview.model';
 const DECISION_NOTICE: Record<string, { title: string; body: string }> = {
   [LecturerDecision.VERIFIED]: {
     title: 'Project verified',
-    body: 'A lecturer has verified your project. It now counts toward your portfolio.',
+    body: 'A lecturer has signed off your project. Read their feedback on the review.',
   },
   [LecturerDecision.REVISION_REQUIRED]: {
     title: 'Revision requested',

@@ -149,7 +149,7 @@ export default function LecturerVerificationPage(): React.ReactElement {
     <Page>
       <PageHeader
         title="Lecturer Accounts"
-        description="Academics who review and sign off student work. Verifying a lecturer gives them authority over what appears in a student's public portfolio, so confirm the institution before you approve."
+        description="Academics who review and sign off student work. Verifying a lecturer gives them authority over whether a student's project passes, so confirm the institution before you approve."
         actions={
           <div className="flex items-center gap-3">
             <StatTile label="Pending" value={unverified.length} tone="text-app-warning" />

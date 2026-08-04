@@ -73,7 +73,7 @@ export function ChatSkeleton(): React.ReactElement {
 }
 
 // ---------------------------------------------------------------------------
-// Table skeleton — matches order or portfolio tables
+// Table skeleton — matches order or listing tables
 // ---------------------------------------------------------------------------
 export function TableSkeleton({ rows = 5 }: { rows?: number }): React.ReactElement {
   return (

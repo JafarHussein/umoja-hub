@@ -208,7 +208,7 @@ describe('POST /api/lecturer/reviews', () => {
     expect(mockPeerReviewFindById).not.toHaveBeenCalled();
   });
 
-  it('creates review, advances engagement to VERIFIED, and increments portfolio stats', async () => {
+  it('creates review, advances engagement to VERIFIED, and increments the completed-project count', async () => {
     setupHappyPath();
 
     const res = await POST(makeRequest(VALID_BODY));

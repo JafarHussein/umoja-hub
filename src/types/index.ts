@@ -14,9 +14,8 @@ export enum Role {
   //
   // NGO and EMPLOYER were removed (2026-08-04). Neither had a path to existence
   // — they were absent from `roleSelectionSchema`, so no real person could
-  // become one, and they existed only in seeded data. Employers keep the
-  // surface that mattered: a student portfolio is public at /portfolio/[slug]
-  // and needs no account to read.
+  // become one, and they existed only in seeded data. The Education Hub vision
+  // reset then removed the recruitment surface EMPLOYER was built for.
   INSTITUTION = 'INSTITUTION',
 }
 
@@ -436,7 +435,7 @@ export enum EscrowEventType {
 }
 
 // ---------------------------------------------------------------------------
-// Ecosystem extensions — NGO / Employer / Institution, notifications, portfolios
+// Ecosystem extensions — Institution, notifications
 // ---------------------------------------------------------------------------
 
 export enum InstitutionType {

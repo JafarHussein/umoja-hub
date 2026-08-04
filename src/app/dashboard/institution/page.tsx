@@ -87,7 +87,7 @@ export default async function InstitutionOverviewPage(): Promise<React.ReactElem
           label="Students"
           value={students.length}
           emphasis
-          caption="Enrolled and building verified portfolios under your name."
+          caption="Enrolled and doing reviewed engineering work under your name."
         />
         <MetricTile
           label="Lecturers"
