@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, isNavActive, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, isNavActive, type IAppNavSpec } from '@/components/app';
 
 // NGO dashboard chrome — the app-design-system shell wired with the NGO
 // navigation. NGOs sponsor farmer cooperatives; this surface lets them see the
@@ -50,15 +49,7 @@ export function NgoShell({ children }: { children: React.ReactNode }): React.Rea
       nav={NGO_NAV}
       currentPath={pathname}
       title={active?.label ?? 'NGO'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>

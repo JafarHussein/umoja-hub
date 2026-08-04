@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, type IAppNavSpec } from '@/components/app';
 
 // Buyer dashboard chrome — the app-design-system shell (AppShell) wired with the
 // buyer navigation. Replaces the legacy LayoutWrapper/Sidebar for the BUYER role
@@ -62,15 +61,7 @@ export function BuyerShell({ children }: { children: React.ReactNode }): React.R
       nav={BUYER_NAV}
       currentPath={pathname}
       title={active?.label ?? 'Buyer'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>

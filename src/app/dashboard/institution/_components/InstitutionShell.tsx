@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, type IAppNavSpec } from '@/components/app';
 
 // Institution dashboard chrome — the app-design-system shell wired with the
 // institution navigation. Institutions host students and lecturers.
@@ -45,15 +44,7 @@ export function InstitutionShell({ children }: { children: React.ReactNode }): R
       nav={INSTITUTION_NAV}
       currentPath={pathname}
       title={active?.label ?? 'Institution'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>

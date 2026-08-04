@@ -3,9 +3,11 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { Button, Alert, Input, ProviderButton } from '@/components/app';
 import { resolvePostAuthDestination } from '@/lib/auth/intent';
+import { homeForRole, ROLE_LABEL } from '@/lib/auth/dashboards';
+import { Role } from '@/types';
 
 // Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
 // account through /onboarding/welcome; OAuth here reconciles an existing account.
@@ -71,6 +73,15 @@ function LoginContent(): React.ReactElement {
     searchParams.get('callbackUrl'),
     POST_AUTH_FALLBACK
   );
+
+  // A session can already exist here — the middleware sends an unfinished
+  // account to the onboarding funnel, and this page is one of the few routes it
+  // exempts, so it is where a stuck user lands looking for a way out. Silently
+  // presenting a fresh sign-in form to someone who is already signed in is how
+  // that dead end was created: re-authenticating as the same person returns
+  // them to the same place. Show them who they are and let them leave.
+  const { data: session, status } = useSession();
+  const [signingOut, setSigningOut] = useState(false);
 
   const [loading, setLoading] = useState<'google' | 'github' | 'credentials' | null>(null);
   const [username, setUsername] = useState('');
@@ -151,6 +162,44 @@ function LoginContent(): React.ReactElement {
             <span className="app-h2 text-app-ink">Umoja</span>
             <span className="app-h2 text-app-brand">Hub</span>
           </div>
+
+          {status === 'authenticated' && session?.user && (
+            <div className="mb-5 rounded-app-card border border-app-brand-border bg-app-brand-surface p-5 sm:p-6">
+              <p className="app-label text-app-brand">Already signed in</p>
+              <p className="app-body-strong mt-1.5 text-app-ink">
+                {session.user.firstName || session.user.email}
+              </p>
+              <p className="app-meta truncate text-app-muted">{session.user.email}</p>
+              <p className="app-meta mt-1 text-app-faint">
+                {session.user.role
+                  ? ROLE_LABEL[session.user.role as Role]
+                  : 'Account setup not finished'}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => router.push(homeForRole(session.user.role as Role | null))}
+                  disabled={signingOut}
+                >
+                  Continue as {session.user.firstName || 'this account'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  isLoading={signingOut}
+                  onClick={() => {
+                    setSigningOut(true);
+                    void signOut({ callbackUrl: '/auth/login' });
+                  }}
+                >
+                  Sign out
+                </Button>
+              </div>
+              <p className="app-meta mt-3 text-app-muted">
+                Sign out first to use a different account.
+              </p>
+            </div>
+          )}
 
           <div className="rounded-app-card border border-app-hairline bg-app-card p-7 sm:p-9">
             <h1 className="app-h1 text-app-ink">Sign in to UmojaHub</h1>

@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, type IAppNavSpec } from '@/components/app';
 
 // Employer dashboard chrome — the app-design-system shell wired with the
 // employer navigation. Employers discover verified student portfolios.
@@ -50,15 +49,7 @@ export function EmployerShell({ children }: { children: React.ReactNode }): Reac
       nav={EMPLOYER_NAV}
       currentPath={pathname}
       title={active?.label ?? 'Employer'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>

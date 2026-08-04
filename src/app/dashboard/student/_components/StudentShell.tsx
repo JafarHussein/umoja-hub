@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, type IAppNavSpec } from '@/components/app';
 
 // Student dashboard chrome — the app-design-system shell (AppShell) wired with
 // the student navigation. Replaces the legacy LayoutWrapper/Sidebar for the
@@ -72,15 +71,7 @@ export function StudentShell({ children }: { children: React.ReactNode }): React
       nav={STUDENT_NAV}
       currentPath={currentPath}
       title={active?.label ?? 'Student'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>

@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, type IAppNavSpec } from '@/components/app';
 
 // Farmer dashboard chrome — the app-design-system shell (AppShell) wired with
 // the farmer navigation. Replaces the legacy LayoutWrapper/Sidebar for the
@@ -81,15 +80,7 @@ export function FarmerShell({ children }: { children: React.ReactNode }): React.
       nav={FARMER_NAV}
       currentPath={pathname}
       title={active?.label ?? 'Farmer'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>
