@@ -58,25 +58,25 @@ function lockoutForStatus(status: VerificationStatus | null): IVerificationLocko
     case VerificationStatus.PENDING:
       return {
         tone: 'pending',
-        title: 'Verification under review',
+        title: 'Your verification is being reviewed',
         message:
-          'An administrator is reviewing your verification documents. You can add produce once your account is approved.',
+          'An administrator is checking your document. Most are decided within two working days and you will be emailed either way — you can publish produce as soon as it is approved.',
       };
     case VerificationStatus.REJECTED:
       return {
         tone: 'rejected',
-        title: 'Verification not approved',
+        title: 'Your verification was not accepted',
         message:
-          'Your verification was not approved. Review the feedback and resubmit your documents from your profile.',
-        cta: { label: 'Go to profile', href: '/dashboard/farmer/profile' },
+          'Check that the document is in date, that the whole page is in frame, and that the name matches your account. You can submit a new one at any time.',
+        cta: { label: 'Submit a new document', href: '/dashboard/verify' },
       };
     default:
       return {
         tone: 'action',
-        title: 'Verification required',
+        title: 'Verify your identity to publish produce',
         message:
-          'You must be a verified farmer before you can add produce. Submit your verification documents to get started.',
-        cta: { label: 'Submit verification', href: '/dashboard/farmer/profile' },
+          'Buyers order from people they can see have been checked, so publishing is the one thing that waits on verification. Everything else — browsing, prices, your cooperative — is open to you now.',
+        cta: { label: 'Verify my identity', href: '/dashboard/verify' },
       };
   }
 }

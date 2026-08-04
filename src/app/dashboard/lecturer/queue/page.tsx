@@ -110,10 +110,14 @@ export default function LecturerQueuePage(): React.ReactElement {
     return (
       <Page>
         <PageHeader title="Pending Reviews" />
+        {/* The lockout had no way forward: a lecturer who had not yet sent a
+            credential letter was told to wait for a review of something that
+            did not exist. Verification now has one address for every role. */}
         <VerificationLockout
           tone="pending"
-          title="Account not yet verified"
-          message="An administrator must verify your lecturer account before you can access the review queue."
+          title="Your account is not verified yet"
+          message="An administrator verifies your faculty role before you can review student work. If you have not sent your credential letter, you can do that now."
+          cta={{ label: 'Go to verification', href: '/dashboard/verify' }}
         />
       </Page>
     );
