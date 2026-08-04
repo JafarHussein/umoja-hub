@@ -44,8 +44,74 @@ interface IOrderResult {
   mpesaCheckoutRequestId: string;
 }
 
+/**
+ * One recorded step of the payment session, as the server narrates it from
+ * PaymentEventLog. These are facts with timestamps, not animation: nothing here
+ * is shown until the backend has actually written it.
+ */
+interface IPaymentSessionEvent {
+  type: string;
+  label: string;
+  detail: string | null;
+  occurredAt: string;
+}
+
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
+  mpesaTransactionId?: string | null;
+  events?: IPaymentSessionEvent[];
+}
+
+function clockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+/**
+ * What the payment session has actually recorded, newest last, with the time
+ * each step happened.
+ *
+ * Checkout was built on a request/response model — submit, await, render an
+ * outcome — so between the button and the result there was one spinner, and the
+ * simulator's real behaviour (a scheduled outcome, a genuine M-Pesa receipt
+ * number, duplicate-callback handling) was invisible. Everything below is read
+ * from PaymentEventLog: if the server has not written it, it does not appear.
+ */
+function SessionLog({ events }: { events: IPaymentSessionEvent[] }): React.ReactElement | null {
+  if (events.length === 0) return null;
+  return (
+    <div className="space-y-2" aria-live="polite">
+      <p className="app-label text-app-muted">Payment session</p>
+      <ol className="space-y-1.5">
+        {events.map((e) => (
+          <li key={`${e.type}-${e.occurredAt}`} className="flex items-baseline gap-2.5">
+            <span className="app-data-s shrink-0 text-app-faint">{clockTime(e.occurredAt)}</span>
+            <span className="app-meta text-app-body">
+              {e.label}
+              {e.detail && <span className="text-app-faint"> · {e.detail}</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/**
+ * Why a payment did not go through, in the words Safaricom used.
+ *
+ * Every non-success used to collapse to "Payment was declined." — which is
+ * wrong for a timeout, wrong for an unreachable handset, and unhelpful for
+ * insufficient funds, where the buyer can fix it in thirty seconds if only they
+ * are told. The reason is already on the event; it just was not read.
+ */
+function failureReason(events: IPaymentSessionEvent[]): string | null {
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    const e = events[i];
+    if (e && e.detail && (e.type === 'FAILED' || e.type === 'TIMEOUT' || e.type === 'CALLBACK_RECEIVED')) {
+      return e.detail;
+    }
+  }
+  return null;
 }
 
 export function CheckoutPanel({
@@ -68,6 +134,9 @@ export function CheckoutPanel({
   const [orderResult, setOrderResult] = useState<IOrderResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(POLL_WINDOW_SECONDS);
+  // What the payment session has actually recorded, and the receipt it produced.
+  const [sessionEvents, setSessionEvents] = useState<IPaymentSessionEvent[]>([]);
+  const [mpesaReceipt, setMpesaReceipt] = useState<string | null>(null);
 
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -106,6 +175,11 @@ export function CheckoutPanel({
             const res = await fetch(`/api/orders/${orderId}/payment-status`);
             if (!res.ok) return;
             const data = (await res.json()) as IPaymentStatusResponse;
+            // Narration updates on every poll, including while still pending —
+            // that is the whole point. The buyer watches M-Pesa respond rather
+            // than watching a spinner and hoping.
+            if (data.events) setSessionEvents(data.events);
+            if (data.mpesaTransactionId) setMpesaReceipt(data.mpesaTransactionId);
             if (data.paymentStatus === OrderPaymentStatus.PAID) {
               stopPolling();
               setState('paid');
@@ -132,6 +206,8 @@ export function CheckoutPanel({
     stopPolling();
     setOrderResult(null);
     setErrorMessage(null);
+    setSessionEvents([]);
+    setMpesaReceipt(null);
     setState('idle');
   }
 
@@ -188,6 +264,9 @@ export function CheckoutPanel({
       { label: 'Amount', value: `KSh ${orderResult.totalAmountKES.toLocaleString()}` },
       { label: 'Phone', value: `+254${phoneSuffix}` },
       { label: 'Reference', value: orderResult.orderReferenceId },
+      // The session identifier M-Pesa issued for this request. It is what
+      // Safaricom support asks for, and the platform already had it.
+      { label: 'Session', value: orderResult.mpesaCheckoutRequestId },
     ];
     return (
       <div className="space-y-5">
@@ -224,6 +303,8 @@ export function CheckoutPanel({
           </div>
         </div>
 
+        <SessionLog events={sessionEvents} />
+
         <p className="app-meta text-app-faint">
           Enter your PIN on your phone. We&apos;ll stop checking after {POLL_WINDOW_SECONDS} seconds
           and let you retry.
@@ -235,6 +316,9 @@ export function CheckoutPanel({
   // ── Payment confirmed ───────────────────────────────────────────────────
   if (state === 'paid' && orderResult) {
     const rows: { label: string; value: string; mono: boolean }[] = [
+      // The receipt number first: it is what a buyer matches against the SMS on
+      // their handset, and the platform stored it without ever showing it.
+      ...(mpesaReceipt ? [{ label: 'M-Pesa receipt', value: mpesaReceipt, mono: true }] : []),
       { label: 'Reference', value: orderResult.orderReferenceId, mono: true },
       { label: 'Amount', value: `KSh ${orderResult.totalAmountKES.toLocaleString()}`, mono: true },
       { label: 'Crop', value: cropName, mono: false },
@@ -273,6 +357,8 @@ export function CheckoutPanel({
           </p>
         </div>
 
+        <SessionLog events={sessionEvents} />
+
         <p className="app-meta text-app-faint">You will receive an M-Pesa SMS confirmation shortly.</p>
 
         <Link
@@ -292,11 +378,17 @@ export function CheckoutPanel({
   const showError =
     state === 'error' || state === 'failed' || state === 'timeout' || state === 'inventory_unavailable';
 
+  // A failure states the reason M-Pesa actually gave. "Payment was declined"
+  // covered insufficient funds, a cancelled prompt, an unreachable handset and
+  // a busy line alike — and only one of those is a decline. The reason was on
+  // the event all along; nothing read it.
+  const recordedReason = failureReason(sessionEvents);
+
   const errorText =
     state === 'failed'
-      ? 'Payment was declined.'
+      ? (recordedReason ?? 'M-Pesa did not complete the payment.')
       : state === 'timeout'
-        ? 'Payment timed out — no confirmation received.'
+        ? 'No confirmation arrived from M-Pesa. Nothing has been charged — you can try again.'
         : state === 'inventory_unavailable'
           ? `${errorMessage ?? 'This quantity is no longer available.'} Refresh to see current stock.`
           : (errorMessage ?? 'Something went wrong.');
@@ -354,6 +446,11 @@ export function CheckoutPanel({
           </div>
         </Alert>
       )}
+
+      {/* What the attempt actually did, kept on screen after it failed. A buyer
+          deciding whether to try again wants to see how far it got — and a
+          farmer or administrator asked about it later needs the same record. */}
+      {(state === 'failed' || state === 'timeout') && <SessionLog events={sessionEvents} />}
 
       {/* Quantity */}
       <div className="space-y-1.5">
