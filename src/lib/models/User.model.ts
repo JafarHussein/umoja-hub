@@ -8,6 +8,7 @@ import {
   OnboardingStage,
   OAuthProvider,
   InstitutionType,
+  BuyerType,
 } from '@/types';
 
 const farmerDataSchema = new Schema(
@@ -135,9 +136,20 @@ const buyerDataSchema = new Schema(
       default: VerificationStatus.UNSUBMITTED,
     },
     isVerified: { type: Boolean, default: false },
+    // Which kind of buyer this is. Everything below branches on it: a BUSINESS
+    // has an organisation and a KRA certificate, an INDIVIDUAL has an identity
+    // document and neither. Optional because records predating the branch have
+    // no value for it — those are migrated, never guessed at read time.
+    buyerType: { type: String, enum: Object.values(BuyerType) },
+    // BUSINESS verification artefact.
     taxComplianceCertificate: { type: String },
+    // INDIVIDUAL verification artefact — same shape the farmer side uses, so the
+    // admin review surface reads one document schema for both.
+    documentType: { type: String, enum: Object.values(DocumentType) },
+    documentImageUrl: { type: String },
+    documentNumber: { type: String },
     // Onboarding identity (AUTH-05) — organisation profile + corporate M-Pesa
-    // paybill and self-declared procurement scale.
+    // paybill and self-declared procurement scale. BUSINESS buyers only.
     organizationName: { type: String, trim: true },
     businessRegistrationNumber: { type: String, trim: true },
     corporatePaybill: { type: String, trim: true },
@@ -278,7 +290,11 @@ export interface IUserDocument extends Document {
   buyerData?: {
     verificationStatus: string;
     isVerified: boolean;
+    buyerType?: string;
     taxComplianceCertificate?: string;
+    documentType?: string;
+    documentImageUrl?: string;
+    documentNumber?: string;
     organizationName?: string;
     businessRegistrationNumber?: string;
     corporatePaybill?: string;

@@ -28,6 +28,23 @@ export enum VerificationStatus {
   REJECTED = 'REJECTED',
 }
 
+// Which kind of buyer an account is. The platform serves both a hotel group
+// sourcing by the tonne and a household buying a crate, and it used to model
+// only the first: organisation name, business registration number and a KRA tax
+// compliance certificate were required of everyone. An individual has none of
+// the three, so the funnel — which had no "not applicable" and no way out —
+// collected fabricated ones instead, and the platform then reported them back
+// as fact. What is asked for follows from this field.
+export enum BuyerType {
+  INDIVIDUAL = 'INDIVIDUAL',
+  BUSINESS = 'BUSINESS',
+}
+
+export const BUYER_TYPE_LABEL: Record<BuyerType, string> = {
+  [BuyerType.INDIVIDUAL]: 'Individual buyer',
+  [BuyerType.BUSINESS]: 'Business or organisation',
+};
+
 // Progressive onboarding funnel (Decision 02-A). A new OAuth user has no role
 // and walks ROLE_SELECTION → IDENTITY_INPUT → VERIFICATION_UPLOAD → COMPLETED.
 // AUTH-02 writes the starting stage on OAuth account creation; AUTH-05 advances

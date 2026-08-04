@@ -1,8 +1,35 @@
 import { z } from 'zod';
-import { Role, KENYAN_COUNTIES, DocumentType, ListingCategory } from '@/types';
+import { Role, KENYAN_COUNTIES, DocumentType, ListingCategory, BuyerType } from '@/types';
 
 const kenyanPhoneRegex = /^(?:\+254|0)[17]\d{8}$/;
 const cloudinaryUrlRegex = /^https:\/\/res\.cloudinary\.com\//;
+
+// Answers people give a form that will not let them past and will not let them
+// out. A live account reached COMPLETED carrying "NOT APPLICABLE" as both its
+// organisation name and its business registration number, because at the time
+// every buyer was required to be a business and no other answer existed.
+//
+// A length check cannot catch this — "NOT APPLICABLE" is fourteen characters of
+// perfectly valid text. The fix is to stop asking the wrong people (see
+// `buyerIdentitySchema`); this guard is the backstop, and its message points at
+// the real remedy rather than just refusing.
+const PLACEHOLDER_ANSWER =
+  /^(?:n\.?\/?a\.?|not[\s-]*applicable|none|nil|null|unknown|test|asdf|x+|-+|\.+|0+)$/i;
+
+/**
+ * Trimmed, length-bounded text that must actually say something. Use for
+ * identity-bearing fields an administrator will later read as fact.
+ */
+function meaningfulText(min: number, max: number, requiredMessage: string) {
+  return z
+    .string()
+    .trim()
+    .min(min, requiredMessage)
+    .max(max)
+    .refine((v) => !PLACEHOLDER_ANSWER.test(v), {
+      message: 'Enter the real value, or choose the option that fits you instead',
+    });
+}
 
 // ---------------------------------------------------------------------------
 // Stage 1 — role selection. ADMIN is never self-selectable (allowlist only,
@@ -121,16 +148,35 @@ export const farmerIdentitySchema = baseIdentitySchema.extend({
   cooperativeName: z.string().trim().max(120).optional(),
 });
 
-export const buyerIdentitySchema = baseIdentitySchema.extend({
-  organizationName: z.string().trim().min(2, 'Organisation name is required').max(120),
-  businessRegistrationNumber: z.string().trim().min(2, 'Registration number is required').max(60),
-  corporatePaybill: z.string().trim().max(20).optional(),
-  procurementScale: z.string().trim().max(60).optional(),
-  // Sourcing preferences — they rank the marketplace, they never restrict it,
-  // so both are optional.
+// Sourcing preferences — they rank the marketplace, they never restrict it, so
+// they are optional for every kind of buyer.
+const buyerPreferences = {
   preferredCounties: z.array(z.enum(KENYAN_COUNTIES)).max(47).optional(),
   purchaseInterests: produceCategories.optional(),
-});
+};
+
+// Buyer identity, branched on what kind of buyer this is.
+//
+// This was one shape requiring `organizationName` and
+// `businessRegistrationNumber` of everyone. `min(2)` is satisfied by "NOT
+// APPLICABLE" exactly as well as by a real company name, and that is what the
+// funnel actually collected from an individual who had no company and no way to
+// say so. A discriminated union makes the wrong question unaskable: an
+// individual is never sent a field they cannot honestly fill.
+export const buyerIdentitySchema = z.discriminatedUnion('buyerType', [
+  baseIdentitySchema.extend({
+    buyerType: z.literal(BuyerType.INDIVIDUAL),
+    ...buyerPreferences,
+  }),
+  baseIdentitySchema.extend({
+    buyerType: z.literal(BuyerType.BUSINESS),
+    organizationName: meaningfulText(2, 120, 'Organisation name is required'),
+    businessRegistrationNumber: meaningfulText(2, 60, 'Registration number is required'),
+    corporatePaybill: z.string().trim().max(20).optional(),
+    procurementScale: z.string().trim().max(60).optional(),
+    ...buyerPreferences,
+  }),
+]);
 
 export const studentIdentitySchema = baseIdentitySchema.extend({
   academicRegistrationNumber: z.string().trim().min(2, 'Registration number is required').max(60),
@@ -176,11 +222,26 @@ export const farmerOnboardingVerificationSchema = z.object({
     .optional(),
 });
 
-export const buyerOnboardingVerificationSchema = z.object({
-  taxComplianceCertificate: z
-    .string()
-    .regex(cloudinaryUrlRegex, 'Certificate must be uploaded to Cloudinary'),
-});
+// Buyer verification, branched the same way as buyer identity. Asking an
+// individual for a KRA tax compliance certificate is what produced a PNG stored
+// under `taxComplianceCertificate` on a live account — the field accepted any
+// Cloudinary URL, so a photo of anything satisfied it, and the platform then
+// emailed the user to say it had received their tax compliance certificate.
+// An individual proves who they are with an identity document, as a farmer does.
+export const buyerOnboardingVerificationSchema = z.discriminatedUnion('buyerType', [
+  z.object({
+    buyerType: z.literal(BuyerType.INDIVIDUAL),
+    documentType: z.enum([DocumentType.NATIONAL_ID, DocumentType.PASSPORT]),
+    documentNumber: z.string().trim().min(1, 'Document number is required'),
+    documentImageUrl: z.string().regex(cloudinaryUrlRegex, 'Image must be uploaded to Cloudinary'),
+  }),
+  z.object({
+    buyerType: z.literal(BuyerType.BUSINESS),
+    taxComplianceCertificate: z
+      .string()
+      .regex(cloudinaryUrlRegex, 'Certificate must be uploaded to Cloudinary'),
+  }),
+]);
 
 export const lecturerOnboardingVerificationSchema = z.object({
   facultyCredentialLetterUrl: z

@@ -42,6 +42,10 @@ function roleIdentityUpdate(role: string, data: Record<string, unknown>): Record
       put('farmerData.cooperativeName', data.cooperativeName);
       break;
     case Role.BUYER:
+      // The discriminator decides which of the fields below exist at all: an
+      // INDIVIDUAL carries none of the organisation ones, and `put` skips
+      // undefined, so nothing is written for questions they were never asked.
+      put('buyerData.buyerType', data.buyerType);
       put('buyerData.organizationName', data.organizationName);
       put('buyerData.businessRegistrationNumber', data.businessRegistrationNumber);
       put('buyerData.corporatePaybill', data.corporatePaybill);
