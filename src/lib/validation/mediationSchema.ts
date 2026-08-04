@@ -16,15 +16,21 @@ const evidenceSchema = z
 export const mediationRequestSchema = z.object({
   // Both sides may file, under different categories — the route enforces which
   // categories each role is allowed (see BUYER_/FARMER_MEDIATION_CATEGORIES).
-  category: z.enum([
-    MediationCategory.NOT_DELIVERED,
-    MediationCategory.QUALITY_ISSUE,
-    MediationCategory.WRONG_QUANTITY,
-    MediationCategory.RECEIPT_NOT_CONFIRMED,
-    MediationCategory.OTHER,
-  ]),
+  // The message matters here as much as the constraint: without one, Zod names
+  // every option in a single line of raw enum values, and this schema sits
+  // behind the form someone reaches on the worst day of their transaction.
+  category: z.enum(
+    [
+      MediationCategory.NOT_DELIVERED,
+      MediationCategory.QUALITY_ISSUE,
+      MediationCategory.WRONG_QUANTITY,
+      MediationCategory.RECEIPT_NOT_CONFIRMED,
+      MediationCategory.OTHER,
+    ],
+    { message: 'Choose what went wrong with this order' }
+  ),
   description: z
-    .string()
+    .string({ message: 'Describe the problem in at least 20 characters' })
     .trim()
     .min(20, 'Describe the problem in at least 20 characters')
     .max(1000),
@@ -36,7 +42,7 @@ export type MediationRequestInput = z.infer<typeof mediationRequestSchema>;
 // The respondent's account of the same order. One statement each.
 export const mediationResponseSchema = z.object({
   statement: z
-    .string()
+    .string({ message: 'Give your account in at least 20 characters' })
     .trim()
     .min(20, 'Give your account in at least 20 characters')
     .max(1000),

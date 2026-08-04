@@ -55,10 +55,6 @@ interface IBuyerOrder {
   fulfillmentStage: FulfillmentStage | null;
 }
 
-interface IOrdersResponse {
-  orders: IBuyerOrder[];
-}
-
 // The mediation case shape and its labels are shared with the farmer surface —
 // both sides must see the same case described the same way.
 type IMediation = IMediationCase;
@@ -132,19 +128,23 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
   const fetchOrder = useCallback(async (): Promise<void> => {
     try {
-      const res = await fetch('/api/orders');
+      // Asks for this order, rather than downloading a page of the buyer's
+      // order list and searching it. The list is paginated at 20, so that
+      // approach could not open anything older: a buyer with 27 orders
+      // following a link to their 25th was told it might belong to someone
+      // else, about their own purchase.
+      const res = await fetch(`/api/orders/${params.orderId}`);
+      if (res.status === 404) {
+        setPageState('not_found');
+        return;
+      }
       if (!res.ok) {
         setPageState('error');
         return;
       }
-      const data = (await res.json()) as IOrdersResponse;
-      const match = data.orders.find((o) => o._id === params.orderId);
-      if (!match) {
-        setPageState('not_found');
-        return;
-      }
-      setOrder(match);
-      setHasRated(match.hasRated);
+      const { data } = (await res.json()) as { data: IBuyerOrder };
+      setOrder(data);
+      setHasRated(data.hasRated);
       setPageState('ready');
     } catch {
       setPageState('error');
