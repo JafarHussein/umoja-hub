@@ -14,7 +14,23 @@ const MUTED = '#6b7280';
 const BORDER = '#e5e7eb';
 const CANVAS = '#f4f1ec';
 
+/**
+ * Who this email is being written to, which decides what the footer may
+ * truthfully claim.
+ *
+ * `SUBJECT` — the person the event happened to.
+ * `ADMIN` — an operator being told about someone *else's* account.
+ *
+ * Without this distinction every email closed with "You received this email
+ * because of activity on your UmojaHub account", which is false for every
+ * operational broadcast: an administrator alerted to a farmer's verification
+ * has had no activity on their own account at all.
+ */
+export type EmailAudience = 'SUBJECT' | 'ADMIN';
+
 export interface LifecycleEmailParams {
+  /** Who is reading. Defaults to SUBJECT. */
+  audience?: EmailAudience;
   /** Recipient's first name, for the greeting. */
   firstName?: string;
   /** Bold heading at the top of the card — the headline of what happened. */
@@ -60,7 +76,8 @@ function detailRows(details: Record<string, string>): string {
  * the caller). Returns inline-styled HTML safe for all major email clients.
  */
 export function renderLifecycleEmail(params: LifecycleEmailParams): string {
-  const { firstName, heading, intro, details, nextStep, ctaLabel, ctaUrl } = params;
+  const { audience = 'SUBJECT', firstName, heading, intro, details, nextStep, ctaLabel, ctaUrl } =
+    params;
 
   const greeting = firstName ? `Hello ${escapeHtml(firstName)},` : 'Hello,';
 
@@ -116,7 +133,11 @@ export function renderLifecycleEmail(params: LifecycleEmailParams): string {
             <tr>
               <td style="padding:18px 28px;border-top:1px solid ${BORDER};background:#fbfaf8">
                 <p style="margin:0;color:${MUTED};font-size:12px;line-height:1.5">
-                  You received this email because of activity on your UmojaHub account.
+                  ${
+                    audience === 'ADMIN'
+                      ? 'You received this operational alert because you administer UmojaHub. It concerns another member&rsquo;s account, not your own.'
+                      : 'You received this email because of activity on your UmojaHub account.'
+                  }
                   UmojaHub — a trust-based agricultural marketplace and academic verification platform.
                 </p>
               </td>

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { logger } from '@/lib/utils';
 import { NotificationType, NotificationChannel, Role } from '@/types';
+import type { EmailAudience } from '@/lib/integrations/emailTemplates';
 
 // ---------------------------------------------------------------------------
 // notify — persist an in-app notification for a user, and (best-effort) send a
@@ -19,6 +20,15 @@ export interface NotifyInput {
   body?: string;
   relatedEntity?: { kind: string; id: string | mongoose.Types.ObjectId };
   channel?: NotificationChannel;
+  /**
+   * Who is being written to. Set to ADMIN by `notifyAdmins`; callers do not
+   * pass it. It exists because the pipe had no way to tell the two apart, so an
+   * operational broadcast borrowed the subject's wording wholesale — an
+   * administrator alerted to a farmer's order was told to "open your orders to
+   * see the latest status", about an order that was not theirs, under a footer
+   * claiming activity on their own account.
+   */
+  audience?: EmailAudience;
 }
 
 // Per-type email policy. A type with no entry here is in-app only — high-volume
@@ -32,6 +42,29 @@ const EMAIL_NEXT_STEP: Partial<Record<NotificationType, string>> = {
   [NotificationType.REVIEW_UPDATE]: 'Open your project to read the review.',
   [NotificationType.GROUP_UPDATE]: 'Open your group to see the update.',
   [NotificationType.SYSTEM]: '',
+};
+
+// What an operator is being asked to do. Every one of these is a queue to work,
+// never a thing that happened to the reader.
+const ADMIN_NEXT_STEP: Partial<Record<NotificationType, string>> = {
+  [NotificationType.VERIFICATION_UPDATE]: 'Open the verification queue to review the submission.',
+  [NotificationType.ORDER_UPDATE]: 'Open the admin dashboard to review the order.',
+  [NotificationType.ESCROW_UPDATE]: 'Open the escrow ledger to review the held funds.',
+  [NotificationType.PAYOUT_UPDATE]: 'Open the payouts queue to settle the request.',
+  [NotificationType.REVIEW_UPDATE]: 'Open the admin dashboard to review.',
+  [NotificationType.GROUP_UPDATE]: 'Open the admin dashboard to review the group.',
+  [NotificationType.WELCOME]: '',
+  [NotificationType.SYSTEM]: '',
+};
+
+// Where an operator should land. Admin alerts used to route through the same
+// per-role map as subjects, which sent every one of them to /dashboard/admin
+// regardless of what the alert was about.
+const ADMIN_PATH: Partial<Record<NotificationType, string>> = {
+  [NotificationType.VERIFICATION_UPDATE]: '/dashboard/admin/verification-queue',
+  [NotificationType.ESCROW_UPDATE]: '/dashboard/admin/escrow',
+  [NotificationType.PAYOUT_UPDATE]: '/dashboard/admin/payouts',
+  [NotificationType.ORDER_UPDATE]: '/dashboard/admin/mediation',
 };
 
 function dashboardPathFor(role: string | null, kind?: string): string {
@@ -59,7 +92,8 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
   // fire-and-forget) no module load runs after the test has torn down — that
   // would raise Jest's "import outside the scope of the test" error.
   if (!process.env['SMTP_HOST'] || process.env['NODE_ENV'] === 'test') return;
-  const nextStep = EMAIL_NEXT_STEP[input.type];
+  const isAdmin = input.audience === 'ADMIN';
+  const nextStep = isAdmin ? ADMIN_NEXT_STEP[input.type] : EMAIL_NEXT_STEP[input.type];
   if (nextStep === undefined) return; // type opts out of email
 
   const { isEmailConfigured, sendLifecycleEmail } = await import(
@@ -73,15 +107,18 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
     if (!user?.email) return;
 
     const base = process.env['NEXTAUTH_URL']?.replace(/\/$/, '') ?? '';
-    const path = dashboardPathFor(user.role ?? null, input.relatedEntity?.kind);
+    const path = isAdmin
+      ? (ADMIN_PATH[input.type] ?? '/dashboard/admin')
+      : dashboardPathFor(user.role ?? null, input.relatedEntity?.kind);
     const ctaUrl = base ? `${base}${path}` : undefined;
 
     await sendLifecycleEmail(user.email, `UmojaHub — ${input.title}`, {
+      audience: isAdmin ? 'ADMIN' : 'SUBJECT',
       ...(user.firstName ? { firstName: user.firstName } : {}),
       heading: input.title,
       intro: input.body ?? input.title,
       ...(nextStep ? { nextStep } : {}),
-      ...(ctaUrl ? { ctaLabel: 'Open UmojaHub', ctaUrl } : {}),
+      ...(ctaUrl ? { ctaLabel: isAdmin ? 'Open the queue' : 'Open UmojaHub', ctaUrl } : {}),
     });
   } catch (error) {
     logger.error('notify', 'NOTIFY_EMAIL_FAILED — could not send lifecycle email', {
@@ -96,11 +133,16 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
  * Fan a notification out to every administrator. Used for operational alerts
  * (new verification request, new dispute, escrow release request). Never throws.
  */
-export async function notifyAdmins(input: Omit<NotifyInput, 'userId'>): Promise<void> {
+export async function notifyAdmins(input: Omit<NotifyInput, 'userId' | 'audience'>): Promise<void> {
   try {
     const { default: User } = await import('@/lib/models/User.model');
     const admins = await User.find({ role: Role.ADMIN }).select('_id').lean();
-    await Promise.all(admins.map((a) => notify({ ...input, userId: String(a._id) })));
+    // Stamped here, not at the call sites: every fan-out is operational by
+    // definition, and leaving it to twenty callers to remember is how the
+    // subject's wording reached administrators in the first place.
+    await Promise.all(
+      admins.map((a) => notify({ ...input, userId: String(a._id), audience: 'ADMIN' }))
+    );
   } catch (error) {
     logger.error('notify', 'NOTIFY_ADMINS_FAILED — could not fan out to admins', {
       type: input.type,
