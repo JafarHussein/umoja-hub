@@ -789,7 +789,7 @@ Effort: Application submission: 1 hour. Approval: 1–2 weeks (Safaricom, not de
 - **Farmer verification**: Document submission (National ID, Cooperative Card, Passport). Admin review queue. Approve/reject with reason. Score reflects verification status.
 - **Supplier verification**: `VerifiedSupplier` model with KEBS/PCPB/KEPHIS numbers. County and input category filtering. Admin workflow.
 - **Rating system**: Requires completed order (RECEIVED status). One rating per order (unique index). 1-5 scale. Trust score recalculates on submission.
-- **Education verification**: Full multi-stage workflow. Append-only audit log with document hashes and GitHub snapshots. Portfolio status updated on verification.
+- **Education verification**: Full multi-stage workflow. Append-only audit log with document hashes and GitHub snapshots. (Portfolio status was removed in the 2026-08-04 Education Hub vision reset.)
 - **Lecturer verification**: Enforced before reviewer can submit reviews.
 
 ### What Is Missing

@@ -89,11 +89,10 @@ const ACCOUNT_ARCHETYPE: Record<string, string> = {
   'fatuma.hassan@gmail.com': 'reseller',
   'peter.otieno@gmail.com': 'individual',
   'brian.otieno@students.uonbi.ac.ke': 'high',
-  'amina.waweru@strathmore.edu': 'portfolio',
+  'amina.waweru@strathmore.edu': 'prolific',
   'dennis.kariuki@jkuat.ac.ke': 'average',
   'g.ndungu@uonbi.ac.ke': 'balanced',
   'j.mwangi@strathmore.edu': 'balanced',
-  'lydia.wanjala@twiga.co.ke': 'employer',
   'umojahub16@gmail.com': 'admin',
 };
 

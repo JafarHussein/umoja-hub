@@ -13,7 +13,7 @@ import type { LecturerReviewDoc } from '@/lib/models/LecturerReview.model';
 const DECISION_NOTICE: Record<string, { title: string; body: string }> = {
   [LecturerDecision.VERIFIED]: {
     title: 'Project verified',
-    body: 'A lecturer has verified your project. It now counts toward your portfolio.',
+    body: 'A lecturer has signed off your project. Read their feedback on the review.',
   },
   [LecturerDecision.REVISION_REQUIRED]: {
     title: 'Revision requested',
@@ -33,7 +33,7 @@ const DECISION_NOTICE: Record<string, { title: string; body: string }> = {
 //   1. Create LecturerReview
 //   2. Advance ProjectEngagement status (status guard prevents double-submit)
 //   3. Append VerificationAuditLog
-//   4. $inc StudentPortfolioStatus.stats.verifiedProjectCount (if VERIFIED)
+//   4. $inc User.studentData.completedProjectCount (if VERIFIED)
 //   5. $inc LecturerEffectiveness counts
 // ---------------------------------------------------------------------------
 
@@ -97,9 +97,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { default: LecturerReview } = await import('@/lib/models/LecturerReview.model');
     const { default: VerificationAuditLog } = await import(
       '@/lib/models/VerificationAuditLog.model'
-    );
-    const { default: StudentPortfolioStatus } = await import(
-      '@/lib/models/StudentPortfolioStatus.model'
     );
     const { default: LecturerEffectiveness } = await import(
       '@/lib/models/LecturerEffectiveness.model'
@@ -198,12 +195,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       reviewScores: scores,
     });
 
-    // 4. Portfolio stats increment (only on VERIFIED)
+    // 4. Student's completed-project counter (only on VERIFIED)
     if (decision === LecturerDecision.VERIFIED) {
-      await StudentPortfolioStatus.findOneAndUpdate(
-        { studentId: raw.studentId } as object,
-        { $inc: { 'stats.verifiedProjectCount': 1 } },
-        { upsert: true }
+      const { default: User } = await import('@/lib/models/User.model');
+      await User.updateOne(
+        { _id: raw.studentId },
+        { $inc: { 'studentData.completedProjectCount': 1 } }
       );
     }
 

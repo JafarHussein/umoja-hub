@@ -14,10 +14,12 @@ import { LecturerDecision, ProjectStatus } from '@/types';
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
 const mockUserFindById = jest.fn();
+const mockUserUpdateOne = jest.fn();
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
     findById: jest.fn((...a: unknown[]) => mockUserFindById(...a)),
+    updateOne: jest.fn((...a: unknown[]) => mockUserUpdateOne(...a)),
   },
 }));
 
@@ -48,14 +50,6 @@ jest.mock('@/lib/models/VerificationAuditLog.model', () => ({
   __esModule: true,
   default: {
     create: jest.fn((...a: unknown[]) => mockAuditLogCreate(...a)),
-  },
-}));
-
-const mockPortfolioFindOneAndUpdate = jest.fn();
-jest.mock('@/lib/models/StudentPortfolioStatus.model', () => ({
-  __esModule: true,
-  default: {
-    findOneAndUpdate: jest.fn((...a: unknown[]) => mockPortfolioFindOneAndUpdate(...a)),
   },
 }));
 
@@ -167,7 +161,7 @@ function setupHappyPath() {
     lecturerReviewId: CREATED_REVIEW._id,
   });
   mockAuditLogCreate.mockResolvedValue({});
-  mockPortfolioFindOneAndUpdate.mockResolvedValue(null);
+  mockUserUpdateOne.mockResolvedValue({ acknowledged: true });
   mockEffectivenessFindOneAndUpdate.mockResolvedValue(null);
 }
 
@@ -214,7 +208,7 @@ describe('POST /api/lecturer/reviews', () => {
     expect(mockPeerReviewFindById).not.toHaveBeenCalled();
   });
 
-  it('creates review, advances engagement to VERIFIED, and increments portfolio stats', async () => {
+  it('creates review, advances engagement to VERIFIED, and increments the completed-project count', async () => {
     setupHappyPath();
 
     const res = await POST(makeRequest(VALID_BODY));
@@ -229,10 +223,9 @@ describe('POST /api/lecturer/reviews', () => {
       { new: true }
     );
 
-    expect(mockPortfolioFindOneAndUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ studentId: ACTIVE_ENGAGEMENT.studentId }),
-      expect.objectContaining({ $inc: { 'stats.verifiedProjectCount': 1 } }),
-      { upsert: true }
+    expect(mockUserUpdateOne).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: ACTIVE_ENGAGEMENT.studentId }),
+      expect.objectContaining({ $inc: { 'studentData.completedProjectCount': 1 } })
     );
 
     expect(mockEffectivenessFindOneAndUpdate).toHaveBeenCalledWith(
@@ -270,8 +263,8 @@ describe('POST /api/lecturer/reviews', () => {
       { upsert: true }
     );
 
-    // Portfolio NOT updated on non-VERIFIED decisions
-    expect(mockPortfolioFindOneAndUpdate).not.toHaveBeenCalled();
+    // The student's completed-project count is NOT incremented on non-VERIFIED decisions
+    expect(mockUserUpdateOne).not.toHaveBeenCalled();
   });
 
   it('advances engagement to DENIED and increments deniedCount', async () => {

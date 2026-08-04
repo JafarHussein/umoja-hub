@@ -12,9 +12,9 @@ export function TopicOverview() {
         </Lead>
         <P>
           Smallholder farmers have sold through brokers who knew the end-market price when they did
-          not. Buyers have no way to confirm a farmer&rsquo;s reliability before paying. Students
-          hold degrees that certify attendance and portfolios that no employer can independently
-          check — and employers have seen AI-generated work and inflated credentials.
+          not. Buyers have no way to confirm a farmer&rsquo;s reliability before paying. Computer
+          science students spend years on units examined on paper and reach industrial attachment
+          having never built software that real people use.
         </P>
         <P>
           These are the same problem: there is no mechanism to establish trust between strangers
@@ -39,22 +39,18 @@ export function TopicOverview() {
           listing.
         </P>
         <P>
-          The <strong className="font-medium text-fg">Education Hub</strong> verifies work, not
-          attendance. CS students complete a project brief, document their process — problem
-          breakdown, approach, blocker log, AI-usage log, and a final reflection — pass anonymous
-          peer review, and receive a VERIFIED, REVISION_REQUIRED, or DENIED decision from a lecturer
-          whose own credentials were verified. Each process document is fingerprinted (SHA-256) when
-          submitted, so it cannot be silently changed later.
-        </P>
-        <P>
-          The hubs differ in what they make trustworthy. The Food Hub&rsquo;s trust object is the
-          farmer — a continuous score that moves with every transaction. The Education Hub&rsquo;s
-          trust object is the project — a one-time, permanent decision backed by hashed evidence.
+          The <strong className="font-medium text-fg">Education Hub</strong> is the practical
+          execution layer beside a Computer Science or Information Technology degree. Its purpose is
+          to turn the theory a student is taught into real engineering experience — building working
+          software against the units they are studying, and having it reviewed by a lecturer whose
+          own credentials were verified.
         </P>
         <Limitation>
           <p>
-            The hubs share one account system and one set of named administrators, but are otherwise
-            independent. Standing in one does not transfer to the other.
+            The Education Hub is being rebuilt from its foundations and is not documented here yet.
+            It is not a portfolio site, a recruitment platform, or a learning-management system —
+            students own their own portfolios and GitHub. The hubs share one account system and one
+            set of named administrators, but are otherwise independent.
           </p>
         </Limitation>
       </Sub>

@@ -5,8 +5,8 @@ import { NotificationType, NotificationChannel } from '@/types';
 // Notification — a persisted, per-user in-app notification. Complements the
 // existing fire-and-forget SMS/email (which are transient and not stored): this
 // backs the in-app notification center with a read/unread inbox. Written
-// non-blocking at lifecycle milestones (order/escrow/verification/payout/review/
-// portfolio-view) via src/lib/notifications/notify.ts. `readAt` is null until
+// non-blocking at lifecycle milestones (order/escrow/verification/payout/review)
+// via src/lib/notifications/notify.ts. `readAt` is null until
 // the user marks it read; `channel` records any out-of-band delivery alongside.
 // ---------------------------------------------------------------------------
 

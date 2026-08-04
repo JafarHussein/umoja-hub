@@ -232,7 +232,7 @@ export default function NewProjectPage(): React.ReactElement {
 
           <FormSection
             title="How hard should it be?"
-            description="Pick the tier that stretches you. A harder tier carries more weight in your portfolio, but it is also more to see through to a verified decision."
+            description="Pick the tier that stretches you. A harder tier is more engineering to see through to a finished, reviewed system."
           >
             <div className="space-y-2.5">
               <p className="app-label text-app-body">Difficulty tier</p>

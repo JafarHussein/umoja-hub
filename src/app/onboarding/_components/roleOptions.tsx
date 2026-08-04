@@ -37,13 +37,13 @@ export const ROLE_OPTIONS: IRoleOption[] = [
   {
     value: Role.STUDENT,
     label: 'Student',
-    description: 'Build a lecturer-verified portfolio',
+    description: 'Turn your coursework into real engineering',
     icon: <GraduationCap />,
   },
   {
     value: Role.LECTURER,
     label: 'Lecturer',
-    description: 'Review and verify student work',
+    description: 'Mentor and review student engineering',
     icon: <BookOpenCheck />,
   },
 ];

@@ -2,6 +2,12 @@
 
 **The living tracker.** I drive ("take the wheel"); this is updated and committed as items complete. Working agreement at the bottom.
 
+> **Historical record — Education Hub items partly void (2026-08-04).** The student
+> screens ticked below include a Portfolio surface and a "verifiable credential"
+> outcome. Those were built, and have now been **deleted** by the Education Hub vision
+> reset. The ticks are left as an accurate record of what was done, not as a description
+> of what exists. See `context/EDUCATION_HUB_VISION_RESET_AUDIT.md`.
+
 ## Phase 0 — Reset, research & direction ✅ DONE
 - [x] Demolition (docs/Figma/old foundation deleted) + app token-values gutted (website preserved & verified)
 - [x] 18 research deliverables (gates 1–4, approved)

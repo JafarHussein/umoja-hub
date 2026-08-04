@@ -2,6 +2,11 @@
 
 **The master design blueprint.** Status: **DRAFT — awaiting approval.** The goal is to **enumerate every screen for every role so nothing is assumed or missed** (owner mandate 2026-06-17). Governed by the [Foundation](UMOJAHUB_WEBAPP_FOUNDATION_V1.md), [IA](IA_INFORMATION_ARCHITECTURE_V1.md), [Marketplace Direction](MARKETPLACE_DESIGN_DIRECTION_V1.md), [Onboarding Direction](ONBOARDING_DESIGN_DIRECTION_V1.md).
 
+> **Education Hub screens superseded (2026-08-04).** The STUDENT rows below — notably
+> S-11 (Portfolio) — describe the retired credential/portfolio vision. S-11 has been
+> deleted from the codebase. The authoritative Education Hub screen map will come from
+> `EDUCATION_HUB_FOUNDATION_V2.md`; every other role's rows stand.
+
 **How to read:** each row = one screen/surface · its purpose · key content · the states it must define. IDs are stable handles for the wireframing backlog. Grounded in the real routes (`src/app/**`); new surfaces implied by the design directions are marked **(NEW)** and carry a backend-verify flag (design never touches logic). Every screen owns its **empty / loading / error / offline** states unless noted.
 
 ---

@@ -63,7 +63,7 @@ const studentDataSchema = new Schema(
     academicRegistrationNumber: { type: String, trim: true },
     // Course of study and expected completion (V3 role setup). The year is a
     // plain number rather than a date — students know the year, not the day,
-    // and employers filter on it.
+    // it tells the platform where they are in the degree.
     programme: { type: String, trim: true },
     graduationYear: { type: Number },
   },

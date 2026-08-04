@@ -16,7 +16,7 @@
 |---|---|---|---|
 | **Farmer** | Kenyan smallholder farmer | Standing, confident, **holding/near produce** (e.g. a crate of tomatoes) — a producer with something to sell | ON-01 Welcome, ON-02 Intent "sell", ON-04 Role confirm, farmer first-run |
 | **Buyer** | Kenyan buyer/trader | Considered, **evaluating** — holding a phone or a basket, mid-decision (sourcing, not impulse) | ON-02 Intent "buy", buyer first-run |
-| **Student** | Kenyan CS student (younger) | **At a laptop**, focused/aspirational — building real work | ON-02 Intent "build a portfolio", education hub, student first-run |
+| **Student** | Kenyan CS student (younger) | **At a laptop**, focused/aspirational — building real work | ON-02 Intent "apply what I am studying", education hub, student first-run |
 | **Lecturer** | Kenyan academic | Professional, **reviewing** — with a document/tablet, considered | ON-02 Intent "review work", lecturer first-run |
 
 ## Optional (later, lower priority)

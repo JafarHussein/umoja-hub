@@ -106,7 +106,6 @@ const PUBLIC_API_ROUTES: Record<string, string> = {
   health: 'liveness probe',
   'marketplace/[listingId]/fairness': 'buyer price fairness on a public listing page (D14)',
   'marketplace/suggest': 'search suggestions for the public marketplace',
-  'portfolio/[slug]': 'public student portfolio reachable by slug, no account required',
   suppliers: 'public verified-supplier directory',
   transparency: 'public transparency figures',
   'webhooks/daraja': 'M-Pesa callback; authenticated by the payment provider, not a session',

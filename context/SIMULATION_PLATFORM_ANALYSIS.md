@@ -4,12 +4,11 @@ Canonical map of the platform the simulation engine populates. Derived from a
 full codebase audit. Pairs with the approved plan and the phased build.
 
 ## Roles (post-extension)
-Original five: **FARMER, BUYER, STUDENT, LECTURER, ADMIN**. The simulation
-program adds three ecosystem participants as **real, additive** roles:
-**NGO** (sponsors farmer cooperatives), **EMPLOYER** (discovers verified student
-portfolios), **INSTITUTION** (hosts students/lecturers). Role-data lives in
-`User.{farmer,student,lecturer,buyer,ngo,employer,institution}Data`. `role` is
-nullable only during onboarding.
+Original five: **FARMER, BUYER, STUDENT, LECTURER, ADMIN**, plus **INSTITUTION**
+(hosts students/lecturers). Role-data lives in
+`User.{farmer,student,lecturer,buyer,institution}Data`. `role` is
+nullable only during onboarding. (NGO and EMPLOYER were added by the simulation
+program and removed on 2026-08-04 — neither had a path to real existence.)
 
 ## Capability / workflow map
 - **Marketplace**: verified FARMER creates `MarketplaceListing` (+`PriceHistory`
@@ -23,9 +22,8 @@ nullable only during onboarding.
   → (documents/blockers/ai-usage) → SUBMITTED → UNDER_PEER_REVIEW (`PeerReview`
   by a different student) → UNDER_LECTURER_REVIEW → VERIFIED/REVISION_REQUIRED/
   DENIED (`LecturerReview` by a **verified** lecturer) → `VerificationAuditLog` +
-  `StudentPortfolioStatus` + `LecturerEffectiveness`.
-- **Cooperatives**: `FarmerGroup` (+ `GroupOrder`, `GroupJoinToken`), now with
-  optional `sponsoredByNgoId`.
+  `LecturerEffectiveness`.
+- **Cooperatives**: `FarmerGroup` (+ `GroupOrder`, `GroupJoinToken`).
 - **Verification**: admin routes write `User.*Data.verificationStatus/isVerified`
   + `AdminAuditLog`; farmer approval seeds `FarmerTrustScore`.
 
@@ -50,7 +48,7 @@ Originally **transient only** (SMS via Africa's Talking, email via Resend; no
 persistence). Now backed by a persisted **`Notification`** model + `notify()`
 service (`src/lib/notifications/notify.ts`, non-blocking) with emit points at:
 payment held, order released, order paid (buyer), farmer verification decision,
-payout decision, lecturer review decision, employer portfolio view. Inbox API:
+payout decision, lecturer review decision. Inbox API:
 `GET /api/notifications` (+unread count), `PATCH /api/notifications/[id]`,
 `PATCH /api/notifications/read-all`.
 
@@ -63,9 +61,8 @@ after seeding rather than fabricating analytics.**
 
 ## Search map
 Marketplace listing full-text (`$text` on title/cropName/description, `?q=`).
-**New**: employer portfolio discovery (`GET /api/employer/portfolios`, by
-skill/tier) + public portfolio by slug (`/portfolio/[slug]`,
-`GET /api/portfolio/[slug]`). No global profile search.
+No global profile search. (Employer portfolio discovery and the public portfolio
+by slug were removed by the 2026-08-04 Education Hub vision reset.)
 
 ## Backdating constraints (drives the hybrid generation strategy)
 Models use Mongoose `timestamps: true`; `createdAt`/`updatedAt` **can** be set on
@@ -73,8 +70,8 @@ insert. Activity timestamps (`paidAt`, `confirmedByFarmerAt`, `receivedByBuyerAt
 `occurredAt`, `recordedAt`, blocker/ai-usage `loggedAt`) are stamped `new Date()`
 by routes, so historical activity **must** be written directly with explicit
 timestamps. The simulator mirrors each route's exact write shape with backdated
-times, then calls the real derived-state functions (`recalculate`,
-portfolio/effectiveness upserts) and the analytics crons.
+times, then calls the real derived-state functions (`recalculate`, effectiveness
+upserts) and the analytics crons.
 
 ## Safety / tracking
 No native seed-tagging exists; the existing `scripts/seed.ts` drops all

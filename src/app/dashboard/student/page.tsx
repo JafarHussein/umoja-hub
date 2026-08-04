@@ -63,19 +63,14 @@ export default function StudentDashboardPage(): React.ReactElement {
     <Page width="focus">
       <PageHeader
         title="My Projects"
-        description="A project is one piece of real work, reviewed by a lecturer and signed off. Finished projects become your public portfolio — the thing an employer can check rather than take on trust."
+        description="A project is one piece of real software, built against the theory you are being taught and reviewed by a lecturer as an engineer would review it."
       />
 
       <EmptyState
-        title="Your first project starts your verified portfolio"
-        description="Pick a brief, build the thing, and submit it for review. A lecturer gives you written feedback and, once it passes, the project is published to your portfolio with their verification attached."
+        title="Turn what you are studying into something that runs"
+        description="Start a project, build the thing, and submit it for review. A lecturer reads your work and gives you written engineering feedback — on the architecture and the code, not just the report."
         action={{ label: 'Start a new project', href: '/dashboard/student/projects/new' }}
         hints={[
-          {
-            label: 'See your portfolio',
-            href: '/dashboard/student/portfolio',
-            description: 'what employers see when they look you up',
-          },
           {
             label: 'Find a mentor',
             href: '/dashboard/student/mentor',

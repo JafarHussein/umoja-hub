@@ -2,7 +2,8 @@
  * Audience doorways (foundation §13, §15.3). A doorway is a thin entry layer
  * over the shared Documentation Stream — a short orientation plus curated links
  * INTO canonical topic sections on `/`. It never holds content that isn't
- * reachable in the Stream. Five doorways, decided in the foundation.
+ * reachable in the Stream. The employers doorway was removed with the Education
+ * Hub vision reset — the platform does not serve recruiters.
  */
 
 export interface DoorwayLink {
@@ -52,27 +53,13 @@ export const doorways: Doorway[] = [
     slug: 'students',
     audience: 'Students',
     title: 'For students',
-    lead: 'You are a computer-science student who wants verifiable proof of how you work — not just a certificate of attendance.',
+    lead: 'You are a computer-science or IT student who wants your coursework to produce real engineering experience, not just an exam mark. The Education Hub is being rebuilt around that; this documentation covers the rest of the platform in the meantime.',
     links: [
-      { href: '/#overview-two-hubs', label: 'How the Education Hub works', why: 'Verifying work, not attendance.' },
-      { href: '/#education-process', label: "What you'll produce", why: 'Three documents, two logs, hashed on submission.' },
-      { href: '/#education-review', label: 'How review works', why: 'Anonymous peer review, then a verified lecturer.' },
-      { href: '/#education-outcomes', label: 'The possible outcomes', why: 'VERIFIED, REVISION_REQUIRED, or DENIED — and the gaps.' },
-      { href: '/#identity-documents', label: 'What happens to your work', why: 'How tamper evidence works.' },
-      { href: '/#risks-students', label: 'Risks & recourse', why: 'What is and is not built yet.' },
-    ],
-  },
-  {
-    slug: 'employers',
-    audience: 'Employers',
-    title: 'For employers',
-    lead: 'You are evaluating a candidate and want to know exactly what was verified, by whom, and on what evidence.',
-    links: [
-      { href: '/#education-review', label: 'Who reviews student work', why: 'Credential-verified lecturers, with written justification.' },
-      { href: '/#education-outcomes', label: 'What "VERIFIED" means', why: 'The decision behind the label.' },
-      { href: '/#identity-documents', label: 'Tamper evidence', why: 'How documents are fingerprinted.' },
+      { href: '/#overview-two-hubs', label: 'How the two hubs fit together', why: 'What the platform is, end to end.' },
+      { href: '/#identity-lecturers', label: 'How lecturers are verified', why: 'Who is qualified to review your work.' },
+      { href: '/#identity-documents', label: 'What happens to your work', why: 'How your submitted documents are handled.' },
       { href: '/#governance-who', label: 'Who makes decisions', why: 'Named humans, not an algorithm.' },
-      { href: '/#risks-students', label: 'What you can rely on today', why: 'Honest about what is not built yet.' },
+      { href: '/#risks-students', label: 'Risks & recourse', why: 'What is and is not built yet.' },
     ],
   },
   {

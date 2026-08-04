@@ -1,6 +1,6 @@
 # User Research Findings — Web App
 
-**Reset deliverable 4.** Research gate 1 of the batched process. **Scope: the web-app roles** (FARMER, BUYER, STUDENT, LECTURER, ADMIN). Website-only audiences (employers, NGOs, institutions, government) are out of scope here and covered by the live website.
+**Reset deliverable 4.** Research gate 1 of the batched process. **Scope: the web-app roles** (FARMER, BUYER, STUDENT, LECTURER, ADMIN). Website-only audiences (institutions, government, funders) are out of scope here and covered by the live website.
 
 ## Method & honesty caveat (read first)
 
@@ -10,7 +10,7 @@ This is **secondary research + structured synthesis** grounded in (a) the actual
 
 - **Mobile-money is universal and trusted; the app's payment model rides on it.** Kenya hit **91% mobile-money penetration** (June 2025), 60M+ M-Pesa users, and **71% of adults receiving agricultural payments get them digitally**, mostly via M-Pesa. Trust in M-Pesa is built on reliability and Safaricom's reputation, and it's perceived as *safer than cash*. → The app should lean on this existing trust, not reinvent a payment mental model. *(Evidence)*
 - **Smartphones are rising but app usage among farmers is still low** — constrained by **low digital literacy, poor interface usability, and lack of farmer-centric design**, plus uneven bandwidth. Adoption skews **male and younger**. → Interface simplicity and low-bandwidth tolerance are not "nice to have"; they are the difference between use and abandonment. *(Evidence)*
-- **The education side exists because of a real crisis:** a wide employer/graduate **skills mismatch** (average digital-skills test ~55%), graduates lacking hands-on coding experience, and the literature explicitly proposing **digital portfolios that demonstrate tangible capability** as the intervention. → UmojaHub's "verify the process, not the certificate" thesis is evidence-backed; the UI's job is to make that demonstrable capability *legible to a skeptical employer*. *(Evidence)*
+- **The education side exists because of a real crisis:** Kenyan CS graduates lack hands-on engineering experience (average digital-skills test ~55%) because the degree is taught and examined as theory. → UmojaHub's answer is to give students real engineering practice *during* the degree rather than at industrial attachment. *(Evidence)*
 - **Connectivity, language, device, and pressure vary enormously across roles.** Design cannot assume a fast phone, a quiet moment, English fluency, or prior app literacy. *(Evidence/Hypothesis)*
 
 ---
@@ -39,13 +39,20 @@ This is **secondary research + structured synthesis** grounded in (a) the actual
 
 ## STUDENT — the Education Hub
 
-- **Snapshot:** University CS student (often 20–29, the unemployment-heavy cohort), building proof of how they actually work. Likely the most tech-comfortable role, but under real economic pressure. *(Evidence: 800k new annual job-seekers, youth unemployment.)*
-- **Primary goal:** Produce verifiable proof of capability — not a certificate of attendance — that a skeptical employer will believe.
-- **Mental model:** "How do I stand out when a degree isn't enough?" They think in *projects, commits, and evidence*.
-- **Risk tolerance:** Will invest effort if the payoff (credible verification) is real; intolerant of busywork or a dead-end outcome.
-- **How they build trust:** In the *fairness and rigor* of the review (anonymous peer review → credential-verified lecturer) and in the verification being something they can *show*.
-- **Anxiety moments:** Submitting work for judgment; the REVISION_REQUIRED dead-end; not knowing what "Verified" will mean to an employer.
-- **UX implications:** Make the process and its rigor visible (it's the value); show exactly what each outcome means and the path between them; surface tamper-evidence plainly; the workspace should feel like a serious tool, not a gamified toy.
+> **Superseded by the Education Hub vision reset (2026-08-04).** The findings below were
+> written on the retired premise that the student's goal is to convince a skeptical
+> employer. The student's actual problem is that a Kenyan CS/IT degree teaches theory
+> examined on paper: they can pass Database Systems, Networking, and Operating Systems
+> without ever building software real people use, and industrial attachment is the first
+> time they meet real engineering. Fresh research is gated behind
+> `EDUCATION_HUB_FOUNDATION_V2.md`.
+
+- **Snapshot:** University CS or IT student (often 20–29), under real economic pressure and the most tech-comfortable role on the platform.
+- **Primary goal:** Become an engineer before graduating — apply the units they are being taught to software that actually runs.
+- **Mental model:** "I can pass the exam; I have never built the thing." They think in *projects, commits, and working systems*.
+- **Risk tolerance:** Will invest real effort if the work is real; intolerant of busywork, toy assignments, and dead-end outcomes.
+- **Anxiety moments:** Submitting work for judgment; the REVISION_REQUIRED dead-end; not knowing whether what they built is any good.
+- **UX implications:** The workspace should feel like a serious engineering tool, not a gamified course; feedback must be specific and technical; the path between outcomes must be honest and open.
 
 ## LECTURER — the verifier
 
@@ -82,7 +89,7 @@ These must be validated with real users, not assumed:
 - **Device/bandwidth/literacy distribution per role** (esp. farmers) — field survey or partner data.
 - **Do farmers/buyers actually understand the Trust Score?** — comprehension testing with the real artifact.
 - **Onboarding drop-off points** — instrument the funnel; watch first-run sessions.
-- **What "Verified" must convey to a real Kenyan employer** — interview hiring managers (note: employer is website-side, but the student UI depends on the answer).
+- **How does the platform learn what a student is actually studying?** — interview registrars and IT departments about what academic data Kenyan universities can expose.
 - **Lecturer review friction** — observe real reviews; time the rubric.
 - **Language needs** — is English-only acceptable, or is Swahili/local-language support a requirement for farmer adoption?
 

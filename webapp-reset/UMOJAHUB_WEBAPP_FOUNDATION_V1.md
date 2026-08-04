@@ -10,6 +10,41 @@
 
 ---
 
+## AMENDMENT A1 — Education Hub vision reset (2026-08-04)
+
+**Filed under the amendment rule above; supersedes every conflicting statement in this document.**
+
+This foundation was written when the Education Hub was understood as a credential
+platform — a system that proved a student's capability to a skeptical employer. That
+product direction has been **retired by owner directive**. The Education Hub is the
+**practical execution layer beside a Kenyan CS or IT degree**: it exists to turn
+theoretical coursework into continuous, real engineering experience from the first
+semester to graduation. There is no employer in the model.
+
+What this amendment changes in the text below:
+
+- **§1 (thesis).** "a student and an employer who never will" is struck. The student's
+  counterpart is their **lecturer and their institution**, not a hiring manager.
+- **§5 (principles).** "Process is shown, because the process is the value — especially
+  in education (… A bare badge convinces no skeptic)" is struck. The value is the
+  engineering experience itself; there is no badge and no skeptic to convince.
+- **§6 (student persona).** "How do I prove capability when a degree isn't enough? Wants
+  a credible, *showable* verification" is replaced by: **"I am being taught theory I have
+  never applied — how do I become an engineer before I graduate?"** The student wants
+  real work, real review, and real feedback; they remain intolerant of busywork and
+  dead-ends.
+- **§16 (open questions).** "What must 'Verified' convey to a real Kenyan employer" is
+  struck as no longer a question this platform asks. It is replaced by: **how does the
+  platform learn what a student is actually studying** (institution integration), and
+  **what makes a lecturer's engineering review worth their time**.
+
+Deliverable 06 (Education UX Research), whose thesis was the employer credibility gap,
+has been deleted. Its replacement is gated behind the new Education Hub foundation,
+`EDUCATION_HUB_FOUNDATION_V2.md`. Everything in this document concerning the Food
+Security Hub, the visual language, and the presentation layer stands unchanged.
+
+---
+
 ## 1. The thesis — what UmojaHub *is*
 
 UmojaHub is **trust infrastructure** for people who must transact with strangers — a farmer and a buyer who have never met; a student and an employer who never will. The backend earns trust through verification, scoring, and named human accountability.

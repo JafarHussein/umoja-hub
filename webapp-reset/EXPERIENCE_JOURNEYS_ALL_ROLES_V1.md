@@ -47,8 +47,7 @@ Each stage: **Goal** (what the user wants) · **Experience** (what they do/see) 
 | **5. Submit** | Get verified | Submit → **hashed on submission** → what-happens-next `[S-07]` | Anxiety of being judged | Submitted |
 | **6. Peer review** | Fair assessment | Anonymous peer review (give and receive) `[S-08/09]` | Fairness and rigor are visible | Reviewed |
 | **7. Outcome** | Pass | VERIFIED / REVISION_REQUIRED / DENIED + meaning + path (honest re: dead-end) `[S-10]` | Relief or an honest setback | Outcome understood |
-| **8. Show it** | Prove to employers | **Portfolio** — the showable artifact (honest: shareable employer URL not built yet) `[S-11]` | "I have something credible to show" | Portfolio ready |
-| **9. Ongoing** | Improve | AI Mentor `[S-12]` | Supported | Next project |
+| **8. Ongoing** | Improve | AI Mentor `[S-12]` | Supported | Next project |
 
 ---
 
@@ -83,7 +82,7 @@ Each stage: **Goal** (what the user wants) · **Experience** (what they do/see) 
 - **The high-anxiety moments are the same shape across roles** — handing over identity/evidence, committing money, awaiting a verdict. Each gets **status clarity + an anxiety-reducing illustration + honest limits**.
 - **Trust is felt at every stage**, not just shown on one screen — legitimacy at sign-in, honesty in onboarding, reassurance at verification, confidence before payment, attribution at decisions.
 - **Every role's onboarding is the same reframed experience** (teach → listen → role last), with a role-specific tail.
-- **Open questions (Foundation §16) touch every journey** — Trust-Score comprehension, language, employer expectations — and stay flagged, not assumed, until validated.
+- **Open questions (Foundation §16) touch every journey** — Trust-Score comprehension and language — and stay flagged, not assumed, until validated.
 
 ## Next
 

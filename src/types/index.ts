@@ -14,9 +14,8 @@ export enum Role {
   //
   // NGO and EMPLOYER were removed (2026-08-04). Neither had a path to existence
   // — they were absent from `roleSelectionSchema`, so no real person could
-  // become one, and they existed only in seeded data. Employers keep the
-  // surface that mattered: a student portfolio is public at /portfolio/[slug]
-  // and needs no account to read.
+  // become one, and they existed only in seeded data. The Education Hub vision
+  // reset then removed the recruitment surface EMPLOYER was built for.
   INSTITUTION = 'INSTITUTION',
 }
 
@@ -213,13 +212,6 @@ export enum StudentTier {
   BEGINNER = 'BEGINNER',
   INTERMEDIATE = 'INTERMEDIATE',
   ADVANCED = 'ADVANCED',
-}
-
-export enum PortfolioStrength {
-  BUILDING = 'BUILDING',
-  DEVELOPING = 'DEVELOPING',
-  STRONG = 'STRONG',
-  EXCEPTIONAL = 'EXCEPTIONAL',
 }
 
 export enum ProjectTrack {
@@ -443,7 +435,7 @@ export enum EscrowEventType {
 }
 
 // ---------------------------------------------------------------------------
-// Ecosystem extensions — NGO / Employer / Institution, notifications, portfolios
+// Ecosystem extensions — Institution, notifications
 // ---------------------------------------------------------------------------
 
 export enum InstitutionType {
@@ -451,13 +443,6 @@ export enum InstitutionType {
   COLLEGE = 'COLLEGE',
   POLYTECHNIC = 'POLYTECHNIC',
   TVET = 'TVET',
-}
-
-// Whether a student portfolio is reachable by its public slug (employers) or
-// private to the student.
-export enum PortfolioVisibility {
-  PRIVATE = 'PRIVATE',
-  PUBLIC = 'PUBLIC',
 }
 
 // Persisted in-app notification taxonomy. The channel records how it was also
@@ -469,7 +454,6 @@ export enum NotificationType {
   VERIFICATION_UPDATE = 'VERIFICATION_UPDATE',
   PAYOUT_UPDATE = 'PAYOUT_UPDATE',
   REVIEW_UPDATE = 'REVIEW_UPDATE',
-  PORTFOLIO_VIEW = 'PORTFOLIO_VIEW',
   GROUP_UPDATE = 'GROUP_UPDATE',
   SYSTEM = 'SYSTEM',
 }
