@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import { AppShell, Button, type IAppNavSpec } from '@/components/app';
+import { AppShell, SessionMenu, type IAppNavSpec } from '@/components/app';
 
 // Lecturer dashboard chrome — the app-design-system shell (AppShell) wired with
 // the lecturer navigation. Replaces the legacy LayoutWrapper/Sidebar for the
@@ -55,15 +54,7 @@ export function LecturerShell({ children }: { children: React.ReactNode }): Reac
       nav={LECTURER_NAV}
       currentPath={currentPath}
       title={active?.label ?? 'Lecturer'}
-      topbarRight={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut({ callbackUrl: '/auth/login' })}
-        >
-          Sign out
-        </Button>
-      }
+      topbarRight={<SessionMenu />}
     >
       {children}
     </AppShell>

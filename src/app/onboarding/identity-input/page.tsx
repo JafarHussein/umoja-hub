@@ -3,8 +3,16 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Input, Select, Button, ChipGroup, TokenSelect } from '@/components/app';
-import { Role, KENYAN_COUNTIES, ListingCategory } from '@/types';
+import {
+  Input,
+  Select,
+  Button,
+  ChipGroup,
+  TokenSelect,
+  ChoiceCard,
+  ChoiceCardGroup,
+} from '@/components/app';
+import { Role, KENYAN_COUNTIES, ListingCategory, BuyerType, BUYER_TYPE_LABEL } from '@/types';
 import { GRADUATION_YEARS } from '@/lib/validation/onboardingSchema';
 import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
@@ -217,38 +225,69 @@ export default function IdentityInputPage(): React.ReactElement {
 
         {role === Role.BUYER && (
           <>
-            <Input
-              label="Organisation name"
-              placeholder="Mavuno Foods Ltd"
-              value={text('organizationName')}
-              onChange={(e) => set('organizationName', e.target.value)}
-              error={fieldErrors['organizationName']?.[0]}
-              required
-            />
-            <Input
-              label="Business registration number"
-              placeholder="PVT-XXXXXX"
-              value={text('businessRegistrationNumber')}
-              onChange={(e) => set('businessRegistrationNumber', e.target.value)}
-              error={fieldErrors['businessRegistrationNumber']?.[0]}
-              required
-            />
-            <Input
-              label="Corporate paybill"
-              optional
-              placeholder="e.g. 400200"
-              value={text('corporatePaybill')}
-              onChange={(e) => set('corporatePaybill', e.target.value)}
-              error={fieldErrors['corporatePaybill']?.[0]}
-            />
-            <Input
-              label="Procurement scale"
-              optional
-              placeholder="e.g. 5–10 tonnes / month"
-              value={text('procurementScale')}
-              onChange={(e) => set('procurementScale', e.target.value)}
-              error={fieldErrors['procurementScale']?.[0]}
-            />
+            {/* Everything a buyer is asked for follows from this answer. The
+                screen used to require an organisation name, a registration
+                number and a KRA certificate of every buyer, which an individual
+                cannot supply — so they supplied "NOT APPLICABLE" instead, and
+                the platform stored it as fact. Asking first costs one tap and
+                removes three impossible questions. */}
+            <div className="flex flex-col gap-2">
+              <p className="app-label text-app-body">What kind of buyer are you?</p>
+              <ChoiceCardGroup label="What kind of buyer are you?">
+                <ChoiceCard
+                  title={BUYER_TYPE_LABEL[BuyerType.INDIVIDUAL]}
+                  description="Buying for yourself, your family or your household."
+                  selected={text('buyerType') === BuyerType.INDIVIDUAL}
+                  onSelect={() => set('buyerType', BuyerType.INDIVIDUAL)}
+                />
+                <ChoiceCard
+                  title={BUYER_TYPE_LABEL[BuyerType.BUSINESS]}
+                  description="Buying for a registered company, hotel, school or cooperative."
+                  selected={text('buyerType') === BuyerType.BUSINESS}
+                  onSelect={() => set('buyerType', BuyerType.BUSINESS)}
+                />
+              </ChoiceCardGroup>
+              {fieldErrors['buyerType']?.[0] && (
+                <p className="app-meta text-app-danger">{fieldErrors['buyerType'][0]}</p>
+              )}
+            </div>
+
+            {text('buyerType') === BuyerType.BUSINESS && (
+              <>
+                <Input
+                  label="Organisation name"
+                  placeholder="Mavuno Foods Ltd"
+                  value={text('organizationName')}
+                  onChange={(e) => set('organizationName', e.target.value)}
+                  error={fieldErrors['organizationName']?.[0]}
+                  required
+                />
+                <Input
+                  label="Business registration number"
+                  placeholder="PVT-XXXXXX"
+                  value={text('businessRegistrationNumber')}
+                  onChange={(e) => set('businessRegistrationNumber', e.target.value)}
+                  error={fieldErrors['businessRegistrationNumber']?.[0]}
+                  required
+                />
+                <Input
+                  label="Corporate paybill"
+                  optional
+                  placeholder="e.g. 400200"
+                  value={text('corporatePaybill')}
+                  onChange={(e) => set('corporatePaybill', e.target.value)}
+                  error={fieldErrors['corporatePaybill']?.[0]}
+                />
+                <Input
+                  label="Procurement scale"
+                  optional
+                  placeholder="e.g. 5–10 tonnes / month"
+                  value={text('procurementScale')}
+                  onChange={(e) => set('procurementScale', e.target.value)}
+                  error={fieldErrors['procurementScale']?.[0]}
+                />
+              </>
+            )}
             <ChipGroup
               label="What do you buy?"
               optional

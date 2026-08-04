@@ -5,15 +5,20 @@ import { connectDB } from '@/lib/db';
 import { AppError, handleApiError } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
-// GET /api/buyers/me — the signed-in user's home county (Marketplace Rebuild,
-// Stage 5). Read-only and minimal: it exists solely so the marketplace "Near
-// me" filter can resolve the buyer's locality client-side without widening the
-// auth session. Any authenticated role may call it; anonymous callers get 401
-// and the UI falls back to a disabled toggle.
+// GET /api/buyers/me — the signed-in user's own marketplace-facing facts.
+// Read-only and deliberately narrow: it exists so client screens can resolve
+// facts that do not belong in the auth session. Any authenticated role may call
+// it; anonymous callers get 401 and each caller falls back gracefully.
+//
+//   county     — the marketplace "Near me" filter (Marketplace Rebuild, Stage 5)
+//   buyerType  — individual vs business, which decides what the verification
+//                screen asks a buyer to upload. Without it that screen asked
+//                every buyer for a KRA tax compliance certificate.
 // ---------------------------------------------------------------------------
 
-interface IUserCountyLean {
+interface IUserLean {
   county?: string;
+  buyerData?: { buyerType?: string };
 }
 
 export async function GET(_req: NextRequest): Promise<NextResponse> {
@@ -27,10 +32,15 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     const { default: User } = await import('@/lib/models/User.model');
 
     const user = (await User.findById(session.user.id)
-      .select('county')
-      .lean()) as IUserCountyLean | null;
+      .select('county buyerData.buyerType')
+      .lean()) as IUserLean | null;
 
-    return NextResponse.json({ data: { county: user?.county ?? null } });
+    return NextResponse.json({
+      data: {
+        county: user?.county ?? null,
+        buyerType: user?.buyerData?.buyerType ?? null,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

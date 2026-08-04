@@ -1,16 +1,11 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
-import { notify } from '@/lib/notifications/notify';
 import { Card } from '@/components/app';
-import { Role, PortfolioVisibility, NotificationType } from '@/types';
+import { PortfolioVisibility } from '@/types';
 
 // Public, shareable student portfolio page. Reachable by slug when the portfolio
-// is PUBLIC. An authenticated EMPLOYER view is recorded (PortfolioView) and the
-// student is notified. This is the human-facing counterpart to
-// GET /api/portfolio/[slug].
+// is PUBLIC. This is the human-facing counterpart to GET /api/portfolio/[slug].
 
 interface VerifiedProject {
   title?: string;
@@ -53,31 +48,6 @@ export default async function PublicPortfolioPage({
   const student = await User.findById(portfolio.studentId)
     .select('firstName lastName profilePhotoUrl bio county studentData.universityAffiliation')
     .lean();
-
-  const session = await getServerSession(authOptions);
-  const viewerId = session?.user?.id;
-  const isEmployerView =
-    session?.user?.role === Role.EMPLOYER &&
-    viewerId &&
-    String(viewerId) !== String(portfolio.studentId);
-
-  if (isEmployerView) {
-    void (async () => {
-      await PortfolioView.create({
-        studentId: portfolio.studentId,
-        viewerId,
-        viewerRole: Role.EMPLOYER,
-        viewedAt: new Date(),
-      });
-      await notify({
-        userId: portfolio.studentId,
-        type: NotificationType.PORTFOLIO_VIEW,
-        title: 'An employer viewed your portfolio',
-        body: 'Your public portfolio was opened by an employer on UmojaHub.',
-        relatedEntity: { kind: 'User', id: portfolio.studentId },
-      });
-    })().catch(() => {});
-  }
 
   const viewCount = await PortfolioView.countDocuments({ studentId: portfolio.studentId });
   const projects = (portfolio.verifiedProjects ?? []) as VerifiedProject[];

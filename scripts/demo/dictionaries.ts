@@ -440,21 +440,6 @@ export const KENYAN_UNIVERSITIES: Array<{ name: string; county: string; domains:
   { name: 'Dedan Kimathi University of Technology', county: 'Nyeri', domains: ['students.dkut.ac.ke', 'dkut.ac.ke'] },
 ];
 
-export const NGO_NAMES: Array<{ name: string; focus: string[] }> = [
-  { name: 'Mazingira Green Initiative', focus: ['Sustainable farming', 'Climate resilience'] },
-  { name: 'Shamba Trust', focus: ['Smallholder finance', 'Market access'] },
-  { name: 'Pamoja Agricultural Foundation', focus: ['Cooperative development', 'Food security'] },
-  { name: 'Tujenge Rural Development', focus: ['Women in agriculture', 'Training'] },
-];
-
-export const EMPLOYERS: Array<{ name: string; industry: string }> = [
-  { name: 'Twiga Foods', industry: 'AgriTech / Logistics' },
-  { name: 'Cellulant', industry: 'FinTech' },
-  { name: 'M-KOPA', industry: 'FinTech / Hardware' },
-  { name: 'Sendy', industry: 'Logistics' },
-  { name: 'Andela Kenya', industry: 'Software / Talent' },
-];
-
 export const TECH_STACKS: string[] = [
   'React', 'Next.js', 'TypeScript', 'Node.js', 'Python', 'Django', 'Flutter',
   'React Native', 'PostgreSQL', 'MongoDB', 'Firebase', 'Go', 'Java', 'Spring',

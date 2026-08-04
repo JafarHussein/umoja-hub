@@ -40,18 +40,11 @@ export interface InstitutionRef {
   county: string;
 }
 
-export interface NgoRef {
-  id: mongoose.Types.ObjectId;
-  name: string;
-}
-
 export interface World {
   farmers: PersonRef[];
   buyers: PersonRef[];
   students: PersonRef[];
   lecturers: PersonRef[];
-  employers: PersonRef[];
-  ngos: NgoRef[];
   institutions: InstitutionRef[];
   admin: PersonRef | null;
 }
@@ -62,8 +55,6 @@ export function emptyWorld(): World {
     buyers: [],
     students: [],
     lecturers: [],
-    employers: [],
-    ngos: [],
     institutions: [],
     admin: null,
   };

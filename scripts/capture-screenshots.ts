@@ -88,10 +88,7 @@ const SHOTS: Shot[] = [
   // Lecturer
   { file: 'lecturer-queue', path: '/dashboard/lecturer/queue', role: Role.LECTURER },
   { file: 'lecturer-review', path: '/dashboard/lecturer/reviews/:engagementId', role: Role.LECTURER },
-  // Employer / NGO / Institution
-  { file: 'employer-overview', path: '/dashboard/employer', role: Role.EMPLOYER },
-  { file: 'employer-talent-search', path: '/dashboard/employer/talent', role: Role.EMPLOYER },
-  { file: 'ngo-dashboard', path: '/dashboard/ngo', role: Role.NGO },
+  // Institution
   { file: 'institution-dashboard', path: '/dashboard/institution', role: Role.INSTITUTION },
   // Admin
   { file: 'admin-dashboard', path: '/dashboard/admin', role: Role.ADMIN },

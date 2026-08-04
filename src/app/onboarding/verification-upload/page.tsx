@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Input, Select, Button } from '@/components/app';
-import { Role, DocumentType } from '@/types';
+import { Role, DocumentType, BuyerType } from '@/types';
 import { OnboardingShell, OnboardingError } from '../_components/OnboardingShell';
 
 // This screen is the one funnel stage that is not universal, so it extends the
@@ -38,10 +38,41 @@ async function uploadToCloudinary(file: File): Promise<string> {
 export default function VerificationUploadPage(): React.ReactElement {
   const { data: session } = useSession();
   const role = session?.user?.role ?? null;
+  // A buyer's verification follows the kind of buyer they said they were. An
+  // individual is asked for an identity document; only a business is asked for
+  // a KRA certificate. The value is read from the record written at the identity
+  // step, so this screen cannot ask for something the account never claimed.
+  const [buyerType, setBuyerType] = useState<BuyerType | null>(null);
+  const [buyerTypeLoaded, setBuyerTypeLoaded] = useState(false);
+
+  useEffect(() => {
+    if (role !== Role.BUYER) {
+      setBuyerTypeLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/buyers/me');
+        const data = (await res.json()) as { data?: { buyerType?: BuyerType | null } };
+        if (!cancelled) setBuyerType(data.data?.buyerType ?? null);
+      } catch {
+        if (!cancelled) setBuyerType(null);
+      } finally {
+        if (!cancelled) setBuyerTypeLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [role]);
 
   if (role === Role.STUDENT) return <StudentVerification />;
-  if (role === Role.FARMER || role === Role.BUYER || role === Role.LECTURER) {
+  if (role === Role.FARMER || role === Role.LECTURER) {
     return <DocumentVerification role={role} />;
+  }
+  if (role === Role.BUYER && buyerTypeLoaded) {
+    return <DocumentVerification role={role} buyerType={buyerType ?? BuyerType.INDIVIDUAL} />;
   }
 
   return (
@@ -194,7 +225,13 @@ function StudentVerification(): React.ReactElement {
 // ---------------------------------------------------------------------------
 // SCR-ONB-005 — document/certificate upload (farmer / buyer / lecturer).
 // ---------------------------------------------------------------------------
-function DocumentVerification({ role }: { role: Role }): React.ReactElement {
+function DocumentVerification({
+  role,
+  buyerType,
+}: {
+  role: Role;
+  buyerType?: BuyerType;
+}): React.ReactElement {
   const router = useRouter();
   const { update } = useSession();
   const [documentType, setDocumentType] = useState<DocumentType | ''>('');
@@ -204,7 +241,16 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const copy = VERIFICATION_COPY[role] ?? DEFAULT_COPY;
+  // An individual buyer is verified the same way a farmer is — by an identity
+  // document — so the two share this branch. Only a registered business is asked
+  // for a KRA certificate.
+  const wantsIdentityDocument =
+    role === Role.FARMER || (role === Role.BUYER && buyerType !== BuyerType.BUSINESS);
+
+  const copy =
+    (role === Role.BUYER && buyerType === BuyerType.INDIVIDUAL
+      ? VERIFICATION_COPY.BUYER_INDIVIDUAL
+      : VERIFICATION_COPY[role]) ?? DEFAULT_COPY;
 
   const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
@@ -231,7 +277,15 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
       if (role === Role.FARMER) {
         body = { documentType, documentNumber, documentImageUrl: fileUrl };
       } else if (role === Role.BUYER) {
-        body = { taxComplianceCertificate: fileUrl };
+        body =
+          buyerType === BuyerType.BUSINESS
+            ? { buyerType: BuyerType.BUSINESS, taxComplianceCertificate: fileUrl }
+            : {
+                buyerType: BuyerType.INDIVIDUAL,
+                documentType,
+                documentNumber,
+                documentImageUrl: fileUrl,
+              };
       } else {
         body = { facultyCredentialLetterUrl: fileUrl };
       }
@@ -255,8 +309,8 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
     }
   }
 
-  const farmerReady = role !== Role.FARMER || (documentType !== '' && documentNumber.trim() !== '');
-  const canSubmit = uploadState === 'done' && fileUrl !== '' && farmerReady && !isLoading;
+  const documentReady = !wantsIdentityDocument || (documentType !== '' && documentNumber.trim() !== '');
+  const canSubmit = uploadState === 'done' && fileUrl !== '' && documentReady && !isLoading;
 
   return (
     <OnboardingShell
@@ -272,7 +326,7 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
       {error && <OnboardingError message={error} />}
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-        {role === Role.FARMER && (
+        {wantsIdentityDocument && (
           <>
             <Select
               id="documentType"
@@ -283,7 +337,11 @@ function DocumentVerification({ role }: { role: Role }): React.ReactElement {
             >
               <option value="">Select a document</option>
               <option value={DocumentType.NATIONAL_ID}>National ID</option>
-              <option value={DocumentType.COOPERATIVE_CARD}>Cooperative card</option>
+              {/* A cooperative card proves farm membership; it says nothing
+                  about an individual buyer, so it is offered only to farmers. */}
+              {role === Role.FARMER && (
+                <option value={DocumentType.COOPERATIVE_CARD}>Cooperative card</option>
+              )}
               <option value={DocumentType.PASSPORT}>Passport</option>
             </Select>
             <Input
@@ -345,10 +403,17 @@ const VERIFICATION_COPY: Record<string, IVerificationCopy> = {
     subtitle: 'Upload an identity document so we can verify your farm.',
     fileLabel: 'Document photo',
   },
+  // Buyer copy is keyed on the kind of buyer. `BUYER` is the business case; an
+  // individual gets `BUYER_INDIVIDUAL` and is never shown the word "certificate".
   BUYER: {
     title: 'Verify your business',
     subtitle: 'Upload your KRA tax compliance certificate.',
     fileLabel: 'Tax compliance certificate',
+  },
+  BUYER_INDIVIDUAL: {
+    title: 'Verify your identity',
+    subtitle: 'Upload an identity document so farmers know who they are selling to.',
+    fileLabel: 'Document photo',
   },
   LECTURER: {
     title: 'Verify your faculty role',

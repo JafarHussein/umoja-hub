@@ -199,15 +199,78 @@ describe('identity schemas', () => {
     expect(farmerIdentitySchema.safeParse({ ...base, county: 'Atlantis' }).success).toBe(false);
   });
 
-  it('buyer requires organizationName and businessRegistrationNumber', () => {
-    expect(buyerIdentitySchema.safeParse(base).success).toBe(false);
-    expect(
-      buyerIdentitySchema.safeParse({
-        ...base,
-        organizationName: 'Mavuno Foods Ltd',
-        businessRegistrationNumber: 'PVT-12345',
-      }).success
-    ).toBe(true);
+  describe('buyer identity is branched on the kind of buyer', () => {
+    it('requires a buyerType — there is no unbranched buyer', () => {
+      expect(buyerIdentitySchema.safeParse(base).success).toBe(false);
+    });
+
+    it('a business must name itself and its registration', () => {
+      expect(
+        buyerIdentitySchema.safeParse({ ...base, buyerType: 'BUSINESS' }).success
+      ).toBe(false);
+      expect(
+        buyerIdentitySchema.safeParse({
+          ...base,
+          buyerType: 'BUSINESS',
+          organizationName: 'Mavuno Foods Ltd',
+          businessRegistrationNumber: 'PVT-12345',
+        }).success
+      ).toBe(true);
+    });
+
+    it('an individual is never asked for business details', () => {
+      expect(buyerIdentitySchema.safeParse({ ...base, buyerType: 'INDIVIDUAL' }).success).toBe(
+        true
+      );
+    });
+
+    // The defect this branch exists to prevent: a live account reached
+    // COMPLETED carrying "NOT APPLICABLE" in both business fields, because
+    // every buyer was required to be a business and no other answer existed.
+    it.each([
+      'NOT APPLICABLE',
+      'not applicable',
+      'N/A',
+      'n/a',
+      'na',
+      'none',
+      'NIL',
+      '-',
+      '...',
+      'xxx',
+      '0000',
+    ])('rejects %p as an organisation name', (value) => {
+      expect(
+        buyerIdentitySchema.safeParse({
+          ...base,
+          buyerType: 'BUSINESS',
+          organizationName: value,
+          businessRegistrationNumber: 'PVT-12345',
+        }).success
+      ).toBe(false);
+    });
+
+    it('rejects a placeholder registration number', () => {
+      expect(
+        buyerIdentitySchema.safeParse({
+          ...base,
+          buyerType: 'BUSINESS',
+          organizationName: 'Mavuno Foods Ltd',
+          businessRegistrationNumber: 'N/A',
+        }).success
+      ).toBe(false);
+    });
+
+    it('does not reject a real name that merely contains a placeholder word', () => {
+      expect(
+        buyerIdentitySchema.safeParse({
+          ...base,
+          buyerType: 'BUSINESS',
+          organizationName: 'Nile Trading Company',
+          businessRegistrationNumber: 'PVT-000123',
+        }).success
+      ).toBe(true);
+    });
   });
 
   it('student requires registration, university, programme and graduation year', () => {
@@ -263,6 +326,7 @@ describe('identity schemas', () => {
   describe('buyer sourcing preferences (V3 role setup)', () => {
     const buyer = {
       ...base,
+      buyerType: 'BUSINESS',
       organizationName: 'Mavuno Foods Ltd',
       businessRegistrationNumber: 'PVT-12345',
     };
@@ -345,17 +409,49 @@ describe('verification schemas', () => {
     ).toBe(false);
   });
 
-  it('buyer accepts a Cloudinary certificate', () => {
+  it('a business buyer accepts a Cloudinary certificate', () => {
     expect(
-      buyerOnboardingVerificationSchema.safeParse({ taxComplianceCertificate: CLOUDINARY }).success
+      buyerOnboardingVerificationSchema.safeParse({
+        buyerType: 'BUSINESS',
+        taxComplianceCertificate: CLOUDINARY,
+      }).success
     ).toBe(true);
   });
 
-  it('buyer rejects a non-Cloudinary certificate', () => {
+  it('a business buyer rejects a non-Cloudinary certificate', () => {
     expect(
       buyerOnboardingVerificationSchema.safeParse({
+        buyerType: 'BUSINESS',
         taxComplianceCertificate: 'https://example.com/c.pdf',
       }).success
+    ).toBe(false);
+  });
+
+  it('an individual buyer submits an identity document, not a certificate', () => {
+    expect(
+      buyerOnboardingVerificationSchema.safeParse({
+        buyerType: 'INDIVIDUAL',
+        documentType: 'NATIONAL_ID',
+        documentNumber: '12345678',
+        documentImageUrl: CLOUDINARY,
+      }).success
+    ).toBe(true);
+  });
+
+  // The shape that produced the wrong email: a certificate field satisfied by
+  // an individual's uploaded PNG. An individual can no longer submit one at all.
+  it('an individual buyer cannot submit a tax compliance certificate', () => {
+    expect(
+      buyerOnboardingVerificationSchema.safeParse({
+        buyerType: 'INDIVIDUAL',
+        taxComplianceCertificate: CLOUDINARY,
+      }).success
+    ).toBe(false);
+  });
+
+  it('a buyer verification without a buyerType is rejected', () => {
+    expect(
+      buyerOnboardingVerificationSchema.safeParse({ taxComplianceCertificate: CLOUDINARY }).success
     ).toBe(false);
   });
 

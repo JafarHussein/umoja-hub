@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Alert } from '@/components/app';
+import Link from 'next/link';
+import { Alert, SessionMenu } from '@/components/app';
 
 // AUTH_ONBOARDING_FLOW_V3 funnel. Verification is role-specific, so it is not
 // in the shared rail — the verification screen supplies its own longer list.
@@ -99,9 +100,24 @@ export function OnboardingShell({
         </p>
       </aside>
 
-      {/* Content panel — centered step card on every breakpoint. */}
-      <main className="flex min-h-screen items-center justify-center px-6 py-10">
-        <div className="w-full max-w-md">
+      {/* Content panel — centered step card, under a bar that always offers a
+          way out. The funnel used to have neither: the middleware holds an
+          unfinished account inside these screens, and with no account control
+          here, a user who could not produce a document could not reach a
+          dashboard, could not finish, and could not sign out. Both exits below
+          are deliberate — one leaves the session, one leaves the funnel. */}
+      <main className="flex min-h-screen flex-col px-6 py-6 sm:py-8">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3">
+          <Link
+            href="/marketplace"
+            className="app-meta text-app-muted transition-colors duration-150 hover:text-app-ink"
+          >
+            ← Look around first
+          </Link>
+          <SessionMenu identityOnly className="-mr-2" />
+        </div>
+
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-8">
           {/* Mobile-only wordmark + compact horizontal stepper (rail is hidden < lg). */}
           <div className="lg:hidden">
             <div className="mb-6 flex items-center gap-1">

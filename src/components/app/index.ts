@@ -64,3 +64,5 @@ export { Modal } from './Modal';
 export type { IModalProps } from './Modal';
 export { AccountNav, MobileAccountLink } from './AccountNav';
 export type { IAccountNavProps } from './AccountNav';
+export { SessionMenu } from './SessionMenu';
+export type { ISessionMenuProps } from './SessionMenu';

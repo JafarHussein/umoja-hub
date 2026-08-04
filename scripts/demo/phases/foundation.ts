@@ -252,9 +252,6 @@ export async function generateFoundation(ctx: SimContext): Promise<FoundationRes
           world.lecturers.push(ref);
         }
         break;
-      case Role.EMPLOYER:
-        world.employers.push(ref);
-        break;
       case Role.ADMIN:
         world.admin = ref;
         break;

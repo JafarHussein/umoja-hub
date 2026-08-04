@@ -8,6 +8,7 @@ import {
   OnboardingStage,
   OAuthProvider,
   InstitutionType,
+  BuyerType,
 } from '@/types';
 
 const farmerDataSchema = new Schema(
@@ -88,29 +89,6 @@ const lecturerDataSchema = new Schema(
   { _id: false }
 );
 
-// NGO role-data (additive). An NGO links to its NgoOrganization profile and the
-// farmer cooperatives it sponsors are modelled via FarmerGroup.sponsoredByNgoId.
-const ngoDataSchema = new Schema(
-  {
-    organizationId: { type: Schema.Types.ObjectId, ref: 'NgoOrganization' },
-    organizationName: { type: String, trim: true },
-    focusAreas: [{ type: String }],
-    countiesServed: [{ type: String }],
-  },
-  { _id: false }
-);
-
-// Employer role-data (additive). Employers discover verified student portfolios.
-const employerDataSchema = new Schema(
-  {
-    companyName: { type: String, trim: true },
-    industry: { type: String, trim: true },
-    website: { type: String, trim: true },
-    hiringInterests: [{ type: String }],
-  },
-  { _id: false }
-);
-
 // Institution role-data (additive). An institution account administers an
 // Institution organisation that hosts students and lecturers.
 const institutionDataSchema = new Schema(
@@ -135,9 +113,20 @@ const buyerDataSchema = new Schema(
       default: VerificationStatus.UNSUBMITTED,
     },
     isVerified: { type: Boolean, default: false },
+    // Which kind of buyer this is. Everything below branches on it: a BUSINESS
+    // has an organisation and a KRA certificate, an INDIVIDUAL has an identity
+    // document and neither. Optional because records predating the branch have
+    // no value for it — those are migrated, never guessed at read time.
+    buyerType: { type: String, enum: Object.values(BuyerType) },
+    // BUSINESS verification artefact.
     taxComplianceCertificate: { type: String },
+    // INDIVIDUAL verification artefact — same shape the farmer side uses, so the
+    // admin review surface reads one document schema for both.
+    documentType: { type: String, enum: Object.values(DocumentType) },
+    documentImageUrl: { type: String },
+    documentNumber: { type: String },
     // Onboarding identity (AUTH-05) — organisation profile + corporate M-Pesa
-    // paybill and self-declared procurement scale.
+    // paybill and self-declared procurement scale. BUSINESS buyers only.
     organizationName: { type: String, trim: true },
     businessRegistrationNumber: { type: String, trim: true },
     corporatePaybill: { type: String, trim: true },
@@ -195,8 +184,6 @@ const userSchema = new Schema(
     studentData: { type: studentDataSchema, default: undefined },
     lecturerData: { type: lecturerDataSchema, default: undefined },
     buyerData: { type: buyerDataSchema, default: undefined },
-    ngoData: { type: ngoDataSchema, default: undefined },
-    employerData: { type: employerDataSchema, default: undefined },
     institutionData: { type: institutionDataSchema, default: undefined },
   },
   { timestamps: true }
@@ -278,25 +265,17 @@ export interface IUserDocument extends Document {
   buyerData?: {
     verificationStatus: string;
     isVerified: boolean;
+    buyerType?: string;
     taxComplianceCertificate?: string;
+    documentType?: string;
+    documentImageUrl?: string;
+    documentNumber?: string;
     organizationName?: string;
     businessRegistrationNumber?: string;
     corporatePaybill?: string;
     procurementScale?: string;
     preferredCounties?: string[];
     purchaseInterests?: string[];
-  };
-  ngoData?: {
-    organizationId?: mongoose.Types.ObjectId;
-    organizationName?: string;
-    focusAreas: string[];
-    countiesServed: string[];
-  };
-  employerData?: {
-    companyName?: string;
-    industry?: string;
-    website?: string;
-    hiringInterests: string[];
   };
   institutionData?: {
     institutionId?: mongoose.Types.ObjectId;

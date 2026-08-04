@@ -8,7 +8,7 @@ import {
   lecturerOnboardingVerificationSchema,
 } from '@/lib/validation/onboardingSchema';
 import { AppError, handleApiError, logger } from '@/lib/utils';
-import { Role, OnboardingStage, VerificationStatus, NotificationType } from '@/types';
+import { Role, OnboardingStage, VerificationStatus, NotificationType, BuyerType } from '@/types';
 import { notify, notifyAdmins } from '@/lib/notifications/notify';
 
 // ---------------------------------------------------------------------------
@@ -60,10 +60,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       case Role.BUYER: {
         const parsed = buyerOnboardingVerificationSchema.safeParse(body);
         if (!parsed.success) return validationError(parsed.error.flatten());
-        set = {
-          'buyerData.taxComplianceCertificate': parsed.data.taxComplianceCertificate,
-          'buyerData.verificationStatus': VerificationStatus.PENDING,
-        };
+        // An individual proves identity with a document; a business proves
+        // standing with a KRA certificate. Storing them in separate fields is
+        // what lets the acknowledgement below stay true — the previous single
+        // `taxComplianceCertificate` field accepted an individual's ID photo and
+        // the platform then called it a tax compliance certificate.
+        set =
+          parsed.data.buyerType === BuyerType.BUSINESS
+            ? {
+                'buyerData.taxComplianceCertificate': parsed.data.taxComplianceCertificate,
+                'buyerData.verificationStatus': VerificationStatus.PENDING,
+              }
+            : {
+                'buyerData.documentType': parsed.data.documentType,
+                'buyerData.documentNumber': parsed.data.documentNumber,
+                'buyerData.documentImageUrl': parsed.data.documentImageUrl,
+                'buyerData.verificationStatus': VerificationStatus.PENDING,
+              };
         break;
       }
       case Role.LECTURER: {
@@ -91,25 +104,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       role: user.role,
     });
 
-    // Welcome + "documents under review" acknowledgement to the new member, and
-    // an operational alert to administrators that a verification awaits review.
-    const credential =
-      user.role === Role.LECTURER
-        ? 'faculty credentials'
-        : user.role === Role.BUYER
-          ? 'tax compliance certificate'
-          : 'identity documents';
+    // Acknowledgement to the new member, and an operational alert to
+    // administrators that a verification awaits review.
+    //
+    // Neither message names the document type. Nothing here has inspected the
+    // upload — the schema checks only that it is a Cloudinary URL — so calling
+    // it "your tax compliance certificate" asserts something the platform does
+    // not know. It said exactly that to a live account whose upload was a photo
+    // of something else entirely, because the form had demanded a certificate
+    // the user did not have. The administrator names the document at review
+    // time; until then we describe only what is true: a document arrived.
     void notify({
       userId: session.user.id,
       type: NotificationType.VERIFICATION_UPDATE,
       title: 'Welcome to UmojaHub — your account is under review',
-      body: `Thank you for joining UmojaHub. We have received your ${credential} and an administrator will review them shortly. You can start exploring the platform right away.`,
+      body: 'Thank you for joining UmojaHub. Your verification documents are with our review team, and an administrator will look at them shortly. You can start exploring the platform right away.',
       relatedEntity: { kind: 'User', id: session.user.id },
     });
     void notifyAdmins({
       type: NotificationType.VERIFICATION_UPDATE,
       title: 'New verification request',
-      body: `A ${String(user.role).toLowerCase()} submitted ${credential} for verification. Open the verification queue to review.`,
+      body: `A ${String(user.role).toLowerCase()} submitted documents for verification. Open the verification queue to review.`,
       relatedEntity: { kind: 'User', id: session.user.id },
     });
 

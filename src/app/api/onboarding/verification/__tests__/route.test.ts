@@ -84,12 +84,35 @@ describe('POST /api/onboarding/verification', () => {
     expect(set.onboardingStage).toBe('COMPLETED');
   });
 
-  it('records the buyer certificate as PENDING', async () => {
+  it('records a business buyer certificate as PENDING', async () => {
     (getServerSession as jest.Mock).mockResolvedValue({ user: { id: 'u1', role: 'BUYER' } });
     userLean({ role: 'BUYER', onboardingStage: 'VERIFICATION_UPLOAD' });
-    const res = await POST(postReq({ taxComplianceCertificate: CLOUDINARY }));
+    const res = await POST(
+      postReq({ buyerType: 'BUSINESS', taxComplianceCertificate: CLOUDINARY })
+    );
     expect(res.status).toBe(200);
     const set = mockUserFindByIdAndUpdate.mock.calls[0][1].$set;
     expect(set['buyerData.verificationStatus']).toBe('PENDING');
+    expect(set['buyerData.taxComplianceCertificate']).toBe(CLOUDINARY);
+  });
+
+  it("records an individual buyer's identity document, not a certificate", async () => {
+    (getServerSession as jest.Mock).mockResolvedValue({ user: { id: 'u1', role: 'BUYER' } });
+    userLean({ role: 'BUYER', onboardingStage: 'VERIFICATION_UPLOAD' });
+    const res = await POST(
+      postReq({
+        buyerType: 'INDIVIDUAL',
+        documentType: 'NATIONAL_ID',
+        documentNumber: '12345678',
+        documentImageUrl: CLOUDINARY,
+      })
+    );
+    expect(res.status).toBe(200);
+    const set = mockUserFindByIdAndUpdate.mock.calls[0][1].$set;
+    expect(set['buyerData.verificationStatus']).toBe('PENDING');
+    expect(set['buyerData.documentImageUrl']).toBe(CLOUDINARY);
+    // An individual's upload must never be filed as a tax compliance
+    // certificate — that mislabelling is what the wrong email reported.
+    expect(set).not.toHaveProperty('buyerData.taxComplianceCertificate');
   });
 });

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/cn';
 import { homeForRole } from '@/lib/auth/dashboards';
+import { SessionMenu } from './SessionMenu';
 import { Role } from '@/types';
 
 /**
@@ -48,7 +49,6 @@ export function AccountNav({ showSellLink = false, className }: IAccountNavProps
 
   if (status === 'authenticated' && session?.user) {
     const role = (session.user.role ?? null) as Role | null;
-    const firstName = session.user.firstName ?? 'My account';
 
     return (
       <div className={cn('flex items-center gap-4', className)}>
@@ -61,10 +61,11 @@ export function AccountNav({ showSellLink = false, className }: IAccountNavProps
             Sell produce
           </Link>
         )}
-        <Link href={homeForRole(role)} className={primaryClass}>
-          {firstName}
-          <span className="sr-only"> — go to your dashboard</span>
-        </Link>
+        {/* The account menu, not a bare dashboard link. Someone browsing the
+            public marketplace while signed in must be able to tell which
+            account they are using and leave it from where they stand — this
+            header is reachable mid-onboarding, when no dashboard exists. */}
+        <SessionMenu identityOnly={role === null} />
       </div>
     );
   }

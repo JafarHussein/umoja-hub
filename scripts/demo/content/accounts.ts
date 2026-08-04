@@ -23,8 +23,6 @@ export const DEMO_PASSWORDS: Record<string, string> = {
   [Role.STUDENT]: 'Student@2024!',
   [Role.LECTURER]: 'Lecturer@2024!',
   [Role.ADMIN]: 'Admin@Umoja2024!',
-  [Role.EMPLOYER]: 'Employer@2024!',
-  [Role.NGO]: 'Ngo@2024!',
   [Role.INSTITUTION]: 'Institution@2024!',
 };
 
@@ -314,25 +312,6 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
         universityAffiliation: 'Strathmore University — Faculty of Information Technology',
         isVerified: false,
         departmentAssignment: 'Information Technology',
-      },
-    },
-  },
-
-  // ---- Employer ----
-  {
-    firstName: 'Lydia',
-    lastName: 'Wanjala',
-    email: 'lydia.wanjala@twiga.co.ke',
-    role: Role.EMPLOYER,
-    phoneNumber: '+254700000021',
-    county: 'Nairobi',
-    purpose: 'Employer login — browses verified student portfolios.',
-    extra: {
-      employerData: {
-        companyName: 'Twiga Foods',
-        industry: 'AgriTech / Distribution',
-        website: 'https://twiga.com',
-        hiringInterests: ['Node.js', 'React', 'TypeScript'],
       },
     },
   },

@@ -7,11 +7,16 @@ export enum Role {
   STUDENT = 'STUDENT',
   LECTURER = 'LECTURER',
   ADMIN = 'ADMIN',
-  // Ecosystem participants (additive). NGOs sponsor farmer cooperatives;
-  // employers discover verified student portfolios; institutions host students
-  // and lecturers. Each has a role-data sub-document on User.
-  NGO = 'NGO',
-  EMPLOYER = 'EMPLOYER',
+  // An institution hosts students and lecturers, and is the Education Hub's
+  // academic-context integration: it supplies what a student is actually
+  // studying so project recommendations can be grounded in their coursework
+  // rather than guessed. Provisioned by an administrator, never self-selected.
+  //
+  // NGO and EMPLOYER were removed (2026-08-04). Neither had a path to existence
+  // — they were absent from `roleSelectionSchema`, so no real person could
+  // become one, and they existed only in seeded data. Employers keep the
+  // surface that mattered: a student portfolio is public at /portfolio/[slug]
+  // and needs no account to read.
   INSTITUTION = 'INSTITUTION',
 }
 
@@ -27,6 +32,23 @@ export enum VerificationStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
 }
+
+// Which kind of buyer an account is. The platform serves both a hotel group
+// sourcing by the tonne and a household buying a crate, and it used to model
+// only the first: organisation name, business registration number and a KRA tax
+// compliance certificate were required of everyone. An individual has none of
+// the three, so the funnel — which had no "not applicable" and no way out —
+// collected fabricated ones instead, and the platform then reported them back
+// as fact. What is asked for follows from this field.
+export enum BuyerType {
+  INDIVIDUAL = 'INDIVIDUAL',
+  BUSINESS = 'BUSINESS',
+}
+
+export const BUYER_TYPE_LABEL: Record<BuyerType, string> = {
+  [BuyerType.INDIVIDUAL]: 'Individual buyer',
+  [BuyerType.BUSINESS]: 'Business or organisation',
+};
 
 // Progressive onboarding funnel (Decision 02-A). A new OAuth user has no role
 // and walks ROLE_SELECTION → IDENTITY_INPUT → VERIFICATION_UPLOAD → COMPLETED.

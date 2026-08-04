@@ -81,14 +81,47 @@ describe('POST /api/onboarding/identity', () => {
     expect(set['farmerData.primaryLanguage']).toBe('Kiswahili');
   });
 
-  it('maps buyer sub-document fields', async () => {
+  it('maps business buyer sub-document fields', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(SESSION);
     userLean({ role: 'BUYER', onboardingStage: 'IDENTITY_INPUT' });
     const res = await POST(
-      postReq({ ...BASE, organizationName: 'Mavuno Foods Ltd', businessRegistrationNumber: 'PVT-9' })
+      postReq({
+        ...BASE,
+        buyerType: 'BUSINESS',
+        organizationName: 'Mavuno Foods Ltd',
+        businessRegistrationNumber: 'PVT-9',
+      })
     );
     expect(res.status).toBe(200);
     const set = mockUserFindByIdAndUpdate.mock.calls[0][1].$set;
+    expect(set['buyerData.buyerType']).toBe('BUSINESS');
     expect(set['buyerData.organizationName']).toBe('Mavuno Foods Ltd');
+  });
+
+  it('writes no business fields for an individual buyer', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(SESSION);
+    userLean({ role: 'BUYER', onboardingStage: 'IDENTITY_INPUT' });
+    const res = await POST(postReq({ ...BASE, buyerType: 'INDIVIDUAL' }));
+    expect(res.status).toBe(200);
+    const set = mockUserFindByIdAndUpdate.mock.calls[0][1].$set;
+    expect(set['buyerData.buyerType']).toBe('INDIVIDUAL');
+    // The fields an individual was never asked about must not be written at
+    // all — this is where "NOT APPLICABLE" used to land.
+    expect(set).not.toHaveProperty('buyerData.organizationName');
+    expect(set).not.toHaveProperty('buyerData.businessRegistrationNumber');
+  });
+
+  it('rejects a placeholder organisation name', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(SESSION);
+    userLean({ role: 'BUYER', onboardingStage: 'IDENTITY_INPUT' });
+    const res = await POST(
+      postReq({
+        ...BASE,
+        buyerType: 'BUSINESS',
+        organizationName: 'NOT APPLICABLE',
+        businessRegistrationNumber: 'NOT APPLICABLE',
+      })
+    );
+    expect(res.status).toBe(400);
   });
 });

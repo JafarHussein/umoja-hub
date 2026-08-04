@@ -22,8 +22,6 @@ import {
   countiesFor,
   listableCrops,
   KENYAN_UNIVERSITIES,
-  NGO_NAMES,
-  EMPLOYERS,
   DEPARTMENTS,
   BUYER_ORGS,
   STUDENT_INTERESTS,
@@ -90,7 +88,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
 
   const { default: User } = await import('../../../src/lib/models/User.model');
   const { default: Institution } = await import('../../../src/lib/models/Institution.model');
-  const { default: NgoOrganization } = await import('../../../src/lib/models/NgoOrganization.model');
   const { default: VerifiedSupplier } = await import('../../../src/lib/models/VerifiedSupplier.model');
   const { default: FarmerGroup } = await import('../../../src/lib/models/FarmerGroup.model');
 
@@ -186,55 +183,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
       })
     );
     await Institution.updateOne({ _id: inst.id }, { $set: { adminUserId: user._id } });
-  }
-
-  // ---- NGOs (org + admin account) ----
-  const chosenNgos = rng.sample(NGO_NAMES, 2);
-  for (const ngo of chosenNgos) {
-    const joinedAt = joinDate(rng, 9);
-    const counties = rng.sample(FARMING_COUNTIES, rng.int(2, 4));
-    const org = ledger.track(
-      'NgoOrganization',
-      await createDoc(NgoOrganization, {
-        name: ngo.name,
-        focusAreas: ngo.focus,
-        countiesServed: counties,
-        description: `${ngo.name} supports smallholder cooperatives across ${counties.join(', ')}.`,
-        createdAt: joinedAt,
-        updatedAt: joinedAt,
-      })
-    );
-    const p = rng.pick(FIRST_NAMES);
-    const last = rng.pick(LAST_NAMES);
-    const email = makeEmail(p.name, last);
-    const user = ledger.track(
-      'User',
-      await createDoc(User, {
-        email,
-        username: makeUsername(p.name, last),
-        firstName: p.name,
-        lastName: last,
-        phoneNumber: makePhone(rng),
-        hashedPassword: await demoPasswordHash(Role.NGO),
-        role: Role.NGO,
-        county: counties[0],
-        status: UserStatus.ACTIVE,
-        onboardingStage: OnboardingStage.COMPLETED,
-        isEmailVerified: true,
-        profilePhotoUrl: nextFace(p.gender),
-        bio: ngo.focus.join(' · '),
-        ngoData: {
-          organizationId: org._id,
-          organizationName: ngo.name,
-          focusAreas: ngo.focus,
-          countiesServed: counties,
-        },
-        createdAt: joinedAt,
-        updatedAt: joinedAt,
-      })
-    );
-    await NgoOrganization.updateOne({ _id: org._id }, { $set: { adminUserId: user._id } });
-    world.ngos.push({ id: org._id, name: ngo.name });
   }
 
   // ---- Farmers ----
@@ -455,42 +403,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
     world.students.push(person(p, last, inst.county, archetype, user._id, joinedAt));
   }
 
-  // ---- Employers ----
-  const chosenEmployers = rng.sample(EMPLOYERS, 3);
-  for (const emp of chosenEmployers) {
-    const p = rng.pick(FIRST_NAMES);
-    const last = rng.pick(LAST_NAMES);
-    const joinedAt = joinDate(rng, 6);
-    const email = makeEmail(p.name, last);
-    const user = ledger.track(
-      'User',
-      await createDoc(User, {
-        email,
-        username: makeUsername(p.name, last),
-        firstName: p.name,
-        lastName: last,
-        phoneNumber: makePhone(rng),
-        hashedPassword: await demoPasswordHash(Role.EMPLOYER),
-        role: Role.EMPLOYER,
-        county: 'Nairobi',
-        status: UserStatus.ACTIVE,
-        onboardingStage: OnboardingStage.COMPLETED,
-        isEmailVerified: true,
-        profilePhotoUrl: nextFace(p.gender),
-        bio: `Hiring at ${emp.name}.`,
-        employerData: {
-          companyName: emp.name,
-          industry: emp.industry,
-          website: `https://${emp.name.toLowerCase().replace(/[^a-z]/g, '')}.co.ke`,
-          hiringInterests: rng.sample(TECH_STACKS, rng.int(2, 4)),
-        },
-        createdAt: joinedAt,
-        updatedAt: joinedAt,
-      })
-    );
-    world.employers.push(person(p, last, 'Nairobi', 'employer', user._id, joinedAt));
-  }
-
   // The admin steward (mediation / payout actor) is the canonical admin account
   // created by the foundation phase — there is exactly one, and it is the same
   // account the presenter signs in as.
@@ -536,7 +448,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
     const sameCounty = verifiedFarmers.filter((f) => f.county === founder.county && f.id !== founder.id);
     const pool = sameCounty.length >= 2 ? sameCounty : verifiedFarmers.filter((f) => f.id !== founder.id);
     const members = [founder, ...rng.sample(pool, rng.int(2, Math.min(5, pool.length)))];
-    const sponsor = rng.bool(0.6) && world.ngos.length > 0 ? rng.pick(world.ngos) : null;
     const joinedAt = founder.joinedAt;
 
     ledger.track(
@@ -548,7 +459,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         members: members.map((m) => m.id),
         memberCount: members.length,
         status: GroupStatus.ACTIVE,
-        sponsoredByNgoId: sponsor?.id,
         createdAt: joinedAt,
         updatedAt: joinedAt,
       })
