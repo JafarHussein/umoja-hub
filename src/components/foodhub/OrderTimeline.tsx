@@ -7,7 +7,16 @@ export interface IOrderTimelineProps {
   paidAt?: Date | string | null | undefined;
   confirmedByFarmerAt?: Date | string | null | undefined;
   receivedByBuyerAt?: Date | string | null | undefined;
+  /**
+   * Who is reading. The journey is the same for everyone; only the pronouns
+   * change. "Waiting for you to confirm receipt" is a different sentence from
+   * "waiting for the buyer to confirm receipt", and only one of them tells the
+   * reader they are the one holding things up.
+   */
+  viewer?: TimelineViewer | undefined;
 }
+
+export type TimelineViewer = 'BUYER' | 'FARMER' | 'ADMIN';
 
 interface IStep {
   key: string;
@@ -15,6 +24,16 @@ interface IStep {
   detail?: string | undefined;
   isComplete: boolean;
   isActive: boolean;
+  /** Who the order is waiting on at this step. */
+  party?: string | undefined;
+  /** A branch off the happy path — dispute or refund — rather than a stage of it. */
+  tone?: 'danger' | 'info' | undefined;
+}
+
+// "You" where it applies, the other party's role where it does not.
+function who(viewer: TimelineViewer | undefined, party: 'BUYER' | 'FARMER'): string {
+  if (viewer === party) return 'You';
+  return party === 'BUYER' ? 'The buyer' : 'The farmer';
 }
 
 function formatDate(ts: Date | string | null | undefined): string {
@@ -51,23 +70,7 @@ export function OrderTimeline({
   ].includes(fulfillmentStatus);
   const isCompleted = fulfillmentStatus === OrderFulfillmentStatus.COMPLETED;
 
-  if (isDisputed) {
-    return (
-      <div className="flex items-center gap-2" role="status" aria-label="Order disputed">
-        <div className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-danger" aria-hidden="true" />
-        <span className="app-body text-app-danger">Dispute raised</span>
-      </div>
-    );
-  }
-
-  if (paymentStatus === OrderPaymentStatus.REFUNDED) {
-    return (
-      <div className="flex items-center gap-2" role="status" aria-label="Payment refunded">
-        <div className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-info" aria-hidden="true" />
-        <span className="app-body text-app-info">Refunded</span>
-      </div>
-    );
-  }
+  const isRefunded = paymentStatus === OrderPaymentStatus.REFUNDED;
 
   const steps: IStep[] = [
     {
@@ -99,11 +102,25 @@ export function OrderTimeline({
     },
     {
       key: 'completed',
-      label: 'Payment released',
-      isComplete: isCompleted,
-      isActive: isCompleted,
+      label: isRefunded ? 'Payment refunded' : 'Payment released',
+      isComplete: isCompleted || isRefunded,
+      isActive: isCompleted || isRefunded,
+      ...(isRefunded ? { tone: 'info' as const } : {}),
     },
   ];
+
+  // Consistent with the detailed view: a dispute is a stage of this order, not
+  // a replacement for its history. Collapsing the row to "Dispute raised" made
+  // the two views disagree about whether a disputed order had a past at all.
+  if (isDisputed) {
+    steps.splice(steps.length - 1, 0, {
+      key: 'review',
+      label: 'Under review',
+      isComplete: false,
+      isActive: true,
+      tone: 'danger',
+    });
+  }
 
   return (
     <ol className="flex items-center gap-0" aria-label="Order progress">
@@ -114,11 +131,15 @@ export function OrderTimeline({
             <div
               className={[
                 'h-2.5 w-2.5 flex-shrink-0 rounded-app-pill transition-colors duration-150',
-                step.isComplete
-                  ? 'bg-app-brand'
-                  : step.isActive
-                    ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
-                    : 'border border-app-hairline bg-app-sunken',
+                step.tone === 'danger'
+                  ? 'bg-app-danger'
+                  : step.tone === 'info'
+                    ? 'bg-app-info'
+                    : step.isComplete
+                      ? 'bg-app-brand'
+                      : step.isActive
+                        ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
+                        : 'border border-app-hairline bg-app-sunken',
               ].join(' ')}
               aria-label={step.isComplete ? `${step.label}: done` : step.label}
             />
@@ -149,8 +170,10 @@ export function OrderTimelineDetailed({
   paidAt,
   confirmedByFarmerAt,
   receivedByBuyerAt,
+  viewer,
 }: IOrderTimelineProps): React.ReactElement {
   const isDisputed = fulfillmentStatus === OrderFulfillmentStatus.DISPUTED;
+  const isRefunded = paymentStatus === OrderPaymentStatus.REFUNDED;
   const isPaid = paymentStatus === OrderPaymentStatus.PAID;
   const isInFulfillment = [
     OrderFulfillmentStatus.IN_FULFILLMENT,
@@ -170,6 +193,7 @@ export function OrderTimelineDetailed({
       detail: 'Awaiting M-Pesa confirmation',
       isComplete: true,
       isActive: !isPaid,
+      party: who(viewer, 'BUYER'),
     },
     {
       key: 'paid',
@@ -177,60 +201,71 @@ export function OrderTimelineDetailed({
       detail: paidAt ? `${formatDate(paidAt)} · held in escrow` : 'Awaiting payment',
       isComplete: isPaid,
       isActive: isPaid && !isInFulfillment,
+      party: 'UmojaHub holds the funds',
     },
     {
       key: 'fulfillment',
       label: 'Farmer dispatched',
       detail: confirmedByFarmerAt
         ? formatDate(confirmedByFarmerAt)
-        : 'Waiting for farmer confirmation',
+        : 'Waiting for the farmer to confirm dispatch',
       isComplete: isInFulfillment,
       isActive: isInFulfillment && !isReceived,
+      party: who(viewer, 'FARMER'),
     },
     {
       key: 'received',
       label: 'Buyer received',
-      detail: receivedByBuyerAt ? formatDate(receivedByBuyerAt) : 'Waiting for receipt',
+      detail: receivedByBuyerAt
+        ? formatDate(receivedByBuyerAt)
+        : viewer === 'BUYER'
+          ? 'Confirm receipt once the produce reaches you'
+          : 'Waiting for the buyer to confirm receipt',
       isComplete: isReceived,
       isActive: isReceived && !isCompleted,
+      party: who(viewer, 'BUYER'),
     },
-    {
+  ];
+
+  // A dispute and a refund are branches off this journey, not replacements for
+  // it. Both used to swap the whole timeline for a single banner — so at the one
+  // moment when someone most needs to see where their money is and what has
+  // happened to it so far, the record vanished and left a sentence behind.
+  if (isDisputed) {
+    steps.push({
+      key: 'review',
+      label: 'Under review',
+      detail: 'An administrator is reviewing this order. The funds stay in escrow meanwhile.',
+      isComplete: false,
+      isActive: true,
+      party: 'UmojaHub',
+      tone: 'danger',
+    });
+  }
+
+  if (isRefunded) {
+    steps.push({
+      key: 'refunded',
+      label: 'Payment refunded',
+      detail: 'Returned to the buyer from escrow following the mediation decision.',
+      isComplete: true,
+      isActive: true,
+      party: 'UmojaHub',
+      tone: 'info',
+    });
+  } else {
+    steps.push({
       key: 'completed',
       label: 'Payment released',
       detail: isCompleted
         ? 'Released to the farmer from escrow'
-        : 'Held in escrow until you confirm receipt',
+        : isDisputed
+          ? 'On hold until the review concludes'
+          : 'Held in escrow until the buyer confirms receipt',
       isComplete: isCompleted,
       isActive: isCompleted,
-    },
-  ];
-
-  if (isDisputed) {
-    return (
-      <div className="flex items-start gap-3 rounded-app-control border border-app-danger/30 bg-app-danger-surface p-3">
-        <div className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill bg-app-danger" />
-        <div>
-          <p className="app-body-strong text-app-danger">Dispute raised</p>
-          <p className="app-body mt-0.5 text-app-muted">
-            This order has an active dispute. The UmojaHub team has been notified.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (paymentStatus === OrderPaymentStatus.REFUNDED) {
-    return (
-      <div className="flex items-start gap-3 rounded-app-control border border-app-info/30 bg-app-info-surface p-3">
-        <div className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill bg-app-info" />
-        <div>
-          <p className="app-body-strong text-app-info">Payment refunded</p>
-          <p className="app-body mt-0.5 text-app-muted">
-            Your payment was returned from escrow following the platform&apos;s mediation decision.
-          </p>
-        </div>
-      </div>
-    );
+      party: 'UmojaHub',
+    });
   }
 
   return (
@@ -242,11 +277,15 @@ export function OrderTimelineDetailed({
             <div
               className={[
                 'mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill transition-colors duration-150',
-                step.isComplete
-                  ? 'bg-app-brand'
-                  : step.isActive
-                    ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
-                    : 'border border-app-hairline bg-app-sunken',
+                step.tone === 'danger'
+                  ? 'bg-app-danger'
+                  : step.tone === 'info'
+                    ? 'bg-app-info'
+                    : step.isComplete
+                      ? 'bg-app-brand'
+                      : step.isActive
+                        ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
+                        : 'border border-app-hairline bg-app-sunken',
               ].join(' ')}
             />
             {index < steps.length - 1 && (
@@ -262,9 +301,26 @@ export function OrderTimelineDetailed({
 
           {/* Label */}
           <div className="min-w-0 pb-4">
-            <p className={['app-body', step.isComplete ? 'text-app-ink' : 'text-app-faint'].join(' ')}>
-              {step.label}
-            </p>
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <p
+                className={[
+                  'app-body',
+                  step.tone === 'danger'
+                    ? 'text-app-danger'
+                    : step.tone === 'info'
+                      ? 'text-app-info'
+                      : step.isComplete
+                        ? 'text-app-ink'
+                        : 'text-app-faint',
+                ].join(' ')}
+              >
+                {step.label}
+              </p>
+              {/* Who the order is waiting on. The timeline said what had
+                  happened but never who had to act next, which is the one thing
+                  someone checking on a stalled order is trying to find out. */}
+              {step.party && <span className="app-meta text-app-faint">· {step.party}</span>}
+            </div>
             {step.detail && <p className="app-meta mt-0.5 text-app-faint">{step.detail}</p>}
           </div>
         </li>
