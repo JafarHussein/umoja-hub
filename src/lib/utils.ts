@@ -96,13 +96,38 @@ export async function verifySecret(secret: string, hash: string): Promise<boolea
 
 type LogLevel = 'ERROR' | 'WARN' | 'INFO' | 'DEBUG';
 
+/**
+ * `JSON.stringify(new Error('boom'))` is `{}` — name, message and stack are all
+ * non-enumerable. Every log line carrying a caught error therefore recorded
+ * nothing at all, and `handleApiError` logs exactly that on every unexpected
+ * 500. Production had an error channel that reported only that *an* error had
+ * happened, which is the one fact you already know from the status code.
+ */
+function serialiseErrors(meta: object): object {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(meta)) {
+    out[key] =
+      value instanceof Error
+        ? {
+            name: value.name,
+            message: value.message,
+            ...(value.stack ? { stack: value.stack } : {}),
+            // AppError and Mongo errors carry a code worth keeping.
+            ...('code' in value ? { code: (value as { code?: unknown }).code } : {}),
+            ...(value.cause !== undefined ? { cause: String(value.cause) } : {}),
+          }
+        : value;
+  }
+  return out;
+}
+
 function log(level: LogLevel, service: string, message: string, meta?: object): void {
   const entry = JSON.stringify({
     timestamp: new Date().toISOString(),
     level,
     service,
     message,
-    ...(meta ?? {}),
+    ...(meta ? serialiseErrors(meta) : {}),
   });
 
   if (level === 'ERROR') {

@@ -301,7 +301,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           },
         },
       ],
-      { new: true }
+      // `updatePipeline` is required by Mongoose 9 before it will send an
+      // aggregation-pipeline update. Without it the driver refuses the call and
+      // the whole purchase path throws — which is exactly what it was doing.
+      { new: true, updatePipeline: true }
     );
 
     if (!reserved) {
