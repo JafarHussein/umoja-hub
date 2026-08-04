@@ -23,6 +23,7 @@ import { encode } from 'next-auth/jwt';
 import { connectDB } from '../src/lib/db';
 import User from '../src/lib/models/User.model';
 import { Role, OnboardingStage } from '../src/types';
+import { isOnboardingComplete } from '../src/lib/auth/onboarding';
 
 function out(msg: string): void {
   console.log(msg); // eslint-disable-line no-console
@@ -101,7 +102,7 @@ async function main(): Promise<void> {
     role: (user.role as Role | null) ?? null,
     firstName: user.firstName,
     onboardingStage: stage,
-    isOnboarded: stage === OnboardingStage.COMPLETED,
+    isOnboarded: isOnboardingComplete(stage),
     isVerified: computeIsVerified(user),
   };
 
