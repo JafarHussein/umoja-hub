@@ -104,16 +104,22 @@ export const RESULT_CODE_DETAIL: Record<number, string> = {
   1037: 'Buyer could not be reached — the prompt expired',
 };
 
+// The farmer's ledger names three distinct states — held in escrow, cleared,
+// available to withdraw — and is careful about the difference, because money
+// that has cleared is the farmer's but is not yet in their hands. This trail
+// used to call the same moment "funds released to the farmer", which reads as
+// paid out. A farmer who saw that on a receipt and then found nothing on their
+// handset would have been misled by us. The vocabulary is now the ledger's.
 const ESCROW_LABEL: Record<string, string> = {
   [EscrowEventType.HELD]: 'Funds secured in escrow',
-  [EscrowEventType.RELEASED]: 'Funds released to the farmer',
+  [EscrowEventType.RELEASED]: 'Funds cleared for the farmer',
   [EscrowEventType.REFUND_ISSUED]: 'Funds refunded to the buyer',
 };
 
 const ESCROW_DETAIL: Record<string, string> = {
   [EscrowEventType.HELD]: 'UmojaHub is holding the payment until the buyer confirms receipt.',
   [EscrowEventType.RELEASED]:
-    'Receipt confirmed — the funds are now part of the farmer’s releasable balance.',
+    'Receipt confirmed — the funds have cleared and the farmer can now request a payout.',
   [EscrowEventType.REFUND_ISSUED]: 'The held funds were returned to the buyer.',
 };
 
