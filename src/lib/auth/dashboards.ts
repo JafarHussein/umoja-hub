@@ -21,8 +21,6 @@ export const ROLE_HOME: Record<Role, string> = {
   [Role.STUDENT]: '/dashboard/student',
   [Role.LECTURER]: '/dashboard/lecturer/queue',
   [Role.ADMIN]: '/dashboard/admin/verification-queue',
-  [Role.NGO]: '/dashboard/ngo',
-  [Role.EMPLOYER]: '/dashboard/employer',
   [Role.INSTITUTION]: '/dashboard/institution',
 };
 
@@ -33,8 +31,6 @@ export const ROLE_LABEL: Record<Role, string> = {
   [Role.STUDENT]: 'Student',
   [Role.LECTURER]: 'Lecturer',
   [Role.ADMIN]: 'Admin',
-  [Role.NGO]: 'NGO',
-  [Role.EMPLOYER]: 'Employer',
   [Role.INSTITUTION]: 'Institution',
 };
 

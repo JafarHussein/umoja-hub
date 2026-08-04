@@ -47,13 +47,11 @@ export function newRunId(): string {
 // stored as run notes — orientation for whoever inspects the run, not UI data.
 function narrativeNotes(world: World): string {
   const lines: string[] = [];
-  const sponsoredNgo = world.ngos[0];
   const cluster = world.farmers.find((f) => f.archetype === 'cooperative') ?? world.farmers[0];
   if (cluster) {
     const buyer = world.buyers[0];
     lines.push(
       `Cluster (${cluster.county}): ${cluster.fullName}, a ${cluster.archetype} farmer` +
-        (sponsoredNgo ? `, supplies cooperatives that ${sponsoredNgo.name} sponsors` : '') +
         (buyer ? `, with repeat orders from ${buyer.fullName}.` : '.')
     );
   }

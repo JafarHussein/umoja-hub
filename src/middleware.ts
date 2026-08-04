@@ -38,8 +38,6 @@ const ROLE_ROUTE_MAP: Array<{ prefix: string; role: Role }> = [
   { prefix: '/dashboard/buyer', role: Role.BUYER },
   { prefix: '/dashboard/student', role: Role.STUDENT },
   { prefix: '/dashboard/lecturer', role: Role.LECTURER },
-  { prefix: '/dashboard/ngo', role: Role.NGO },
-  { prefix: '/dashboard/employer', role: Role.EMPLOYER },
   { prefix: '/dashboard/institution', role: Role.INSTITUTION },
   { prefix: '/dashboard/admin', role: Role.ADMIN },
   { prefix: '/api/admin', role: Role.ADMIN },

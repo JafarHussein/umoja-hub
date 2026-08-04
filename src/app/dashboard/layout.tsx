@@ -8,8 +8,6 @@ import { BuyerShell } from './buyer/_components/BuyerShell';
 import { StudentShell } from './student/_components/StudentShell';
 import { LecturerShell } from './lecturer/_components/LecturerShell';
 import { AdminShell } from './admin/_components/AdminShell';
-import { NgoShell } from './ngo/_components/NgoShell';
-import { EmployerShell } from './employer/_components/EmployerShell';
 import { InstitutionShell } from './institution/_components/InstitutionShell';
 import { Role } from '@/types';
 
@@ -43,14 +41,6 @@ export default async function DashboardLayout({
 
   if (session.user.role === Role.ADMIN) {
     return <AdminShell>{children}</AdminShell>;
-  }
-
-  if (session.user.role === Role.NGO) {
-    return <NgoShell>{children}</NgoShell>;
-  }
-
-  if (session.user.role === Role.EMPLOYER) {
-    return <EmployerShell>{children}</EmployerShell>;
   }
 
   if (session.user.role === Role.INSTITUTION) {

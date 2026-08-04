@@ -39,19 +39,6 @@ export function buildRoleDefaults(role: string): Record<string, unknown> {
           isVerified: false,
         },
       };
-    case Role.NGO:
-      return {
-        ngoData: {
-          focusAreas: [],
-          countiesServed: [],
-        },
-      };
-    case Role.EMPLOYER:
-      return {
-        employerData: {
-          hiringInterests: [],
-        },
-      };
     case Role.INSTITUTION:
       return {
         institutionData: {},

@@ -4,7 +4,6 @@
 
 import '../../src/lib/models/User.model';
 import '../../src/lib/models/Institution.model';
-import '../../src/lib/models/NgoOrganization.model';
 import '../../src/lib/models/VerifiedSupplier.model';
 import '../../src/lib/models/FarmerGroup.model';
 import '../../src/lib/models/MarketplaceListing.model';

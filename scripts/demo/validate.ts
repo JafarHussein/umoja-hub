@@ -76,7 +76,7 @@ export async function validate(): Promise<boolean> {
   const escrowIds = idsOf('EscrowEventLog');
 
   // ---- Per-role population ----
-  for (const role of [Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER, Role.EMPLOYER, Role.NGO, Role.INSTITUTION]) {
+  for (const role of [Role.FARMER, Role.BUYER, Role.STUDENT, Role.LECTURER, Role.INSTITUTION]) {
     const count = await User.countDocuments({ _id: { $in: userIds }, role });
     ok(`role ${role} populated`, count > 0, `${count} users`);
   }

@@ -89,29 +89,6 @@ const lecturerDataSchema = new Schema(
   { _id: false }
 );
 
-// NGO role-data (additive). An NGO links to its NgoOrganization profile and the
-// farmer cooperatives it sponsors are modelled via FarmerGroup.sponsoredByNgoId.
-const ngoDataSchema = new Schema(
-  {
-    organizationId: { type: Schema.Types.ObjectId, ref: 'NgoOrganization' },
-    organizationName: { type: String, trim: true },
-    focusAreas: [{ type: String }],
-    countiesServed: [{ type: String }],
-  },
-  { _id: false }
-);
-
-// Employer role-data (additive). Employers discover verified student portfolios.
-const employerDataSchema = new Schema(
-  {
-    companyName: { type: String, trim: true },
-    industry: { type: String, trim: true },
-    website: { type: String, trim: true },
-    hiringInterests: [{ type: String }],
-  },
-  { _id: false }
-);
-
 // Institution role-data (additive). An institution account administers an
 // Institution organisation that hosts students and lecturers.
 const institutionDataSchema = new Schema(
@@ -207,8 +184,6 @@ const userSchema = new Schema(
     studentData: { type: studentDataSchema, default: undefined },
     lecturerData: { type: lecturerDataSchema, default: undefined },
     buyerData: { type: buyerDataSchema, default: undefined },
-    ngoData: { type: ngoDataSchema, default: undefined },
-    employerData: { type: employerDataSchema, default: undefined },
     institutionData: { type: institutionDataSchema, default: undefined },
   },
   { timestamps: true }
@@ -301,18 +276,6 @@ export interface IUserDocument extends Document {
     procurementScale?: string;
     preferredCounties?: string[];
     purchaseInterests?: string[];
-  };
-  ngoData?: {
-    organizationId?: mongoose.Types.ObjectId;
-    organizationName?: string;
-    focusAreas: string[];
-    countiesServed: string[];
-  };
-  employerData?: {
-    companyName?: string;
-    industry?: string;
-    website?: string;
-    hiringInterests: string[];
   };
   institutionData?: {
     institutionId?: mongoose.Types.ObjectId;

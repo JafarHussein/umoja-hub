@@ -16,8 +16,6 @@ const roleLabels: Record<Role, string> = {
   [Role.STUDENT]: 'Student',
   [Role.LECTURER]: 'Lecturer',
   [Role.ADMIN]: 'Admin',
-  [Role.NGO]: 'NGO',
-  [Role.EMPLOYER]: 'Employer',
   [Role.INSTITUTION]: 'Institution',
 };
 

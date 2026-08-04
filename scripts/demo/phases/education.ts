@@ -15,7 +15,7 @@ import {
 } from '../text';
 import {
   ProjectTrack, ProjectStatus, PeerReviewStatus, LecturerDecision,
-  StudentTier, PortfolioStrength, PortfolioVisibility, NotificationType, Role,
+  StudentTier, PortfolioStrength, PortfolioVisibility, NotificationType,
 } from '../../../src/types';
 
 function sha256(s: string): string {
@@ -58,7 +58,6 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   const { default: LecturerEffectiveness } = await import('../../../src/lib/models/LecturerEffectiveness.model');
   const { default: StudentPortfolioStatus } = await import('../../../src/lib/models/StudentPortfolioStatus.model');
   const { default: VerificationAuditLog } = await import('../../../src/lib/models/VerificationAuditLog.model');
-  const { default: PortfolioView } = await import('../../../src/lib/models/PortfolioView.model');
 
   const lecturerStats = new Map<string, LecturerStat>();
 
@@ -225,22 +224,6 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
 
     await User.updateOne({ _id: student.id }, { $set: { 'studentData.completedProjectCount': verifiedCount, 'studentData.currentTier': tier } });
 
-    // Employer views of public portfolios.
-    if (isPublic && world.employers.length > 0) {
-      const viewers = rng.sample(world.employers, rng.int(0, Math.min(3, world.employers.length)));
-      for (const emp of viewers) {
-        const viewedAt = between(rng, daysAgo(45), daysAgo(0));
-        batcher.add(PortfolioView, 'PortfolioView', {
-          studentId: student.id, viewerId: emp.id, viewerRole: Role.EMPLOYER, viewedAt,
-        });
-        await pushNotification(batcher, {
-          userId: student.id, type: NotificationType.PORTFOLIO_VIEW,
-          title: 'An employer viewed your portfolio',
-          body: 'Your public portfolio was opened by an employer on UmojaHub.',
-          relatedEntity: { kind: 'User', id: student.id }, createdAt: viewedAt,
-        });
-      }
-    }
   }
 
   // Write lecturer effectiveness aggregates.

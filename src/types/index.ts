@@ -7,11 +7,16 @@ export enum Role {
   STUDENT = 'STUDENT',
   LECTURER = 'LECTURER',
   ADMIN = 'ADMIN',
-  // Ecosystem participants (additive). NGOs sponsor farmer cooperatives;
-  // employers discover verified student portfolios; institutions host students
-  // and lecturers. Each has a role-data sub-document on User.
-  NGO = 'NGO',
-  EMPLOYER = 'EMPLOYER',
+  // An institution hosts students and lecturers, and is the Education Hub's
+  // academic-context integration: it supplies what a student is actually
+  // studying so project recommendations can be grounded in their coursework
+  // rather than guessed. Provisioned by an administrator, never self-selected.
+  //
+  // NGO and EMPLOYER were removed (2026-08-04). Neither had a path to existence
+  // — they were absent from `roleSelectionSchema`, so no real person could
+  // become one, and they existed only in seeded data. Employers keep the
+  // surface that mattered: a student portfolio is public at /portfolio/[slug]
+  // and needs no account to read.
   INSTITUTION = 'INSTITUTION',
 }
 
