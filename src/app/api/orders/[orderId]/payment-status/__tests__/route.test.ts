@@ -93,7 +93,10 @@ describe('GET /api/orders/[orderId]/payment-status', () => {
 
   it('reconciles this order lazily rather than waiting for the daily cron', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
-    mockOrderFindById.mockReturnValue(selectLean(order()));
+    mockOrderFindById
+      .mockReturnValueOnce(selectLean(order()))
+      // The re-read after reconciliation, which settled this one as failed.
+      .mockReturnValueOnce(selectLean(order({ paymentStatus: 'FAILED' })));
     mockReconcile.mockResolvedValue(1);
 
     const res = await GET(req(), params());
@@ -103,6 +106,46 @@ describe('GET /api/orders/[orderId]/payment-status', () => {
     expect(body.paymentStatus).toBe('FAILED');
     // Once closed out there is nothing left to deliver for this order.
     expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('reports a recovered payment as paid, not failed', async () => {
+    // Regression. This branch used to answer a hardcoded FAILED, which was true
+    // while reconciliation could only ever fail an order. It now asks the
+    // provider first, so a stuck payment can come back PAID when the debit was
+    // real and only the callback was lost. Reporting failure there would tell a
+    // buyer their money was safe at the moment we had just established it had
+    // left their account — and on an order that had actually succeeded.
+    (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
+    mockOrderFindById
+      .mockReturnValueOnce(selectLean(order()))
+      .mockReturnValueOnce(
+        selectLean(
+          order({
+            paymentStatus: 'PAID',
+            fulfillmentStatus: 'IN_FULFILLMENT',
+            mpesaTransactionId: 'QGR1ABCD23',
+          })
+        )
+      );
+    mockReconcile.mockResolvedValue(1);
+
+    const body = await (await GET(req(), params())).json();
+
+    expect(body.paymentStatus).toBe('PAID');
+    expect(body.mpesaTransactionId).toBe('QGR1ABCD23');
+  });
+
+  it('reports an unresolvable payment as unresolved, never as failed', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(BUYER_SESSION);
+    mockOrderFindById
+      .mockReturnValueOnce(selectLean(order()))
+      .mockReturnValueOnce(selectLean(order({ paymentStatus: 'UNRESOLVED' })));
+    mockReconcile.mockResolvedValue(1);
+
+    const body = await (await GET(req(), params())).json();
+
+    expect(body.paymentStatus).toBe('UNRESOLVED');
+    expect(body.paymentStatus).not.toBe('FAILED');
   });
 
   it('does not attempt reconciliation once the order has left PENDING_PAYMENT', async () => {
