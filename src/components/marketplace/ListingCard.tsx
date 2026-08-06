@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LISTING_CATEGORY_LABEL, ListingCategory } from '@/types';
+import { ListingCategory } from '@/types';
 
 // Marketplace feed card (Marketplace Rebuild, Stage 6 primitive, introduced in
 // Stage 3). Built on the `.theme-app` token group. Consumes the GET
@@ -35,14 +35,16 @@ export interface IListingCardItem {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function freshness(iso: string): { label: string; isNew: boolean } {
+// Freshness is now carried by this line alone. It used to be told twice — once
+// here and once as a "New" ribbon over the photo — which is the clearest case
+// of a chip restating what the card already said.
+function freshness(iso: string): { label: string } {
   const diff = Date.now() - new Date(iso).getTime();
-  if (diff < DAY_MS) return { label: 'Today', isNew: true };
+  if (diff < DAY_MS) return { label: 'Today' };
   const days = Math.floor(diff / DAY_MS);
-  if (days < 3) return { label: `${days}d ago`, isNew: true };
-  if (days < 30) return { label: `${days}d ago`, isNew: false };
+  if (days < 30) return { label: `${days}d ago` };
   const months = Math.floor(days / 30);
-  return { label: `${months}mo ago`, isNew: false };
+  return { label: `${months}mo ago` };
 }
 
 // Below this share of a typical batch we nudge the buyer that stock is thinning
@@ -57,7 +59,7 @@ export function ListingCard({
   /** Preload this image (set only for the first above-the-fold cards — LCP). */
   priority?: boolean;
 }): React.ReactElement {
-  const { label: freshLabel, isNew } = freshness(listing.createdAt);
+  const { label: freshLabel } = freshness(listing.createdAt);
   const farmerName = `${listing.farmer.firstName} ${listing.farmer.lastName}`.trim();
   const unit = listing.unit.toLowerCase();
   const lowStock = listing.quantityAvailable > 0 && listing.quantityAvailable <= LOW_STOCK_THRESHOLD;
@@ -92,55 +94,64 @@ export function ListingCard({
             </div>
           )}
 
-          {/* Category chip */}
-          {listing.category && (
-            <span className="app-label absolute left-2 top-2 rounded-app-pill bg-app-card/90 px-2 py-0.5 text-app-body backdrop-blur-sm">
-              {LISTING_CATEGORY_LABEL[listing.category]}
-            </span>
-          )}
+          {/* One overlay, and only when it says something nothing else does.
+              This corner used to carry four: a category chip, a Verified
+              ribbon, and a New/Almost-gone ribbon.
 
-          {/* Verified ribbon */}
-          {listing.farmer.isVerified && (
-            <span className="app-label absolute right-2 top-2 inline-flex items-center gap-1 rounded-app-pill bg-app-success-surface px-2 py-0.5 text-app-success backdrop-blur-sm">
-              <span aria-hidden>✓</span>
-              Verified
-            </span>
-          )}
+              Category went because the buyer arrived here by category — via
+              search, a filter or the category nav — so "Vegetables" under a
+              photograph of spinach restates the query they just made.
 
-          {/* Freshness / low-stock ribbon */}
-          {isNew ? (
-            <span className="app-label absolute bottom-2 left-2 rounded-app-pill bg-app-brand px-2 py-0.5 text-app-on-brand">
-              New
-            </span>
-          ) : lowStock ? (
+              Verified went because it marked every card. A signal carried by
+              everything carries nothing, and a badge that means nothing teaches
+              people to skip badges that do. Verification is a precondition of
+              publishing, so it is a property of the marketplace rather than of
+              any listing in it; it now appears where it is actually acted on —
+              the listing, the farmer, checkout.
+
+              New went because it repeated the body text three lines below,
+              which already reads "Kericho · Today".
+
+              Almost gone stays. Scarcity appears nowhere else on the card, it
+              changes whether this listing is worth opening now rather than
+              later, and it is true of few listings — so it still discriminates. */}
+          {lowStock && (
             <span className="app-label absolute bottom-2 left-2 rounded-app-pill bg-app-warning-surface px-2 py-0.5 text-app-warning">
               Almost gone
             </span>
-          ) : null}
+          )}
         </div>
 
-        {/* Body */}
-        <div className="flex flex-1 flex-col p-3">
-          {/* Price */}
+        {/* Body — the four things that decide whether this is worth opening:
+            what it costs, what it is, where it is, and who is selling it.
+            Spaced rather than packed: the room the removed chips gave back is
+            spent on breathing space, not refilled with more to read. */}
+        <div className="flex flex-1 flex-col p-4">
+          {/* Price leads. It is the one value a buyer scans a feed for, and it
+              is what makes two otherwise similar listings comparable. */}
           <p className="app-data-l text-app-ink">
             KSh {listing.currentPricePerUnit.toLocaleString()}
             <span className="app-meta text-app-faint"> / {unit}</span>
           </p>
 
-          {/* Title */}
-          <h3 className="app-body-strong mt-1 line-clamp-2 text-app-ink">{listing.title}</h3>
+          <h3 className="app-body-strong mt-1.5 line-clamp-2 text-app-ink">{listing.title}</h3>
 
-          {/* Location + freshness */}
-          <p className="app-meta mt-1 text-app-muted">
+          <p className="app-meta mt-1.5 text-app-muted">
             {listing.pickupCounty} · {freshLabel}
           </p>
 
-          {/* Farmer + trust */}
-          <div className="mt-2 flex items-center justify-between gap-2 border-t border-app-hairline pt-2">
+          {/* Farmer, and the one trust signal that still discriminates.
+              The Trust Score survives the cut the Verified badge did not
+              because it is earned and it varies — a 51 and an 82 are different
+              propositions, where "Verified" and "Verified" are not. It is
+              pushed to the foot of the card and given no colour of its own, so
+              it reads as a quiet fact about the seller rather than a claim
+              competing with the produce. */}
+          <div className="mt-auto flex items-center justify-between gap-2 pt-3">
             <span className="app-meta truncate text-app-muted">{farmerName || '—'}</span>
             {hasTrust && (
               <span
-                className="app-meta inline-flex flex-shrink-0 items-center gap-1 text-app-brand"
+                className="app-meta inline-flex flex-shrink-0 items-center gap-1 text-app-muted"
                 aria-label={`Farmer trust score ${listing.farmer.trustScore}`}
               >
                 <span aria-hidden>◆</span>
