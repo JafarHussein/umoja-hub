@@ -350,3 +350,19 @@ export function EscalateForm({
     </div>
   );
 }
+
+/**
+ * Is this case still with the platform?
+ *
+ * The order does not carry this. `fulfillmentStatus === DISPUTED` is written
+ * only when a mediation is resolved *with a refund*, so it marks an outcome and
+ * not an open review — reading it as "under review" was backwards in both
+ * directions. Callers pass the answer from here to the order timeline.
+ */
+export function isMediationOpen(mediation: IMediationCase | null | undefined): boolean {
+  if (!mediation) return false;
+  return (
+    mediation.status === MediationRequestStatus.OPEN ||
+    mediation.status === MediationRequestStatus.IN_REVIEW
+  );
+}

@@ -12,8 +12,6 @@ import {
   MediationRequestStatus,
   MediationInitiator,
   MEDIATION_ESCALATION_HOURS,
-  ORDER_PAYMENT_LABEL,
-  ORDER_FULFILLMENT_LABEL,
   FulfillmentStage,
   FULFILLMENT_STAGE_LABEL,
 } from '@/types';
@@ -25,16 +23,17 @@ import {
   Textarea,
   Alert,
   StatusPill,
-  type StatusState,
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
+import { orderStatusPill, paymentPill } from '@/components/foodhub/orderPill';
 import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   MediationPanel,
   MEDIATION_CATEGORY_LABEL,
   type IMediationCase,
+  isMediationOpen,
 } from '@/components/foodhub/MediationPanel';
 
 interface IBuyerOrder {
@@ -69,19 +68,6 @@ interface IPaymentStatusResponse {
 type PageState = 'loading' | 'ready' | 'error' | 'not_found';
 type ActionState = 'idle' | 'submitting' | 'error';
 
-function paymentPillState(status: OrderPaymentStatus): StatusState {
-  if (status === OrderPaymentStatus.PAID) return 'completed';
-  if (status === OrderPaymentStatus.FAILED) return 'denied';
-  return 'pending';
-}
-
-function fulfillmentPillState(status: OrderFulfillmentStatus): StatusState {
-  if (status === OrderFulfillmentStatus.COMPLETED) return 'completed';
-  if (status === OrderFulfillmentStatus.RECEIVED) return 'completed';
-  if (status === OrderFulfillmentStatus.DISPUTED) return 'denied';
-  if (status === OrderFulfillmentStatus.IN_FULFILLMENT) return 'in-transit';
-  return 'pending';
-}
 
 export default function BuyerOrderDetailPage(): React.ReactElement {
   const params = useParams<{ orderId: string }>();
@@ -441,12 +427,14 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         <h1 className="app-h1 mt-1 capitalize text-app-ink">{order.cropName}</h1>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <StatusPill
-            state={paymentPillState(order.paymentStatus)}
-            label={ORDER_PAYMENT_LABEL[order.paymentStatus]}
+            {...paymentPill(order.paymentStatus)}
           />
           <StatusPill
-            state={fulfillmentPillState(order.fulfillmentStatus)}
-            label={ORDER_FULFILLMENT_LABEL[order.fulfillmentStatus]}
+            {...orderStatusPill({
+              paymentStatus: order.paymentStatus,
+              fulfillmentStatus: order.fulfillmentStatus,
+              hasOpenMediation: isMediationOpen(mediation),
+            })}
           />
         </div>
       </div>
@@ -524,6 +512,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           confirmedByFarmerAt={order.confirmedByFarmerAt}
           receivedByBuyerAt={order.receivedByBuyerAt}
           viewer="BUYER"
+          hasOpenMediation={isMediationOpen(mediation)}
         />
       </div>
 

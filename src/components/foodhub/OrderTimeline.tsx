@@ -14,6 +14,19 @@ export interface IOrderTimelineProps {
    * reader they are the one holding things up.
    */
   viewer?: TimelineViewer | undefined;
+  /**
+   * True while a mediation is OPEN or IN_REVIEW on this order.
+   *
+   * This cannot be read off the order. `fulfillmentStatus === DISPUTED` is
+   * written by `escrowSettlement` only when an administrator resolves a
+   * mediation *with a refund* — it is an outcome, not a state of being under
+   * review. Keying the review branch on it therefore announced "an
+   * administrator is reviewing this order" about an order whose review had
+   * finished and whose money had already gone back, while an order genuinely
+   * under review showed an untroubled timeline. The live fact lives on
+   * MediationRequest, so the caller passes it.
+   */
+  hasOpenMediation?: boolean | undefined;
 }
 
 export type TimelineViewer = 'BUYER' | 'FARMER' | 'ADMIN';
@@ -56,8 +69,9 @@ export function OrderTimeline({
   paidAt,
   confirmedByFarmerAt,
   receivedByBuyerAt,
+  hasOpenMediation,
 }: IOrderTimelineProps): React.ReactElement {
-  const isDisputed = fulfillmentStatus === OrderFulfillmentStatus.DISPUTED;
+  const underReview = hasOpenMediation === true;
   const isPaid = paymentStatus === OrderPaymentStatus.PAID;
   const isInFulfillment = [
     OrderFulfillmentStatus.IN_FULFILLMENT,
@@ -112,7 +126,7 @@ export function OrderTimeline({
   // Consistent with the detailed view: a dispute is a stage of this order, not
   // a replacement for its history. Collapsing the row to "Dispute raised" made
   // the two views disagree about whether a disputed order had a past at all.
-  if (isDisputed) {
+  if (underReview) {
     steps.splice(steps.length - 1, 0, {
       key: 'review',
       label: 'Under review',
@@ -171,8 +185,9 @@ export function OrderTimelineDetailed({
   confirmedByFarmerAt,
   receivedByBuyerAt,
   viewer,
+  hasOpenMediation,
 }: IOrderTimelineProps): React.ReactElement {
-  const isDisputed = fulfillmentStatus === OrderFulfillmentStatus.DISPUTED;
+  const underReview = hasOpenMediation === true;
   const isRefunded = paymentStatus === OrderPaymentStatus.REFUNDED;
   const isPaid = paymentStatus === OrderPaymentStatus.PAID;
   const isInFulfillment = [
@@ -234,7 +249,7 @@ export function OrderTimelineDetailed({
   // it. Both used to swap the whole timeline for a single banner — so at the one
   // moment when someone most needs to see where their money is and what has
   // happened to it so far, the record vanished and left a sentence behind.
-  if (isDisputed) {
+  if (underReview) {
     steps.push({
       key: 'review',
       label: 'Under review',
@@ -262,7 +277,7 @@ export function OrderTimelineDetailed({
       label: 'Payment released',
       detail: isCompleted
         ? 'Released to the farmer from escrow'
-        : isDisputed
+        : underReview
           ? 'On hold until the review concludes'
           : // Addressed to whoever is reading. This step and "Buyer received"
             // describe the same act by the same person, and saying "you" on one

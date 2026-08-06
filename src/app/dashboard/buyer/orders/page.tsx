@@ -4,20 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import {
-  Role,
-  OrderPaymentStatus,
-  OrderFulfillmentStatus,
-  ORDER_FULFILLMENT_LABEL,
-} from '@/types';
-import {
-  Button,
-  EmptyState,
-  Page,
-  PageHeader,
-  StatusPill,
-  type StatusState,
-} from '@/components/app';
+import { Role, OrderPaymentStatus, OrderFulfillmentStatus } from '@/types';
+import { Button, EmptyState, Page, PageHeader, StatusPill } from '@/components/app';
+import { orderStatusPill } from '@/components/foodhub/orderPill';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 
@@ -33,6 +22,10 @@ interface IBuyerOrder {
   farmer: { firstName: string; lastName: string };
   hasRated: boolean;
   createdAt: string;
+  // Live escalation on this order, supplied per row by GET /api/orders. It is
+  // not derivable from the order: filing a mediation deliberately leaves the
+  // order state machine untouched.
+  hasOpenMediation?: boolean;
 }
 
 interface IOrdersResponse {
@@ -41,16 +34,6 @@ interface IOrdersResponse {
 
 type PageState = 'loading' | 'ready' | 'error';
 
-// Maps the order lifecycle to a trust StatusPill state — status is conveyed by
-// icon + shape + text, never colour alone.
-function resolvePillState(order: IBuyerOrder): StatusState {
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED) return 'completed';
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.RECEIVED) return 'completed';
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.DISPUTED) return 'denied';
-  if (order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT) return 'in-transit';
-  if (order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT) return 'pending';
-  return 'pending';
-}
 
 export default function BuyerOrdersPage(): React.ReactElement {
   const { data: session, status } = useSession();
@@ -192,12 +175,7 @@ export default function BuyerOrdersPage(): React.ReactElement {
                     KSh {order.totalAmountKES.toLocaleString()}
                   </span>
                   <span className="flex w-40 justify-start">
-                    <StatusPill
-                      state={resolvePillState(order)}
-                      label={
-                        ORDER_FULFILLMENT_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus
-                      }
-                    />
+                    <StatusPill {...orderStatusPill(order)} />
                   </span>
                 </div>
               </div>
