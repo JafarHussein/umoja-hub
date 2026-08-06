@@ -35,8 +35,15 @@ jest.mock('@/lib/models/MarketplaceListing.model', () => ({
   },
 }));
 
+const mockSendSMS = jest.fn().mockResolvedValue({ success: true });
 jest.mock('@/lib/integrations/smsService', () => ({
-  sendSMS: jest.fn().mockResolvedValue({ success: true }),
+  sendSMS: (...a: unknown[]) => mockSendSMS(...a),
+}));
+
+const mockNotify = jest.fn();
+jest.mock('@/lib/notifications/notify', () => ({
+  notify: (...a: unknown[]) => mockNotify(...a),
+  notifyAdmins: jest.fn(),
 }));
 
 jest.mock('@/lib/integrations/darajaService', () => ({
@@ -128,6 +135,33 @@ describe('POST /api/webhooks/daraja', () => {
     expect(res.status).toBe(200);
     expect(body.ResultCode).toBe(0);
     expect(body.ResultDesc).toBe('Success');
+  });
+
+  it('texts the farmer but not the buyer, and tells both in the app', async () => {
+    // The notification policy, asserted because nothing else protects it and
+    // the previous behaviour — SMS to both — passed every test.
+    //
+    // The buyer entered their M-Pesa PIN seconds ago and Safaricom has already
+    // texted them the authoritative receipt. A second SMS repeats it, costs
+    // money, and trains people to ignore the channel. The farmer is not party
+    // to the STK push, gets no Safaricom message, and theirs is the only
+    // immediate signal that money arrived and dispatch should begin.
+    mockOrderFindOne.mockResolvedValueOnce(mockOrder).mockResolvedValueOnce(null);
+    mockOrderFindByIdAndUpdate.mockResolvedValue({});
+    mockUserFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ firstName: 'Kamau', phoneNumber: '+254712345678' }),
+      }),
+    });
+
+    await POST(makeWebhookRequest(validSuccessPayload));
+    // The side-effect chain is fire-and-forget; let it drain.
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(mockSendSMS).toHaveBeenCalledTimes(1);
+    expect(String(mockSendSMS.mock.calls[0]?.[1])).toMatch(/New order confirmed/i);
+    // Both parties are still told in the app — only the duplicated channel went.
+    expect(mockNotify).toHaveBeenCalledTimes(2);
   });
 
   it('updates order paymentStatus to PAID on successful payment', async () => {
