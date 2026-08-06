@@ -272,24 +272,24 @@ export async function queryStkPushStatus(checkoutRequestId: string): Promise<IST
 }
 
 // ---------------------------------------------------------------------------
-// Webhook Signature Verification
+// Callback authenticity — where it actually lives.
 //
-// Safaricom Daraja does NOT sign callbacks with HMAC or any other message
-// authentication code. Their security model relies on:
-//   1. HTTPS-only callback URLs (enforced by Vercel)
-//   2. Callback URL secrecy — the WEBHOOK_SECRET query param appended in
-//      initiateSTKPush acts as a shared secret; the webhook handler at
-//      /api/webhooks/daraja validates it before processing any payload.
-//   3. Production: IP allowlisting for Safaricom's callback IP ranges via
-//      Vercel Edge middleware (Phase 2 hardening).
+// Safaricom Daraja does NOT sign callbacks: no HMAC, no message authentication
+// code, nothing in the payload or headers that proves the sender. There is
+// therefore nothing for a verify-signature function to verify, and this file
+// used to export one anyway. It took a Headers and a body, ignored both, and
+// returned true. The webhook called it as "Step 1: Verify signature (always
+// first)", so the route read as though it authenticated its caller.
 //
-// This function is retained for interface consistency. The meaningful
-// security check is the URL secret validated in the webhook route handler.
+// It did not, and a security control that only appears to exist is worse than
+// an absent one: it stops anybody looking for the real thing. Removed rather
+// than left "for interface consistency".
+//
+// The genuine controls, all of which are real and in force:
+//   1. HTTPS-only callback URLs — Daraja refuses to POST to plain HTTP.
+//   2. IP allow-listing against Safaricom's published callback ranges, applied
+//      in `src/middleware.ts` before any other handling of this route.
+//   3. Replay protection — a unique sparse index on the order's
+//      mpesaTransactionId, so a receipt number can only ever be credited once.
+//      `processStkCallback` checks it first and no-ops cleanly on a repeat.
 // ---------------------------------------------------------------------------
-
-export function verifyDarajaSignature(
-  _headers: Headers,
-  _body: unknown
-): boolean {
-  return true;
-}

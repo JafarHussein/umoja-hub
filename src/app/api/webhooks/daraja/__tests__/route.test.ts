@@ -40,8 +40,8 @@ jest.mock('@/lib/integrations/smsService', () => ({
 }));
 
 jest.mock('@/lib/integrations/darajaService', () => ({
-  verifyDarajaSignature: jest.fn().mockReturnValue(true),
   initiateSTKPush: jest.fn(),
+  queryStkPushStatus: jest.fn(),
 }));
 
 jest.mock('@/lib/env', () => ({
@@ -176,18 +176,20 @@ describe('POST /api/webhooks/daraja', () => {
     );
   });
 
-  it('returns HTTP 200 on invalid signature — does NOT process payment', async () => {
-    const { verifyDarajaSignature } = jest.requireMock('@/lib/integrations/darajaService') as {
-      verifyDarajaSignature: jest.MockedFunction<() => boolean>;
-    };
-    verifyDarajaSignature.mockReturnValueOnce(false);
-
-    const req = makeWebhookRequest(validSuccessPayload);
+  it('acknowledges a payload that is not a Daraja callback without touching the order', async () => {
+    // This replaces a test that mocked verifyDarajaSignature to return false.
+    // That function ignored its arguments and returned true in every real call,
+    // so the test could only ever exercise its own mock — it demonstrated
+    // nothing about the running system. Daraja does not sign callbacks;
+    // authenticity is the IP allow-list in middleware, applied before this
+    // handler runs, and replay is the unique index on mpesaTransactionId.
+    // What this route is genuinely responsible for is shape.
+    const req = makeWebhookRequest({ not: 'a daraja callback' });
     const res = await POST(req);
-    const body = await res.json() as { ResultCode: number };
+    const body = (await res.json()) as { ResultCode: number };
 
-    expect(res.status).toBe(200);
-    expect(body.ResultCode).toBe(1); // Non-zero signals Daraja to stop retrying
+    expect(res.status).toBe(200); // never make Safaricom retry
+    expect(body.ResultCode).toBe(0);
     expect(mockOrderFindByIdAndUpdate).not.toHaveBeenCalled();
   });
 

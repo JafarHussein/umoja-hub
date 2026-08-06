@@ -59,11 +59,28 @@ returning the produce to sale.
 The fix is the researched one: extend the provider contract with a query capability, consult it
 before declaring failure, and — where the answer is unknown — say *unknown* rather than *failed*.
 
-### P2 — HIGH · The Daraja webhook is unauthenticated
+### P2 — ~~HIGH~~ **CORRECTED TO LOW** · Webhook authenticity was already in place
 
-Callbacks are unauthenticated HTTPS POSTs. Nothing verifies the sender. Under real Daraja anyone
-who learns the URL could POST a success payload and mark an order paid. Needs IP allow-listing, a
-secret path segment, and `MpesaReceiptNumber` uniqueness.
+**This finding was overstated when first written, and is corrected here rather than quietly
+edited.** The audit initially recorded the webhook as unauthenticated. Checking the code before
+acting showed otherwise:
+
+- **IP allow-listing exists and is enforced** — `src/middleware.ts` holds Safaricom's published
+  callback ranges and rejects anything else on `/api/webhooks/daraja` in production, *before* any
+  other handling of the route.
+- **Replay protection exists** — a unique sparse index on the order's `mpesaTransactionId`, checked
+  first by `processStkCallback`, which no-ops cleanly on a repeated receipt number.
+- **HTTPS is enforced by Daraja itself**, which refuses plain-HTTP callback URLs.
+
+Two of the three controls proposed were therefore already built. What was genuinely wrong was
+smaller and more insidious: `verifyDarajaSignature()` took a `Headers` and a body, ignored both,
+and returned `true`, while the route called it as *"Step 1: Verify signature (always first)"*. Its
+own comment described a `WEBHOOK_SECRET` shared secret that appears nowhere else in the repository.
+A control that only appears to exist is worse than an absent one, because it stops anyone looking
+for the real one. Removed, with the actual controls documented where the fake one used to be.
+
+*Lesson recorded deliberately: the first audit pass asserted a vulnerability from the route file
+alone. Reading the middleware first would have got it right.*
 
 ### P3 — HIGH · The regulatory position is nowhere in the repository
 
