@@ -87,6 +87,46 @@ builds cleanly on existing data.
 **Regression risk** Low, but see O1 — the index must exist in production.
 **Commit** `1cd8f00`
 
+### D6 · S1 · A timed-out payment was assumed failed, and the buyer told their money was safe
+**Workflow** Checkout, stuck-payment reconciliation.
+**Root cause** The STK Push lifecycle has three legs — initiate, callback, **query**. Only two were
+implemented. With no way to ask the provider what happened, `reconcileStuckPayments` treated a
+missing callback as a failure.
+**Effect** The order was marked `FAILED`, the produce returned to the marketplace, and the buyer
+told *"No money left your account"* — none of it verified. A lost callback can sit on top of a real
+debit, so under `daraja-*` this could take a buyer's money, tell them it was safe, and resell the
+produce they had paid for.
+**Fix** `PaymentProvider.queryPaymentStatus` returning `SUCCESS | FAILED | PENDING | UNKNOWN`.
+Reconciliation asks first: a confirmed success is credited through the ordinary callback path, a
+confirmed failure closes out as before, in-flight is left alone, and an unanswerable one becomes the
+new `OrderPaymentStatus.UNRESOLVED` — produce stays reserved, buyer told the truth, admin asked to
+settle by hand. Window cut 15 → 5 minutes, since the wide margin only existed to cover the guess.
+**Regression risk** Medium-high — money path. 11 new tests; existing reconcile tests had never
+reached the provider because their fixture had no checkout request id.
+**Commit** `ad48261` · full reasoning in `context/payments-research/`
+
+### D7 · S2 · A security control that only appeared to exist
+**Workflow** Daraja callback.
+**Root cause** `verifyDarajaSignature()` took a `Headers` and a body, ignored both, returned `true`.
+The webhook called it as *"Step 1: Verify signature (always first)"*, and its comment described a
+`WEBHOOK_SECRET` found nowhere else in the repository.
+**Effect** No exploit — the real controls (IP allow-list in middleware, unique index on
+`mpesaTransactionId`) were already in place. The harm was to review: anyone auditing this route
+would believe it authenticated its caller and stop looking.
+**Fix** Removed, with the actual controls documented in its place. Its test mocked it to return
+`false`, so it only ever exercised its own mock.
+**Commit** `63ddd87`
+
+### D8 · S3 · Escrow reported itself but never explained itself
+**Workflow** Buyer order detail.
+**Root cause** The escrow block stated where the money was and rendered only while
+`PAID + IN_FULFILLMENT`.
+**Effect** No answer to what releases the money, what happens if produce never arrives, or when an
+administrator steps in — and total silence in the two states most needing explanation: under review,
+and just refunded.
+**Fix** `EscrowExplainer`, keyed on `EscrowState`, both viewers, every state.
+**Commit** `33fd660`
+
 ---
 
 ## Open observations — not defects today

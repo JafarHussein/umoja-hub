@@ -4,6 +4,23 @@ Ordered highest priority first. Each task is executable without further design w
 
 Baseline at start: 1196 tests / 104 suites green, `tsc` clean, 0 lint errors.
 
+## Execution status
+
+| Task | Status | Commit |
+|---|---|---|
+| T1 · Query capability on the provider contract | **Done** | `ad48261` |
+| T2 · `OrderPaymentStatus.UNRESOLVED` | **Done** | `ad48261` |
+| T3 · Reconciliation asks before concluding | **Done** | `ad48261` |
+| T4 · Justify the stuck-payment window (15 → 5 min) | **Done** | `ad48261` |
+| T5 · Webhook authenticity | **Done, reduced scope** — the IP allow-list and replay protection already existed; what was wrong was a no-op `verifyDarajaSignature` that always returned `true`. See the correction to P2 in `04`. | `63ddd87` |
+| T6 · One escrow explainer | **Done** | `33fd660` |
+| T7 · Surface the M-Pesa receipt code | **Not started** — verify first how much `TransactionReceipt` already covers, since several checklist assumptions proved out of date. |
+| T8 · Defence notes | **Done** (written with the research) | `52fb075` |
+| T9 · Record in the Food Hub register | **Not started** |
+
+At 1222 tests / 106 suites green. Two checklist items shrank once the code was read rather than
+assumed — the pattern is worth carrying into the remainder.
+
 ---
 
 ## Phase 1 — Honesty under uncertainty (the critical path)
