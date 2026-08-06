@@ -150,7 +150,12 @@ export function TransactionReceipt({ orderId }: ITransactionReceiptProps): React
   const isRefunded = receipt.paymentStatus === OrderPaymentStatus.REFUNDED;
 
   const rows: { label: string; value: string; mono?: boolean }[] = [
-    { label: 'Transaction reference', value: receipt.receiptNumber ?? '—', mono: true },
+    // "M-Pesa receipt", not "Transaction reference". This is the code a buyer
+    // matches against the SMS on their handset, and that SMS is what they
+    // actually trust — so it has to be called what the handset calls it.
+    // Checkout already used this wording; the receipt did not, which left one
+    // value with two names across two screens.
+    { label: 'M-Pesa receipt', value: receipt.receiptNumber ?? '—', mono: true },
     { label: 'Order number', value: receipt.orderReferenceId, mono: true },
     { label: 'Escrow reference', value: receipt.escrowReference, mono: true },
     { label: 'Payment method', value: receipt.paymentMethod },

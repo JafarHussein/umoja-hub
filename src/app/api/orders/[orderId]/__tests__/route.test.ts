@@ -76,6 +76,36 @@ describe('GET /api/orders/[orderId]', () => {
     expect(body.data.orderReferenceId).toBe('UMJ-2026-000001');
   });
 
+  it('returns the M-Pesa receipt code, and says whether it was simulated', async () => {
+    // A screen that says "Paid" and shows nothing to check it against asks to
+    // be taken on trust; Kenyan buyers verify against the Safaricom SMS. The
+    // platform stored this code all along and only ever showed it on the
+    // receipt, a click away from the claim it substantiates. The simulation
+    // flag travels with it, because a receipt code shown without saying where
+    // it came from is the exact implication the notice exists to prevent.
+    storedOrder = { ...storedOrder, mpesaTransactionId: 'QGR1ABCD23' };
+    (getServerSession as jest.Mock).mockResolvedValue({ user: { id: BUYER_ID, role: 'BUYER' } });
+
+    const res = await GET(req(), params());
+    const body = (await res.json()) as {
+      data: { mpesaTransactionId: string | null; isSimulated: boolean };
+    };
+
+    expect(body.data.mpesaTransactionId).toBe('QGR1ABCD23');
+    // Default provider is the simulator, so this must not silently read false.
+    expect(body.data.isSimulated).toBe(true);
+  });
+
+  it('reports a null receipt code rather than inventing one before payment', async () => {
+    storedOrder = { ...storedOrder, paymentStatus: 'PENDING_PAYMENT' };
+    (getServerSession as jest.Mock).mockResolvedValue({ user: { id: BUYER_ID, role: 'BUYER' } });
+
+    const res = await GET(req(), params());
+    const body = (await res.json()) as { data: { mpesaTransactionId: string | null } };
+
+    expect(body.data.mpesaTransactionId).toBeNull();
+  });
+
   it('returns it to the farmer on it', async () => {
     (getServerSession as jest.Mock).mockResolvedValue({ user: { id: FARMER_ID, role: 'FARMER' } });
     expect((await GET(req(), params())).status).toBe(200);

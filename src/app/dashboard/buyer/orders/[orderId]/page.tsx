@@ -54,6 +54,10 @@ interface IBuyerOrder {
   confirmedByFarmerAt: string | null;
   receivedByBuyerAt: string | null;
   fulfillmentStage: FulfillmentStage | null;
+  /** The M-Pesa receipt code, so the buyer can match this order to their SMS. */
+  mpesaTransactionId: string | null;
+  /** Whether that code came from the simulator. Decided server-side. */
+  isSimulated: boolean;
 }
 
 // The mediation case shape and its labels are shared with the farmer surface —
@@ -439,6 +443,21 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
             })}
           />
         </div>
+
+        {/* The code the buyer can check against their M-Pesa SMS.
+            A screen that says "Paid" and shows nothing to match it against is
+            asking to be believed; the Safaricom message is what Kenyan buyers
+            actually trust. The platform stored this all along and only showed
+            it on the receipt, a click away from the claim it substantiates. */}
+        {order.mpesaTransactionId && (
+          <p className="app-meta mt-2 text-app-muted">
+            M-Pesa receipt{' '}
+            <span className="app-data-m text-app-ink">{order.mpesaTransactionId}</span>
+            {order.isSimulated && (
+              <SimulationNotice variant="badge" className="ml-2 align-middle" />
+            )}
+          </p>
+        )}
       </div>
 
       {/* UNDER_MEDIATION alert bar — decoupled from order state */}

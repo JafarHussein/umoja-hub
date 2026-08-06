@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { AppError, handleApiError } from '@/lib/utils';
+import { isSimulationActive } from '@/lib/payments';
 import { OrderPaymentStatus, OrderFulfillmentStatus, Role } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -81,6 +82,17 @@ export async function GET(
         fulfillmentStatus: order.fulfillmentStatus,
         fulfillmentType: order.fulfillmentType,
         mpesaCheckoutRequestId: order.mpesaCheckoutRequestId ?? null,
+        // The M-Pesa receipt code. Kenyan buyers verify a payment against the
+        // Safaricom SMS on their handset, so an order claiming to be paid
+        // without showing the code it was paid under is asking to be taken on
+        // trust. The platform has always stored this; the order screen just
+        // never showed it, sending the buyer to the receipt page to find it.
+        mpesaTransactionId: order.mpesaTransactionId ?? null,
+        // Whether that code came from the simulator. Decided on the server, as
+        // the receipt already does — PAYMENT_PROVIDER is not readable in the
+        // browser, and a receipt code shown without saying where it came from
+        // is exactly the implication the simulation notice exists to prevent.
+        isSimulated: isSimulationActive(),
         buyerPhone: order.buyerPhone,
         farmer: { firstName: farmer?.firstName ?? '—', lastName: farmer?.lastName ?? '' },
         buyer: { firstName: buyer?.firstName ?? '—', lastName: buyer?.lastName ?? '' },
