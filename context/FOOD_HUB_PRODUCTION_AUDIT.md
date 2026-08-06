@@ -127,6 +127,55 @@ and just refunded.
 **Fix** `EscrowExplainer`, keyed on `EscrowState`, both viewers, every state.
 **Commit** `33fd660`
 
+### D9 · S3 · A payment claimed to be paid, with nothing to check it against
+**Workflow** Buyer order detail; receipt.
+**Root cause** The M-Pesa receipt code was stored on every paid order but rendered only on the
+receipt page. Separately, checkout called it *"M-Pesa receipt"* while the receipt page called it
+*"Transaction reference"* — one value, two names, across two screens.
+**Effect** Kenyan buyers verify a payment against the Safaricom SMS on their handset; that code is
+the receipt they actually trust. An order screen reading "Paid" with nothing to match against asks
+to be taken on trust, which is the opposite of what this platform is for.
+**Fix** The code now sits under the payment pill on the order, with the simulation badge beside it
+— a receipt code shown without saying where it came from is the exact implication `SimulationNotice`
+exists to prevent. Both surfaces now use the handset's word.
+**Regression risk** Low — additive projection plus a label change.
+**Commit** `e6a2e78`
+
+---
+
+## Decision record · The payment and escrow posture
+
+Recorded here because it is the question most likely to be asked and the answer is a designed
+position, not a fallback. Full reasoning and sources: `context/payments-research/`.
+
+**UmojaHub implements the control plane of a marketplace escrow system and simulates the custody
+plane.** The control plane — derived escrow state machine, release gated on confirmed receipt,
+two-sided adjudication, append-only audit of every custodial decision, settlement queue separating
+*earned* from *paid* — is real and complete. The M-Pesa custody leg is simulated and disclosed.
+
+**Why simulated, on two independent grounds:**
+1. Production Daraja credentials require a registered business entity, a business KRA PIN and an
+   active Paybill. Safaricom does not issue them to individuals.
+2. **It would still be simulated with those credentials.** Holding third-party funds in Kenya is
+   licensed activity under the National Payment System Act 2011, requiring CBK authorisation,
+   segregated client accounts and a trust arrangement. Stripe draws the same line — it runs this
+   control plane for much of the world's marketplace volume and still refuses to call it escrow.
+
+**Rejected alternatives, with reasons:**
+- *Nominal real KES 1 STK Push* — **not viable.** Sandbox cannot reach a real handset; reaching one
+  needs the production access that was refused. It is not a partial alternative to production, it
+  *is* production for one shilling. It would also be less honest: a real receipt for an amount
+  unrelated to the order, and a real debit the escrow ledger does not account for.
+- *Direct payment to the farmer, no hold* — rejected. It pays the farmer before delivery, which is
+  the exact trust failure the platform exists to solve.
+
+**The production path is not "switch on Daraja"** — it is to delegate custody to a CBK-licensed PSP
+while keeping the control plane already built. Roadmap in `06_ACADEMIC_DEFENCE_AND_ROADMAP.md`.
+
+**Standing constraint:** `PAYMENT_PROVIDER` defaults to `simulation`, so the Daraja query path
+introduced in D6 is correct-by-construction and unit-tested but has never met the live API. Say so
+plainly rather than implying otherwise.
+
 ---
 
 ## Open observations — not defects today
@@ -143,16 +192,38 @@ sets `DISPUTED`, and no path produces `COMPLETED` without `PAID`, confirmed agai
 unreachable state carries more risk than it removes. Revisit if any new path can complete an order
 that was not paid, because the documented invariant `grossReceived = held + releasable` depends on it.
 
+**Re-checked when `UNRESOLVED` was added (D6).** That status was the first new member of
+`OrderPaymentStatus` since this observation was written, so it was the obvious way to reach
+`COMPLETED` without `PAID`. It cannot: an unresolved order stays at `AWAITING_PAYMENT`, and the
+`RECEIVED` transition requires `IN_FULFILLMENT`. Still unreachable, still deliberately unchanged.
+
 ### O3 · S4 · E2E fixtures are present in the demo database
 `E2E Sukuma Wiki — Grade A` from "E2E Farmer" (`…000010`) appears in the marketplace, and
 `E2E-FAR-0002` carries an open mediation. Test-data hygiene in the dev database, not application
 code; `npm run demo:reset` clears it. Worth clearing before any demo.
 
+### O4 · Deployment · The Daraja query path has never met the live API
+`queryPaymentStatus` is implemented against `/mpesa/stkpushquery/v1/query` and unit-tested, but
+`PAYMENT_PROVIDER` defaults to `simulation`, so only the simulator's implementation has ever
+executed. Correct-by-construction is not the same as exercised. If Daraja sandbox credentials ever
+become available, running one real timed-out payment through it is the single highest-value
+verification remaining on the payment path.
+
 ---
+
+## Audited and closed
+
+**Payment simulation · checkout · the STK callback · escrow · settlement · mediation · payouts ·
+order state and status honesty.** Researched against production practice before changing anything
+(`context/payments-research/`), then corrected: D1–D9 above. The engine was found to be closer to
+production-grade than expected — real Safaricom result codes, a realistic failure distribution
+including lost callbacks, one shared processor for both providers, a two-layer reconciliation sweep
+— so it was corrected rather than rebuilt.
 
 ## Not yet audited
 
-Listing creation and editing · farmer verification and the admin verification queue · checkout and
-the M-Pesa simulation callback · admin escrow console and payout approval · ratings · trust score ·
-price intelligence · suppliers · groups · knowledge · assistant · notifications and email ·
-responsive behaviour · the farmer's and admin's own views of the workflows corrected above.
+Listing creation and editing · farmer verification and the admin verification queue · ratings ·
+trust score · price intelligence · suppliers · groups · knowledge · assistant · notifications and
+email · responsive behaviour · **the farmer's and admin's own views of the workflows corrected
+above** (the buyer's side has been driven in a browser; the farmer's and admin's have been read and
+tested but not clicked through).

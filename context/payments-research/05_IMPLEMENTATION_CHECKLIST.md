@@ -14,12 +14,22 @@ Baseline at start: 1196 tests / 104 suites green, `tsc` clean, 0 lint errors.
 | T4 · Justify the stuck-payment window (15 → 5 min) | **Done** | `ad48261` |
 | T5 · Webhook authenticity | **Done, reduced scope** — the IP allow-list and replay protection already existed; what was wrong was a no-op `verifyDarajaSignature` that always returned `true`. See the correction to P2 in `04`. | `63ddd87` |
 | T6 · One escrow explainer | **Done** | `33fd660` |
-| T7 · Surface the M-Pesa receipt code | **Not started** — verify first how much `TransactionReceipt` already covers, since several checklist assumptions proved out of date. |
+| T7 · Surface the M-Pesa receipt code | **Done, reduced scope** — the receipt page already carried the code and the trail. The real gaps were that the order screen never showed it at all, and that checkout and the receipt gave one value two different names. | `e6a2e78` |
 | T8 · Defence notes | **Done** (written with the research) | `52fb075` |
-| T9 · Record in the Food Hub register | **Not started** |
+| T9 · Record in the Food Hub register | **Done** — D6–D9 plus a decision record for the payment/escrow posture in `context/FOOD_HUB_PRODUCTION_AUDIT.md` | `9e68ce3`, this commit |
 
-At 1222 tests / 106 suites green. Two checklist items shrank once the code was read rather than
-assumed — the pattern is worth carrying into the remainder.
+**Checklist complete.** 1224 tests / 106 suites green, `tsc` clean, 0 lint errors.
+
+Three of nine tasks shrank once the code was read rather than assumed — T5 and T7 substantially,
+and P2 in `04` had to be downgraded outright. The pattern held all the way through: this codebase
+is consistently further along than a first read of any single file suggests, and the productive
+move was always to check the neighbouring module before writing the finding down.
+
+### What remains on the payment path
+
+Nothing on this checklist. The one open item is recorded as O4 in the Food Hub register: the Daraja
+query implementation has never executed against the live API, because `PAYMENT_PROVIDER` defaults
+to `simulation`. Correct-by-construction is not the same as exercised.
 
 ---
 
