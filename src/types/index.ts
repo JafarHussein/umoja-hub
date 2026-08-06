@@ -469,6 +469,32 @@ export enum EscrowEventType {
 }
 
 // ---------------------------------------------------------------------------
+// Simulation profiles — named test fixtures, NOT statistics.
+//
+// The simulator used to carry a single fixed weighting (75% success, 10%
+// insufficient funds, and so on). Those numbers were indefensible: asked "why
+// 75%?", there is no honest answer, because UmojaHub has never observed a real
+// M-Pesa population and any figure would be invented authority.
+//
+// A profile answers a different and answerable question — not "how often does
+// M-Pesa fail?" but "which workflow do I want to exercise right now?". Each one
+// is chosen to drive a specific path through the system, the way a test fixture
+// is chosen, and is documented as such.
+// ---------------------------------------------------------------------------
+export enum SimulationProfile {
+  /** Every payment succeeds promptly. For walking the happy path uninterrupted. */
+  HAPPY_PATH = 'HAPPY_PATH',
+  /** A mixed run: mostly success, with each failure mode represented. The default. */
+  TYPICAL = 'TYPICAL',
+  /** Slow and lost callbacks dominate — exercises reconciliation and the query leg. */
+  NETWORK_TROUBLE = 'NETWORK_TROUBLE',
+  /** Declines dominate — exercises retry, inventory restoration and buyer messaging. */
+  PAYMENT_FAILURE = 'PAYMENT_FAILURE',
+  /** Every payment is lost, so every order needs reconciling. For the admin drill. */
+  RECONCILIATION_DRILL = 'RECONCILIATION_DRILL',
+}
+
+// ---------------------------------------------------------------------------
 // Ecosystem extensions — Institution, notifications
 // ---------------------------------------------------------------------------
 

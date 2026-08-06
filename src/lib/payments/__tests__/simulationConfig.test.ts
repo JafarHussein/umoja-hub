@@ -3,8 +3,9 @@ import {
   pickWeighted,
   pickOutcome,
   pickDelaySeconds,
+  SIMULATION_PROFILES,
 } from '../simulationConfig';
-import { SimulatedOutcome } from '@/types';
+import { SimulatedOutcome, SimulationProfile } from '@/types';
 
 describe('pickWeighted', () => {
   it('selects deterministically from the cumulative distribution', () => {
@@ -35,13 +36,57 @@ describe('getSimulationConfig', () => {
     process.env = { ...saved };
   });
 
-  it('returns the documented defaults', () => {
-    delete process.env['SIMULATION_RATE_SUCCESS'];
+  it('defaults to the TYPICAL profile, which represents every failure mode', () => {
+    delete process.env['SIMULATION_PROFILE'];
     const config = getSimulationConfig();
-    expect(config.outcomeWeights[SimulatedOutcome.SUCCESS]).toBe(75);
-    expect(config.outcomeWeights[SimulatedOutcome.LOST]).toBe(2);
-    expect(config.delayBuckets.find((b) => b.seconds === 0)?.weight).toBe(70);
-    expect(config.duplicateRate).toBeCloseTo(0.02);
+    expect(config.profile).toBe(SimulationProfile.TYPICAL);
+    // Coverage is the point of this profile: a demo environment that shows only
+    // successes is not believable, so each failure mode must be reachable.
+    for (const outcome of [
+      SimulatedOutcome.SUCCESS,
+      SimulatedOutcome.INSUFFICIENT_FUNDS,
+      SimulatedOutcome.USER_CANCELLED,
+      SimulatedOutcome.TIMEOUT,
+      SimulatedOutcome.NETWORK_FAILURE,
+      SimulatedOutcome.LOST,
+    ]) {
+      expect(config.outcomeWeights[outcome]).toBeGreaterThan(0);
+    }
+  });
+
+  it('selects a named profile from the environment', () => {
+    process.env['SIMULATION_PROFILE'] = SimulationProfile.HAPPY_PATH;
+    const config = getSimulationConfig();
+    expect(config.profile).toBe(SimulationProfile.HAPPY_PATH);
+    expect(config.outcomeWeights[SimulatedOutcome.SUCCESS]).toBeGreaterThan(0);
+    expect(config.outcomeWeights[SimulatedOutcome.LOST]).toBe(0);
+  });
+
+  it('falls back to TYPICAL rather than failing on an unknown profile', () => {
+    // A mistyped profile must not take the payment path down.
+    process.env['SIMULATION_PROFILE'] = 'CHAOS_MONKEY';
+    expect(getSimulationConfig().profile).toBe(SimulationProfile.TYPICAL);
+  });
+
+  it('drives the reconciliation drill entirely through lost callbacks', () => {
+    process.env['SIMULATION_PROFILE'] = SimulationProfile.RECONCILIATION_DRILL;
+    const config = getSimulationConfig();
+    expect(config.outcomeWeights[SimulatedOutcome.LOST]).toBeGreaterThan(0);
+    expect(config.outcomeWeights[SimulatedOutcome.SUCCESS]).toBe(0);
+  });
+
+  it('never lets a payment succeed under the payment-failure profile', () => {
+    process.env['SIMULATION_PROFILE'] = SimulationProfile.PAYMENT_FAILURE;
+    expect(getSimulationConfig().outcomeWeights[SimulatedOutcome.SUCCESS]).toBe(0);
+  });
+
+  it('carries a stated purpose, so no weight is presented without a reason', () => {
+    // The whole point of profiles: a number in this file must be answerable
+    // with "to exercise X", never with a claim about how often M-Pesa fails.
+    for (const profile of Object.values(SimulationProfile)) {
+      process.env['SIMULATION_PROFILE'] = profile;
+      expect(getSimulationConfig().purpose.length).toBeGreaterThan(20);
+    }
   });
 
   it('honours environment overrides', () => {
@@ -52,9 +97,13 @@ describe('getSimulationConfig', () => {
     expect(config.duplicateRate).toBeCloseTo(0.1);
   });
 
-  it('ignores invalid override values, keeping the default', () => {
+  it('ignores invalid override values, keeping the profile value', () => {
+    delete process.env['SIMULATION_PROFILE'];
     process.env['SIMULATION_RATE_SUCCESS'] = 'not-a-number';
-    expect(getSimulationConfig().outcomeWeights[SimulatedOutcome.SUCCESS]).toBe(75);
+    const typical = SIMULATION_PROFILES[SimulationProfile.TYPICAL];
+    expect(getSimulationConfig().outcomeWeights[SimulatedOutcome.SUCCESS]).toBe(
+      typical.outcomeWeights[SimulatedOutcome.SUCCESS]
+    );
   });
 });
 

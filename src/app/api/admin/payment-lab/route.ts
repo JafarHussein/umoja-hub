@@ -7,6 +7,7 @@ import PaymentEventLog from '@/lib/models/PaymentEventLog.model';
 import { paymentLabActionSchema, type PaymentLabAction } from '@/lib/validation/paymentLabSchema';
 import { forceOutcomeForOrder } from '@/lib/payments/simulationProvider';
 import { getActiveProviderName, isSimulationActive } from '@/lib/payments';
+import { getSimulationConfig } from '@/lib/payments/simulationConfig';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, SimulatedOutcome, OrderPaymentStatus } from '@/types';
 
@@ -113,10 +114,19 @@ export async function GET(): Promise<NextResponse> {
       occurredAt: e.occurredAt,
     }));
 
+    // Which fixture is loaded, and what it is for. Surfaced rather than left in
+    // an env var so the outcome mix on this screen is never mistaken for a
+    // measurement of M-Pesa — the profile says, in its own words, which
+    // workflow it exists to exercise.
+    const simConfig = getSimulationConfig();
+
     return NextResponse.json({
       data: {
         provider: getActiveProviderName(),
         simulationActive: isSimulationActive(),
+        simulationProfile: isSimulationActive()
+          ? { name: simConfig.profile, purpose: simConfig.purpose }
+          : null,
         metrics,
         pendingOrders,
         recentEvents,

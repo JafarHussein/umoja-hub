@@ -48,6 +48,8 @@ interface IEvent {
 interface ILabResponse {
   provider: string;
   simulationActive: boolean;
+  /** The loaded fixture and the workflow it exists to exercise. Null under a real provider. */
+  simulationProfile: { name: string; purpose: string } | null;
   metrics: IMetrics;
   pendingOrders: IPendingOrder[];
   recentEvents: IEvent[];
@@ -238,6 +240,25 @@ export default function AdminPaymentLabPage(): React.ReactElement {
           A real Daraja provider is active; scenario triggers are disabled. Metrics below reflect
           real payment events.
         </Alert>
+      )}
+
+      {/* Which fixture is loaded, and what it is for.
+          The outcome mix on this page is a consequence of a chosen profile, not
+          a measurement of M-Pesa. Saying so here, beside the numbers it
+          produces, is the difference between a demonstrable test bench and a
+          set of invented statistics. */}
+      {data.simulationProfile && (
+        <div className="rounded-app-card border border-app-hairline bg-app-sunken p-4">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <p className="app-label text-app-muted">Active simulation profile</p>
+            <p className="app-body-strong text-app-ink">{data.simulationProfile.name}</p>
+          </div>
+          <p className="app-meta mt-1 text-app-muted">{data.simulationProfile.purpose}</p>
+          <p className="app-meta mt-2 text-app-faint">
+            Profiles are test fixtures chosen to exercise a workflow. The mix below follows from
+            this profile and is not a measurement of how often M-Pesa succeeds or fails.
+          </p>
+        </div>
       )}
 
       {/* Metrics */}
