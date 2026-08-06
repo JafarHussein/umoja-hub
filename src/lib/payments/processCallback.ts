@@ -240,10 +240,21 @@ export async function processStkCallback(
         });
       }
       if (buyer) {
-        await sendSMS(
-          buyer.phoneNumber,
-          `UmojaHub: Payment confirmed! Your KSh ${order.totalAmountKES} for order ${order.orderReferenceId} is protected in escrow and released to the farmer only when you confirm you've received your ${order.cropName}.`
-        );
+        // Deliberately NO SMS to the buyer here.
+        //
+        // They entered their M-Pesa PIN seconds ago and Safaricom has already
+        // sent them a confirmation SMS carrying the authoritative receipt code.
+        // A second SMS saying the same thing arrives moments later, costs the
+        // platform money, and teaches people that UmojaHub's messages repeat
+        // what they already know — which is how a channel stops being read.
+        //
+        // The escrow half IS ours to say, because Safaricom's message says
+        // nothing about the money being held. But it is not urgent in the way
+        // the farmer's is: the buyer has no action to take, was told at
+        // checkout, and reads it in the app and by email. The farmer, by
+        // contrast, is not party to the STK push at all and gets no Safaricom
+        // SMS — theirs is the only immediate signal that money has arrived and
+        // the dispatch clock has started, which is why it stays.
         void notify({
           userId: order.buyerId,
           type: NotificationType.ORDER_UPDATE,

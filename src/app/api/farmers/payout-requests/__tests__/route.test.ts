@@ -120,6 +120,29 @@ describe('POST /api/farmers/payout-requests', () => {
     expect(body.balance.availableKES).toBe(4000);
     expect(body.balance.committedPayoutsKES).toBe(1000);
   });
+
+  it('turns the database refusal of a second open request into the same clear answer', async () => {
+    // The one-open-request rule used to rest entirely on the findOne above,
+    // with a gap between that read and the create. Two requests arriving
+    // together both saw no open request and both measured themselves against
+    // the same unspent balance, so a farmer could hold two open requests for
+    // the full amount. The partial unique index now refuses the second; this
+    // asserts the farmer is told why, rather than getting "Duplicate entry".
+    (getServerSession as jest.Mock).mockResolvedValue(FARMER_SESSION);
+    mockUserFindById.mockReturnValue(selectLean({ status: 'ACTIVE' }));
+    mockWRFindOne.mockReturnValue(selectLean(null));
+    mockComputeEscrowBalance.mockResolvedValue({
+      grossReceivedKES: 5000,
+      committedPayoutsKES: 0,
+      availableKES: 5000,
+    });
+    mockWRCreate.mockRejectedValue(Object.assign(new Error('E11000 duplicate key'), { code: 11000 }));
+
+    const res = await POST(postReq({ amountKES: 1000 }));
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('PAYOUT_REQUEST_PENDING');
+  });
 });
 
 describe('GET /api/farmers/payout-requests', () => {

@@ -23,6 +23,7 @@ import {
   MediationPanel,
   EscalateForm,
   type IMediationCase,
+  isMediationOpen,
 } from '@/components/foodhub/MediationPanel';
 import { ListSkeleton } from '@/components/ui/SkeletonLoader';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
@@ -56,6 +57,11 @@ interface IFarmerOrder {
   // !confirmedByFarmerAt). The client must never recompute this.
   canConfirmDispatch: boolean;
   fulfillmentStage?: FulfillmentStage | null;
+  // Whether a live escalation sits on this order. Supplied per row by
+  // GET /api/orders, because the page only ever fetches the full mediation
+  // record for the order the farmer has opened — without this the rows behind
+  // it could not tell the difference between a quiet order and a contested one.
+  hasOpenMediation?: boolean;
   createdAt: string;
   buyer: {
     firstName: string;
@@ -89,6 +95,14 @@ const PAYMENT_PILL: Record<OrderPaymentStatus, { label: string; glyph: string; w
     glyph: '↺',
     wrap: 'bg-app-info-surface',
     text: 'text-app-info',
+  },
+  // The buyer's payment could not be confirmed either way. The farmer must not
+  // read this as money received, nor as a buyer who failed to pay.
+  [OrderPaymentStatus.UNRESOLVED]: {
+    label: 'Being checked',
+    glyph: '◌',
+    wrap: 'bg-app-warning-surface',
+    text: 'text-app-warning',
   },
 };
 
@@ -412,6 +426,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
                     paidAt={order.paidAt}
                     confirmedByFarmerAt={order.confirmedByFarmerAt}
                     receivedByBuyerAt={order.receivedByBuyerAt}
+                    hasOpenMediation={order.hasOpenMediation}
                   />
                 </TD>
 
@@ -550,6 +565,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
                 confirmedByFarmerAt={selectedOrder.confirmedByFarmerAt}
                 receivedByBuyerAt={selectedOrder.receivedByBuyerAt}
                 viewer="FARMER"
+                hasOpenMediation={isMediationOpen(mediation)}
               />
             </div>
 

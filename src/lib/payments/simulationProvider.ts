@@ -8,10 +8,13 @@ import {
   pickOutcome,
   pickDelaySeconds,
 } from '@/lib/payments/simulationConfig';
-import type {
-  PaymentProvider,
-  PaymentInitiationParams,
-  PaymentInitiationResult,
+import {
+  OUTCOME_RESULT_CODE,
+  OUTCOME_RESULT_DESC,
+  type PaymentProvider,
+  type PaymentInitiationParams,
+  type PaymentInitiationResult,
+  type PaymentQueryResult,
 } from '@/lib/payments/types';
 import { SimulatedOutcome, SimulatedPaymentStatus } from '@/types';
 
@@ -93,6 +96,48 @@ export const simulationProvider: PaymentProvider = {
       checkoutRequestId,
       merchantRequestId,
       customerMessage: 'Success. Request accepted for processing',
+    };
+  },
+
+  /**
+   * Answer for a simulated payment the way Safaricom would for a real one.
+   *
+   * LOST deliberately answers UNKNOWN rather than FAILED. A lost callback is
+   * modelled here precisely because it is the case a real integration cannot
+   * resolve on its own, and answering FAILED would quietly make the simulator
+   * kinder than reality — the one thing a simulator must never be. Reconciliation
+   * therefore meets genuine uncertainty in simulation too, instead of only
+   * discovering it in production.
+   */
+  async queryPaymentStatus(checkoutRequestId: string): Promise<PaymentQueryResult> {
+    await connectDB();
+
+    const sim = await SimulatedPayment.findOne({ checkoutRequestId })
+      .select('outcome mpesaReceiptNumber deliverAt')
+      .lean();
+
+    if (!sim) return { state: 'UNKNOWN' };
+
+    if (sim.outcome === SimulatedOutcome.LOST) return { state: 'UNKNOWN' };
+
+    // Not yet due — the prompt is still with the buyer.
+    if (sim.deliverAt && new Date(sim.deliverAt).getTime() > Date.now()) {
+      return { state: 'PENDING' };
+    }
+
+    if (sim.outcome === SimulatedOutcome.SUCCESS) {
+      return {
+        state: 'SUCCESS',
+        resultCode: 0,
+        ...(sim.mpesaReceiptNumber ? { mpesaReceiptNumber: sim.mpesaReceiptNumber } : {}),
+      };
+    }
+
+    const outcome = sim.outcome as Exclude<SimulatedOutcome, SimulatedOutcome.LOST>;
+    return {
+      state: 'FAILED',
+      resultCode: OUTCOME_RESULT_CODE[outcome] ?? 1,
+      resultDesc: OUTCOME_RESULT_DESC[outcome] ?? 'The transaction failed.',
     };
   },
 };

@@ -23,7 +23,38 @@ import {
   ListingStatus,
   UserStatus,
   PaymentEventType,
+  MediationRequestStatus,
 } from '@/types';
+
+/**
+ * Which of `orderIds` currently have a live escalation against them.
+ *
+ * Whether an order is under review is not recorded on the order — it lives on
+ * MediationRequest. `fulfillmentStatus === DISPUTED` is not the same question:
+ * escrowSettlement writes that only when a mediation is resolved *with a
+ * refund*, so it marks a concluded outcome. Any screen that wants to say "under
+ * review" has to be told, and this is where both order lists are told.
+ *
+ * Queried by party rather than by order id: open escalations per user are few
+ * and `buyerId`/`farmerId` are indexed, whereas the only orderId index is
+ * partial on OPEN and so would not serve the IN_REVIEW half of the question.
+ */
+async function openMediationOrderIds(
+  party: 'buyerId' | 'farmerId',
+  userId: string,
+  orderIds: string[]
+): Promise<Set<string>> {
+  if (orderIds.length === 0) return new Set();
+  const { default: MediationRequest } = await import('@/lib/models/MediationRequest.model');
+  const live = (await MediationRequest.find({
+    [party]: userId,
+    status: { $in: [MediationRequestStatus.OPEN, MediationRequestStatus.IN_REVIEW] },
+  })
+    .select('orderId')
+    .lean()) as unknown as { orderId: { toString(): string } }[];
+  const onThisPage = new Set(orderIds);
+  return new Set(live.map((m) => m.orderId.toString()).filter((id) => onThisPage.has(id)));
+}
 
 type ListingLean = {
   _id: mongoose.Types.ObjectId;
@@ -124,6 +155,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         .lean()) as unknown as UserLean[];
       const farmerMap = new Map(farmers.map((f) => [f._id.toString(), f]));
 
+      const buyerUnderReview = await openMediationOrderIds(
+        'buyerId',
+        userId,
+        orders.map((o) => o._id.toString())
+      );
+
       return NextResponse.json({
         orders: orders.map((order) => {
           const farmer = farmerMap.get(order.farmerId.toString());
@@ -149,6 +186,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             // Where the produce actually is — the buyer is watching this while
             // their money sits in escrow.
             fulfillmentStage: order.fulfillmentStage ?? null,
+            hasOpenMediation: buyerUnderReview.has(order._id.toString()),
           };
         }),
         nextCursor,
@@ -173,6 +211,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .select('firstName lastName')
       .lean()) as unknown as UserLean[];
     const buyerMap = new Map(buyers.map((b) => [b._id.toString(), b]));
+
+    const farmerUnderReview = await openMediationOrderIds(
+      'farmerId',
+      userId,
+      farmerOrders.map((o) => o._id.toString())
+    );
 
     return NextResponse.json({
       orders: farmerOrders.map((order) => {
@@ -207,6 +251,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           confirmedByFarmerAt: order.confirmedByFarmerAt?.toISOString() ?? null,
           receivedByBuyerAt: order.receivedByBuyerAt?.toISOString() ?? null,
           fulfillmentStage: order.fulfillmentStage ?? null,
+          hasOpenMediation: farmerUnderReview.has(order._id.toString()),
         };
       }),
       nextCursor: farmerNextCursor,

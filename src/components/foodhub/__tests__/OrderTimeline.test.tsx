@@ -23,17 +23,14 @@ describe('OrderTimelineDetailed', () => {
     expect(screen.getByText('Payment released')).toBeInTheDocument();
   });
 
-  it('keeps the journey when the order is disputed, and adds the review stage', () => {
-    // Regression: a dispute used to replace the entire timeline with one red
-    // banner, so the record of where the money was disappeared at exactly the
-    // moment the buyer most needed to see it.
-    render(
-      <OrderTimelineDetailed
-        {...PAID}
-        fulfillmentStatus={OrderFulfillmentStatus.DISPUTED}
-        viewer="BUYER"
-      />
-    );
+  it('keeps the journey while a mediation is open, and adds the review stage', () => {
+    // Two regressions in one. A dispute used to replace the entire timeline
+    // with one red banner, so the record of where the money was disappeared at
+    // exactly the moment the buyer most needed it. And the branch keyed on
+    // fulfillmentStatus === DISPUTED, which escrowSettlement writes only when a
+    // mediation is resolved WITH A REFUND — an outcome, not an open review. The
+    // live fact comes from MediationRequest and is passed in.
+    render(<OrderTimelineDetailed {...PAID} hasOpenMediation viewer="BUYER" />);
     expect(screen.getByText('Order placed')).toBeInTheDocument();
     expect(screen.getByText('Payment confirmed')).toBeInTheDocument();
     expect(screen.getByText('Under review')).toBeInTheDocument();
@@ -95,5 +92,38 @@ describe('OrderTimelineDetailed', () => {
       />
     );
     expect(screen.getByText('Awaiting M-Pesa confirmation')).toBeInTheDocument();
+  });
+});
+
+describe('OrderTimelineDetailed — what "disputed" actually means', () => {
+  it('does not claim a review is under way once it has concluded in a refund', () => {
+    // `fulfillmentStatus === DISPUTED` is written by escrowSettlement only when
+    // an administrator resolves a mediation with a refund. Reading it as "under
+    // review" told a buyer an administrator was still looking at an order whose
+    // money had already gone back to them.
+    render(
+      <OrderTimelineDetailed
+        paymentStatus={OrderPaymentStatus.REFUNDED}
+        fulfillmentStatus={OrderFulfillmentStatus.DISPUTED}
+        paidAt="2026-08-01T10:00:00Z"
+        viewer="BUYER"
+      />
+    );
+    expect(screen.queryByText('Under review')).not.toBeInTheDocument();
+    expect(screen.getByText('Payment refunded')).toBeInTheDocument();
+  });
+
+  it('shows the review stage for an order genuinely with the platform', () => {
+    // The inverse failure: an order under active mediation is still
+    // IN_FULFILLMENT, so it used to render an untroubled timeline while the
+    // buyer waited on a decision.
+    render(<OrderTimelineDetailed {...PAID} hasOpenMediation viewer="BUYER" />);
+    expect(screen.getByText('Under review')).toBeInTheDocument();
+    expect(screen.getByText(/funds stay in escrow/i)).toBeInTheDocument();
+  });
+
+  it('says nothing about a review when there is no mediation', () => {
+    render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
+    expect(screen.queryByText('Under review')).not.toBeInTheDocument();
   });
 });

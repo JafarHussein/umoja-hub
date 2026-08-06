@@ -146,3 +146,29 @@ Vercel caches env vars at build time. After any env var update:
 2. Find the current production deployment → three-dot menu → "Redeploy"
 3. Wait for deployment to complete (typically 2–3 minutes)
 4. Confirm `/api/health` returns `{ "status": "ok", "db": true }`
+
+## 9. Dev server throwing ENOENT on a `.next` chunk, or `[object Event]` in the browser
+
+**Cause: `npm run build` was run while `npm run dev` was still running.** They share the same
+`.next` directory. The production build rewrites it and deletes the chunks the dev server compiled
+on demand, so the next request that lazily `require()`s one of them dies with something like:
+
+```
+ENOENT: no such file or directory, open '.next/server/_rsc_src_lib_models_Counter_model_ts.js'
+    at generateOrderReferenceId (src/lib/foodhub/orderUtils.ts)
+```
+
+In the browser this surfaces as a **Runtime Error reading `[object Event]`** — a failed chunk load
+is reported as an `Event`, which the dev overlay cannot stringify into anything useful. The message
+says nothing about the real cause, so check the dev server log, not the overlay.
+
+It is not an application defect and nothing in the code needs changing. The lazy model imports it
+trips over are required by the serverless cold-start rule and build correctly.
+
+**Fix:**
+1. Stop the dev server.
+2. `Remove-Item -Recurse -Force .next`
+3. `npm run dev`
+
+**Avoid:** do not run `npm run build` while a dev server is up. If you need both, stop dev first, or
+build with a separate output directory.

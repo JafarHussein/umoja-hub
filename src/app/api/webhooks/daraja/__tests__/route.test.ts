@@ -35,13 +35,20 @@ jest.mock('@/lib/models/MarketplaceListing.model', () => ({
   },
 }));
 
+const mockSendSMS = jest.fn().mockResolvedValue({ success: true });
 jest.mock('@/lib/integrations/smsService', () => ({
-  sendSMS: jest.fn().mockResolvedValue({ success: true }),
+  sendSMS: (...a: unknown[]) => mockSendSMS(...a),
+}));
+
+const mockNotify = jest.fn();
+jest.mock('@/lib/notifications/notify', () => ({
+  notify: (...a: unknown[]) => mockNotify(...a),
+  notifyAdmins: jest.fn(),
 }));
 
 jest.mock('@/lib/integrations/darajaService', () => ({
-  verifyDarajaSignature: jest.fn().mockReturnValue(true),
   initiateSTKPush: jest.fn(),
+  queryStkPushStatus: jest.fn(),
 }));
 
 jest.mock('@/lib/env', () => ({
@@ -130,6 +137,33 @@ describe('POST /api/webhooks/daraja', () => {
     expect(body.ResultDesc).toBe('Success');
   });
 
+  it('texts the farmer but not the buyer, and tells both in the app', async () => {
+    // The notification policy, asserted because nothing else protects it and
+    // the previous behaviour — SMS to both — passed every test.
+    //
+    // The buyer entered their M-Pesa PIN seconds ago and Safaricom has already
+    // texted them the authoritative receipt. A second SMS repeats it, costs
+    // money, and trains people to ignore the channel. The farmer is not party
+    // to the STK push, gets no Safaricom message, and theirs is the only
+    // immediate signal that money arrived and dispatch should begin.
+    mockOrderFindOne.mockResolvedValueOnce(mockOrder).mockResolvedValueOnce(null);
+    mockOrderFindByIdAndUpdate.mockResolvedValue({});
+    mockUserFindById.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ firstName: 'Kamau', phoneNumber: '+254712345678' }),
+      }),
+    });
+
+    await POST(makeWebhookRequest(validSuccessPayload));
+    // The side-effect chain is fire-and-forget; let it drain.
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(mockSendSMS).toHaveBeenCalledTimes(1);
+    expect(String(mockSendSMS.mock.calls[0]?.[1])).toMatch(/New order confirmed/i);
+    // Both parties are still told in the app — only the duplicated channel went.
+    expect(mockNotify).toHaveBeenCalledTimes(2);
+  });
+
   it('updates order paymentStatus to PAID on successful payment', async () => {
     mockOrderFindOne
       .mockResolvedValueOnce(mockOrder)
@@ -176,18 +210,20 @@ describe('POST /api/webhooks/daraja', () => {
     );
   });
 
-  it('returns HTTP 200 on invalid signature — does NOT process payment', async () => {
-    const { verifyDarajaSignature } = jest.requireMock('@/lib/integrations/darajaService') as {
-      verifyDarajaSignature: jest.MockedFunction<() => boolean>;
-    };
-    verifyDarajaSignature.mockReturnValueOnce(false);
-
-    const req = makeWebhookRequest(validSuccessPayload);
+  it('acknowledges a payload that is not a Daraja callback without touching the order', async () => {
+    // This replaces a test that mocked verifyDarajaSignature to return false.
+    // That function ignored its arguments and returned true in every real call,
+    // so the test could only ever exercise its own mock — it demonstrated
+    // nothing about the running system. Daraja does not sign callbacks;
+    // authenticity is the IP allow-list in middleware, applied before this
+    // handler runs, and replay is the unique index on mpesaTransactionId.
+    // What this route is genuinely responsible for is shape.
+    const req = makeWebhookRequest({ not: 'a daraja callback' });
     const res = await POST(req);
-    const body = await res.json() as { ResultCode: number };
+    const body = (await res.json()) as { ResultCode: number };
 
-    expect(res.status).toBe(200);
-    expect(body.ResultCode).toBe(1); // Non-zero signals Daraja to stop retrying
+    expect(res.status).toBe(200); // never make Safaricom retry
+    expect(body.ResultCode).toBe(0);
     expect(mockOrderFindByIdAndUpdate).not.toHaveBeenCalled();
   });
 

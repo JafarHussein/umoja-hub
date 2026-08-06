@@ -45,9 +45,25 @@ interface IEvent {
   occurredAt: string;
 }
 
+interface IUnresolvedPayment {
+  orderId: string;
+  orderReferenceId: string;
+  cropName: string;
+  totalAmountKES: number;
+  buyerName: string;
+  buyerPhone: string | null;
+  /** The reference to search the M-Pesa statement or re-query Daraja with. */
+  checkoutRequestId: string | null;
+  unresolvedSince: string;
+}
+
 interface ILabResponse {
   provider: string;
   simulationActive: boolean;
+  /** The loaded fixture and the workflow it exists to exercise. Null under a real provider. */
+  simulationProfile: { name: string; purpose: string } | null;
+  /** Orders where the platform does not know whether the buyer was charged. */
+  unresolvedPayments: IUnresolvedPayment[];
   metrics: IMetrics;
   pendingOrders: IPendingOrder[];
   recentEvents: IEvent[];
@@ -240,6 +256,25 @@ export default function AdminPaymentLabPage(): React.ReactElement {
         </Alert>
       )}
 
+      {/* Which fixture is loaded, and what it is for.
+          The outcome mix on this page is a consequence of a chosen profile, not
+          a measurement of M-Pesa. Saying so here, beside the numbers it
+          produces, is the difference between a demonstrable test bench and a
+          set of invented statistics. */}
+      {data.simulationProfile && (
+        <div className="rounded-app-card border border-app-hairline bg-app-sunken p-4">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <p className="app-label text-app-muted">Active simulation profile</p>
+            <p className="app-body-strong text-app-ink">{data.simulationProfile.name}</p>
+          </div>
+          <p className="app-meta mt-1 text-app-muted">{data.simulationProfile.purpose}</p>
+          <p className="app-meta mt-2 text-app-faint">
+            Profiles are test fixtures chosen to exercise a workflow. The mix below follows from
+            this profile and is not a measurement of how often M-Pesa succeeds or fails.
+          </p>
+        </div>
+      )}
+
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((s) => (
@@ -249,6 +284,50 @@ export default function AdminPaymentLabPage(): React.ReactElement {
           </div>
         ))}
       </div>
+
+      {/* Unresolved payments — the only rows where UmojaHub does not know
+          whether a buyer's money left their account. Placed above every other
+          queue because it is the one failure the platform cannot answer on its
+          own, and a buyer is waiting on the other end of each line. */}
+      {data.unresolvedPayments.length > 0 && (
+        <section className="rounded-app-card border border-app-warning/40 bg-app-warning-surface/30 p-4">
+          <p className="app-body-strong text-app-ink">
+            {data.unresolvedPayments.length} payment
+            {data.unresolvedPayments.length === 1 ? '' : 's'} could not be resolved
+          </p>
+          <p className="app-meta mt-0.5 text-app-muted">
+            No callback arrived and the provider could not say whether the buyer was charged. The
+            produce stays reserved until someone decides. Check the M-Pesa statement for the
+            checkout reference, then settle the order by hand.
+          </p>
+
+          <ul className="mt-3 space-y-2">
+            {data.unresolvedPayments.map((p) => (
+              <li
+                key={p.orderId}
+                className="rounded-app-control border border-app-hairline bg-app-card p-3"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="app-data-m text-app-ink">{p.orderReferenceId}</span>
+                  <span className="app-data-m text-app-ink">
+                    KSh {p.totalAmountKES.toLocaleString()}
+                  </span>
+                </div>
+                <p className="app-meta mt-0.5 text-app-muted">
+                  {p.cropName} · {p.buyerName}
+                  {p.buyerPhone ? ` · ${p.buyerPhone}` : ''}
+                </p>
+                {p.checkoutRequestId && (
+                  <p className="app-meta mt-0.5 text-app-faint">
+                    Checkout reference{' '}
+                    <span className="app-data-m text-app-muted">{p.checkoutRequestId}</span>
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {notice && (
         <p className="app-meta text-app-muted" role="status">

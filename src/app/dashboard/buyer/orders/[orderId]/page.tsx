@@ -12,8 +12,6 @@ import {
   MediationRequestStatus,
   MediationInitiator,
   MEDIATION_ESCALATION_HOURS,
-  ORDER_PAYMENT_LABEL,
-  ORDER_FULFILLMENT_LABEL,
   FulfillmentStage,
   FULFILLMENT_STAGE_LABEL,
 } from '@/types';
@@ -25,16 +23,19 @@ import {
   Textarea,
   Alert,
   StatusPill,
-  type StatusState,
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
+import { orderStatusPill, paymentPill } from '@/components/foodhub/orderPill';
+import { EscrowExplainer } from '@/components/foodhub/EscrowExplainer';
+import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
 import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   MediationPanel,
   MEDIATION_CATEGORY_LABEL,
   type IMediationCase,
+  isMediationOpen,
 } from '@/components/foodhub/MediationPanel';
 
 interface IBuyerOrder {
@@ -53,10 +54,10 @@ interface IBuyerOrder {
   confirmedByFarmerAt: string | null;
   receivedByBuyerAt: string | null;
   fulfillmentStage: FulfillmentStage | null;
-}
-
-interface IOrdersResponse {
-  orders: IBuyerOrder[];
+  /** The M-Pesa receipt code, so the buyer can match this order to their SMS. */
+  mpesaTransactionId: string | null;
+  /** Whether that code came from the simulator. Decided server-side. */
+  isSimulated: boolean;
 }
 
 // The mediation case shape and its labels are shared with the farmer surface —
@@ -73,19 +74,6 @@ interface IPaymentStatusResponse {
 type PageState = 'loading' | 'ready' | 'error' | 'not_found';
 type ActionState = 'idle' | 'submitting' | 'error';
 
-function paymentPillState(status: OrderPaymentStatus): StatusState {
-  if (status === OrderPaymentStatus.PAID) return 'completed';
-  if (status === OrderPaymentStatus.FAILED) return 'denied';
-  return 'pending';
-}
-
-function fulfillmentPillState(status: OrderFulfillmentStatus): StatusState {
-  if (status === OrderFulfillmentStatus.COMPLETED) return 'completed';
-  if (status === OrderFulfillmentStatus.RECEIVED) return 'completed';
-  if (status === OrderFulfillmentStatus.DISPUTED) return 'denied';
-  if (status === OrderFulfillmentStatus.IN_FULFILLMENT) return 'in-transit';
-  return 'pending';
-}
 
 export default function BuyerOrderDetailPage(): React.ReactElement {
   const params = useParams<{ orderId: string }>();
@@ -132,19 +120,23 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
   const fetchOrder = useCallback(async (): Promise<void> => {
     try {
-      const res = await fetch('/api/orders');
+      // Asks for this order, rather than downloading a page of the buyer's
+      // order list and searching it. The list is paginated at 20, so that
+      // approach could not open anything older: a buyer with 27 orders
+      // following a link to their 25th was told it might belong to someone
+      // else, about their own purchase.
+      const res = await fetch(`/api/orders/${params.orderId}`);
+      if (res.status === 404) {
+        setPageState('not_found');
+        return;
+      }
       if (!res.ok) {
         setPageState('error');
         return;
       }
-      const data = (await res.json()) as IOrdersResponse;
-      const match = data.orders.find((o) => o._id === params.orderId);
-      if (!match) {
-        setPageState('not_found');
-        return;
-      }
-      setOrder(match);
-      setHasRated(match.hasRated);
+      const { data } = (await res.json()) as { data: IBuyerOrder };
+      setOrder(data);
+      setHasRated(data.hasRated);
       setPageState('ready');
     } catch {
       setPageState('error');
@@ -441,14 +433,31 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         <h1 className="app-h1 mt-1 capitalize text-app-ink">{order.cropName}</h1>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <StatusPill
-            state={paymentPillState(order.paymentStatus)}
-            label={ORDER_PAYMENT_LABEL[order.paymentStatus]}
+            {...paymentPill(order.paymentStatus)}
           />
           <StatusPill
-            state={fulfillmentPillState(order.fulfillmentStatus)}
-            label={ORDER_FULFILLMENT_LABEL[order.fulfillmentStatus]}
+            {...orderStatusPill({
+              paymentStatus: order.paymentStatus,
+              fulfillmentStatus: order.fulfillmentStatus,
+              hasOpenMediation: isMediationOpen(mediation),
+            })}
           />
         </div>
+
+        {/* The code the buyer can check against their M-Pesa SMS.
+            A screen that says "Paid" and shows nothing to match it against is
+            asking to be believed; the Safaricom message is what Kenyan buyers
+            actually trust. The platform stored this all along and only showed
+            it on the receipt, a click away from the claim it substantiates. */}
+        {order.mpesaTransactionId && (
+          <p className="app-meta mt-2 text-app-muted">
+            M-Pesa receipt{' '}
+            <span className="app-data-m text-app-ink">{order.mpesaTransactionId}</span>
+            {order.isSimulated && (
+              <SimulationNotice variant="badge" className="ml-2 align-middle" />
+            )}
+          </p>
+        )}
       </div>
 
       {/* UNDER_MEDIATION alert bar — decoupled from order state */}
@@ -466,28 +475,24 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </Alert>
       )}
 
-      {/* Escrow protection — buyer's money is held until they confirm receipt */}
-      {order.paymentStatus === OrderPaymentStatus.PAID &&
-        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-          <div className="flex items-start gap-3 rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
-            <span className="app-title leading-none text-app-brand" aria-hidden>
-              🔒
-            </span>
-            <div className="space-y-0.5">
-              <p className="app-body-strong text-app-ink">
-                Your payment is protected in escrow
-              </p>
-              <p className="app-meta text-app-muted">
-                The platform is holding your{' '}
-                <span className="app-data-m text-app-ink">
-                  KSh {order.totalAmountKES.toLocaleString()}
-                </span>
-                . It is released to {order.farmer.firstName} only when you confirm you have received
-                your order.
-              </p>
-            </div>
-          </div>
+      {/* What is happening to this money, and what governs it.
+          Replaces a block that stated where the money was but never what moved
+          it — and which only rendered while PAID + IN_FULFILLMENT, so it fell
+          silent in exactly the states a buyer most needs explaining: an order
+          under review, and one that has just been refunded. */}
+      <EscrowExplainer
+        escrowState={orderEscrowState(
+          {
+            paymentStatus: order.paymentStatus,
+            fulfillmentStatus: order.fulfillmentStatus,
+            confirmedByFarmerAt: order.confirmedByFarmerAt ?? null,
+          },
+          isMediationOpen(mediation)
         )}
+        viewer="BUYER"
+        amountKES={order.totalAmountKES}
+        counterpartyName={order.farmer.firstName}
+      />
 
       {/* Refunded — escrow returned to the buyer */}
       {order.paymentStatus === OrderPaymentStatus.REFUNDED && (
@@ -524,6 +529,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           confirmedByFarmerAt={order.confirmedByFarmerAt}
           receivedByBuyerAt={order.receivedByBuyerAt}
           viewer="BUYER"
+          hasOpenMediation={isMediationOpen(mediation)}
         />
       </div>
 
@@ -618,22 +624,28 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </div>
       )}
 
-      {/* IN_FULFILLMENT — mark as received */}
+      {/* IN_FULFILLMENT — mark as received.
+          Withheld while a review is open: confirming pays the farmer out, which
+          is the very thing under review, so the API refuses it. Offering a
+          button that cannot work is worse than explaining why it is not there. */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
         <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">Confirm receipt</p>
           <p className="app-body text-app-muted">
-            Have you received your order from {order.farmer.firstName}? Confirming releases your
-            payment from escrow to the farmer.
+            {isMediationOpen(mediation)
+              ? 'Confirming receipt would release your payment to the farmer, so it is paused while UmojaHub reviews this order. You will be told as soon as it is decided.'
+              : `Have you received your order from ${order.farmer.firstName}? Confirming releases your payment from escrow to the farmer.`}
           </p>
           {receiveError && <Alert tone="danger">{receiveError}</Alert>}
-          <Button
-            isLoading={receiveState === 'submitting'}
-            onClick={() => void handleMarkReceived()}
-            className="w-full"
-          >
-            Mark as received
-          </Button>
+          {!isMediationOpen(mediation) && (
+            <Button
+              isLoading={receiveState === 'submitting'}
+              onClick={() => void handleMarkReceived()}
+              className="w-full"
+            >
+              Mark as received
+            </Button>
+          )}
         </div>
       )}
 

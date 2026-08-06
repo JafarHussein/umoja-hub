@@ -41,6 +41,19 @@ const withdrawalRequestSchema = new Schema(
 withdrawalRequestSchema.index({ farmerId: 1, status: 1 });
 withdrawalRequestSchema.index({ status: 1, createdAt: -1 });
 
+// One open request per farmer, enforced by the database.
+//
+// The rule was previously held up by a findOne in the route followed by a
+// create — a read and a write with a gap between them. Two requests arriving
+// together both saw no open request, both passed the balance check against the
+// same unspent balance, and both were created, so a farmer could have two open
+// requests for the full amount and be paid twice over. Mirrors the
+// belt-and-braces index MediationRequest uses for its one-open-per-order rule.
+withdrawalRequestSchema.index(
+  { farmerId: 1 },
+  { unique: true, partialFilterExpression: { status: WithdrawalRequestStatus.REQUESTED } }
+);
+
 const WithdrawalRequest: Model<IWithdrawalRequestDocument> =
   (mongoose.models['WithdrawalRequest'] as Model<IWithdrawalRequestDocument>) ??
   mongoose.model<IWithdrawalRequestDocument>('WithdrawalRequest', withdrawalRequestSchema);

@@ -116,13 +116,32 @@ export async function GET(
       try {
         const closed = await reconcileStuckPayments({ orderId });
         if (closed > 0) {
-          return NextResponse.json({
-            paymentStatus: OrderPaymentStatus.FAILED,
-            fulfillmentStatus: order.fulfillmentStatus,
-            isSimulated: isSimulationActive(),
-            mpesaTransactionId: null,
-            events: await sessionEvents(orderId),
-          });
+          // Re-read rather than assume. This branch used to answer a hardcoded
+          // FAILED, which was true while reconciliation had only one possible
+          // ending. It now has three: it asks the provider first, so a stuck
+          // payment can come back PAID when the debit was real and only the
+          // callback was lost, or UNRESOLVED when the provider cannot say.
+          // Announcing "failed" for either of those tells the buyer their money
+          // is safe at the exact moment we know it might not be — and for a
+          // recovered payment it would report failure on an order that had just
+          // succeeded. The delivery sweep below has always re-read; this now
+          // matches it.
+          const settled = (await Order.findById(orderId)
+            .select('paymentStatus fulfillmentStatus mpesaTransactionId')
+            .lean()) as unknown as Pick<
+            OrderStatusLean,
+            'paymentStatus' | 'fulfillmentStatus' | 'mpesaTransactionId'
+          > | null;
+
+          if (settled) {
+            return NextResponse.json({
+              paymentStatus: settled.paymentStatus,
+              fulfillmentStatus: settled.fulfillmentStatus,
+              isSimulated: isSimulationActive(),
+              mpesaTransactionId: settled.mpesaTransactionId ?? null,
+              events: await sessionEvents(orderId),
+            });
+          }
         }
       } catch {
         // Best-effort; fall through to the delivery sweep and current status.

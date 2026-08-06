@@ -83,6 +83,14 @@ export enum OrderPaymentStatus {
   PAID = 'PAID',
   FAILED = 'FAILED',
   REFUNDED = 'REFUNDED',
+  // The outcome could not be established. An STK callback that never arrives
+  // does NOT mean the buyer kept their money — the debit may have gone through
+  // and only the notification been lost. Without this state the only way to
+  // close such a payment was to call it FAILED, which asserts the buyer was not
+  // charged; that assertion cannot be made truthfully without asking the
+  // provider, and sometimes it cannot be made at all. An order here is never
+  // releasable and is raised for an administrator to settle by hand.
+  UNRESOLVED = 'UNRESOLVED',
 }
 
 export enum OrderFulfillmentStatus {
@@ -141,6 +149,9 @@ export const ORDER_PAYMENT_LABEL: Record<OrderPaymentStatus, string> = {
   [OrderPaymentStatus.PAID]: 'Paid',
   [OrderPaymentStatus.FAILED]: 'Payment failed',
   [OrderPaymentStatus.REFUNDED]: 'Refunded',
+  // Not "failed". The buyer is told we are checking, because we do not yet know
+  // whether their money left their account.
+  [OrderPaymentStatus.UNRESOLVED]: 'Payment being checked',
 };
 
 export enum ListingStatus {
@@ -409,6 +420,9 @@ export enum PaymentEventType {
   TIMEOUT = 'TIMEOUT',
   LOST = 'LOST',
   RECONCILED = 'RECONCILED',
+  // Reconciliation asked the provider what happened and got no usable answer.
+  // Distinct from RECONCILED, which records a payment we established had failed.
+  UNRESOLVED = 'UNRESOLVED',
 }
 
 // ---------------------------------------------------------------------------
@@ -452,6 +466,32 @@ export enum EscrowEventType {
   HELD = 'HELD',
   RELEASED = 'RELEASED',
   REFUND_ISSUED = 'REFUND_ISSUED',
+}
+
+// ---------------------------------------------------------------------------
+// Simulation profiles — named test fixtures, NOT statistics.
+//
+// The simulator used to carry a single fixed weighting (75% success, 10%
+// insufficient funds, and so on). Those numbers were indefensible: asked "why
+// 75%?", there is no honest answer, because UmojaHub has never observed a real
+// M-Pesa population and any figure would be invented authority.
+//
+// A profile answers a different and answerable question — not "how often does
+// M-Pesa fail?" but "which workflow do I want to exercise right now?". Each one
+// is chosen to drive a specific path through the system, the way a test fixture
+// is chosen, and is documented as such.
+// ---------------------------------------------------------------------------
+export enum SimulationProfile {
+  /** Every payment succeeds promptly. For walking the happy path uninterrupted. */
+  HAPPY_PATH = 'HAPPY_PATH',
+  /** A mixed run: mostly success, with each failure mode represented. The default. */
+  TYPICAL = 'TYPICAL',
+  /** Slow and lost callbacks dominate — exercises reconciliation and the query leg. */
+  NETWORK_TROUBLE = 'NETWORK_TROUBLE',
+  /** Declines dominate — exercises retry, inventory restoration and buyer messaging. */
+  PAYMENT_FAILURE = 'PAYMENT_FAILURE',
+  /** Every payment is lost, so every order needs reconciling. For the admin drill. */
+  RECONCILIATION_DRILL = 'RECONCILIATION_DRILL',
 }
 
 // ---------------------------------------------------------------------------

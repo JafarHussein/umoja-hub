@@ -109,6 +109,29 @@ export async function PATCH(
           'ORDER_INVALID_STATUS_TRANSITION'
         );
       }
+
+      // Confirming receipt is what releases the escrow, so it cannot be done
+      // while the platform is deciding where that money should go.
+      //
+      // Filing a mediation deliberately leaves the order in IN_FULFILLMENT, so
+      // the check above passed for a disputed order and the buyer could pay the
+      // farmer out mid-dispute — the very thing under review. It also stranded
+      // the case: settleEscrow only settles funds that are PAID + IN_FULFILLMENT,
+      // so an administrator later resolving it as a refund would find nothing
+      // left to refund.
+      const { default: MediationRequest } = await import('@/lib/models/MediationRequest.model');
+      const { MediationRequestStatus } = await import('@/types');
+      const openCase = await MediationRequest.exists({
+        orderId: order._id,
+        status: { $in: [MediationRequestStatus.OPEN, MediationRequestStatus.IN_REVIEW] },
+      });
+      if (openCase) {
+        throw new AppError(
+          'This order is under review by UmojaHub. Confirming receipt would release your payment to the farmer, so it is paused until the review is decided.',
+          409,
+          'ORDER_UNDER_MEDIATION'
+        );
+      }
     } else {
       throw new AppError(
         'This order cannot be updated to the requested status at this stage.',

@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { darajaCallbackSchema } from '@/lib/validation/orderSchema';
-import { verifyDarajaSignature } from '@/lib/integrations/darajaService';
 import { processStkCallback } from '@/lib/payments/processCallback';
 import { getActiveProviderName } from '@/lib/payments';
 import { logger } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/daraja — M-Pesa STK Push callback from Safaricom
-// Auth: IP allowlisting enforced in middleware (Safaricom IP range only)
-// CRITICAL: Always return HTTP 200 — Daraja retries indefinitely on non-200
 //
-// This route is a thin transport wrapper: it authenticates + validates the
-// Daraja payload, then hands off to the shared processStkCallback — the exact
-// same processor the payment simulator uses. All state transitions, idempotency,
-// notifications, and audit logging live there, so a real Safaricom callback and
-// a simulated one are processed identically.
+// Authenticity is established BEFORE this handler runs, and not by it:
+// `src/middleware.ts` allow-lists Safaricom's published callback IP ranges for
+// this exact path ahead of any other handling. Replay is stopped downstream by
+// the unique index on the order's mpesaTransactionId. Daraja does not sign its
+// callbacks, so there is no signature to check here — this route used to call a
+// verifyDarajaSignature() that ignored its arguments and returned true, which
+// made it look authenticated when it was not. That has been removed.
+//
+// CRITICAL: always answer HTTP 200 within 30s. Safaricom retries on anything
+// else and eventually gives up, which loses real payments.
+//
+// Otherwise a thin transport wrapper: validate the payload, hand off to the
+// shared processStkCallback — the same processor the simulator feeds — so a
+// real callback and a simulated one are processed identically.
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -24,14 +30,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body: unknown = await req.json();
 
-    // Step 1: Verify signature (always first)
-    if (!verifyDarajaSignature(req.headers, body)) {
-      logger.error('daraja', 'Invalid webhook signature', { requestId, body });
-      // Return 200 with non-zero ResultCode — Daraja will stop retrying
-      return NextResponse.json({ ResultCode: 1, ResultDesc: 'Invalid signature' });
-    }
-
-    // Step 2: Validate payload schema
+    // Validate the payload shape. Anything that is not a Daraja callback is
+    // acknowledged and dropped — never retried at us.
     const parsed = darajaCallbackSchema.safeParse(body);
     if (!parsed.success) {
       logger.error('daraja', 'Invalid webhook payload schema', {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(ack); // Ack to prevent retries
     }
 
-    // Step 3: Process via the shared callback processor.
+    // Process via the shared callback processor.
     const { ack: resultAck } = await processStkCallback(parsed.data, {
       provider: getActiveProviderName(),
       requestId,

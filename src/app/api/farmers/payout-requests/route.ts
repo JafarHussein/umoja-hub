@@ -77,11 +77,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const request = await WithdrawalRequest.create({
-      farmerId,
-      amountKES: parsed.data.amountKES,
-      status: WithdrawalRequestStatus.REQUESTED,
-    });
+    // The check above is a courtesy that gives a clear message; the partial
+    // unique index on WithdrawalRequest is what actually enforces the rule. Two
+    // requests arriving together both clear the read, so without this the
+    // second one would be created against a balance the first had already
+    // spent. Translate the database's refusal back into the same answer the
+    // read gives, rather than letting it surface as "Duplicate entry".
+    let request;
+    try {
+      request = await WithdrawalRequest.create({
+        farmerId,
+        amountKES: parsed.data.amountKES,
+        status: WithdrawalRequestStatus.REQUESTED,
+      });
+    } catch (createError) {
+      if ((createError as { code?: number }).code === 11000) {
+        throw new AppError(
+          'You already have a payout request awaiting review.',
+          409,
+          'PAYOUT_REQUEST_PENDING'
+        );
+      }
+      throw createError;
+    }
 
     logger.info('farmers/payout-requests', 'Payout request created', {
       requestId,

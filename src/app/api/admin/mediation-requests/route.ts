@@ -137,26 +137,15 @@ type MediationLean = {
   status: string;
 };
 
-// Apply the admin's escrow decision to the held funds. The money movement
-// itself lives in settleEscrow(), shared with the direct admin escrow console
-// so a release or refund lands identically wherever it was decided.
-async function applyEscrowOutcome(
-  mediation: MediationLean,
-  outcome: MediationOutcome,
-  note: string | undefined,
-  adminId: string,
-  requestId: string
-): Promise<void> {
-  if (outcome !== MediationOutcome.RELEASE && outcome !== MediationOutcome.REFUND) return;
-
-  await settleEscrow({
-    orderId: String(mediation.orderId),
-    outcome,
-    note,
-    adminId,
-    context: 'MEDIATION',
-    requestId,
-  });
+/** Does this decision move custodial funds? RESOLVED with NONE does not. */
+function movesMoney(
+  status: MediationDecision,
+  outcome: MediationOutcome | undefined
+): outcome is MediationOutcome.RELEASE | MediationOutcome.REFUND {
+  return (
+    status === MediationRequestStatus.RESOLVED &&
+    (outcome === MediationOutcome.RELEASE || outcome === MediationOutcome.REFUND)
+  );
 }
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
@@ -189,6 +178,63 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
 
     await connectDB();
+
+    // Move the money BEFORE recording the decision.
+    //
+    // This used to run the other way round, and discarded settleEscrow's
+    // result. `settleEscrow` reports a refusal by RETURNING
+    // { applied: false, reason: 'NOT_HELD' } — it does not throw — so the
+    // try/catch around it caught nothing and the request answered 200. An
+    // administrator resolving "refund the buyer" on an order whose funds were
+    // no longer held therefore got a success screen, an audit row reading
+    // MEDIATION_RESOLVED with outcome REFUND, and a closed case, while no money
+    // moved and nobody was told. The escrow console has always checked
+    // `result.applied` and answered 409; the two call sites had drifted.
+    //
+    // Settling first means a refusal leaves the case open for the administrator
+    // to look at again, instead of closing it over a refund that never happened.
+    // settleEscrow's held guard is itself compare-and-swap, so two admins
+    // resolving at once still move the funds exactly once.
+    if (movesMoney(status, outcome)) {
+      const pending = await MediationRequest.findOne({
+        _id: mediationId,
+        status: { $in: TRANSITION_FROM[status] },
+      })
+        .select('orderId')
+        .lean();
+
+      if (!pending) {
+        const exists = await MediationRequest.findById(mediationId).select('status').lean();
+        if (!exists) throw new AppError('Mediation request not found.', 404, 'DB_NOT_FOUND');
+        throw new AppError(
+          `Cannot move a ${exists.status} request to ${status}.`,
+          409,
+          'MEDIATION_INVALID_STATUS_TRANSITION'
+        );
+      }
+
+      const settlement = await settleEscrow({
+        orderId: String(pending.orderId),
+        outcome,
+        note: resolutionNote,
+        adminId: session!.user.id,
+        context: 'MEDIATION',
+        requestId,
+      });
+
+      if (!settlement.applied) {
+        logger.warn('admin/mediation-requests', 'Resolution refused — funds not held', {
+          requestId,
+          mediationRequestId: mediationId,
+          outcome,
+        });
+        throw new AppError(
+          'These funds are no longer held in escrow, so this outcome cannot be applied. The order may already have been completed or settled. Review the order, then resolve this case again.',
+          409,
+          'ESCROW_NOT_HELD'
+        );
+      }
+    }
 
     const updated = (await MediationRequest.findOneAndUpdate(
       { _id: mediationId, status: { $in: TRANSITION_FROM[status] } } as object,
@@ -231,25 +277,6 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       targetType: 'MediationRequest',
       ...(resolutionNote !== undefined && { details: { resolutionNote, outcome } }),
     }).catch(() => {});
-
-    // Apply the escrow decision to the held funds when resolving. Awaited so the
-    // money outcome is settled before responding; failures are logged but never
-    // un-resolve the mediation (admin can re-apply).
-    if (
-      status === MediationRequestStatus.RESOLVED &&
-      (outcome === MediationOutcome.RELEASE || outcome === MediationOutcome.REFUND)
-    ) {
-      try {
-        await applyEscrowOutcome(updated, outcome, resolutionNote, session!.user.id, requestId);
-      } catch (err) {
-        logger.error('admin/mediation-requests', 'Escrow outcome failed to apply', {
-          requestId,
-          mediationRequestId: mediationId,
-          outcome,
-          err,
-        });
-      }
-    }
 
     return NextResponse.json({ data: updated });
   } catch (error) {

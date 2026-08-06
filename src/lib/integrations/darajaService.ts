@@ -188,24 +188,108 @@ export async function initiateSTKPush(params: ISTKPushParams): Promise<ISTKPushR
 }
 
 // ---------------------------------------------------------------------------
-// Webhook Signature Verification
+// STK Push Query — the third leg of the STK lifecycle.
 //
-// Safaricom Daraja does NOT sign callbacks with HMAC or any other message
-// authentication code. Their security model relies on:
-//   1. HTTPS-only callback URLs (enforced by Vercel)
-//   2. Callback URL secrecy — the WEBHOOK_SECRET query param appended in
-//      initiateSTKPush acts as a shared secret; the webhook handler at
-//      /api/webhooks/daraja validates it before processing any payload.
-//   3. Production: IP allowlisting for Safaricom's callback IP ranges via
-//      Vercel Edge middleware (Phase 2 hardening).
+// Initiating a push and receiving a callback are only two of the three calls a
+// production integration needs. The callback is not guaranteed to arrive: the
+// server may be briefly unreachable, or Safaricom may be under load at
+// month-end. When it does not arrive, the transaction is NOT known to have
+// failed — the customer may already have been debited. Asking Safaricom
+// directly is the only way to tell the difference between "did not pay" and
+// "paid, but we never heard".
 //
-// This function is retained for interface consistency. The meaningful
-// security check is the URL secret validated in the webhook route handler.
+// Endpoint: /mpesa/stkpushquery/v1/query
 // ---------------------------------------------------------------------------
 
-export function verifyDarajaSignature(
-  _headers: Headers,
-  _body: unknown
-): boolean {
-  return true;
+export interface ISTKQueryResult {
+  /** 0 = the payment succeeded. Any other value is a real failure code. */
+  resultCode?: number | undefined;
+  resultDesc?: string | undefined;
+  /** True when Safaricom says the transaction is still being processed. */
+  stillProcessing: boolean;
 }
+
+/** Safaricom's "the transaction is being processed" response, which is not a failure. */
+const QUERY_IN_PROGRESS_CODES = ['500.001.1001'];
+
+export async function queryStkPushStatus(checkoutRequestId: string): Promise<ISTKQueryResult> {
+  const shortcode = env('MPESA_SHORTCODE');
+  const passkey = env('MPESA_PASSKEY');
+
+  const timestamp = getTimestamp();
+  const password = buildPassword(shortcode, passkey, timestamp);
+
+  const isSandbox = process.env.NODE_ENV !== 'production';
+  const queryUrl = isSandbox
+    ? 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query'
+    : 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query';
+
+  const accessToken = await getAccessToken();
+
+  const res = await fetch(queryUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      BusinessShortCode: shortcode,
+      Password: password,
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestId,
+    }),
+  });
+
+  const data = (await res.json()) as {
+    ResultCode?: string | number;
+    ResultDesc?: string;
+    errorCode?: string;
+    errorMessage?: string;
+  };
+
+  if (data.errorCode && QUERY_IN_PROGRESS_CODES.includes(data.errorCode)) {
+    return { stillProcessing: true };
+  }
+
+  if (!res.ok || data.errorCode !== undefined || data.ResultCode === undefined) {
+    // Safaricom could not tell us. Deliberately not an error and deliberately
+    // not a failure — the caller must be able to distinguish "no answer" from
+    // "answered: failed", because only one of those means the buyer kept their
+    // money.
+    logger.warn('darajaService', 'STK query returned no usable result', {
+      checkoutRequestId,
+      status: res.status,
+      error: data.errorCode ?? null,
+    });
+    return { stillProcessing: false };
+  }
+
+  return {
+    resultCode: Number(data.ResultCode),
+    resultDesc: data.ResultDesc ?? '',
+    stillProcessing: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Callback authenticity — where it actually lives.
+//
+// Safaricom Daraja does NOT sign callbacks: no HMAC, no message authentication
+// code, nothing in the payload or headers that proves the sender. There is
+// therefore nothing for a verify-signature function to verify, and this file
+// used to export one anyway. It took a Headers and a body, ignored both, and
+// returned true. The webhook called it as "Step 1: Verify signature (always
+// first)", so the route read as though it authenticated its caller.
+//
+// It did not, and a security control that only appears to exist is worse than
+// an absent one: it stops anybody looking for the real thing. Removed rather
+// than left "for interface consistency".
+//
+// The genuine controls, all of which are real and in force:
+//   1. HTTPS-only callback URLs — Daraja refuses to POST to plain HTTP.
+//   2. IP allow-listing against Safaricom's published callback ranges, applied
+//      in `src/middleware.ts` before any other handling of this route.
+//   3. Replay protection — a unique sparse index on the order's
+//      mpesaTransactionId, so a receipt number can only ever be credited once.
+//      `processStkCallback` checks it first and no-ops cleanly on a repeat.
+// ---------------------------------------------------------------------------
