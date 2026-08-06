@@ -102,6 +102,46 @@ export async function GET(): Promise<NextResponse> {
       };
     });
 
+    // Payments the platform could not resolve either way.
+    //
+    // Reconciliation asks the provider what happened to a payment whose
+    // callback never arrived. When the provider cannot say, the order lands in
+    // UNRESOLVED and an administrator is notified to settle it by hand — and
+    // until now there was nowhere for them to go and look. These are the only
+    // orders where UmojaHub does not know whether a buyer was charged, so they
+    // are the most consequential rows in the system and get their own queue.
+    //
+    // The checkout request id is included deliberately: it is the reference an
+    // administrator needs to search the M-Pesa statement or re-query Daraja by
+    // hand, which is what "settle it by hand" actually means.
+    const unresolvedRaw = await Order.find({ paymentStatus: OrderPaymentStatus.UNRESOLVED })
+      .sort({ updatedAt: -1 })
+      .limit(25)
+      .select(
+        'orderReferenceId cropName totalAmountKES buyerId buyerPhone mpesaCheckoutRequestId createdAt updatedAt'
+      )
+      .lean();
+
+    const unresolvedBuyerIds = [...new Set(unresolvedRaw.map((o) => String(o.buyerId)))];
+    const unresolvedBuyers = await User.find({ _id: { $in: unresolvedBuyerIds } })
+      .select('firstName lastName')
+      .lean();
+    const unresolvedBuyerMap = new Map(unresolvedBuyers.map((b) => [String(b._id), b]));
+
+    const unresolvedPayments = unresolvedRaw.map((o) => {
+      const buyer = unresolvedBuyerMap.get(String(o.buyerId));
+      return {
+        orderId: String(o._id),
+        orderReferenceId: o.orderReferenceId,
+        cropName: o.cropName,
+        totalAmountKES: o.totalAmountKES,
+        buyerName: buyer ? `${buyer.firstName ?? ''} ${buyer.lastName ?? ''}`.trim() : 'Unknown',
+        buyerPhone: o.buyerPhone ?? null,
+        checkoutRequestId: o.mpesaCheckoutRequestId ?? null,
+        unresolvedSince: o.updatedAt ?? o.createdAt,
+      };
+    });
+
     const recentEvents = (
       await PaymentEventLog.find().sort({ occurredAt: -1 }).limit(15).lean()
     ).map((e) => ({
@@ -129,6 +169,7 @@ export async function GET(): Promise<NextResponse> {
           : null,
         metrics,
         pendingOrders,
+        unresolvedPayments,
         recentEvents,
       },
     });
