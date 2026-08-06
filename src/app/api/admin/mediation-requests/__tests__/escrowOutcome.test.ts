@@ -13,11 +13,15 @@ jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined)
 
 const mockMRFindOneAndUpdate = jest.fn();
 const mockMRFindById = jest.fn();
+// The route reads the case before settling, so the money moves before the
+// decision is recorded and a refusal can leave the case open.
+const mockMRFindOne = jest.fn();
 jest.mock('@/lib/models/MediationRequest.model', () => ({
   __esModule: true,
   default: {
     findOneAndUpdate: (...a: unknown[]) => mockMRFindOneAndUpdate(...a),
     findById: (...a: unknown[]) => mockMRFindById(...a),
+    findOne: (...a: unknown[]) => mockMRFindOne(...a),
   },
 }));
 
@@ -82,10 +86,20 @@ function resolvedMediation() {
   });
 }
 
+/** The case as it stands before the decision is recorded. */
+function pendingMediation() {
+  mockMRFindOne.mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ _id: MR_ID, orderId: ORDER._id }),
+    }),
+  });
+}
+
 describe('mediation escrow outcome', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(ADMIN_SESSION);
+    pendingMediation();
   });
 
   it('rejects a money outcome that is not paired with RESOLVED (400)', async () => {
@@ -140,7 +154,13 @@ describe('mediation escrow outcome', () => {
     );
   });
 
-  it('is a clean no-op when the order is no longer in a held state', async () => {
+  it('refuses out loud when the order is no longer in a held state', async () => {
+    // The no-side-effects half of this was always right: nothing must move
+    // twice. What was wrong was the silence. This answered 200 and marked the
+    // case RESOLVED, so an administrator who chose "refund the buyer" on an
+    // order whose funds had already left escrow — e.g. a buyer who confirmed
+    // receipt mid-dispute — saw a success screen and a closed case while no
+    // money moved and nobody was told. The case must stay open instead.
     resolvedMediation();
     mockOrderFindOneAndUpdate.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
 
@@ -148,9 +168,12 @@ describe('mediation escrow outcome', () => {
       patchReq({ requestId: MR_ID, status: 'RESOLVED', resolutionNote: 'Late.', outcome: 'REFUND' })
     );
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: 'ESCROW_NOT_HELD' });
     expect(mockListingUpdate).not.toHaveBeenCalled();
     expect(mockEscrowCreate).not.toHaveBeenCalled();
+    // The decision is not recorded, so the case is still there to act on.
+    expect(mockMRFindOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('leaves the order untouched for a plain resolution (no outcome)', async () => {

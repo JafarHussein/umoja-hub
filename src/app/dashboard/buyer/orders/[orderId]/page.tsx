@@ -607,22 +607,28 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </div>
       )}
 
-      {/* IN_FULFILLMENT — mark as received */}
+      {/* IN_FULFILLMENT — mark as received.
+          Withheld while a review is open: confirming pays the farmer out, which
+          is the very thing under review, so the API refuses it. Offering a
+          button that cannot work is worse than explaining why it is not there. */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
         <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">Confirm receipt</p>
           <p className="app-body text-app-muted">
-            Have you received your order from {order.farmer.firstName}? Confirming releases your
-            payment from escrow to the farmer.
+            {isMediationOpen(mediation)
+              ? 'Confirming receipt would release your payment to the farmer, so it is paused while UmojaHub reviews this order. You will be told as soon as it is decided.'
+              : `Have you received your order from ${order.farmer.firstName}? Confirming releases your payment from escrow to the farmer.`}
           </p>
           {receiveError && <Alert tone="danger">{receiveError}</Alert>}
-          <Button
-            isLoading={receiveState === 'submitting'}
-            onClick={() => void handleMarkReceived()}
-            className="w-full"
-          >
-            Mark as received
-          </Button>
+          {!isMediationOpen(mediation) && (
+            <Button
+              isLoading={receiveState === 'submitting'}
+              onClick={() => void handleMarkReceived()}
+              className="w-full"
+            >
+              Mark as received
+            </Button>
+          )}
         </div>
       )}
 
