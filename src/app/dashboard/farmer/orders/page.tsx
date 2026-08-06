@@ -96,6 +96,14 @@ const PAYMENT_PILL: Record<OrderPaymentStatus, { label: string; glyph: string; w
     wrap: 'bg-app-info-surface',
     text: 'text-app-info',
   },
+  // The buyer's payment could not be confirmed either way. The farmer must not
+  // read this as money received, nor as a buyer who failed to pay.
+  [OrderPaymentStatus.UNRESOLVED]: {
+    label: 'Being checked',
+    glyph: '◌',
+    wrap: 'bg-app-warning-surface',
+    text: 'text-app-warning',
+  },
 };
 
 function PaymentPill({ status }: { status: OrderPaymentStatus }): React.ReactElement {

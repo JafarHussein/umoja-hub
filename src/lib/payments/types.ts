@@ -27,6 +27,23 @@ export interface PaymentInitiationResult {
   customerMessage: string;
 }
 
+/**
+ * What the provider says about a payment when asked directly.
+ *
+ * The four cases are deliberately distinct, and UNKNOWN is the reason this type
+ * exists. A callback that never arrives does not mean the payment failed — the
+ * buyer may already have been debited and the notification lost in transit.
+ * Collapsing "we could not find out" into "it failed" is what lets a platform
+ * tell someone their money is safe when it is gone.
+ */
+export type PaymentQueryResult =
+  | { state: 'SUCCESS'; resultCode: number; mpesaReceiptNumber?: string | undefined }
+  | { state: 'FAILED'; resultCode: number; resultDesc: string }
+  /** Still in flight. Ask again later; conclude nothing. */
+  | { state: 'PENDING' }
+  /** The provider could not answer. Never treat as failure. */
+  | { state: 'UNKNOWN' };
+
 export interface PaymentProvider {
   readonly name: string;
   /**
@@ -34,6 +51,13 @@ export interface PaymentProvider {
    * dispatched; the actual outcome arrives later as a callback.
    */
   initiatePayment(params: PaymentInitiationParams): Promise<PaymentInitiationResult>;
+  /**
+   * Ask the provider what actually happened to a payment.
+   *
+   * The third leg of the STK lifecycle, alongside initiate and callback. It is
+   * what reconciliation consults before declaring a silent payment dead.
+   */
+  queryPaymentStatus(checkoutRequestId: string): Promise<PaymentQueryResult>;
 }
 
 // ---------------------------------------------------------------------------

@@ -188,6 +188,90 @@ export async function initiateSTKPush(params: ISTKPushParams): Promise<ISTKPushR
 }
 
 // ---------------------------------------------------------------------------
+// STK Push Query — the third leg of the STK lifecycle.
+//
+// Initiating a push and receiving a callback are only two of the three calls a
+// production integration needs. The callback is not guaranteed to arrive: the
+// server may be briefly unreachable, or Safaricom may be under load at
+// month-end. When it does not arrive, the transaction is NOT known to have
+// failed — the customer may already have been debited. Asking Safaricom
+// directly is the only way to tell the difference between "did not pay" and
+// "paid, but we never heard".
+//
+// Endpoint: /mpesa/stkpushquery/v1/query
+// ---------------------------------------------------------------------------
+
+export interface ISTKQueryResult {
+  /** 0 = the payment succeeded. Any other value is a real failure code. */
+  resultCode?: number | undefined;
+  resultDesc?: string | undefined;
+  /** True when Safaricom says the transaction is still being processed. */
+  stillProcessing: boolean;
+}
+
+/** Safaricom's "the transaction is being processed" response, which is not a failure. */
+const QUERY_IN_PROGRESS_CODES = ['500.001.1001'];
+
+export async function queryStkPushStatus(checkoutRequestId: string): Promise<ISTKQueryResult> {
+  const shortcode = env('MPESA_SHORTCODE');
+  const passkey = env('MPESA_PASSKEY');
+
+  const timestamp = getTimestamp();
+  const password = buildPassword(shortcode, passkey, timestamp);
+
+  const isSandbox = process.env.NODE_ENV !== 'production';
+  const queryUrl = isSandbox
+    ? 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query'
+    : 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query';
+
+  const accessToken = await getAccessToken();
+
+  const res = await fetch(queryUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      BusinessShortCode: shortcode,
+      Password: password,
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestId,
+    }),
+  });
+
+  const data = (await res.json()) as {
+    ResultCode?: string | number;
+    ResultDesc?: string;
+    errorCode?: string;
+    errorMessage?: string;
+  };
+
+  if (data.errorCode && QUERY_IN_PROGRESS_CODES.includes(data.errorCode)) {
+    return { stillProcessing: true };
+  }
+
+  if (!res.ok || data.errorCode !== undefined || data.ResultCode === undefined) {
+    // Safaricom could not tell us. Deliberately not an error and deliberately
+    // not a failure — the caller must be able to distinguish "no answer" from
+    // "answered: failed", because only one of those means the buyer kept their
+    // money.
+    logger.warn('darajaService', 'STK query returned no usable result', {
+      checkoutRequestId,
+      status: res.status,
+      error: data.errorCode ?? null,
+    });
+    return { stillProcessing: false };
+  }
+
+  return {
+    resultCode: Number(data.ResultCode),
+    resultDesc: data.ResultDesc ?? '',
+    stillProcessing: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Webhook Signature Verification
 //
 // Safaricom Daraja does NOT sign callbacks with HMAC or any other message

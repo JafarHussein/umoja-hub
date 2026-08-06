@@ -43,6 +43,10 @@ const PAYMENT_STATE: Record<OrderPaymentStatus, StatusState> = {
   // terminal non-success outcome — the admin escrow screen already labels a
   // refunded order this way, and the wording carries the meaning.
   [OrderPaymentStatus.REFUNDED]: 'denied',
+  // Deliberately NOT `denied`. We do not know that this payment failed, and a
+  // red pill would tell the buyer it did. Something is genuinely outstanding,
+  // which is what `pending` means; the label says who is resolving it.
+  [OrderPaymentStatus.UNRESOLVED]: 'pending',
 };
 
 /** The delivery axis on its own. Exhaustive for the same reason. */
