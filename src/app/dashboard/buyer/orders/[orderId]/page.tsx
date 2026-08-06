@@ -27,6 +27,8 @@ import {
 import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
 import { orderStatusPill, paymentPill } from '@/components/foodhub/orderPill';
+import { EscrowExplainer } from '@/components/foodhub/EscrowExplainer';
+import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
 import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
@@ -454,28 +456,24 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </Alert>
       )}
 
-      {/* Escrow protection — buyer's money is held until they confirm receipt */}
-      {order.paymentStatus === OrderPaymentStatus.PAID &&
-        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-          <div className="flex items-start gap-3 rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
-            <span className="app-title leading-none text-app-brand" aria-hidden>
-              🔒
-            </span>
-            <div className="space-y-0.5">
-              <p className="app-body-strong text-app-ink">
-                Your payment is protected in escrow
-              </p>
-              <p className="app-meta text-app-muted">
-                The platform is holding your{' '}
-                <span className="app-data-m text-app-ink">
-                  KSh {order.totalAmountKES.toLocaleString()}
-                </span>
-                . It is released to {order.farmer.firstName} only when you confirm you have received
-                your order.
-              </p>
-            </div>
-          </div>
+      {/* What is happening to this money, and what governs it.
+          Replaces a block that stated where the money was but never what moved
+          it — and which only rendered while PAID + IN_FULFILLMENT, so it fell
+          silent in exactly the states a buyer most needs explaining: an order
+          under review, and one that has just been refunded. */}
+      <EscrowExplainer
+        escrowState={orderEscrowState(
+          {
+            paymentStatus: order.paymentStatus,
+            fulfillmentStatus: order.fulfillmentStatus,
+            confirmedByFarmerAt: order.confirmedByFarmerAt ?? null,
+          },
+          isMediationOpen(mediation)
         )}
+        viewer="BUYER"
+        amountKES={order.totalAmountKES}
+        counterpartyName={order.farmer.firstName}
+      />
 
       {/* Refunded — escrow returned to the buyer */}
       {order.paymentStatus === OrderPaymentStatus.REFUNDED && (
