@@ -13,6 +13,26 @@ export interface ResetResult {
   deleted: number;
 }
 
+// Records that belong to a user, keyed by the field that points at them. Shared
+// by the retired-seed sweep and the orphan sweep below.
+const OWNED_BY_USER: Array<[string, string[]]> = [
+  ['MarketplaceListing', ['farmerId']],
+  ['Order', ['farmerId', 'buyerId']],
+  ['FarmerTrustScore', ['farmerId']],
+  ['Rating', ['farmerId', 'buyerId']],
+  ['PriceHistory', ['farmerId']],
+  ['EscrowEventLog', ['farmerId', 'buyerId']],
+  ['WithdrawalRequest', ['farmerId']],
+  ['MediationRequest', ['farmerId', 'buyerId']],
+  ['ProjectEngagement', ['studentId']],
+  ['PeerReview', ['reviewerId']],
+  ['LecturerReview', ['lecturerId']],
+  ['LecturerEffectiveness', ['lecturerId']],
+  ['VerificationAuditLog', ['studentId', 'lecturerId']],
+  ['Notification', ['userId']],
+  ['AdminAuditLog', ['adminId']],
+];
+
 // Reset a specific run, or the most recent run when no id is given.
 export async function resetRun(runId?: string): Promise<ResetResult | null> {
   const { default: SimulationRun } = await import('../../src/lib/models/SimulationRun.model');
@@ -35,6 +55,25 @@ export async function resetRun(runId?: string): Promise<ResetResult | null> {
 
   let deleted = 0;
   for (const [collection, ids] of byCollection) {
+    // A ledger can outlive the model that wrote it.
+    //
+    // `mongoose.model(name)` THROWS for an unregistered model, and this loop ran
+    // it mid-delete. A run recorded against a model that was later retired —
+    // `NgoOrganization`, from an ecosystem-simulation branch that was never
+    // merged — therefore killed the reset partway through: users, institutions,
+    // suppliers and articles were already deleted, the crash landed before the
+    // rest, and `npm run demo` then failed identically on every subsequent run
+    // because the same ledger row was still there.
+    //
+    // The result was a database with 8 users but 49 listings and 223 orders
+    // pointing at people who no longer existed, and no documented way back.
+    // A retired model must be skippable: the documents are unreachable by this
+    // script anyway, and stranding the whole seed over one stale name is far
+    // worse than leaving a few rows behind.
+    if (!mongoose.modelNames().includes(collection)) {
+      log(`  ${collection}: SKIPPED — no such model is registered any more (${ids.length} ids left in place)`);
+      continue;
+    }
     const model = mongoose.model(collection);
     const res = await model.deleteMany({ _id: { $in: ids } });
     deleted += res.deletedCount ?? 0;
@@ -83,24 +122,7 @@ export async function clearRetiredSeedData(): Promise<number> {
   const staleIds = stale.map((u) => u._id);
   let deleted = 0;
 
-  // Records that belong to a user, keyed by the field that points at them.
-  const ownedByUser: Array<[string, string[]]> = [
-    ['MarketplaceListing', ['farmerId']],
-    ['Order', ['farmerId', 'buyerId']],
-    ['FarmerTrustScore', ['farmerId']],
-    ['Rating', ['farmerId', 'buyerId']],
-    ['PriceHistory', ['farmerId']],
-    ['EscrowEventLog', ['farmerId', 'buyerId']],
-    ['WithdrawalRequest', ['farmerId']],
-    ['MediationRequest', ['farmerId', 'buyerId']],
-    ['ProjectEngagement', ['studentId']],
-    ['PeerReview', ['reviewerId']],
-    ['LecturerReview', ['lecturerId']],
-    ['LecturerEffectiveness', ['lecturerId']],
-    ['VerificationAuditLog', ['studentId', 'lecturerId']],
-    ['Notification', ['userId']],
-    ['AdminAuditLog', ['adminId']],
-  ];
+  const ownedByUser = OWNED_BY_USER;
 
   if (staleIds.length > 0) {
     for (const [collection, fields] of ownedByUser) {
@@ -120,6 +142,41 @@ export async function clearRetiredSeedData(): Promise<number> {
   }
 
   log(`  removed ${deleted} legacy document(s).`);
+  return deleted;
+}
+
+// Remove records whose owner no longer exists.
+//
+// A reset removes exactly what its ledger tracked, which is the right rule and
+// leaves one gap: anything created through the running application during a
+// demonstration was never in a ledger. Place an order in front of a panel, then
+// rebuild the world, and that order stays behind pointing at a buyer and a
+// farmer who have both been replaced — which is precisely how the mediation
+// queue came to show "Farmer: Unknown farmer".
+//
+// The sweep is safe by construction rather than by fingerprint: a record is
+// removed only when the user it belongs to cannot be found, and a genuine
+// user's records always have their user. It runs as part of the demo build, so
+// the world a presenter gets is never one with wreckage in it.
+export async function clearOrphanedRecords(): Promise<number> {
+  const User = mongoose.model('User');
+  const liveIds = await User.find({})
+    .select('_id')
+    .lean<Array<{ _id: mongoose.Types.ObjectId }>>();
+  const ids = liveIds.map((u) => u._id);
+
+  let deleted = 0;
+  for (const [collection, fields] of OWNED_BY_USER) {
+    const model = mongoose.model(collection);
+    const res = await model.deleteMany({
+      $or: fields.map((f) => ({ [f]: { $exists: true, $nin: ids } })),
+    });
+    const n = res.deletedCount ?? 0;
+    if (n > 0) log(`  ${collection}: removed ${n} record(s) whose owner no longer exists`);
+    deleted += n;
+  }
+
+  if (deleted > 0) log(`cleared ${deleted} orphaned record(s).`);
   return deleted;
 }
 

@@ -17,7 +17,7 @@
 import { bootstrap, shutdown, log } from './db';
 import { runSimulation } from './orchestrate';
 import { runAnalytics } from './analytics';
-import { resetRun, resetAllRuns, clearRetiredSeedData } from './reset';
+import { resetRun, resetAllRuns, clearRetiredSeedData, clearOrphanedRecords } from './reset';
 import { validate } from './validate';
 import { DEMO_ACCOUNTS, DEMO_PASSWORDS } from './content/accounts';
 
@@ -34,6 +34,10 @@ async function demo(): Promise<boolean> {
   const started = Date.now();
   await resetAllRuns();
   await clearRetiredSeedData();
+  // After the runs are gone, before the new world is built: anything the last
+  // demonstration created through the app is now ownerless, and this is the one
+  // moment it can be told apart from data that belongs to somebody.
+  await clearOrphanedRecords();
   await runSimulation();
   await runAnalytics();
   const healthy = await validate();
@@ -66,6 +70,7 @@ async function main(): Promise<void> {
         } else {
           await resetAllRuns();
           await clearRetiredSeedData();
+          await clearOrphanedRecords();
         }
         break;
       case 'validate':

@@ -3,12 +3,17 @@ name: E2E
 # Visual-regression + smoke harness (Phase 4). Runs against a built app served
 # with `npm run start` and an ephemeral MongoDB, so snapshots are deterministic.
 #
-# There is deliberately NO seed step. e2e/support/global-setup.ts builds every
-# fixture the specs use (all "E2E …"-prefixed) and does not wipe the database
-# first, so anything seeded beforehand is layered underneath it. `npm run demo`
+# There is deliberately NO seed step. e2e/support/global-setup.ts drops the
+# harness database and builds every fixture the specs use. `npm run demo`
 # generates a randomised world — including "Kale (Sukuma Wiki)" listings that
 # compete with the search spec's own fixture — which is the opposite of what a
 # snapshot harness needs.
+#
+# MONGODB_E2E_URI is the database the harness owns and drops on every run; the
+# config redirects both this process and the app under test onto it. It is a
+# separate database name from MONGODB_URI on purpose — the harness refuses to
+# run when the two addresses match, which is what keeps a local run off the
+# presentation data.
 on:
   push:
     branches: [main, develop]
@@ -30,9 +35,10 @@ jobs:
       # Dummy values are sufficient to boot the app; the harness drives synthetic
       # sessions, never the real OAuth providers. NEXTAUTH_SECRET must match what
       # global-setup uses to mint cookies (it reads the same process env).
-      MONGODB_URI: mongodb://localhost:27017/umojahub-e2e
+      MONGODB_URI: mongodb://localhost:27017/umojahub-ci-app
+      MONGODB_E2E_URI: mongodb://localhost:27017/umojahub-e2e
       NEXTAUTH_SECRET: test-secret-for-ci-only
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3100
       GOOGLE_CLIENT_ID: test
       GOOGLE_CLIENT_SECRET: test
       GITHUB_CLIENT_ID: test

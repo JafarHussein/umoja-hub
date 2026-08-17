@@ -366,16 +366,37 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
     if (releasable > 2000 && rng.bool(0.7)) {
       const nReq = rng.int(1, 2);
       let remainingReleasable = releasable;
+      // At most one OPEN request per farmer, because the database enforces
+      // exactly that: WithdrawalRequest carries a unique index on farmerId
+      // partial-filtered to status REQUESTED, so a farmer may queue one payout
+      // at a time.
+      //
+      // This loop drew each status independently from a list containing
+      // REQUESTED at weight 3, so two requests for one farmer collided about
+      // 9% of the time, and across the eligible farmers the whole seed died on
+      // E11000 roughly half the time — non-deterministically, by RNG seed. It
+      // could pass a rehearsal and fail on the morning of a presentation.
+      let openRequestIssued = false;
       for (let w = 0; w < nReq && remainingReleasable > 1000; w++) {
         const amount = Math.floor(rng.float(0.2, 0.5) * remainingReleasable);
         if (amount < 500) break;
         remainingReleasable -= amount;
-        const status = rng.weighted<string>([
+        let status = rng.weighted<string>([
           [WithdrawalRequestStatus.PAID, 4],
           [WithdrawalRequestStatus.APPROVED, 2],
           [WithdrawalRequestStatus.REQUESTED, 3],
           [WithdrawalRequestStatus.REJECTED, 1],
         ]);
+        if (status === WithdrawalRequestStatus.REQUESTED && openRequestIssued) {
+          // Already queued one. Settle this one instead of violating the rule
+          // the platform actually enforces.
+          status = rng.weighted<string>([
+            [WithdrawalRequestStatus.PAID, 4],
+            [WithdrawalRequestStatus.APPROVED, 2],
+            [WithdrawalRequestStatus.REJECTED, 1],
+          ]);
+        }
+        if (status === WithdrawalRequestStatus.REQUESTED) openRequestIssued = true;
         const reqAt = clampPast(daysAgo(rng.int(1, 60)));
         const resolved = status !== WithdrawalRequestStatus.REQUESTED;
         ledger.track('WithdrawalRequest', await createDoc(WithdrawalRequest, {
