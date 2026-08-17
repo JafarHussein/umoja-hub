@@ -46,6 +46,11 @@ export interface IPaymentReceipt {
   provider: string;
   /** True when this receipt was produced by the payment simulator. */
   isSimulated: boolean;
+  /** Which leg of the payment this order actually used. */
+  paymentMode: string;
+  /** Safaricom-issued references, where the order has them. */
+  checkoutRequestId: string | null;
+  merchantRequestId: string | null;
   buyer: IReceiptParty;
   farmer: IReceiptParty;
   cropName: string;
@@ -241,6 +246,8 @@ export function buildTransactionTrail(
 export interface IReceiptOrderInput {
   orderReferenceId: string;
   mpesaTransactionId?: string | null | undefined;
+  mpesaCheckoutRequestId?: string | null | undefined;
+  mpesaMerchantRequestId?: string | null | undefined;
   cropName: string;
   quantityOrdered: number;
   unit: string;
@@ -258,8 +265,9 @@ export function buildOrderReceipt(params: {
   escrowState: EscrowState;
   provider: string;
   isSimulated: boolean;
+  paymentMode: string;
 }): IPaymentReceipt {
-  const { order, buyer, farmer, escrowState, provider, isSimulated } = params;
+  const { order, buyer, farmer, escrowState, provider, isSimulated, paymentMode } = params;
   return {
     receiptNumber: order.mpesaTransactionId ?? null,
     orderReferenceId: order.orderReferenceId,
@@ -267,6 +275,9 @@ export function buildOrderReceipt(params: {
     paymentMethod: 'M-PESA',
     provider,
     isSimulated,
+    paymentMode,
+    checkoutRequestId: order.mpesaCheckoutRequestId ?? null,
+    merchantRequestId: order.mpesaMerchantRequestId ?? null,
     buyer,
     farmer,
     cropName: order.cropName,

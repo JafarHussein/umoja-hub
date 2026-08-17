@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, StatusPill } from '@/components/app';
+import { Alert, Button, DataItem, DataList, Disclosure, StatusPill } from '@/components/app';
 import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
 import { EscrowState, OrderPaymentStatus } from '@/types';
 
@@ -31,6 +31,9 @@ interface IReceipt {
   paymentMethod: string;
   provider: string;
   isSimulated: boolean;
+  paymentMode: string;
+  checkoutRequestId: string | null;
+  merchantRequestId: string | null;
   buyer: IReceiptParty;
   farmer: IReceiptParty;
   cropName: string;
@@ -159,7 +162,15 @@ export function TransactionReceipt({ orderId }: ITransactionReceiptProps): React
     // actually trust — so it has to be called what the handset calls it.
     // Checkout already used this wording; the receipt did not, which left one
     // value with two names across two screens.
-    { label: 'M-Pesa receipt', value: receipt.receiptNumber ?? '—', mono: true },
+    // ...unless it is not one. A `DEMO-` reference was minted by UmojaHub's
+    // demonstration bridge, and calling it an M-Pesa receipt on a document
+    // headed "Payment receipt" would be the single most misleading line the
+    // platform could print.
+    {
+      label: receipt.paymentMode === 'demo-bridge' ? 'Demonstration reference' : 'M-Pesa receipt',
+      value: receipt.receiptNumber ?? '—',
+      mono: true,
+    },
     { label: 'Order number', value: receipt.orderReferenceId, mono: true },
     { label: 'Escrow reference', value: receipt.escrowReference, mono: true },
     { label: 'Payment method', value: receipt.paymentMethod },
@@ -193,7 +204,7 @@ export function TransactionReceipt({ orderId }: ITransactionReceiptProps): React
         </Button>
       </div>
 
-      {receipt.isSimulated && <SimulationNotice className="print:hidden" />}
+      <SimulationNotice mode={receipt.paymentMode as never} className="print:hidden" />
 
       <article className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card print:border-0">
         {/* Masthead */}
@@ -255,6 +266,44 @@ export function TransactionReceipt({ orderId }: ITransactionReceiptProps): React
           </p>
         </footer>
       </article>
+
+      {/* Payment technical detail.
+          Behind disclosure, not on the face of the receipt: a buyer wants the
+          amount and the code, and an administrator or an examiner wants the
+          provider references. Both are served without either being crowded out.
+          This is also the admin transaction view — the same route, the same
+          component, no privileged rendering of the facts. */}
+      <section className="rounded-app-card border border-app-hairline bg-app-card px-5 print:hidden">
+        <Disclosure summary="Payment technical details">
+          <DataList>
+            <DataItem label="Payment route">{receipt.paymentMode}</DataItem>
+            <DataItem label="Provider">{receipt.provider}</DataItem>
+            <DataItem label="Checkout request ID" numeric>
+              {receipt.checkoutRequestId ?? '—'}
+            </DataItem>
+            <DataItem label="Merchant request ID" numeric>
+              {receipt.merchantRequestId ?? '—'}
+            </DataItem>
+            <DataItem
+              label={
+                receipt.paymentMode === 'demo-bridge'
+                  ? 'Demonstration reference'
+                  : 'M-Pesa receipt'
+              }
+              numeric
+            >
+              {receipt.receiptNumber ?? '—'}
+            </DataItem>
+            <DataItem label="Escrow state">{receipt.escrowState}</DataItem>
+            <DataItem label="Order payment status">{receipt.paymentStatus}</DataItem>
+          </DataList>
+          <p className="app-meta mt-4 text-pretty text-app-faint">
+            The checkout and merchant request IDs are issued by Safaricom and identify this payment
+            on their side. Every event below is replayed from the append-only payment and escrow
+            logs; nothing on this page is inferred from the order&apos;s current status.
+          </p>
+        </Disclosure>
+      </section>
 
       {/* Audit trail */}
       <section className="rounded-app-card border border-app-hairline bg-app-card">

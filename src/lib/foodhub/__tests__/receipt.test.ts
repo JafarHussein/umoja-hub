@@ -181,6 +181,7 @@ describe('buildOrderReceipt', () => {
     escrowState: EscrowState.HELD,
     provider: 'simulation',
     isSimulated: true,
+    paymentMode: 'simulation',
   };
 
   it('carries the M-Pesa receipt, both references and the amount', () => {
@@ -196,7 +197,8 @@ describe('buildOrderReceipt', () => {
   it('marks a simulated payment as simulated', () => {
     expect(buildOrderReceipt(base).isSimulated).toBe(true);
     expect(
-      buildOrderReceipt({ ...base, provider: 'daraja-production', isSimulated: false }).isSimulated
+      buildOrderReceipt({ ...base, provider: 'daraja-production', isSimulated: false, paymentMode: 'daraja-production' })
+        .isSimulated
     ).toBe(false);
   });
 
