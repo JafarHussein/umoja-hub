@@ -126,14 +126,58 @@ export async function processStkCallback(
 
   // ── Failure path — restore inventory, alert admin ──────────────────────────
   if (ResultCode !== 0) {
+    // Guarded, where it used to be unconditional.
+    //
+    // A failure callback could previously demote an order that had already
+    // settled: `findByIdAndUpdate(..., FAILED)` ran whatever state the order was
+    // in. Safaricom retries callbacks, and a late or duplicated failure for a
+    // superseded payment session would therefore mark a PAID order failed and
+    // hand its produce back to the marketplace — after the buyer had been
+    // debited and the farmer told to dispatch.
+    //
+    // Only a payment still waiting on an answer may be failed. Anything else is
+    // recorded and ignored, which is what makes this processor idempotent
+    // against the real provider's retry behaviour rather than only against the
+    // simulator's.
+    const failed = await Order.findOneAndUpdate(
+      { _id: order._id, paymentStatus: OrderPaymentStatus.PENDING_PAYMENT },
+      { $set: { paymentStatus: OrderPaymentStatus.FAILED } },
+      { new: true }
+    ).lean();
+
+    if (!failed) {
+      logger.warn('payments', 'Failure callback for an order no longer awaiting payment', {
+        requestId,
+        provider,
+        CheckoutRequestID,
+        ResultCode,
+        orderId: String(order._id),
+        currentStatus: statusBefore,
+      });
+      await recordEvent({
+        provider,
+        eventType: PaymentEventType.DUPLICATE,
+        orderId: order._id,
+        buyerId: order.buyerId,
+        farmerId: order.farmerId,
+        amount: order.totalAmountKES,
+        paymentReference: order.orderReferenceId,
+        checkoutRequestId: CheckoutRequestID,
+        resultCode: ResultCode,
+        actor: PaymentEventActor.PROVIDER,
+        previousStatus: statusBefore,
+        newStatus: statusBefore,
+        reason: `A failure result (${ResultCode}) arrived for a payment session that is no longer open. The order is ${statusBefore} and was left untouched.`,
+        ...(requestId ? { correlationId: requestId } : {}),
+      });
+      return { ack, processed: false };
+    }
+
     const { default: MarketplaceListing } = await import('@/lib/models/MarketplaceListing.model');
-    await Promise.all([
-      Order.findByIdAndUpdate(order._id, { paymentStatus: OrderPaymentStatus.FAILED }),
-      MarketplaceListing.findByIdAndUpdate(order.listingId, {
-        $inc: { quantityAvailable: order.quantityOrdered },
-        listingStatus: ListingStatus.AVAILABLE,
-      }),
-    ]);
+    await MarketplaceListing.findByIdAndUpdate(order.listingId, {
+      $inc: { quantityAvailable: order.quantityOrdered },
+      listingStatus: ListingStatus.AVAILABLE,
+    });
 
     logger.info('payments', 'Payment failed or cancelled — inventory restored', {
       requestId,

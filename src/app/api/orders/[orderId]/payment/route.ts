@@ -7,6 +7,7 @@ import Order from '@/lib/models/Order.model';
 import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { paymentActionSchema } from '@/lib/validation/paymentActionSchema';
 import { getPaymentProvider, getActiveProviderName, isSimulationActive } from '@/lib/payments';
+import { providerAmountFor } from '@/lib/payments/demoMode';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AppError, handleApiError, logger } from '@/lib/utils';
 import {
@@ -234,17 +235,20 @@ export async function POST(
     }
 
     let checkoutRequestId: string;
+    let merchantRequestId: string | undefined;
     try {
       const initiation = await getPaymentProvider().initiatePayment({
         orderId: String(order._id),
         orderReferenceId: order.orderReferenceId,
-        amount: order.totalAmountKES,
+        // Same rule as first payment: nominal only in demonstration mode.
+        amount: providerAmountFor(order.totalAmountKES),
         phone: order.buyerPhone,
         description: `UmojaHub ${order.cropName}`,
         buyerId: String(order.buyerId),
         farmerId: String(order.farmerId),
       });
       checkoutRequestId = initiation.checkoutRequestId;
+      merchantRequestId = initiation.merchantRequestId;
     } catch (stkError) {
       // Give the stock straight back — the buyer is no worse off than before.
       await MarketplaceListing.findByIdAndUpdate(order.listingId, {
@@ -268,6 +272,7 @@ export async function POST(
         paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
         fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
         mpesaCheckoutRequestId: checkoutRequestId,
+        ...(merchantRequestId ? { mpesaMerchantRequestId: merchantRequestId } : {}),
         // Restarts the stuck-payment clock. Without this the sweep would judge
         // the retry stale immediately, on the age of the original order.
         paymentRequestedAt: new Date(),

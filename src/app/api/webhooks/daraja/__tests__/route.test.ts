@@ -13,11 +13,17 @@ jest.mock('@/lib/db', () => ({
 
 const mockOrderFindOne = jest.fn();
 const mockOrderFindByIdAndUpdate = jest.fn();
+// The failure path is a guarded conditional update, so a late or duplicated
+// failure cannot demote an order that has already settled.
+const mockOrderFindOneAndUpdate: jest.Mock = jest.fn(() => ({
+  lean: () => Promise.resolve({ _id: 'o1' }),
+}));
 jest.mock('@/lib/models/Order.model', () => ({
   __esModule: true,
   default: {
     findOne: jest.fn((...args: unknown[]) => mockOrderFindOne(...args)),
     findByIdAndUpdate: jest.fn((...args: unknown[]) => mockOrderFindByIdAndUpdate(...args)),
+    findOneAndUpdate: (...args: unknown[]) => mockOrderFindOneAndUpdate(...args),
   },
 }));
 
@@ -199,9 +205,13 @@ describe('POST /api/webhooks/daraja', () => {
 
     expect(res.status).toBe(200);
     expect(body.ResultCode).toBe(0);
-    expect(mockOrderFindByIdAndUpdate).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ paymentStatus: 'FAILED' })
+    // Guarded: only an order still PENDING_PAYMENT may be failed. Safaricom
+    // retries callbacks, and the unconditional write this replaces would let a
+    // late failure mark a paid order failed and hand its produce back.
+    expect(mockOrderFindOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentStatus: 'PENDING_PAYMENT' }),
+      expect.objectContaining({ $set: { paymentStatus: 'FAILED' } }),
+      expect.anything()
     );
     // Inventory must be restored when payment fails
     expect(mockListingFindByIdAndUpdate).toHaveBeenCalledWith(

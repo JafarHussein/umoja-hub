@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import Order from '@/lib/models/Order.model';
 import { AppError, handleApiError } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
+import { paymentModeForOrder } from '@/lib/payments/demoMode';
 import { dispatchDuePayments } from '@/lib/payments/dispatcher';
 import { reconcileStuckPayments } from '@/lib/payments/reconcile';
 import { PAYMENT_LABEL, RESULT_CODE_DETAIL } from '@/lib/foodhub/receipt';
@@ -147,6 +148,7 @@ export async function GET(
               paymentStatus: settled.paymentStatus,
               fulfillmentStatus: settled.fulfillmentStatus,
               isSimulated: isSimulationActive(),
+              paymentMode: paymentModeForOrder(order.mpesaTransactionId ?? null),
               mpesaTransactionId: settled.mpesaTransactionId ?? null,
               events: await sessionEvents(orderId),
             });
@@ -176,6 +178,7 @@ export async function GET(
               paymentStatus: fresh.paymentStatus,
               fulfillmentStatus: fresh.fulfillmentStatus,
               isSimulated: true,
+              paymentMode: paymentModeForOrder(fresh.mpesaTransactionId ?? null),
               // The simulator mints a realistic 10-character M-Pesa receipt and
               // the platform stored it without ever showing it. It is the one
               // thing a Kenyan buyer checks a payment against.
@@ -196,6 +199,7 @@ export async function GET(
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
       isSimulated: isSimulationActive(),
+              paymentMode: paymentModeForOrder(order.mpesaTransactionId ?? null),
       mpesaTransactionId: order.mpesaTransactionId ?? null,
       events: await sessionEvents(orderId),
     });

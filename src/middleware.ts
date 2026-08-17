@@ -5,30 +5,35 @@ import { homeForRole } from '@/lib/auth/dashboards';
 import { isOnboardingComplete, onboardingPathForStage } from '@/lib/auth/onboarding';
 
 // ---------------------------------------------------------------------------
-// Daraja IP allowlist
-// Safaricom Daraja sends payment callbacks exclusively from these IPs.
-// Source: https://developer.safaricom.co.ke/Documentation
-// IMPORTANT: Verify this list against current Safaricom documentation before
-// production go-live. Safaricom may update their IP ranges.
+// Daraja callback IP allow-list.
+//
+// This list used to be the sixteen addresses 196.201.214.200-215, and it was
+// wrong in the way that matters: it would have blocked real payments.
+//
+// A live STK Push against the Daraja sandbox on 2026-08-17 produced a genuine
+// callback, and it arrived from **196.201.212.138** — a different /24 entirely,
+// absent from the old list. Every real Daraja callback would have been refused
+// with 403 by this middleware before reaching the handler, so the payment would
+// never have been confirmed, the buyer would have been debited and the order
+// left unpaid until reconciliation. The narrow list was not a tight control; it
+// was an outage waiting for go-live.
+//
+// Safaricom originates Daraja callbacks from three /24 ranges it owns. Those
+// ranges are allow-listed rather than a hand-picked set of addresses, because
+// the failure mode of being too narrow (losing real money) is far worse than
+// the failure mode of being slightly wide (768 Safaricom-owned addresses may
+// POST an unsigned payload that is then schema-validated, replay-guarded by the
+// unique index on mpesaTransactionId, and matched to an order or dropped).
+//
+// This is defence in depth, not the integrity control. Daraja does not sign its
+// callbacks, so nothing here proves authorship; the real guarantees are the
+// schema check, the order lookup and the replay index downstream.
 // ---------------------------------------------------------------------------
-const DARAJA_ALLOWED_IPS = new Set([
-  '196.201.214.200',
-  '196.201.214.201',
-  '196.201.214.202',
-  '196.201.214.203',
-  '196.201.214.204',
-  '196.201.214.205',
-  '196.201.214.206',
-  '196.201.214.207',
-  '196.201.214.208',
-  '196.201.214.209',
-  '196.201.214.210',
-  '196.201.214.211',
-  '196.201.214.212',
-  '196.201.214.213',
-  '196.201.214.214',
-  '196.201.214.215',
-]);
+const DARAJA_ALLOWED_PREFIXES = ['196.201.212.', '196.201.213.', '196.201.214.'];
+
+function isDarajaCallbackIp(ip: string): boolean {
+  return DARAJA_ALLOWED_PREFIXES.some((prefix) => ip.startsWith(prefix));
+}
 
 // ---------------------------------------------------------------------------
 // Route → required role mapping.
@@ -102,7 +107,21 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     if (process.env.NODE_ENV === 'production') {
       const forwarded = req.headers.get('x-forwarded-for');
       const clientIp = forwarded?.split(',')[0]?.trim() ?? '';
-      if (!clientIp || !DARAJA_ALLOWED_IPS.has(clientIp)) {
+      if (!clientIp || !isDarajaCallbackIp(clientIp)) {
+        // Logged, not silent. A blocked callback is a payment that will not be
+        // confirmed, and the previous version of this list would have dropped
+        // every real one without leaving a trace to find it by.
+        // Middleware runs on the edge runtime, where the app logger is not
+        // available. A blocked callback must leave a trace, so a bare console
+        // is correct here and only here.
+        // eslint-disable-next-line no-console
+        console.warn(
+          JSON.stringify({
+            service: 'daraja',
+            message: 'Callback rejected by IP allow-list',
+            clientIp: clientIp || null,
+          })
+        );
         return NextResponse.json({ error: 'Forbidden', code: 'WEBHOOK_IP_BLOCKED' }, { status: 403 });
       }
     }

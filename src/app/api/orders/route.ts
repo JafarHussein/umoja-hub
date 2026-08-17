@@ -7,6 +7,7 @@ import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { createOrderSchema } from '@/lib/validation/orderSchema';
 import { generateOrderReferenceId } from '@/lib/foodhub/orderUtils';
 import { getPaymentProvider, getActiveProviderName } from '@/lib/payments';
+import { providerAmountFor } from '@/lib/payments/demoMode';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { checkRateLimit, peekRateLimit, recordRateLimitUse } from '@/lib/rateLimit';
 
@@ -431,18 +432,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Initiate payment via the active provider (simulation or Daraja). The
     // contract is identical: returns a checkout request id; the outcome arrives
     // later as a callback. May throw AppError PAYMENT_STK_FAILED.
+    // What Safaricom is asked to charge. Identical to the order total unless
+    // PAYMENT_MODE=REAL_STK_DEMO is set, in which case a nominal amount is used
+    // so an academic demonstration does not push thousands of shillings through
+    // a sandbox shortcode. The order keeps its true total everywhere else.
+    const providerAmount = providerAmountFor(totalAmountKES);
+
     let mpesaCheckoutRequestId: string;
+    let mpesaMerchantRequestId: string | undefined;
     try {
       const initiation = await getPaymentProvider().initiatePayment({
         orderId: String(order._id),
         orderReferenceId: order.orderReferenceId,
-        amount: totalAmountKES,
+        amount: providerAmount,
         phone: buyerPhone,
         description: `UmojaHub ${listing.cropName}`,
         buyerId: String(session!.user.id),
         farmerId: String(listing.farmerId),
       });
       mpesaCheckoutRequestId = initiation.checkoutRequestId;
+      mpesaMerchantRequestId = initiation.merchantRequestId;
     } catch (stkError) {
       // Rollback: delete the order AND restore listing inventory atomically.
       // listingStatus is unconditionally restored to AVAILABLE because we only reach
@@ -462,8 +471,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw stkError;
     }
 
-    // Update order with checkout request ID
-    await Order.findByIdAndUpdate(order._id, { mpesaCheckoutRequestId });
+    // Both provider references. MerchantRequestID was previously returned by
+    // the provider and thrown away; it is the second identifier Safaricom
+    // support asks for, and the admin transaction view needs it.
+    await Order.findByIdAndUpdate(order._id, {
+      mpesaCheckoutRequestId,
+      ...(mpesaMerchantRequestId ? { mpesaMerchantRequestId } : {}),
+    });
 
     // Provider-agnostic audit trail (non-blocking).
     {
@@ -481,7 +495,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         // The first event in the chain — there is no prior status to record,
         // and leaving it unset says that more honestly than inventing one.
         newStatus: OrderPaymentStatus.PENDING_PAYMENT,
-        reason: 'The buyer placed this order. An STK prompt was sent to their handset.',
+        reason:
+          providerAmount === totalAmountKES
+            ? `The buyer placed this order. A payment request for KSh ${totalAmountKES.toLocaleString()} was sent to ${getActiveProviderName()}.`
+            : `The buyer placed this order. A nominal KSh ${providerAmount.toLocaleString()} was requested from ${getActiveProviderName()} for the demonstration; the order total is KSh ${totalAmountKES.toLocaleString()}.`,
         correlationId: requestId,
         occurredAt: new Date(),
       }).catch(() => {});

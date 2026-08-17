@@ -31,7 +31,7 @@ import { MoneyStatement, NextStep } from '@/components/foodhub/MoneyStatement';
 import { escrowNarrative } from '@/lib/foodhub/escrowNarrative';
 import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
 import { escrowReferenceFor } from '@/lib/foodhub/receipt';
-import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
+import { SimulationNotice, type PaymentMode } from '@/components/foodhub/SimulationNotice';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   MediationPanel,
@@ -82,6 +82,10 @@ interface IBuyerOrder {
   mpesaTransactionId: string | null;
   /** Whether that code came from the simulator. Decided server-side. */
   isSimulated: boolean;
+  /** Which leg of the payment this order used. Derived server-side. */
+  paymentMode?: PaymentMode;
+  mpesaMerchantRequestId?: string | null;
+  mpesaCheckoutRequestId?: string | null;
 }
 
 type IMediation = IMediationCase;
@@ -135,6 +139,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   const [escalateOpen, setEscalateOpen] = useState(false);
 
   const [isSimulated, setIsSimulated] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('simulation');
 
   const [paymentActionState, setPaymentActionState] = useState<'idle' | 'submitting'>('idle');
   const [paymentActionError, setPaymentActionError] = useState<string | null>(null);
@@ -165,6 +170,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       setOrder(data);
       setHasRated(data.hasRated);
       setIsSimulated(data.isSimulated);
+      if (data.paymentMode) setPaymentMode(data.paymentMode);
       setPageState('ready');
     } catch {
       setPageState('error');
@@ -438,7 +444,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
                 <span className="app-data-m text-app-muted">{order.mpesaTransactionId}</span>
               </span>
             )}
-            {order.isSimulated && <SimulationNotice variant="badge" />}
+            {order.isSimulated && <SimulationNotice mode={paymentMode} variant="badge" />}
           </>
         }
       />
@@ -470,7 +476,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           }
         >
           <div className="space-y-3">
-            {isSimulated && <SimulationNotice />}
+            <SimulationNotice mode={paymentMode} />
             {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
             <Button
               variant="secondary"
@@ -626,23 +632,45 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         </Disclosure>
 
         {isPaid && (
-          <Disclosure
-            summary="Payment details"
-            hint={order.isSimulated ? 'Simulated' : undefined}
-          >
-            <DataList>
-              <DataItem label="M-Pesa receipt" numeric>
-                {order.mpesaTransactionId ?? '—'}
-              </DataItem>
-              <DataItem label="Order reference" numeric>
-                {order.orderReferenceId}
-              </DataItem>
-              <DataItem label="Escrow reference" numeric>
-                {escrowReferenceFor(order.orderReferenceId)}
-              </DataItem>
-              <DataItem label="Method">M-PESA</DataItem>
-              <DataItem label="Paid on">{formatDateTime(order.paidAt)}</DataItem>
-            </DataList>
+          <Disclosure summary="Payment details">
+            <div className="space-y-4">
+              <SimulationNotice mode={paymentMode} />
+              <DataList>
+                {/* Named for what it is. A `DEMO-` reference is not an M-Pesa
+                    receipt and must not be labelled as one; a buyer matching
+                    this against their handset would find nothing. */}
+                <DataItem
+                  label={
+                    paymentMode === 'demo-bridge' ? 'Demonstration reference' : 'M-Pesa receipt'
+                  }
+                  numeric
+                >
+                  {order.mpesaTransactionId ?? '—'}
+                </DataItem>
+                <DataItem label="Order reference" numeric>
+                  {order.orderReferenceId}
+                </DataItem>
+                <DataItem label="Escrow reference" numeric>
+                  {escrowReferenceFor(order.orderReferenceId)}
+                </DataItem>
+                <DataItem label="Method">M-PESA</DataItem>
+                <DataItem label="Paid on">{formatDateTime(order.paidAt)}</DataItem>
+                {/* The provider references. These are what Safaricom support
+                    asks for, and on a sandbox order they are the evidence that
+                    the request genuinely reached Daraja. */}
+                {order.mpesaCheckoutRequestId && (
+                  <DataItem label="Checkout request" numeric>
+                    {order.mpesaCheckoutRequestId}
+                  </DataItem>
+                )}
+                {order.mpesaMerchantRequestId && (
+                  <DataItem label="Merchant request" numeric>
+                    {order.mpesaMerchantRequestId}
+                  </DataItem>
+                )}
+                <DataItem label="Payment route">{paymentMode}</DataItem>
+              </DataList>
+            </div>
             <div className="pt-4">
               <Link
                 href={`/dashboard/buyer/orders/${order._id}/receipt`}

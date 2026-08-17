@@ -22,11 +22,14 @@ jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined)
 
 const mockOrderFindOne = jest.fn();
 const mockOrderFindByIdAndUpdate = jest.fn().mockResolvedValue({});
+// The failure path is a guarded conditional update now, not a blind write.
+const mockOrderFindOneAndUpdate = jest.fn();
 jest.mock('@/lib/models/Order.model', () => ({
   __esModule: true,
   default: {
     findOne: (...a: unknown[]) => mockOrderFindOne(...a),
     findByIdAndUpdate: (...a: unknown[]) => mockOrderFindByIdAndUpdate(...a),
+    findOneAndUpdate: (...a: unknown[]) => mockOrderFindOneAndUpdate(...a),
   },
 }));
 
@@ -115,6 +118,7 @@ beforeEach(() => {
   mockWritten.length = 0;
   jest.clearAllMocks();
   mockOrderFindByIdAndUpdate.mockResolvedValue({});
+  mockOrderFindOneAndUpdate.mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: ORDER_ID }) });
 });
 
 describe('processStkCallback — the audit row', () => {
@@ -190,6 +194,41 @@ describe('processStkCallback — the audit row', () => {
     });
     // Nothing was written to the order on a duplicate.
     expect(mockOrderFindByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('does not let a late failure callback demote a payment that already settled', async () => {
+    // Safaricom retries callbacks, and a real STK Push against the sandbox
+    // answers `1037 · No response from user` about thirty seconds after the
+    // push. If that lands on an order that has since been paid — a retry, a
+    // recovered payment, a demonstration confirmation — the failure branch used
+    // to run `findByIdAndUpdate(..., FAILED)` unconditionally: the order would
+    // be marked failed and its produce handed back to the marketplace, after
+    // the buyer had been debited and the farmer told to dispatch.
+    mockOrderFindOne.mockResolvedValue(order({ paymentStatus: 'PAID' }));
+    // The guarded update matches nothing, because the order is no longer
+    // PENDING_PAYMENT.
+    mockOrderFindOneAndUpdate.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+
+    const result = await processStkCallback(callback(1037), { provider: 'daraja-sandbox' });
+
+    expect(result.processed).toBe(false);
+    // Recorded rather than silent: the row proves the guard fired.
+    expect(row('DUPLICATE')).toMatchObject({ previousStatus: 'PAID', newStatus: 'PAID' });
+    expect(String(row('DUPLICATE')?.['reason'])).toMatch(/no longer open/i);
+    // And nothing was written to the order or the listing.
+    expect(mockOrderFindByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('still fails a payment that is genuinely still open', async () => {
+    mockOrderFindOne.mockResolvedValue(order());
+    mockOrderFindOneAndUpdate.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ _id: ORDER_ID }),
+    });
+
+    const result = await processStkCallback(callback(1032), { provider: 'daraja-sandbox' });
+
+    expect(result.processed).toBe(true);
+    expect(row('FAILED')).toMatchObject({ newStatus: 'FAILED' });
   });
 
   it('does not present the arrival of a callback as a state change of its own', async () => {

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { AppError, handleApiError } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
+import { paymentModeForOrder } from '@/lib/payments/demoMode';
 import { OrderPaymentStatus, OrderFulfillmentStatus, Role } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -93,6 +94,10 @@ export async function GET(
         // browser, and a receipt code shown without saying where it came from
         // is exactly the implication the simulation notice exists to prevent.
         isSimulated: isSimulationActive(),
+        // Which leg this order actually used, derived once so every surface
+        // describes the same payment the same way.
+        paymentMode: paymentModeForOrder(order.mpesaTransactionId ?? null),
+        mpesaMerchantRequestId: order.mpesaMerchantRequestId ?? null,
         buyerPhone: order.buyerPhone,
         farmer: { firstName: farmer?.firstName ?? '—', lastName: farmer?.lastName ?? '' },
         buyer: { firstName: buyer?.firstName ?? '—', lastName: buyer?.lastName ?? '' },

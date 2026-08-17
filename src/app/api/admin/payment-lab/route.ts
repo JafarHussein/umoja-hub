@@ -4,7 +4,13 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import Order from '@/lib/models/Order.model';
 import PaymentEventLog from '@/lib/models/PaymentEventLog.model';
-import { paymentLabActionSchema, type PaymentLabAction } from '@/lib/validation/paymentLabSchema';
+import {
+  paymentLabActionSchema,
+  DEMO_BRIDGE_ACTION,
+  type PaymentLabAction,
+} from '@/lib/validation/paymentLabSchema';
+import { confirmViaDemoBridge } from '@/lib/payments/demoBridge';
+import { isDemoBridgeAvailable, isRealStkDemo, demoAmountKES } from '@/lib/payments/demoMode';
 import { forceOutcomeForOrder } from '@/lib/payments/simulationProvider';
 import { getActiveProviderName, isSimulationActive } from '@/lib/payments';
 import { getSimulationConfig } from '@/lib/payments/simulationConfig';
@@ -212,6 +218,11 @@ export async function GET(): Promise<NextResponse> {
       data: {
         provider: getActiveProviderName(),
         simulationActive: isSimulationActive(),
+        // The demonstration configuration, surfaced so an operator (and a
+        // panel) can see from the screen which leg of the payment is real.
+        realStkDemo: isRealStkDemo(),
+        demoAmountKES: isRealStkDemo() ? demoAmountKES() : null,
+        demoBridgeAvailable: isDemoBridgeAvailable(),
         simulationProfile: isSimulationActive()
           ? { name: simConfig.profile, purpose: simConfig.purpose }
           : null,
@@ -242,6 +253,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const body: unknown = await req.json();
+    const preParsed = paymentLabActionSchema.safeParse(body);
+
+    // The demonstration bridge is handled before the simulation gate below,
+    // because it exists for the opposite situation: a REAL Daraja sandbox
+    // payment that Safaricom cannot complete. Its own guard lives in
+    // isDemoBridgeAvailable().
+    if (preParsed.success && preParsed.data.action === DEMO_BRIDGE_ACTION) {
+      const requestId = crypto.randomUUID();
+      const session2 = await getServerSession(authOptions);
+      requireRole(session2, Role.ADMIN);
+      const result = await confirmViaDemoBridge(preParsed.data.orderId, session2!.user.id);
+      logger.warn('admin/payment-lab', 'Demonstration bridge invoked', {
+        requestId,
+        adminId: session2!.user.id,
+        ...result,
+      });
+      return NextResponse.json({ data: { action: DEMO_BRIDGE_ACTION, ...result } });
+    }
+
     const parsed = paymentLabActionSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -255,6 +285,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { orderId, action } = parsed.data;
+    // The bridge returned above; anything reaching here is a simulator action.
+    if (action === DEMO_BRIDGE_ACTION) {
+      throw new AppError('Unsupported action.', 400, 'VALIDATION_FAILED');
+    }
     const opts = ACTION_MAP[action];
 
     const result = await forceOutcomeForOrder(orderId, opts);
