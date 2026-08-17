@@ -1,4 +1,5 @@
 import {
+  PaymentEventActor,
   EscrowEventType,
   FULFILLMENT_STAGE_LABEL,
   FulfillmentStage,
@@ -45,6 +46,11 @@ export interface IPaymentReceipt {
   provider: string;
   /** True when this receipt was produced by the payment simulator. */
   isSimulated: boolean;
+  /** Which leg of the payment this order actually used. */
+  paymentMode: string;
+  /** Safaricom-issued references, where the order has them. */
+  checkoutRequestId: string | null;
+  merchantRequestId: string | null;
   buyer: IReceiptParty;
   farmer: IReceiptParty;
   cropName: string;
@@ -69,6 +75,12 @@ export interface IReceiptEventInput {
   resultCode?: number | null | undefined;
   actorRole?: string | null | undefined;
   note?: string | null | undefined;
+  /** PaymentEventActor, where the row recorded one. Absent on rows written
+   *  before the field existed — the trail falls back to inferring from kind. */
+  actor?: string | null | undefined;
+  /** The reason the writer recorded. Preferred over any derived detail: it is
+   *  the explanation of the event given by the code that caused it. */
+  reason?: string | null | undefined;
 }
 
 export interface IReceiptEvent {
@@ -91,6 +103,9 @@ export const PAYMENT_LABEL: Record<string, string> = {
   [PaymentEventType.DUPLICATE]: 'Duplicate confirmation ignored',
   [PaymentEventType.LOST]: 'No response from M-Pesa',
   [PaymentEventType.RECONCILED]: 'Payment reconciled',
+  // Was missing, so the one event that says we do not know whether the buyer
+  // was charged rendered on their receipt as the raw string "UNRESOLVED".
+  [PaymentEventType.UNRESOLVED]: 'Payment could not be confirmed',
 };
 
 // Result codes Safaricom actually returns — surfaced so the trail explains
@@ -123,8 +138,30 @@ const ESCROW_DETAIL: Record<string, string> = {
   [EscrowEventType.REFUND_ISSUED]: 'The held funds were returned to the buyer.',
 };
 
-function actorFor(kind: IReceiptEvent['kind'], actorRole?: string | null): string {
-  if (kind === 'PAYMENT') return 'M-Pesa';
+// PaymentEventActor, in the words a receipt should use. Kept separate from the
+// escrow mapping below because they answer different questions: this one is who
+// caused a payment event, that one is which party an escrow action was taken by.
+const PAYMENT_ACTOR_LABEL: Record<string, string> = {
+  [PaymentEventActor.BUYER]: 'Buyer',
+  [PaymentEventActor.PROVIDER]: 'M-Pesa',
+  [PaymentEventActor.SYSTEM]: 'UmojaHub',
+  [PaymentEventActor.ADMIN]: 'UmojaHub administrator',
+};
+
+function actorFor(
+  kind: IReceiptEvent['kind'],
+  actorRole?: string | null,
+  paymentActor?: string | null
+): string {
+  if (kind === 'PAYMENT') {
+    // Every payment event used to be attributed to M-Pesa. That was never true
+    // of all of them — the buyer opens the session and retries it, and
+    // reconciliation closes it out on nobody's instruction — so a trail read
+    // back to a panel or an auditor credited M-Pesa with our decisions and the
+    // buyer's. The row now says who acted; only rows predating the field fall
+    // back, and for those the old attribution is the best available guess.
+    return (paymentActor && PAYMENT_ACTOR_LABEL[paymentActor]) ?? 'M-Pesa';
+  }
   if (kind === 'FULFILMENT') return 'Farmer';
   switch (actorRole) {
     case Role.BUYER:
@@ -165,10 +202,15 @@ export function buildTransactionTrail(
       kind: 'PAYMENT' as const,
       type: e.eventType,
       label: PAYMENT_LABEL[e.eventType] ?? e.eventType,
+      // The recorded reason first: it was written by the code that caused the
+      // event and says why, where a result code only says what. The code
+      // gloss and the amount remain the fallback for rows written before the
+      // field existed.
       detail:
+        e.reason ??
         codeDetail ??
         (typeof e.amount === 'number' ? `KSh ${e.amount.toLocaleString()}` : null),
-      actor: actorFor('PAYMENT'),
+      actor: actorFor('PAYMENT', null, e.actor),
       occurredAt: toIso(e.occurredAt),
       reference: e.paymentReference ?? null,
     };
@@ -204,6 +246,8 @@ export function buildTransactionTrail(
 export interface IReceiptOrderInput {
   orderReferenceId: string;
   mpesaTransactionId?: string | null | undefined;
+  mpesaCheckoutRequestId?: string | null | undefined;
+  mpesaMerchantRequestId?: string | null | undefined;
   cropName: string;
   quantityOrdered: number;
   unit: string;
@@ -221,8 +265,9 @@ export function buildOrderReceipt(params: {
   escrowState: EscrowState;
   provider: string;
   isSimulated: boolean;
+  paymentMode: string;
 }): IPaymentReceipt {
-  const { order, buyer, farmer, escrowState, provider, isSimulated } = params;
+  const { order, buyer, farmer, escrowState, provider, isSimulated, paymentMode } = params;
   return {
     receiptNumber: order.mpesaTransactionId ?? null,
     orderReferenceId: order.orderReferenceId,
@@ -230,6 +275,9 @@ export function buildOrderReceipt(params: {
     paymentMethod: 'M-PESA',
     provider,
     isSimulated,
+    paymentMode,
+    checkoutRequestId: order.mpesaCheckoutRequestId ?? null,
+    merchantRequestId: order.mpesaMerchantRequestId ?? null,
     buyer,
     farmer,
     cropName: order.cropName,

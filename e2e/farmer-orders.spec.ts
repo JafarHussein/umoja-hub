@@ -43,10 +43,17 @@ test('order detail modal surfaces the handover window copy and CTA', async ({ pa
 
   await expect(page.getByRole('heading', { name: 'Orders' })).toBeVisible({ timeout: 30_000 });
 
-  await page.getByRole('button', { name: /view details for order/i }).first().click();
+  // Open the order this test is actually about: the one with a live dispatch
+  // CTA. It used to take .first(), which matched the right row only by luck of
+  // how the seeded orders happened to sort, and quietly became a test about a
+  // failed order once that ordering changed.
+  const confirmable = page.getByRole('button', { name: /confirm dispatch for order/i }).first();
+  const label = await confirmable.getAttribute('aria-label');
+  const ref = (label ?? '').replace(/^Confirm dispatch for order /, '');
+  await page.getByRole('button', { name: 'View details for order ' + ref }).click();
 
   await expect(
-    page.getByText(/confirm within 24 h of payment to keep your reliability score on-time/i)
+    page.getByText(/Confirming within 24 h of payment keeps your reliability score on time/i)
   ).toBeVisible();
   // exact: true — the list CTA's aria-label ("Confirm dispatch for order …")
   // would otherwise match this substring query too.

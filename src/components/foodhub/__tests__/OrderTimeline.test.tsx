@@ -53,12 +53,12 @@ describe('OrderTimelineDetailed', () => {
 
   it('addresses the buyer directly about the step the buyer must take', () => {
     render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
-    expect(screen.getByText(/Confirm receipt once the produce reaches you/)).toBeInTheDocument();
+    expect(screen.getByText(/Waiting for you to confirm the produce arrived/)).toBeInTheDocument();
   });
 
   it('tells the farmer whom the same step is waiting on', () => {
     render(<OrderTimelineDetailed {...PAID} viewer="FARMER" />);
-    expect(screen.getByText(/Waiting for the buyer to confirm receipt/)).toBeInTheDocument();
+    expect(screen.getByText(/Waiting for the buyer to confirm the produce reached them/)).toBeInTheDocument();
   });
 
   it('attributes custody of the funds to the platform, not to either party', () => {
@@ -67,13 +67,13 @@ describe('OrderTimelineDetailed', () => {
   });
 
   it('addresses the buyer the same way in both steps that describe their act', () => {
-    // "Confirm receipt once the produce reaches you" and "held in escrow until
-    // the buyer confirms receipt" describe one act by one person. Mixing the
-    // second and third person across two adjacent steps made a single timeline
-    // read as though it were written about someone else halfway down.
+    // Both steps describe one act by one person. Mixing the second and third
+    // person across two adjacent steps made a single timeline read as though it
+    // were written about someone else halfway down.
     render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
-    expect(screen.getByText(/Held in escrow until you confirm receipt/)).toBeInTheDocument();
-    expect(screen.queryByText(/until the buyer confirms receipt/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Waiting for you to confirm the produce arrived/)).toBeInTheDocument();
+    expect(screen.getByText(/Released to the farmer when you confirm receipt/)).toBeInTheDocument();
+    expect(screen.queryByText(/the buyer confirms receipt/)).not.toBeInTheDocument();
   });
 
   it('stops saying a paid order is awaiting payment', () => {
@@ -91,7 +91,39 @@ describe('OrderTimelineDetailed', () => {
         viewer="BUYER"
       />
     );
-    expect(screen.getByText('Awaiting M-Pesa confirmation')).toBeInTheDocument();
+    // It now says what the buyer has to DO rather than only that we are
+    // waiting. "Awaiting M-Pesa confirmation" described our side of a moment
+    // whose next move belongs entirely to the person reading it.
+    expect(screen.getByText(/Enter your M-Pesa PIN/)).toBeInTheDocument();
+  });
+
+  it('does not describe a payment that failed as one still in progress', () => {
+    // Every non-PAID state used to share one sentence about awaiting
+    // confirmation, so a payment the buyer had cancelled and one still in
+    // flight were indistinguishable on the timeline.
+    render(
+      <OrderTimelineDetailed
+        paymentStatus={OrderPaymentStatus.FAILED}
+        fulfillmentStatus={OrderFulfillmentStatus.AWAITING_PAYMENT}
+        viewer="BUYER"
+      />
+    );
+    expect(screen.getByText(/did not go through/)).toBeInTheDocument();
+    expect(screen.queryByText(/Enter your M-Pesa PIN/)).not.toBeInTheDocument();
+  });
+
+  it('never tells anyone an unresolved payment succeeded or failed', () => {
+    // The one state where the platform does not know. Saying either would be a
+    // claim about someone's money that we cannot support.
+    render(
+      <OrderTimelineDetailed
+        paymentStatus={OrderPaymentStatus.UNRESOLVED}
+        fulfillmentStatus={OrderFulfillmentStatus.AWAITING_PAYMENT}
+        viewer="BUYER"
+      />
+    );
+    expect(screen.getByText(/could not tell us whether you were charged/)).toBeInTheDocument();
+    expect(screen.queryByText(/did not go through/)).not.toBeInTheDocument();
   });
 });
 
@@ -119,7 +151,7 @@ describe('OrderTimelineDetailed — what "disputed" actually means', () => {
     // buyer waited on a decision.
     render(<OrderTimelineDetailed {...PAID} hasOpenMediation viewer="BUYER" />);
     expect(screen.getByText('Under review')).toBeInTheDocument();
-    expect(screen.getByText(/funds stay in escrow/i)).toBeInTheDocument();
+    expect(screen.getByText(/money stays where it is/i)).toBeInTheDocument();
   });
 
   it('says nothing about a review when there is no mediation', () => {

@@ -122,3 +122,72 @@ export async function computeEscrowBalance(farmerId: string): Promise<IEscrowBal
     availableKES: Math.max(0, releasableKES - committedPayoutsKES),
   };
 }
+
+// ---------------------------------------------------------------------------
+// The same question asked of the whole platform rather than one farmer.
+//
+// An operator running an escrow needs to be able to answer "how much of other
+// people's money are we holding right now, and against how many orders?" —
+// which is the first question an auditor asks and the number a float has to
+// cover. It was derivable, one farmer at a time, and so in practice unanswerable.
+//
+// Deliberately the same definitions as computeEscrowBalance above, computed the
+// same way from the same collections. A separate reading of "held" that drifted
+// from the farmer-facing one would be worse than not having this at all.
+// ---------------------------------------------------------------------------
+
+export interface IPlatformEscrowPosition {
+  /** Paid, not yet confirmed received — the platform's live custody obligation. */
+  heldKES: number;
+  heldOrders: number;
+  /** Subset of held whose release is blocked by a live escalation. */
+  underReviewKES: number;
+  underReviewOrders: number;
+  /** Confirmed received: the farmer's money, not yet requested or paid out. */
+  clearedKES: number;
+  clearedOrders: number;
+}
+
+export async function computePlatformEscrowPosition(): Promise<IPlatformEscrowPosition> {
+  const [{ default: Order }, { default: MediationRequest }] = await Promise.all([
+    import('@/lib/models/Order.model'),
+    import('@/lib/models/MediationRequest.model'),
+  ]);
+
+  const disputedOrderIds = await MediationRequest.distinct('orderId', {
+    status: { $in: [MediationRequestStatus.OPEN, MediationRequestStatus.IN_REVIEW] },
+  });
+
+  const sum = { _id: null, total: { $sum: '$totalAmountKES' }, count: { $sum: 1 } };
+
+  const [heldAgg, releasableAgg, underReviewAgg] = await Promise.all([
+    Order.aggregate<{ total: number; count: number }>([
+      {
+        $match: {
+          paymentStatus: OrderPaymentStatus.PAID,
+          fulfillmentStatus: OrderFulfillmentStatus.IN_FULFILLMENT,
+        },
+      },
+      { $group: sum },
+    ]),
+    Order.aggregate<{ total: number; count: number }>([
+      { $match: { fulfillmentStatus: OrderFulfillmentStatus.COMPLETED } },
+      { $group: sum },
+    ]),
+    disputedOrderIds.length
+      ? Order.aggregate<{ total: number; count: number }>([
+          { $match: { _id: { $in: disputedOrderIds }, paymentStatus: OrderPaymentStatus.PAID } },
+          { $group: sum },
+        ])
+      : Promise.resolve([]),
+  ]);
+
+  return {
+    heldKES: heldAgg[0]?.total ?? 0,
+    heldOrders: heldAgg[0]?.count ?? 0,
+    underReviewKES: underReviewAgg[0]?.total ?? 0,
+    underReviewOrders: underReviewAgg[0]?.count ?? 0,
+    clearedKES: releasableAgg[0]?.total ?? 0,
+    clearedOrders: releasableAgg[0]?.count ?? 0,
+  };
+}

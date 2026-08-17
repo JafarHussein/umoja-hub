@@ -7,6 +7,8 @@ export type { IButtonProps } from './Button';
 export { Input, Textarea, Select } from './Field';
 export type { IInputProps, ITextareaProps, ISelectProps } from './Field';
 export { Card } from './Card';
+export { Disclosure } from './Disclosure';
+export type { IDisclosureProps } from './Disclosure';
 export type { ICardProps } from './Card';
 export { Page, PageHeader, PageSection } from './Page';
 export type { IPageProps, IPageHeaderProps, IPageSectionProps } from './Page';

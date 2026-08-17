@@ -16,27 +16,51 @@ import {
   FULFILLMENT_STAGE_LABEL,
 } from '@/types';
 import {
+  Alert,
   Button,
+  Card,
+  DataItem,
+  DataList,
+  Disclosure,
   EmptyState,
   Page,
-  Select,
   Textarea,
-  Alert,
-  StatusPill,
 } from '@/components/app';
-import { cn } from '@/lib/cn';
 import { OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
-import { orderStatusPill, paymentPill } from '@/components/foodhub/orderPill';
-import { EscrowExplainer } from '@/components/foodhub/EscrowExplainer';
+import { MoneyStatement, NextStep } from '@/components/foodhub/MoneyStatement';
+import { escrowNarrative } from '@/lib/foodhub/escrowNarrative';
 import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
-import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
+import { escrowReferenceFor } from '@/lib/foodhub/receipt';
+import { SimulationNotice, type PaymentMode } from '@/components/foodhub/SimulationNotice';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import {
   MediationPanel,
+  EscalateForm,
   MEDIATION_CATEGORY_LABEL,
   type IMediationCase,
   isMediationOpen,
 } from '@/components/foodhub/MediationPanel';
+
+// ---------------------------------------------------------------------------
+// The buyer's order, read as one statement about one payment.
+//
+// This screen was ten bordered cards deep — status pills, an escrow panel, a
+// refund alert saying what the escrow panel had just said, a "latest from the
+// farmer" card saying what the timeline already showed, a details table, a
+// receipt link, an action panel, a mediation panel, an escalation panel and a
+// rating panel. Every fact was in a box, so no fact outranked any other, and
+// the amount of money involved appeared once, in 13px, inside a table.
+//
+// Four zones now, in the order the questions get asked:
+//
+//   1. the statement    how much, where it is, and what proves it
+//   2. the next step    the one thing this buyer can do, or nothing at all
+//   3. the journey      the whole lifecycle with the current stage marked
+//   4. the detail       everything else, behind disclosure
+//
+// Cards survive in exactly one place: the mediation case, which is a genuine
+// sub-document containing two people's accounts of what happened.
+// ---------------------------------------------------------------------------
 
 interface IBuyerOrder {
   _id: string;
@@ -58,22 +82,44 @@ interface IBuyerOrder {
   mpesaTransactionId: string | null;
   /** Whether that code came from the simulator. Decided server-side. */
   isSimulated: boolean;
+  /** Which leg of the payment this order used. Derived server-side. */
+  paymentMode?: PaymentMode;
+  mpesaMerchantRequestId?: string | null;
+  mpesaCheckoutRequestId?: string | null;
 }
 
-// The mediation case shape and its labels are shared with the farmer surface —
-// both sides must see the same case described the same way.
 type IMediation = IMediationCase;
 
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
-  /** True when the payment simulator is the active provider. */
   isSimulated?: boolean;
 }
 
 type PageState = 'loading' | 'ready' | 'error' | 'not_found';
 type ActionState = 'idle' | 'submitting' | 'error';
 
+const BUYER_MEDIATION_CATEGORIES: MediationCategory[] = Object.values(MediationCategory);
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-KE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-KE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function BuyerOrderDetailPage(): React.ReactElement {
   const params = useParams<{ orderId: string }>();
@@ -91,16 +137,9 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
   const [mediation, setMediation] = useState<IMediation | null>(null);
   const [escalateOpen, setEscalateOpen] = useState(false);
-  const [mediationForm, setMediationForm] = useState<{
-    category: MediationCategory;
-    description: string;
-  }>({ category: MediationCategory.NOT_DELIVERED, description: '' });
-  const [mediationState, setMediationState] = useState<ActionState>('idle');
-  const [mediationError, setMediationError] = useState<string | null>(null);
 
-  // Whether the payment simulator is active. Drives the waiting-screen copy so
-  // the buyer is never told to expect an STK prompt that will not arrive.
   const [isSimulated, setIsSimulated] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('simulation');
 
   const [paymentActionState, setPaymentActionState] = useState<'idle' | 'submitting'>('idle');
   const [paymentActionError, setPaymentActionError] = useState<string | null>(null);
@@ -114,17 +153,10 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     }
   }, []);
 
-  useEffect(() => {
-    return stopPolling;
-  }, [stopPolling]);
+  useEffect(() => stopPolling, [stopPolling]);
 
   const fetchOrder = useCallback(async (): Promise<void> => {
     try {
-      // Asks for this order, rather than downloading a page of the buyer's
-      // order list and searching it. The list is paginated at 20, so that
-      // approach could not open anything older: a buyer with 27 orders
-      // following a link to their 25th was told it might belong to someone
-      // else, about their own purchase.
       const res = await fetch(`/api/orders/${params.orderId}`);
       if (res.status === 404) {
         setPageState('not_found');
@@ -137,6 +169,8 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       const { data } = (await res.json()) as { data: IBuyerOrder };
       setOrder(data);
       setHasRated(data.hasRated);
+      setIsSimulated(data.isSimulated);
+      if (data.paymentMode) setPaymentMode(data.paymentMode);
       setPageState('ready');
     } catch {
       setPageState('error');
@@ -150,7 +184,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       const data = (await res.json()) as { data: IMediation | null };
       setMediation(data.data);
     } catch {
-      // Non-fatal — the page still renders without the mediation banner.
+      // Non-fatal — the page still renders without the mediation case.
     }
   }, [params.orderId]);
 
@@ -169,7 +203,9 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     }
   }, [status, session, router, fetchOrder, fetchMediation]);
 
-  // Start polling if order is PENDING_PAYMENT on load
+  // While a payment is outstanding this screen keeps asking. The poll is also
+  // what triggers reconciliation for this order, so leaving it running is what
+  // eventually resolves a payment whose callback never arrived.
   useEffect(() => {
     if (pageState !== 'ready' || !order) return;
     if (order.paymentStatus !== OrderPaymentStatus.PENDING_PAYMENT) return;
@@ -190,15 +226,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           if (data.isSimulated !== undefined) setIsSimulated(data.isSimulated);
           if (data.paymentStatus !== OrderPaymentStatus.PENDING_PAYMENT) {
             stopPolling();
-            setOrder((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    paymentStatus: data.paymentStatus,
-                    fulfillmentStatus: data.fulfillmentStatus,
-                  }
-                : prev
-            );
+            void fetchOrder();
           }
         } catch {
           // transient error — continue polling
@@ -208,10 +236,8 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
 
     pollingTimer.current = timer;
     return stopPolling;
-  }, [pageState, order, stopPolling]);
+  }, [pageState, order, stopPolling, fetchOrder]);
 
-  // Retry or abandon a payment that did not go through. The order keeps its
-  // reference and its history — only the payment session is new.
   async function handlePaymentAction(action: 'RETRY' | 'CANCEL'): Promise<void> {
     if (!order) return;
     setPaymentActionState('submitting');
@@ -230,8 +256,6 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       }
       if (body.data?.isSimulated !== undefined) setIsSimulated(body.data.isSimulated);
       setPaymentActionState('idle');
-      // Re-read the order so the page picks up the new payment state and, on a
-      // retry, restarts the payment poll.
       await fetchOrder();
     } catch {
       setPaymentActionError('Could not complete that request. Check your connection.');
@@ -290,49 +314,20 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
     }
   }
 
-  async function submitMediation(e: React.FormEvent<HTMLFormElement>): Promise<void> {
-    e.preventDefault();
-    if (!order) return;
-    setMediationError(null);
-    if (mediationForm.description.trim().length < 20) {
-      setMediationError('Describe the problem in at least 20 characters.');
-      return;
-    }
-    setMediationState('submitting');
-    try {
-      const res = await fetch(`/api/orders/${order._id}/mediation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: mediationForm.category,
-          description: mediationForm.description.trim(),
-        }),
-      });
-      const body = (await res.json()) as { data?: IMediation; error?: string };
-      if (!res.ok) {
-        setMediationError(body.error ?? 'Could not send your report. Please try again.');
-        setMediationState('error');
-        return;
-      }
-      if (body.data) setMediation(body.data);
-      setEscalateOpen(false);
-      setMediationState('idle');
-    } catch {
-      setMediationError('Something went wrong. Please try again.');
-      setMediationState('error');
-    }
-  }
-
   // ── Loading ─────────────────────────────────────────────────────────────
   if (status === 'loading' || pageState === 'loading') {
     return (
       <Page width="focus">
-        <div className="space-y-2">
-          <div className="skeleton h-3 w-24 rounded" />
-          <div className="skeleton h-8 w-48 rounded" />
+        <div className="space-y-3">
+          <div className="skeleton h-4 w-28 rounded" />
+          <div className="skeleton h-7 w-56 rounded" />
         </div>
-        <div className="skeleton h-40 rounded-app-card" />
-        <div className="skeleton h-48 rounded-app-card" />
+        <div className="space-y-3">
+          <div className="skeleton h-3 w-24 rounded" />
+          <div className="skeleton h-9 w-48 rounded" />
+          <div className="skeleton h-4 w-full max-w-md rounded" />
+        </div>
+        <div className="skeleton h-56 rounded-app-card" />
       </Page>
     );
   }
@@ -356,7 +351,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       <Page width="focus">
         <EmptyState
           title="We could not load this order"
-          description="Whatever you have paid is still held in escrow — this screen just could not reach the order's details."
+          description="Whatever you have paid is still held. This screen just could not reach the order's details."
           action={{ label: 'Try again', onClick: () => void fetchOrder() }}
           secondaryAction={{ label: 'Back to my orders', href: '/dashboard/buyer/orders' }}
         />
@@ -365,8 +360,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
   }
 
   // ── Ready ────────────────────────────────────────────────────────────────
-  // Mediation is decoupled from the order state machine: an OPEN/IN_REVIEW
-  // escalation only surfaces a banner; it never changes the order's status.
+  const openMediation = isMediationOpen(mediation);
   const activeMediation =
     mediation &&
     (mediation.status === MediationRequestStatus.OPEN ||
@@ -374,46 +368,40 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
       ? mediation
       : null;
 
-  // 48-h client gate (mirrors the server's MEDIATION_TOO_EARLY rule): mediation
-  // opens 48h after payment, giving the farmer time to fulfil first.
+  const escrowState = orderEscrowState(
+    {
+      paymentStatus: order.paymentStatus,
+      fulfillmentStatus: order.fulfillmentStatus,
+      confirmedByFarmerAt: order.confirmedByFarmerAt ?? null,
+    },
+    openMediation
+  );
+
+  // One narrative, three placements: the headline is the status of the money,
+  // what releases it is the consequence of the action, and what to do when it
+  // goes wrong sits behind disclosure until it is needed.
+  const money = escrowNarrative(
+    escrowState,
+    'BUYER',
+    order.totalAmountKES,
+    order.farmer.firstName,
+    order.paymentStatus
+  );
+
+  // 48-h client gate, mirroring the server's MEDIATION_TOO_EARLY rule.
   const paidMs = order.paidAt ? new Date(order.paidAt).getTime() : null;
   const eligibleAtMs = paidMs !== null ? paidMs + MEDIATION_ESCALATION_HOURS * 60 * 60 * 1000 : null;
   const canEscalate = eligibleAtMs !== null && Date.now() >= eligibleAtMs;
-  const eligibleDate =
-    eligibleAtMs !== null
-      ? new Date(eligibleAtMs).toLocaleDateString('en-KE', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-      : null;
 
-  const detailRows: { label: string; value: string; mono: boolean }[] = [
-    { label: 'Crop', value: order.cropName, mono: false },
-    {
-      label: 'Quantity',
-      value: `${order.quantityOrdered.toLocaleString()} ${order.unit.toLowerCase()}`,
-      mono: true,
-    },
-    { label: 'Total', value: `KSh ${order.totalAmountKES.toLocaleString()}`, mono: true },
-    { label: 'Farmer', value: `${order.farmer.firstName} ${order.farmer.lastName}`, mono: false },
-    {
-      label: 'Placed',
-      value: new Date(order.createdAt).toLocaleDateString('en-KE', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }),
-      mono: false,
-    },
-  ];
+  const isPaid =
+    order.paymentStatus === OrderPaymentStatus.PAID ||
+    order.paymentStatus === OrderPaymentStatus.REFUNDED;
 
   return (
     <Page width="focus">
-      {/* Back link */}
       <Link
         href="/dashboard/buyer/orders"
-        className="app-body inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink"
+        className="app-body inline-flex items-center gap-1.5 text-app-muted transition-colors duration-150 hover:text-app-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
@@ -427,40 +415,42 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         Back to orders
       </Link>
 
-      {/* Page header */}
-      <div>
-        <p className="app-data-m text-app-faint">{order.orderReferenceId}</p>
-        <h1 className="app-h1 mt-1 capitalize text-app-ink">{order.cropName}</h1>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <StatusPill
-            {...paymentPill(order.paymentStatus)}
-          />
-          <StatusPill
-            {...orderStatusPill({
-              paymentStatus: order.paymentStatus,
-              fulfillmentStatus: order.fulfillmentStatus,
-              hasOpenMediation: isMediationOpen(mediation),
-            })}
-          />
-        </div>
+      {/* What this order is. Recognisable, but not the loudest thing — the
+          amount below outranks it, because that is what the reader came for. */}
+      <header className="space-y-1">
+        <h1 className="app-h1 capitalize text-app-ink">
+          {order.cropName}
+          <span className="app-h1 font-normal text-app-muted">
+            , {order.quantityOrdered.toLocaleString()} {order.unit.toLowerCase()}
+          </span>
+        </h1>
+        <p className="app-meta text-app-faint">
+          <span className="app-data-m">{order.orderReferenceId}</span> · from{' '}
+          {order.farmer.firstName} {order.farmer.lastName} · placed {formatDate(order.createdAt)}
+        </p>
+      </header>
 
-        {/* The code the buyer can check against their M-Pesa SMS.
-            A screen that says "Paid" and shows nothing to match it against is
-            asking to be believed; the Safaricom message is what Kenyan buyers
-            actually trust. The platform stored this all along and only showed
-            it on the receipt, a click away from the claim it substantiates. */}
-        {order.mpesaTransactionId && (
-          <p className="app-meta mt-2 text-app-muted">
-            M-Pesa receipt{' '}
-            <span className="app-data-m text-app-ink">{order.mpesaTransactionId}</span>
-            {order.isSimulated && (
-              <SimulationNotice variant="badge" className="ml-2 align-middle" />
+      {/* ── 1 · The statement ─────────────────────────────────────────────── */}
+      <MoneyStatement
+        label={money.label}
+        amountKES={order.totalAmountKES}
+        status={money.headline}
+        tone={money.tone}
+        evidence={
+          <>
+            {order.mpesaTransactionId && (
+              <span>
+                M-Pesa receipt{' '}
+                <span className="app-data-m text-app-muted">{order.mpesaTransactionId}</span>
+              </span>
             )}
-          </p>
-        )}
-      </div>
+            {order.isSimulated && <SimulationNotice mode={paymentMode} variant="badge" />}
+          </>
+        }
+      />
 
-      {/* UNDER_MEDIATION alert bar — decoupled from order state */}
+      {/* A live review is an interruption to the story, not a stage of it, so it
+          stays an alert. It is the one thing that outranks the next step. */}
       {activeMediation && (
         <Alert tone="warning">
           <span className="app-body-strong">UmojaHub is stepping in.</span> Our team{' '}
@@ -470,187 +460,148 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
           {activeMediation.initiatedBy === MediationInitiator.BUYER
             ? 'your report'
             : `a report from ${order.farmer.firstName}`}{' '}
-          ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Your order status is unchanged
-          while this is resolved.
+          ({MEDIATION_CATEGORY_LABEL[activeMediation.category]}). Nothing moves until it is decided.
         </Alert>
       )}
 
-      {/* What is happening to this money, and what governs it.
-          Replaces a block that stated where the money was but never what moved
-          it — and which only rendered while PAID + IN_FULFILLMENT, so it fell
-          silent in exactly the states a buyer most needs explaining: an order
-          under review, and one that has just been refunded. */}
-      <EscrowExplainer
-        escrowState={orderEscrowState(
-          {
-            paymentStatus: order.paymentStatus,
-            fulfillmentStatus: order.fulfillmentStatus,
-            confirmedByFarmerAt: order.confirmedByFarmerAt ?? null,
-          },
-          isMediationOpen(mediation)
-        )}
-        viewer="BUYER"
-        amountKES={order.totalAmountKES}
-        counterpartyName={order.farmer.firstName}
-      />
+      {/* ── 2 · The next step ─────────────────────────────────────────────── */}
 
-      {/* Refunded — escrow returned to the buyer */}
-      {order.paymentStatus === OrderPaymentStatus.REFUNDED && (
-        <Alert tone="warning">
-          <span className="app-body-strong">Payment refunded.</span> Your{' '}
-          KSh {order.totalAmountKES.toLocaleString()} has been returned following the platform&apos;s
-          mediation decision.
-        </Alert>
-      )}
-
-      {/* Where the produce is right now — reported by the farmer */}
-      {order.fulfillmentStage &&
-        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-          <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
-            <p className="app-label text-app-muted">Latest from {order.farmer.firstName}</p>
-            <p className="app-body-strong mt-0.5 text-app-ink">
-              {FULFILLMENT_STAGE_LABEL[order.fulfillmentStage]}
-            </p>
-            <p className="app-meta mt-0.5 text-app-muted">
-              {order.fulfillmentStage === FulfillmentStage.DELIVERED
-                ? 'Once you have checked it, confirm receipt below to release the payment.'
-                : 'Your payment stays protected in escrow until you confirm you have received the order.'}
-            </p>
+      {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
+        <NextStep
+          title="Waiting for your payment"
+          consequence={
+            isSimulated
+              ? 'The payment request has been sent and is being processed. This page updates on its own, and no PIN is requested on your handset.'
+              : 'Check your phone and enter your M-Pesa PIN. This page updates on its own once M-Pesa answers.'
+          }
+        >
+          <div className="space-y-3">
+            <SimulationNotice mode={paymentMode} />
+            {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
+            <Button
+              variant="secondary"
+              isLoading={paymentActionState === 'submitting'}
+              onClick={() => void handlePaymentAction('CANCEL')}
+            >
+              Cancel this order
+            </Button>
           </div>
+        </NextStep>
+      )}
+
+      {order.paymentStatus === OrderPaymentStatus.FAILED && (
+        <NextStep title="Pay for this order again" consequence={money.releasedBy}>
+          <div className="space-y-3">
+            {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
+            <Button
+              isLoading={paymentActionState === 'submitting'}
+              onClick={() => void handlePaymentAction('RETRY')}
+            >
+              Try payment again
+            </Button>
+          </div>
+        </NextStep>
+      )}
+
+      {/* No button, because there is genuinely nothing for the buyer to do and
+          the one thing they might try — paying again — is the wrong move. */}
+      {order.paymentStatus === OrderPaymentStatus.UNRESOLVED && (
+        <NextStep title="While we check" consequence={money.releasedBy} />
+      )}
+
+      {order.paymentStatus === OrderPaymentStatus.PAID &&
+        order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
+          <NextStep
+            title="Confirm receipt"
+            consequence={
+              openMediation
+                ? 'Confirming would release the payment to the farmer, which is the very thing under review, so it is paused until UmojaHub decides.'
+                : money.releasedBy
+            }
+          >
+            <div className="space-y-3">
+              {order.fulfillmentStage && (
+                <p className="app-meta text-app-muted">
+                  Latest from {order.farmer.firstName}:{' '}
+                  <span className="text-app-ink">
+                    {FULFILLMENT_STAGE_LABEL[order.fulfillmentStage]}
+                  </span>
+                </p>
+              )}
+              {receiveError && <Alert tone="danger">{receiveError}</Alert>}
+              {!openMediation && (
+                <Button
+                  isLoading={receiveState === 'submitting'}
+                  onClick={() => void handleMarkReceived()}
+                >
+                  Mark as received
+                </Button>
+              )}
+            </div>
+          </NextStep>
         )}
 
-      {/* Progress timeline */}
-      <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
-        <p className="app-label text-app-muted">Progress</p>
+      {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && !hasRated && (
+        <NextStep
+          title={`Rate ${order.farmer.firstName}`}
+          consequence="Your rating feeds their trust score, which is what other buyers see before they order. It is the last thing this order needs."
+        >
+          <form onSubmit={(e) => void handleRatingSubmit(e)} className="space-y-4">
+            <div className="flex gap-1" role="group" aria-label="Rating">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRatingForm((prev) => ({ ...prev, rating: star }))}
+                  aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+                  aria-pressed={ratingForm.rating >= star}
+                  className="rounded-app-cell px-0.5 text-2xl leading-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+                >
+                  <span className={ratingForm.rating >= star ? 'text-app-brand' : 'text-app-faint'}>
+                    ★
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <Textarea
+              label="Comment (optional)"
+              rows={3}
+              value={ratingForm.comment}
+              onChange={(e) => setRatingForm((prev) => ({ ...prev, comment: e.target.value }))}
+              placeholder="What was the produce like?"
+            />
+
+            {ratingError && <Alert tone="danger">{ratingError}</Alert>}
+
+            <Button
+              type="submit"
+              isLoading={ratingState === 'submitting'}
+              disabled={ratingForm.rating === 0}
+            >
+              Submit rating
+            </Button>
+          </form>
+        </NextStep>
+      )}
+
+      {/* ── 3 · The journey ───────────────────────────────────────────────── */}
+      <section className="space-y-4 border-t border-app-hairline pt-6" aria-label="Order progress">
+        <h2 className="app-h2 text-app-ink">How this order is going</h2>
         <OrderTimelineDetailed
           paymentStatus={order.paymentStatus}
           fulfillmentStatus={order.fulfillmentStatus}
+          createdAt={order.createdAt}
           paidAt={order.paidAt}
           confirmedByFarmerAt={order.confirmedByFarmerAt}
           receivedByBuyerAt={order.receivedByBuyerAt}
           viewer="BUYER"
-          hasOpenMediation={isMediationOpen(mediation)}
+          hasOpenMediation={openMediation}
         />
-      </div>
+      </section>
 
-      {/* Order details */}
-      <div className="rounded-app-card border border-app-hairline bg-app-card">
-        <div className="px-4 pb-2 pt-4">
-          <p className="app-label text-app-muted">Order details</p>
-        </div>
-        {detailRows.map(({ label, value, mono }) => (
-          <div
-            key={label}
-            className="flex items-center justify-between border-t border-app-hairline px-4 py-2.5"
-          >
-            <span className="app-body text-app-muted">{label}</span>
-            <span
-              className={cn(
-                'capitalize text-app-ink',
-                mono ? 'app-data-m' : 'app-body'
-              )}
-            >
-              {value}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Receipt — available from the moment payment is confirmed */}
-      {(order.paymentStatus === OrderPaymentStatus.PAID ||
-        order.paymentStatus === OrderPaymentStatus.REFUNDED) && (
-        <Link
-          href={`/dashboard/buyer/orders/${order._id}/receipt`}
-          className="flex items-center justify-between gap-3 rounded-app-card border border-app-hairline bg-app-card p-6 transition-colors duration-150 hover:bg-app-sunken"
-        >
-          <div>
-            <p className="app-body-strong text-app-ink">View receipt</p>
-            <p className="app-meta text-app-muted">
-              M-Pesa reference, escrow reference and the full transaction history.
-            </p>
-          </div>
-          <span aria-hidden className="app-body text-app-muted">
-            →
-          </span>
-        </Link>
-      )}
-
-      {/* ── Action zone ─────────────────────────────────────────────────── */}
-
-      {/* PENDING_PAYMENT — waiting for M-Pesa */}
-      {order.paymentStatus === OrderPaymentStatus.PENDING_PAYMENT && (
-        <div className="space-y-2 rounded-app-card border border-app-hairline bg-app-card p-6">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="h-2 w-2 flex-shrink-0 animate-pulse rounded-app-pill bg-app-warning"
-              aria-hidden="true"
-            />
-            <p className="app-body-strong text-app-ink">Awaiting payment</p>
-          </div>
-          <p className="app-body text-app-muted">
-            {isSimulated
-              ? 'The payment request has been sent and is being processed. This page updates on its own — no PIN is requested on your handset.'
-              : 'Check your phone and enter your M-Pesa PIN to complete this order.'}
-          </p>
-          {isSimulated && <SimulationNotice />}
-          {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
-          <Button
-            variant="secondary"
-            size="sm"
-            isLoading={paymentActionState === 'submitting'}
-            onClick={() => void handlePaymentAction('CANCEL')}
-          >
-            Cancel this order
-          </Button>
-        </div>
-      )}
-
-      {/* FAILED — the payment did not go through; offer a way forward */}
-      {order.paymentStatus === OrderPaymentStatus.FAILED && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
-          <p className="app-body-strong text-app-ink">Payment was not completed</p>
-          <p className="app-body text-app-muted">
-            No money left your account. You can try paying for this order again — the price and
-            quantity are unchanged, as long as {order.farmer.firstName} still has the stock.
-          </p>
-          {paymentActionError && <Alert tone="danger">{paymentActionError}</Alert>}
-          <Button
-            isLoading={paymentActionState === 'submitting'}
-            onClick={() => void handlePaymentAction('RETRY')}
-            className="w-full"
-          >
-            Try payment again
-          </Button>
-        </div>
-      )}
-
-      {/* IN_FULFILLMENT — mark as received.
-          Withheld while a review is open: confirming pays the farmer out, which
-          is the very thing under review, so the API refuses it. Offering a
-          button that cannot work is worse than explaining why it is not there. */}
-      {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
-          <p className="app-label text-app-muted">Confirm receipt</p>
-          <p className="app-body text-app-muted">
-            {isMediationOpen(mediation)
-              ? 'Confirming receipt would release your payment to the farmer, so it is paused while UmojaHub reviews this order. You will be told as soon as it is decided.'
-              : `Have you received your order from ${order.farmer.firstName}? Confirming releases your payment from escrow to the farmer.`}
-          </p>
-          {receiveError && <Alert tone="danger">{receiveError}</Alert>}
-          {!isMediationOpen(mediation) && (
-            <Button
-              isLoading={receiveState === 'submitting'}
-              onClick={() => void handleMarkReceived()}
-              className="w-full"
-            >
-              Mark as received
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* The case, when there is one — both accounts, all photos, and the
-          buyer's chance to reply if the farmer raised it. */}
+      {/* The case itself is a real sub-document — two people's accounts and their
+          photographs — so it keeps its container. */}
       {mediation && (
         <MediationPanel
           orderId={order._id}
@@ -660,138 +611,120 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         />
       )}
 
-      {/* IN_FULFILLMENT + no active escalation — platform mediation (48-h gate) */}
-      {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && !activeMediation && (
-        <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
-          <p className="app-label text-app-muted">Problem with this order?</p>
+      {/* ── 4 · The detail ────────────────────────────────────────────────── */}
+      <div className="border-b border-app-hairline">
+        <Disclosure summary="Order details">
+          <DataList>
+            <DataItem label="Produce">
+              <span className="capitalize">{order.cropName}</span>
+            </DataItem>
+            <DataItem label="Quantity" numeric>
+              {order.quantityOrdered.toLocaleString()} {order.unit.toLowerCase()}
+            </DataItem>
+            <DataItem label="Total" numeric>
+              KSh {order.totalAmountKES.toLocaleString()}
+            </DataItem>
+            <DataItem label="Farmer">
+              {order.farmer.firstName} {order.farmer.lastName}
+            </DataItem>
+            <DataItem label="Order placed">{formatDateTime(order.createdAt)}</DataItem>
+          </DataList>
+        </Disclosure>
 
-          {!canEscalate ? (
-            <p className="app-body text-app-muted">
-              Give {order.farmer.firstName} time to fulfil your order. If it still hasn&apos;t
-              arrived, you can ask UmojaHub to step in from {eligibleDate}.
-            </p>
-          ) : !escalateOpen ? (
-            <>
-              <p className="app-body text-app-muted">
-                Haven&apos;t received your order? Our team can step in to help resolve it.
-              </p>
-              <Button variant="secondary" onClick={() => setEscalateOpen(true)} className="w-full">
-                Ask UmojaHub to step in
-              </Button>
-            </>
-          ) : (
-            <form onSubmit={(e) => void submitMediation(e)} className="space-y-3">
-              <Select
-                label="What went wrong?"
-                value={mediationForm.category}
-                onChange={(e) =>
-                  setMediationForm((prev) => ({
-                    ...prev,
-                    category: e.target.value as MediationCategory,
-                  }))
-                }
-              >
-                {Object.values(MediationCategory).map((c) => (
-                  <option key={c} value={c}>
-                    {MEDIATION_CATEGORY_LABEL[c]}
-                  </option>
-                ))}
-              </Select>
-
-              <Textarea
-                label="Describe the problem (at least 20 characters)"
-                rows={4}
-                value={mediationForm.description}
-                onChange={(e) =>
-                  setMediationForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                placeholder="Tell our team what happened so we can help."
-              />
-
-              {mediationError && <Alert tone="danger">{mediationError}</Alert>}
-
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setEscalateOpen(false);
-                    setMediationError(null);
-                  }}
+        {isPaid && (
+          <Disclosure summary="Payment details">
+            <div className="space-y-4">
+              <SimulationNotice mode={paymentMode} />
+              <DataList>
+                {/* Named for what it is. A `DEMO-` reference is not an M-Pesa
+                    receipt and must not be labelled as one; a buyer matching
+                    this against their handset would find nothing. */}
+                <DataItem
+                  label={
+                    paymentMode === 'demo-bridge' ? 'Demonstration reference' : 'M-Pesa receipt'
+                  }
+                  numeric
                 >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  isLoading={mediationState === 'submitting'}
-                  className="flex-1"
-                >
-                  Send to UmojaHub
-                </Button>
-              </div>
-            </form>
-          )}
-        </div>
-      )}
-
-      {/* COMPLETED + not rated — rating form */}
-      {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && !hasRated && (
-        <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
-          <p className="app-label text-app-muted">Rate this order</p>
-          <form onSubmit={(e) => void handleRatingSubmit(e)} className="space-y-4">
-            {/* Star selector */}
-            <div>
-              <p className="app-body mb-2 text-app-muted">
-                How was your experience with {order.farmer.firstName}?
-              </p>
-              <div className="flex gap-1" role="group" aria-label="Rating">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setRatingForm((prev) => ({ ...prev, rating: star }))}
-                    aria-label={`${star} star${star !== 1 ? 's' : ''}`}
-                    className="rounded-app-cell text-2xl leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-app-ring"
-                  >
-                    <span className={ratingForm.rating >= star ? 'text-app-brand' : 'text-app-faint'}>
-                      ★
-                    </span>
-                  </button>
-                ))}
-              </div>
+                  {order.mpesaTransactionId ?? '—'}
+                </DataItem>
+                <DataItem label="Order reference" numeric>
+                  {order.orderReferenceId}
+                </DataItem>
+                <DataItem label="Escrow reference" numeric>
+                  {escrowReferenceFor(order.orderReferenceId)}
+                </DataItem>
+                <DataItem label="Method">M-PESA</DataItem>
+                <DataItem label="Paid on">{formatDateTime(order.paidAt)}</DataItem>
+                {/* The provider references. These are what Safaricom support
+                    asks for, and on a sandbox order they are the evidence that
+                    the request genuinely reached Daraja. */}
+                {order.mpesaCheckoutRequestId && (
+                  <DataItem label="Checkout request" numeric>
+                    {order.mpesaCheckoutRequestId}
+                  </DataItem>
+                )}
+                {order.mpesaMerchantRequestId && (
+                  <DataItem label="Merchant request" numeric>
+                    {order.mpesaMerchantRequestId}
+                  </DataItem>
+                )}
+                <DataItem label="Payment route">{paymentMode}</DataItem>
+              </DataList>
             </div>
+            <div className="pt-4">
+              <Link
+                href={`/dashboard/buyer/orders/${order._id}/receipt`}
+                className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+              >
+                View the full receipt and transaction history
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </Disclosure>
+        )}
 
-            {/* Comment */}
-            <Textarea
-              label="Comment (optional)"
-              rows={3}
-              value={ratingForm.comment}
-              onChange={(e) => setRatingForm((prev) => ({ ...prev, comment: e.target.value }))}
-              placeholder="Share your experience..."
-            />
+        <Disclosure summary="If something goes wrong">
+          <div className="space-y-4">
+            <p className="app-body max-w-app-prose text-pretty text-app-muted">
+              {money.ifItGoesWrong}
+            </p>
 
-            {ratingError && <Alert tone="danger">{ratingError}</Alert>}
+            {order.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+              !activeMediation &&
+              (canEscalate ? (
+                escalateOpen ? (
+                  <EscalateForm
+                    orderId={order._id}
+                    categories={BUYER_MEDIATION_CATEGORIES}
+                    onFiled={() => {
+                      setEscalateOpen(false);
+                      void fetchMediation();
+                    }}
+                  />
+                ) : (
+                  // Opens the form; the form's own button is the one that asks.
+                  // Naming both "Ask UmojaHub to step in" put the same label on
+                  // a disclosure and on a submit that files a case.
+                  <Button variant="secondary" onClick={() => setEscalateOpen(true)}>
+                    Report a problem
+                  </Button>
+                )
+              ) : (
+                <p className="app-meta text-app-faint">
+                  Give {order.farmer.firstName} time to fulfil the order first. You can ask UmojaHub
+                  to step in from {formatDate(eligibleAtMs ? new Date(eligibleAtMs).toISOString() : null)}.
+                </p>
+              ))}
+          </div>
+        </Disclosure>
+      </div>
 
-            <Button
-              type="submit"
-              isLoading={ratingState === 'submitting'}
-              disabled={ratingForm.rating === 0}
-              className="w-full"
-            >
-              Submit rating
-            </Button>
-          </form>
-        </div>
-      )}
-
-      {/* COMPLETED + already rated */}
       {order.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED && hasRated && (
-        <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+        <Card pad="tight">
           <p className="app-body text-app-muted">
-            You have rated this order. Your rating feeds {order.farmer.firstName}&apos;s trust score,
-            which is what other buyers see before they order.
+            You rated this order. That rating is part of {order.farmer.firstName}&apos;s trust score.
           </p>
-        </div>
+        </Card>
       )}
     </Page>
   );

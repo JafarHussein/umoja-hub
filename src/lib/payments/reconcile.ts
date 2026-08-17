@@ -12,7 +12,9 @@ import {
   ListingStatus,
   NotificationType,
   OrderPaymentStatus,
+  PaymentEventActor,
   PaymentEventType,
+  STUCK_PAYMENT_TIMEOUT_MINUTES,
 } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -54,15 +56,15 @@ import {
 /**
  * How long a payment may sit unconfirmed before we go and ask about it.
  *
- * The STK prompt itself lives roughly 30 seconds, and the usual guidance is to
- * begin sweeping after about five minutes — long enough that a merely slow
- * callback has arrived, short enough that a buyer is not left watching a dead
- * screen with their stock held. Fifteen minutes was inherited and never
- * justified; it was safe only because the sweep assumed failure and so wanted
- * a wide margin of error. Now that the sweep asks the provider instead of
- * guessing, the margin is no longer doing any work.
+ * Defined in `@/types` and re-exported here, where it is used, because the
+ * Payment Lab tells operators the same number and is a client component —
+ * importing it from this module would drag mongoose and the DB singleton into
+ * the browser bundle. Fifteen minutes was inherited and never justified; it was
+ * safe only because the sweep assumed failure and so wanted a wide margin of
+ * error. Now that the sweep asks the provider instead of guessing, the margin
+ * is no longer doing any work. See the definition for the reasoning behind 5.
  */
-export const STUCK_PAYMENT_TIMEOUT_MINUTES = 5;
+export { STUCK_PAYMENT_TIMEOUT_MINUTES } from '@/types';
 
 /** The fields the reconciliation handlers need off an order. */
 interface StuckOrder {
@@ -88,7 +90,8 @@ interface StuckOrder {
  */
 async function creditRecoveredPayment(
   order: StuckOrder,
-  answer: Extract<PaymentQueryResult, { state: 'SUCCESS' }>
+  answer: Extract<PaymentQueryResult, { state: 'SUCCESS' }>,
+  correlationId: string
 ): Promise<boolean> {
   const { processStkCallback } = await import('@/lib/payments/processCallback');
 
@@ -114,7 +117,7 @@ async function creditRecoveredPayment(
         },
       },
     },
-    { provider: getActiveProviderName() }
+    { provider: getActiveProviderName(), requestId: correlationId }
   );
 
   return result.processed;
@@ -127,7 +130,10 @@ async function creditRecoveredPayment(
  * in fact debited, this produce is theirs, and selling it to someone else while
  * the question is open would turn an unknown into a second wrong.
  */
-async function flagUnresolvedPayment(order: StuckOrder): Promise<boolean> {
+async function flagUnresolvedPayment(
+  order: StuckOrder,
+  correlationId: string
+): Promise<boolean> {
   const closed = await Order.findOneAndUpdate(
     { _id: order._id, paymentStatus: OrderPaymentStatus.PENDING_PAYMENT },
     { $set: { paymentStatus: OrderPaymentStatus.UNRESOLVED } },
@@ -145,6 +151,12 @@ async function flagUnresolvedPayment(order: StuckOrder): Promise<boolean> {
       farmerId: order.farmerId,
       amount: order.totalAmountKES,
       paymentReference: order.orderReferenceId,
+      actor: PaymentEventActor.SYSTEM,
+      previousStatus: OrderPaymentStatus.PENDING_PAYMENT,
+      newStatus: OrderPaymentStatus.UNRESOLVED,
+      reason:
+        'No callback arrived within the timeout, and the provider could not say whether the buyer was charged. The produce stays reserved and an administrator must settle it by hand.',
+      correlationId,
       occurredAt: new Date(),
     });
   } catch (err) {
@@ -216,6 +228,13 @@ export async function reconcileStuckPayments(opts?: {
   let reconciled = 0;
 
   for (const order of stuck) {
+    // One id per order reconciled, threading the query, whatever it concluded,
+    // and — on the recovery path — the replayed callback and its escrow hold
+    // into a single retrievable chain. Per order rather than per sweep: an
+    // investigation is always about one payment, never about the batch that
+    // happened to contain it.
+    const correlationId = crypto.randomUUID();
+
     // Ask before concluding. Without a payment session there is nothing to ask
     // about, and an order that never reached the provider genuinely did not pay.
     const answer: PaymentQueryResult = order.mpesaCheckoutRequestId
@@ -230,7 +249,7 @@ export async function reconcileStuckPayments(opts?: {
     // that arrived on time — same idempotency, same escrow hold, same
     // notifications, same audit trail.
     if (answer.state === 'SUCCESS') {
-      const recovered = await creditRecoveredPayment(order, answer);
+      const recovered = await creditRecoveredPayment(order, answer, correlationId);
       if (recovered) reconciled += 1;
       continue;
     }
@@ -239,7 +258,7 @@ export async function reconcileStuckPayments(opts?: {
     // dressed up as a failure: the stock stays reserved, the buyer is told the
     // truth, and an administrator is asked to settle it by hand.
     if (answer.state === 'UNKNOWN') {
-      const flagged = await flagUnresolvedPayment(order);
+      const flagged = await flagUnresolvedPayment(order, correlationId);
       if (flagged) reconciled += 1;
       continue;
     }
@@ -271,6 +290,13 @@ export async function reconcileStuckPayments(opts?: {
         farmerId: order.farmerId,
         amount: order.totalAmountKES,
         paymentReference: order.orderReferenceId,
+        actor: PaymentEventActor.SYSTEM,
+        previousStatus: OrderPaymentStatus.PENDING_PAYMENT,
+        newStatus: OrderPaymentStatus.FAILED,
+        // The provider's own words for why, not our summary of them. This is
+        // the row that justifies returning the produce to the marketplace.
+        reason: `No callback arrived within the timeout. The provider confirmed the payment did not go through: ${answer.resultDesc}`,
+        correlationId,
         occurredAt: new Date(),
       });
     } catch (err) {

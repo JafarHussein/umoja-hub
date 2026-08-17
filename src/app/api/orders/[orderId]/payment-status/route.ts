@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import Order from '@/lib/models/Order.model';
 import { AppError, handleApiError } from '@/lib/utils';
 import { isSimulationActive } from '@/lib/payments';
+import { paymentModeForOrder } from '@/lib/payments/demoMode';
 import { dispatchDuePayments } from '@/lib/payments/dispatcher';
 import { reconcileStuckPayments } from '@/lib/payments/reconcile';
 import { PAYMENT_LABEL, RESULT_CODE_DETAIL } from '@/lib/foodhub/receipt';
@@ -33,17 +34,26 @@ export interface IPaymentSessionEvent {
 interface IPaymentEventLean {
   eventType: string;
   resultCode?: number | null;
+  reason?: string | null;
   occurredAt?: Date | string | null;
 }
 
 // The vocabulary comes from the receipt so the live session and the permanent
 // record describe the same event with the same sentence. A buyer who watched
 // "M-Pesa responded" go by should find that exact line on the receipt later.
+//
+// The recorded `reason` is preferred over the result-code gloss for the same
+// reason the receipt prefers it: it was written by the code that caused the
+// event and says why, where a code only says what. Without this the waiting
+// screen said strictly less about an event than the receipt did about the same
+// event, which is an odd thing for the live view to do.
 function narrate(events: IPaymentEventLean[]): IPaymentSessionEvent[] {
   return events.map((e) => ({
     type: e.eventType,
     label: PAYMENT_LABEL[e.eventType] ?? e.eventType,
-    detail: typeof e.resultCode === 'number' ? (RESULT_CODE_DETAIL[e.resultCode] ?? null) : null,
+    detail:
+      e.reason ??
+      (typeof e.resultCode === 'number' ? (RESULT_CODE_DETAIL[e.resultCode] ?? null) : null),
     occurredAt: new Date(e.occurredAt ?? Date.now()).toISOString(),
   }));
 }
@@ -52,7 +62,7 @@ async function sessionEvents(orderId: string): Promise<IPaymentSessionEvent[]> {
   try {
     const { default: PaymentEventLog } = await import('@/lib/models/PaymentEventLog.model');
     const rows = (await PaymentEventLog.find({ orderId })
-      .select('eventType resultCode occurredAt')
+      .select('eventType resultCode reason occurredAt')
       .sort({ occurredAt: 1 })
       .lean()) as unknown as IPaymentEventLean[];
     return narrate(rows);
@@ -138,6 +148,7 @@ export async function GET(
               paymentStatus: settled.paymentStatus,
               fulfillmentStatus: settled.fulfillmentStatus,
               isSimulated: isSimulationActive(),
+              paymentMode: paymentModeForOrder(order.mpesaTransactionId ?? null),
               mpesaTransactionId: settled.mpesaTransactionId ?? null,
               events: await sessionEvents(orderId),
             });
@@ -167,6 +178,7 @@ export async function GET(
               paymentStatus: fresh.paymentStatus,
               fulfillmentStatus: fresh.fulfillmentStatus,
               isSimulated: true,
+              paymentMode: paymentModeForOrder(fresh.mpesaTransactionId ?? null),
               // The simulator mints a realistic 10-character M-Pesa receipt and
               // the platform stored it without ever showing it. It is the one
               // thing a Kenyan buyer checks a payment against.
@@ -187,6 +199,7 @@ export async function GET(
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
       isSimulated: isSimulationActive(),
+              paymentMode: paymentModeForOrder(order.mpesaTransactionId ?? null),
       mpesaTransactionId: order.mpesaTransactionId ?? null,
       events: await sessionEvents(orderId),
     });

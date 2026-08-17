@@ -11,9 +11,21 @@ import {
   OrderPaymentStatus,
   OrderFulfillmentStatus,
   ListingStatus,
+  PaymentEventActor,
   PaymentEventType,
   NotificationType,
 } from '@/types';
+
+// Result codes Safaricom returns, in the words the audit should carry. A log
+// that records only "FAILED, code 1032" makes the reader go and look 1032 up;
+// one that says the buyer cancelled on their handset does not.
+const FAILURE_REASON: Record<number, string> = {
+  1: 'The buyer did not have enough money in their M-Pesa account.',
+  1001: 'Another M-Pesa transaction was already in progress on the same line.',
+  1025: 'M-Pesa could not process the request.',
+  1032: 'The buyer cancelled the prompt on their handset.',
+  1037: 'The buyer could not be reached and the prompt expired.',
+};
 
 // ---------------------------------------------------------------------------
 // Shared STK-callback processor.
@@ -51,6 +63,11 @@ async function recordEvent(fields: {
   checkoutRequestId?: string;
   resultCode?: number;
   processingTimeMs?: number;
+  actor?: PaymentEventActor;
+  previousStatus?: string;
+  newStatus?: string;
+  reason?: string;
+  correlationId?: string;
 }): Promise<void> {
   try {
     const event = new PaymentEventLog();
@@ -83,6 +100,11 @@ export async function processStkCallback(
 
   const processingTimeMs = Date.now() - new Date(order.createdAt).getTime();
 
+  // The status this callback found the order in. Read once, before anything is
+  // written, so every event below records the transition it actually caused
+  // rather than the state left behind by the event before it.
+  const statusBefore = String(order.paymentStatus);
+
   await recordEvent({
     provider,
     eventType: PaymentEventType.CALLBACK_RECEIVED,
@@ -92,18 +114,70 @@ export async function processStkCallback(
     amount: order.totalAmountKES,
     checkoutRequestId: CheckoutRequestID,
     resultCode: ResultCode,
+    actor: PaymentEventActor.PROVIDER,
+    // Arrival moves nothing on its own. The transition belongs to the SUCCESS
+    // or FAILED row that follows, and saying so keeps this from reading like a
+    // state change that was then contradicted.
+    previousStatus: statusBefore,
+    newStatus: statusBefore,
+    reason: 'M-Pesa delivered a result for this payment session.',
+    ...(requestId ? { correlationId: requestId } : {}),
   });
 
   // ── Failure path — restore inventory, alert admin ──────────────────────────
   if (ResultCode !== 0) {
+    // Guarded, where it used to be unconditional.
+    //
+    // A failure callback could previously demote an order that had already
+    // settled: `findByIdAndUpdate(..., FAILED)` ran whatever state the order was
+    // in. Safaricom retries callbacks, and a late or duplicated failure for a
+    // superseded payment session would therefore mark a PAID order failed and
+    // hand its produce back to the marketplace — after the buyer had been
+    // debited and the farmer told to dispatch.
+    //
+    // Only a payment still waiting on an answer may be failed. Anything else is
+    // recorded and ignored, which is what makes this processor idempotent
+    // against the real provider's retry behaviour rather than only against the
+    // simulator's.
+    const failed = await Order.findOneAndUpdate(
+      { _id: order._id, paymentStatus: OrderPaymentStatus.PENDING_PAYMENT },
+      { $set: { paymentStatus: OrderPaymentStatus.FAILED } },
+      { new: true }
+    ).lean();
+
+    if (!failed) {
+      logger.warn('payments', 'Failure callback for an order no longer awaiting payment', {
+        requestId,
+        provider,
+        CheckoutRequestID,
+        ResultCode,
+        orderId: String(order._id),
+        currentStatus: statusBefore,
+      });
+      await recordEvent({
+        provider,
+        eventType: PaymentEventType.DUPLICATE,
+        orderId: order._id,
+        buyerId: order.buyerId,
+        farmerId: order.farmerId,
+        amount: order.totalAmountKES,
+        paymentReference: order.orderReferenceId,
+        checkoutRequestId: CheckoutRequestID,
+        resultCode: ResultCode,
+        actor: PaymentEventActor.PROVIDER,
+        previousStatus: statusBefore,
+        newStatus: statusBefore,
+        reason: `A failure result (${ResultCode}) arrived for a payment session that is no longer open. The order is ${statusBefore} and was left untouched.`,
+        ...(requestId ? { correlationId: requestId } : {}),
+      });
+      return { ack, processed: false };
+    }
+
     const { default: MarketplaceListing } = await import('@/lib/models/MarketplaceListing.model');
-    await Promise.all([
-      Order.findByIdAndUpdate(order._id, { paymentStatus: OrderPaymentStatus.FAILED }),
-      MarketplaceListing.findByIdAndUpdate(order.listingId, {
-        $inc: { quantityAvailable: order.quantityOrdered },
-        listingStatus: ListingStatus.AVAILABLE,
-      }),
-    ]);
+    await MarketplaceListing.findByIdAndUpdate(order.listingId, {
+      $inc: { quantityAvailable: order.quantityOrdered },
+      listingStatus: ListingStatus.AVAILABLE,
+    });
 
     logger.info('payments', 'Payment failed or cancelled — inventory restored', {
       requestId,
@@ -131,6 +205,15 @@ export async function processStkCallback(
       checkoutRequestId: CheckoutRequestID,
       resultCode: ResultCode,
       processingTimeMs,
+      // The buyer when they cancelled it themselves; M-Pesa when the network
+      // or the handset ended it. Both are failures and only one is a decision.
+      actor: ResultCode === 1032 ? PaymentEventActor.BUYER : PaymentEventActor.PROVIDER,
+      previousStatus: statusBefore,
+      newStatus: OrderPaymentStatus.FAILED,
+      reason:
+        FAILURE_REASON[ResultCode] ??
+        `M-Pesa rejected the payment with result code ${ResultCode}.`,
+      ...(requestId ? { correlationId: requestId } : {}),
     });
 
     return { ack, processed: true };
@@ -169,6 +252,13 @@ export async function processStkCallback(
       paymentReference: MpesaReceiptNumber,
       checkoutRequestId: CheckoutRequestID,
       resultCode: ResultCode,
+      actor: PaymentEventActor.PROVIDER,
+      // Nothing moved, and the row exists to prove that. A duplicate that left
+      // no trace would be indistinguishable from one that was never sent.
+      previousStatus: String(existingOrder.paymentStatus),
+      newStatus: String(existingOrder.paymentStatus),
+      reason: `Receipt ${MpesaReceiptNumber} was already recorded against this order. Ignored so the payment is not counted twice.`,
+      ...(requestId ? { correlationId: requestId } : {}),
     });
     return { ack: { ResultCode: 0, ResultDesc: 'Already processed' }, processed: false };
   }
@@ -199,6 +289,13 @@ export async function processStkCallback(
     checkoutRequestId: CheckoutRequestID,
     resultCode: ResultCode,
     processingTimeMs,
+    // The buyer authorised it. M-Pesa carried the message, but the act that
+    // moved the money was a PIN entered on a handset.
+    actor: PaymentEventActor.BUYER,
+    previousStatus: statusBefore,
+    newStatus: OrderPaymentStatus.PAID,
+    reason: `The buyer authorised the payment on their handset. M-Pesa receipt ${MpesaReceiptNumber}. The funds are now held in escrow.`,
+    ...(requestId ? { correlationId: requestId } : {}),
   });
 
   // Funds are now held in escrow on the farmer's behalf — append the milestone.

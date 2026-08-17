@@ -5,7 +5,13 @@ import { connectDB } from '@/lib/db';
 import { logger } from '@/lib/utils';
 import { processStkCallback } from '@/lib/payments/processCallback';
 import { buildCallbackPayload } from '@/lib/payments/callbackPayload';
-import { SimulatedOutcome, SimulatedPaymentStatus, PaymentEventType } from '@/types';
+import {
+  SimulatedOutcome,
+  SimulatedPaymentStatus,
+  OrderPaymentStatus,
+  PaymentEventActor,
+  PaymentEventType,
+} from '@/types';
 
 // ---------------------------------------------------------------------------
 // Simulated-callback dispatcher.
@@ -43,6 +49,15 @@ export async function deliverSimulatedPayment(sim: SimDoc): Promise<void> {
         farmerId: sim.farmerId,
         amount: sim.amount,
         checkoutRequestId: sim.checkoutRequestId,
+        // M-Pesa, not us: the buyer may well have authorised this payment and
+        // the notification was lost on the way back. The order moves nowhere on
+        // this event — it sits in PENDING_PAYMENT until reconciliation asks the
+        // provider what really happened, which is the whole point of LOST.
+        actor: PaymentEventActor.PROVIDER,
+        previousStatus: OrderPaymentStatus.PENDING_PAYMENT,
+        newStatus: OrderPaymentStatus.PENDING_PAYMENT,
+        reason:
+          'The callback for this payment was never delivered. Whether the buyer was charged is unknown until reconciliation queries the provider.',
         occurredAt: new Date(),
       });
       await event.save();

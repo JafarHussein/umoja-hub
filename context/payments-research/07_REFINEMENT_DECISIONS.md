@@ -3,7 +3,9 @@
 Second programme over the payment and escrow system. The first built the architecture; this one
 challenges it. Records what changed, what was already adequate, and what was deliberately left.
 
-Gate at close: **1232 tests / 106 suites**, `tsc` clean, 0 lint errors.
+Gate at close of the second pass: **1232 tests / 106 suites**.
+Gate at close of the **third pass** (below): **1259 tests / 108 suites**, `tsc` clean, 0 lint errors,
+build green.
 
 ---
 
@@ -98,20 +100,158 @@ order, as the delivery branch twenty lines below always did.
 
 ---
 
-## Not done, and honestly so
+## Not done, and honestly so — *closed in the third pass*
 
-- **I4 · Escrow visible to the farmer.** `EscrowExplainer` handles both viewers and every state, but
-  is wired only into the buyer's order. The farmer's side still needs it. *Largest remaining gap.*
-- **I7 · Payment timeline as a single component.** The pieces exist — `OrderTimeline`, the narrated
-  payment session, the receipt's event trail — but they are three renderings rather than one, and
-  actor/reason are not shown uniformly.
-- **I11 · Event log fields.** `PaymentEventLog` records type, actor, amount, provider, result code
-  and correlation id. It does **not** record previous state, new state, or a reason string. Adding
-  those is a schema change to an append-only financial log and deserves its own pass.
-- **I12 (rest).** Only the unresolved queue was built. Escrow-holding totals, payments awaiting
-  callback and reservations nearing expiry are not surfaced.
+The four items below were left open at the close of the second pass. All four are now built. What
+each one turned out to require, and what looking for it uncovered, is recorded in the next section.
 
-**The honest summary:** four of the thirteen improvements produced real changes, six were already
-adequate when challenged, and three remain. One regression was found in work from the previous
-programme. Claiming all thirteen were "done" would be the kind of statement this audit exists to
-prevent.
+- ~~**I4 · Escrow visible to the farmer.**~~ Done.
+- ~~**I7 · Payment timeline as a single component.**~~ Done.
+- ~~**I11 · Event log fields.**~~ Done.
+- ~~**I12 (rest) · Escrow totals, payments awaiting callback, reservations nearing expiry.**~~ Done.
+
+**The honest summary of the second pass:** four of the thirteen improvements produced real changes,
+six were already adequate when challenged, and three remained. One regression was found in work
+from the previous programme. Claiming all thirteen were "done" would be the kind of statement this
+audit exists to prevent.
+
+---
+
+# Third pass — closing the four open items
+
+## I4 · Escrow visible to the farmer *(`997b337`)*
+
+`EscrowExplainer` already handled both viewers and every state; only the buyer's order used it. The
+farmer had two hand-written blocks covering two of the six escrow states, so the screen fell silent
+in exactly the two farmers chase us about — an order under review, and one whose money has cleared
+but has not been paid out. Neither block said what would release the funds.
+
+One component, both sides. Verified in the browser as a seeded farmer: an order the buyer has
+confirmed now reads *"KSh 123,422 is yours. Naliaka confirmed the produce arrived"* and names the
+payout request as the thing that moves it — where previously it said nothing at all.
+
+## I7 · One journey, three renderings *(`e3dbe8a`)*
+
+The compact row, the detailed spine and the narrated payment session each derived the stages of an
+order for themselves, and had drifted: the same moment was *"Paid — held in escrow"* in one and
+*"Payment confirmed"* in another, only one named the party being waited on, and where a payment had
+actually got to appeared solely on the screen a buyer watches while paying. A farmer or an
+administrator looking at a stalled order saw *"Awaiting M-Pesa confirmation"* whatever had really
+happened.
+
+`lib/foodhub/orderJourney.ts` is now the single derivation; the renderers only draw. Every stage
+carries what it is, when, why it is where it is, who has to act, and how far along the order is —
+the five things I7 asked for, uniformly, for all three viewers. Pure and tested directly, which the
+duplicated branches never were.
+
+The receipt's event trail is deliberately **not** folded in. It is a replay of the append-only logs,
+not a projection of the order, and the two must be able to disagree — that disagreement is what
+would expose a bug in the projection.
+
+## I11 · The event log says who, from what, to what, and why *(`09b545a`)*
+
+`PaymentEventLog` recorded what happened and when. It could not say who caused it, what the payment
+moved from and to, or why — so replaying it told you a payment failed without telling you whether
+the buyer cancelled, the prompt expired, or we closed it out ourselves.
+
+Adds `actor`, `previousStatus`, `newStatus`, `reason`, `correlationId`, populated at every write
+site, plus a sparse index on `(correlationId, occurredAt)` because replaying one payment session is
+where an investigation starts. All five are optional **by design**: this is an append-only financial
+log, and rows written before the fields existed are still true. They are not backfilled to look as
+though they carried them, and readers treat absence as "not recorded", never as a default. Confirmed
+on the admin feed, where historic rows render without the new columns rather than with invented ones.
+
+Two things fell out of wiring it:
+
+- A buyer cancelling an unpaid order moved it to `FAILED` and returned the produce **while writing
+  nothing to the payment trail**. The log showed an order that had failed with no event that failed
+  it — indistinguishable from one the network killed.
+- The receipt attributed every payment event to M-Pesa. The act that moves money is a PIN entered on
+  a handset, and reconciliation closes payments out on nobody's instruction; the trail was crediting
+  the network with the buyer's decisions and ours.
+
+`processStkCallback` — the single definition of what a payment does, fed by both providers — had no
+direct test. It has one now.
+
+## I12 (rest) · What is held, and what is running out of time *(`62acdd2`)*
+
+The Lab counted events and never said how much of other people's money the platform was holding —
+the first question an auditor asks and the number a float has to cover. It was derivable one farmer
+at a time and so in practice unanswerable. `computePlatformEscrowPosition` uses the *same*
+definitions as the farmer-facing balance, deliberately: a second reading of "held" that drifted from
+the one farmers see would be worse than not having it. Live figures on the seeded environment:
+KSh 1,347,081 held across 40 orders, KSh 57,416 of it blocked by a review, KSh 3,963,316 cleared and
+awaiting payout.
+
+The awaiting-payment queue now sorts **oldest first** — it sorted newest-first, which is the wrong
+end, since the row that needs an operator is the one that has waited longest, and with a cap of 15
+those were the rows falling off the list. Each row shows how long its session has been silent and
+whether reconciliation is due. Those orders each have produce reserved behind them, so this is also
+the reservations-nearing-release list, an inventory consequence previously derivable only from a
+timeout constant in the source.
+
+---
+
+# Final validation — reading it as an examiner
+
+The gate stayed green through all of this. Four defects were found anyway, three of them only by
+opening the screens as each role. They are listed because the pattern matters more than the fixes:
+**tests assert values; they do not read sentences.**
+
+### 1. The platform contradicted itself about a buyer's money *(`11edf6d`)* — the serious one
+
+`orderEscrowState` mapped `UNRESOLVED` to `NO_FUNDS`, whose buyer copy reads *"Nothing has been
+taken from your account yet."* That was rendered on the buyer's own order page, on the one order
+whose notification had just told them to *check their M-Pesa messages, because the money may well
+have gone*.
+
+This is the exact claim the whole reconciliation rebuild exists to avoid making, contradicted on the
+screen the buyer actually looks at. **Not knowing is not the same as knowing nothing was taken.**
+
+`EscrowState.UNKNOWN` makes the difference a state rather than a collapse. Because the maps that
+switch on `EscrowState` are exhaustive, the receipt, the admin ledger and the explainer each had to
+say what they mean by it — no surface can collapse it into a claim by accident again. The explainer's
+copy is written to survive being wrong in either direction and names the one mistake available to a
+buyer here: do not pay twice. An administrator cannot settle it either, deliberately — releasing or
+refunding money the platform cannot confirm it received is not a decision to offer.
+
+### 2. The journey told the reader to act on the screen telling them not to *(`11edf6d`)*
+
+The payment stage named the buyer as the party to act on an `UNRESOLVED` payment, beside a sentence
+asking them not to pay again. It is UmojaHub acting there — we are the ones checking the M-Pesa
+record by hand.
+
+### 3. Two sentences that claimed things they could not know *(`e732bdd`)*
+
+Both caught by reading the rendered page:
+
+- A completed order told the **farmer** *"they can now request a payout"* — about the farmer.
+- The closing stage read *"Held by UmojaHub until you confirm receipt"* whatever the payment had
+  done, so a failed order — and one whose payment we cannot confirm — both asserted custody of money
+  we may never have received. Now conditional until the money genuinely is held.
+
+### 4. A number that could not be true *(`e732bdd`)*
+
+The Lab showed **72 cancelled against 39 failed**, when cancellations are a subset of failures.
+Result code 1032 was counted on every event row and a cancellation writes two of them. Now 36 of 39,
+which is coherent. This is the kind of figure a panel does arithmetic on in the room.
+
+---
+
+## Standing after three passes
+
+Thirteen improvements: **eight produced real changes**, five were challenged and found already
+adequate. Three programme regressions and four fresh defects were found in work this programme had
+itself just approved — which is the argument for the passes, not against them.
+
+**What is still not done, and should be said out loud:**
+
+- **No administrator action on an unresolved payment.** The queue shows them and carries the
+  checkout reference to search the M-Pesa statement with; settling one is still done by hand,
+  outside the platform. A button that moves real money needs a designed workflow and its own audit
+  trail, and a queue that cannot lie is worth more than an action that has not been thought through.
+- **`UNRESOLVED` has no metric**, only a live queue. "How often does this happen?" currently has no
+  number on the page.
+- **Reconciliation still rides the buyer's poll plus a daily cron**, because Vercel Hobby permits one
+  cron a day. This is documented in I3 as a deliberate trade, not an oversight, and a real scheduler
+  is the prerequisite for moving the waiting screen to SSE.

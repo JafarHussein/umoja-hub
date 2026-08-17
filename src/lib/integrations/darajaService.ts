@@ -8,6 +8,37 @@ import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
+// Which Safaricom to talk to.
+//
+// This was `process.env.NODE_ENV !== 'production'`, which is the wrong
+// authority in both directions: a production Vercel build running
+// PAYMENT_PROVIDER=daraja-sandbox would post sandbox credentials to the LIVE
+// api.safaricom.co.ke and fail, and there was no way to run the sandbox from a
+// production build — which is exactly what a deployed demonstration needs.
+//
+// PAYMENT_PROVIDER is the single authority for which provider is active, so it
+// is the single authority for which environment that provider talks to.
+// ---------------------------------------------------------------------------
+
+function isSandboxEnvironment(): boolean {
+  return (process.env.PAYMENT_PROVIDER ?? 'simulation') !== 'daraja-production';
+}
+
+const HOST = {
+  sandbox: 'https://sandbox.safaricom.co.ke',
+  production: 'https://api.safaricom.co.ke',
+} as const;
+
+function darajaHost(): string {
+  return isSandboxEnvironment() ? HOST.sandbox : HOST.production;
+}
+
+/** Exposed for the audit trail and the admin transaction view. */
+export function darajaEnvironmentName(): 'sandbox' | 'production' {
+  return isSandboxEnvironment() ? 'sandbox' : 'production';
+}
+
+// ---------------------------------------------------------------------------
 // OAuth token cache (in-memory, scoped to the serverless function instance)
 // ---------------------------------------------------------------------------
 
@@ -30,10 +61,7 @@ async function getAccessToken(): Promise<string> {
   const consumerSecret = env('MPESA_CONSUMER_SECRET');
   const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
 
-  const isSandbox = process.env.NODE_ENV !== 'production';
-  const tokenUrl = isSandbox
-    ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-    : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+  const tokenUrl = `${darajaHost()}/oauth/v1/generate?grant_type=client_credentials`;
 
   const res = await fetch(tokenUrl, {
     method: 'GET',
@@ -114,10 +142,7 @@ export async function initiateSTKPush(params: ISTKPushParams): Promise<ISTKPushR
   const password = buildPassword(shortcode, passkey, timestamp);
   const phone = normaliseDarajaPhone(params.phone);
 
-  const isSandbox = process.env.NODE_ENV !== 'production';
-  const stkPushUrl = isSandbox
-    ? 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
-    : 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+  const stkPushUrl = `${darajaHost()}/mpesa/stkpush/v1/processrequest`;
 
   let accessToken: string;
   try {
@@ -209,8 +234,29 @@ export interface ISTKQueryResult {
   stillProcessing: boolean;
 }
 
-/** Safaricom's "the transaction is being processed" response, which is not a failure. */
-const QUERY_IN_PROGRESS_CODES = ['500.001.1001'];
+// Safaricom says "still running" in two different shapes, and only one of them
+// was handled.
+//
+// `500.001.1001` arrives as an `errorCode`. But a live query on 2026-08-17
+// answered HTTP 200, no errorCode at all, and `ResultCode: "4999"` with
+// `ResultDesc: "The transaction is still under processing"`. That fell straight
+// through to the success/failure branch, where any non-zero code is a failure —
+// so `reconcileStuckPayments` would have marked a payment FAILED, returned the
+// produce to the marketplace and told the buyer "no money left your account",
+// while Safaricom was saying the transaction was still running and the buyer
+// may already have been debited.
+//
+// This is the exact failure the reconciliation rebuild exists to prevent, and
+// it was sitting in the real provider where the simulator could never reach it.
+const QUERY_IN_PROGRESS_ERROR_CODES = ['500.001.1001'];
+
+/**
+ * ResultCodes that mean "not finished", not "failed".
+ *
+ * 4999 is the one observed from the live sandbox. 1032 (cancelled by user) and
+ * 1037 (no response) are genuine terminal failures and are deliberately absent.
+ */
+const QUERY_IN_PROGRESS_RESULT_CODES = new Set([4999]);
 
 export async function queryStkPushStatus(checkoutRequestId: string): Promise<ISTKQueryResult> {
   const shortcode = env('MPESA_SHORTCODE');
@@ -219,10 +265,7 @@ export async function queryStkPushStatus(checkoutRequestId: string): Promise<IST
   const timestamp = getTimestamp();
   const password = buildPassword(shortcode, passkey, timestamp);
 
-  const isSandbox = process.env.NODE_ENV !== 'production';
-  const queryUrl = isSandbox
-    ? 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query'
-    : 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query';
+  const queryUrl = `${darajaHost()}/mpesa/stkpushquery/v1/query`;
 
   const accessToken = await getAccessToken();
 
@@ -247,7 +290,17 @@ export async function queryStkPushStatus(checkoutRequestId: string): Promise<IST
     errorMessage?: string;
   };
 
-  if (data.errorCode && QUERY_IN_PROGRESS_CODES.includes(data.errorCode)) {
+  if (data.errorCode && QUERY_IN_PROGRESS_ERROR_CODES.includes(data.errorCode)) {
+    return { stillProcessing: true };
+  }
+
+  // The 200-with-ResultCode shape. Checked before the failure branch below,
+  // because that branch treats every non-zero code as a terminal failure.
+  if (data.ResultCode !== undefined && QUERY_IN_PROGRESS_RESULT_CODES.has(Number(data.ResultCode))) {
+    logger.info('darajaService', 'STK query: transaction still processing', {
+      checkoutRequestId,
+      resultCode: data.ResultCode,
+    });
     return { stillProcessing: true };
   }
 

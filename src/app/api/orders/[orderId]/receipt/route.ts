@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { AppError, handleApiError } from '@/lib/utils';
 import { getActiveProviderName, isSimulationActive } from '@/lib/payments';
+import { paymentModeForOrder } from '@/lib/payments/demoMode';
 import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
 import { buildOrderReceipt, buildTransactionTrail, hasReceipt } from '@/lib/foodhub/receipt';
 import { MediationRequestStatus, Role } from '@/types';
@@ -128,6 +129,7 @@ export async function GET(
       escrowState,
       provider: getActiveProviderName(),
       isSimulated: isSimulationActive(),
+      paymentMode: paymentModeForOrder(order.mpesaTransactionId ?? null),
     });
 
     const events = buildTransactionTrail(

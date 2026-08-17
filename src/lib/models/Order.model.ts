@@ -24,6 +24,11 @@ const orderSchema = new Schema(
       default: OrderPaymentStatus.PENDING_PAYMENT,
     },
     mpesaCheckoutRequestId: { type: String },
+    // The second identifier Safaricom issues on an STK Push. The provider
+    // returned it and the platform threw it away; it is what Safaricom support
+    // asks for alongside the checkout id, and the admin transaction view needs
+    // both to reconcile an order against an M-Pesa statement.
+    mpesaMerchantRequestId: { type: String },
     mpesaTransactionId: { type: String, unique: true, sparse: true },
     // When the current payment session was opened. Set at order creation and
     // again on every retry, so a retried order is not judged stale by the

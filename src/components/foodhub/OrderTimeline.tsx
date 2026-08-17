@@ -1,9 +1,28 @@
 import React from 'react';
-import { OrderFulfillmentStatus, OrderPaymentStatus } from '@/types';
+import {
+  buildOrderJourney,
+  type IJourneyStage,
+  type JourneyStatus,
+  type JourneyViewer,
+} from '@/lib/foodhub/orderJourney';
+
+// ---------------------------------------------------------------------------
+// Two views of one journey.
+//
+// Both used to derive the stages themselves, and drifted: the same moment was
+// labelled differently in each, only the detailed one named the party being
+// waited on, and neither could say where a payment had actually got to. The
+// derivation now lives in lib/foodhub/orderJourney and these components only
+// draw it — so the row in a table and the spine in a modal cannot disagree
+// about an order again.
+// ---------------------------------------------------------------------------
+
+export type TimelineViewer = JourneyViewer;
 
 export interface IOrderTimelineProps {
-  paymentStatus: OrderPaymentStatus;
-  fulfillmentStatus: OrderFulfillmentStatus;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  createdAt?: Date | string | null | undefined;
   paidAt?: Date | string | null | undefined;
   confirmedByFarmerAt?: Date | string | null | undefined;
   receivedByBuyerAt?: Date | string | null | undefined;
@@ -14,44 +33,13 @@ export interface IOrderTimelineProps {
    * reader they are the one holding things up.
    */
   viewer?: TimelineViewer | undefined;
-  /**
-   * True while a mediation is OPEN or IN_REVIEW on this order.
-   *
-   * This cannot be read off the order. `fulfillmentStatus === DISPUTED` is
-   * written by `escrowSettlement` only when an administrator resolves a
-   * mediation *with a refund* — it is an outcome, not a state of being under
-   * review. Keying the review branch on it therefore announced "an
-   * administrator is reviewing this order" about an order whose review had
-   * finished and whose money had already gone back, while an order genuinely
-   * under review showed an untroubled timeline. The live fact lives on
-   * MediationRequest, so the caller passes it.
-   */
+  /** True while a mediation is OPEN or IN_REVIEW on this order. */
   hasOpenMediation?: boolean | undefined;
 }
 
-export type TimelineViewer = 'BUYER' | 'FARMER' | 'ADMIN';
-
-interface IStep {
-  key: string;
-  label: string;
-  detail?: string | undefined;
-  isComplete: boolean;
-  isActive: boolean;
-  /** Who the order is waiting on at this step. */
-  party?: string | undefined;
-  /** A branch off the happy path — dispute or refund — rather than a stage of it. */
-  tone?: 'danger' | 'info' | undefined;
-}
-
-// "You" where it applies, the other party's role where it does not.
-function who(viewer: TimelineViewer | undefined, party: 'BUYER' | 'FARMER'): string {
-  if (viewer === party) return 'You';
-  return party === 'BUYER' ? 'The buyer' : 'The farmer';
-}
-
-function formatDate(ts: Date | string | null | undefined): string {
-  if (!ts) return '';
-  return new Date(ts).toLocaleDateString('en-KE', {
+function formatDate(iso: string | null): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-KE', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -59,112 +47,64 @@ function formatDate(ts: Date | string | null | undefined): string {
   });
 }
 
-/**
- * Renders a horizontal step timeline showing the order lifecycle.
- * Compact variant for use inside order cards and tables.
- */
-export function OrderTimeline({
-  paymentStatus,
-  fulfillmentStatus,
-  paidAt,
-  confirmedByFarmerAt,
-  receivedByBuyerAt,
-  hasOpenMediation,
-}: IOrderTimelineProps): React.ReactElement {
-  const underReview = hasOpenMediation === true;
-  const isPaid = paymentStatus === OrderPaymentStatus.PAID;
-  const isInFulfillment = [
-    OrderFulfillmentStatus.IN_FULFILLMENT,
-    OrderFulfillmentStatus.RECEIVED,
-    OrderFulfillmentStatus.COMPLETED,
-  ].includes(fulfillmentStatus);
-  const isReceived = [
-    OrderFulfillmentStatus.RECEIVED,
-    OrderFulfillmentStatus.COMPLETED,
-  ].includes(fulfillmentStatus);
-  const isCompleted = fulfillmentStatus === OrderFulfillmentStatus.COMPLETED;
-
-  const isRefunded = paymentStatus === OrderPaymentStatus.REFUNDED;
-
-  const steps: IStep[] = [
-    {
-      key: 'ordered',
-      label: 'Placed',
-      isComplete: true,
-      isActive: !isPaid,
-    },
-    {
-      key: 'paid',
-      label: 'Paid — held in escrow',
-      ...(paidAt ? { detail: formatDate(paidAt) } : {}),
-      isComplete: isPaid,
-      isActive: isPaid && !isInFulfillment,
-    },
-    {
-      key: 'fulfillment',
-      label: 'Dispatched',
-      ...(confirmedByFarmerAt ? { detail: formatDate(confirmedByFarmerAt) } : {}),
-      isComplete: isInFulfillment,
-      isActive: isInFulfillment && !isReceived,
-    },
-    {
-      key: 'received',
-      label: 'Received',
-      ...(receivedByBuyerAt ? { detail: formatDate(receivedByBuyerAt) } : {}),
-      isComplete: isReceived,
-      isActive: isReceived && !isCompleted,
-    },
-    {
-      key: 'completed',
-      label: isRefunded ? 'Payment refunded' : 'Payment released',
-      isComplete: isCompleted || isRefunded,
-      isActive: isCompleted || isRefunded,
-      ...(isRefunded ? { tone: 'info' as const } : {}),
-    },
-  ];
-
-  // Consistent with the detailed view: a dispute is a stage of this order, not
-  // a replacement for its history. Collapsing the row to "Dispute raised" made
-  // the two views disagree about whether a disputed order had a past at all.
-  if (underReview) {
-    steps.splice(steps.length - 1, 0, {
-      key: 'review',
-      label: 'Under review',
-      isComplete: false,
-      isActive: true,
-      tone: 'danger',
-    });
+// One tone scale for both views, so a stage that reads as blocked in the modal
+// does not read as merely pending in the row behind it.
+function nodeClass(stage: IJourneyStage): string {
+  if (stage.tone === 'danger') return 'bg-app-danger';
+  if (stage.tone === 'info') return 'bg-app-info';
+  switch (stage.status) {
+    case 'DONE':
+      return 'bg-app-brand';
+    case 'CURRENT':
+      return 'bg-app-brand/40 ring-1 ring-app-brand/40';
+    case 'BLOCKED':
+      return 'bg-app-danger';
+    default:
+      return 'border border-app-hairline bg-app-sunken';
   }
+}
+
+function textClass(stage: IJourneyStage): string {
+  if (stage.tone === 'danger' || stage.status === 'BLOCKED') return 'text-app-danger';
+  if (stage.tone === 'info') return 'text-app-info';
+  return stage.status === 'DONE' ? 'text-app-ink' : 'text-app-faint';
+}
+
+// What a screen reader hears. The dots carry the whole meaning of the compact
+// view, so the status has to be spoken — a row of unlabelled dots is not a
+// timeline to anyone not looking at it.
+const STATUS_WORD: Record<JourneyStatus, string> = {
+  DONE: 'done',
+  CURRENT: 'in progress',
+  BLOCKED: 'stopped',
+  UPCOMING: 'not yet',
+};
+
+/**
+ * Horizontal step timeline — compact variant for order cards and table rows.
+ */
+export function OrderTimeline(props: IOrderTimelineProps): React.ReactElement {
+  const stages = buildOrderJourney(props, props.viewer);
 
   return (
     <ol className="flex items-center gap-0" aria-label="Order progress">
-      {steps.map((step, index) => (
-        <li key={step.key} className="flex items-center">
-          {/* Step node */}
+      {stages.map((stage, index) => (
+        <li key={stage.key} className="flex items-center">
           <div className="flex flex-col items-center gap-1">
             <div
               className={[
                 'h-2.5 w-2.5 flex-shrink-0 rounded-app-pill transition-colors duration-150',
-                step.tone === 'danger'
-                  ? 'bg-app-danger'
-                  : step.tone === 'info'
-                    ? 'bg-app-info'
-                    : step.isComplete
-                      ? 'bg-app-brand'
-                      : step.isActive
-                        ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
-                        : 'border border-app-hairline bg-app-sunken',
+                nodeClass(stage),
               ].join(' ')}
-              aria-label={step.isComplete ? `${step.label}: done` : step.label}
+              aria-label={`${stage.label}: ${STATUS_WORD[stage.status]}`}
             />
           </div>
 
-          {/* Connector */}
-          {index < steps.length - 1 && (
+          {index < stages.length - 1 && (
             <div
               className={[
                 'mx-1 h-px w-6',
-                steps[index + 1]?.isComplete ? 'bg-app-brand' : 'bg-app-hairline',
+                stages[index + 1]?.status === 'DONE' ? 'bg-app-brand' : 'bg-app-hairline',
               ].join(' ')}
               aria-hidden="true"
             />
@@ -176,176 +116,49 @@ export function OrderTimeline({
 }
 
 /**
- * Vertical detailed timeline — used on the order detail view.
+ * Vertical detailed timeline — used on order detail views.
+ *
+ * Every stage shows the same five things: what it is, when, why it is where it
+ * is, who has to act, and how far along the order is.
  */
-export function OrderTimelineDetailed({
-  paymentStatus,
-  fulfillmentStatus,
-  paidAt,
-  confirmedByFarmerAt,
-  receivedByBuyerAt,
-  viewer,
-  hasOpenMediation,
-}: IOrderTimelineProps): React.ReactElement {
-  const underReview = hasOpenMediation === true;
-  const isRefunded = paymentStatus === OrderPaymentStatus.REFUNDED;
-  const isPaid = paymentStatus === OrderPaymentStatus.PAID;
-  const isInFulfillment = [
-    OrderFulfillmentStatus.IN_FULFILLMENT,
-    OrderFulfillmentStatus.RECEIVED,
-    OrderFulfillmentStatus.COMPLETED,
-  ].includes(fulfillmentStatus);
-  const isReceived = [
-    OrderFulfillmentStatus.RECEIVED,
-    OrderFulfillmentStatus.COMPLETED,
-  ].includes(fulfillmentStatus);
-  const isCompleted = fulfillmentStatus === OrderFulfillmentStatus.COMPLETED;
-
-  const steps: IStep[] = [
-    {
-      key: 'ordered',
-      label: 'Order placed',
-      // Only while it is true. Once payment lands, "Awaiting M-Pesa
-      // confirmation" sat under a completed step describing a state that had
-      // already passed — the timestamp on the next step says the rest.
-      ...(isPaid ? {} : { detail: 'Awaiting M-Pesa confirmation' }),
-      isComplete: true,
-      isActive: !isPaid,
-      party: who(viewer, 'BUYER'),
-    },
-    {
-      key: 'paid',
-      label: 'Payment confirmed',
-      detail: paidAt ? `${formatDate(paidAt)} · held in escrow` : 'Awaiting payment',
-      isComplete: isPaid,
-      isActive: isPaid && !isInFulfillment,
-      party: 'UmojaHub holds the funds',
-    },
-    {
-      key: 'fulfillment',
-      label: 'Farmer dispatched',
-      detail: confirmedByFarmerAt
-        ? formatDate(confirmedByFarmerAt)
-        : 'Waiting for the farmer to confirm dispatch',
-      isComplete: isInFulfillment,
-      isActive: isInFulfillment && !isReceived,
-      party: who(viewer, 'FARMER'),
-    },
-    {
-      key: 'received',
-      label: 'Buyer received',
-      detail: receivedByBuyerAt
-        ? formatDate(receivedByBuyerAt)
-        : viewer === 'BUYER'
-          ? 'Confirm receipt once the produce reaches you'
-          : 'Waiting for the buyer to confirm receipt',
-      isComplete: isReceived,
-      isActive: isReceived && !isCompleted,
-      party: who(viewer, 'BUYER'),
-    },
-  ];
-
-  // A dispute and a refund are branches off this journey, not replacements for
-  // it. Both used to swap the whole timeline for a single banner — so at the one
-  // moment when someone most needs to see where their money is and what has
-  // happened to it so far, the record vanished and left a sentence behind.
-  if (underReview) {
-    steps.push({
-      key: 'review',
-      label: 'Under review',
-      detail: 'An administrator is reviewing this order. The funds stay in escrow meanwhile.',
-      isComplete: false,
-      isActive: true,
-      party: 'UmojaHub',
-      tone: 'danger',
-    });
-  }
-
-  if (isRefunded) {
-    steps.push({
-      key: 'refunded',
-      label: 'Payment refunded',
-      detail: 'Returned to the buyer from escrow following the mediation decision.',
-      isComplete: true,
-      isActive: true,
-      party: 'UmojaHub',
-      tone: 'info',
-    });
-  } else {
-    steps.push({
-      key: 'completed',
-      label: 'Payment released',
-      detail: isCompleted
-        ? 'Released to the farmer from escrow'
-        : underReview
-          ? 'On hold until the review concludes'
-          : // Addressed to whoever is reading. This step and "Buyer received"
-            // describe the same act by the same person, and saying "you" on one
-            // and "the buyer" on the other made a single timeline sound like it
-            // was written about two different people.
-            viewer === 'BUYER'
-            ? 'Held in escrow until you confirm receipt'
-            : 'Held in escrow until the buyer confirms receipt',
-      isComplete: isCompleted,
-      isActive: isCompleted,
-      party: 'UmojaHub',
-    });
-  }
+export function OrderTimelineDetailed(props: IOrderTimelineProps): React.ReactElement {
+  const stages = buildOrderJourney(props, props.viewer);
 
   return (
     <ol className="space-y-0" aria-label="Order progress">
-      {steps.map((step, index) => (
-        <li key={step.key} className="flex gap-3">
+      {stages.map((stage, index) => (
+        <li key={stage.key} className="flex gap-3">
           {/* Spine */}
           <div className="flex flex-col items-center">
             <div
               className={[
                 'mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-app-pill transition-colors duration-150',
-                step.tone === 'danger'
-                  ? 'bg-app-danger'
-                  : step.tone === 'info'
-                    ? 'bg-app-info'
-                    : step.isComplete
-                      ? 'bg-app-brand'
-                      : step.isActive
-                        ? 'bg-app-brand/40 ring-1 ring-app-brand/40'
-                        : 'border border-app-hairline bg-app-sunken',
+                nodeClass(stage),
               ].join(' ')}
             />
-            {index < steps.length - 1 && (
+            {index < stages.length - 1 && (
               <div
                 className={[
                   'mb-1 mt-1 w-px flex-1',
-                  steps[index + 1]?.isComplete ? 'bg-app-brand/40' : 'bg-app-hairline',
+                  stages[index + 1]?.status === 'DONE' ? 'bg-app-brand/40' : 'bg-app-hairline',
                 ].join(' ')}
                 aria-hidden="true"
               />
             )}
           </div>
 
-          {/* Label */}
+          {/* Stage */}
           <div className="min-w-0 pb-4">
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <p
-                className={[
-                  'app-body',
-                  step.tone === 'danger'
-                    ? 'text-app-danger'
-                    : step.tone === 'info'
-                      ? 'text-app-info'
-                      : step.isComplete
-                        ? 'text-app-ink'
-                        : 'text-app-faint',
-                ].join(' ')}
-              >
-                {step.label}
-              </p>
-              {/* Who the order is waiting on. The timeline said what had
-                  happened but never who had to act next, which is the one thing
-                  someone checking on a stalled order is trying to find out. */}
-              {step.party && <span className="app-meta text-app-faint">· {step.party}</span>}
+              <p className={['app-body', textClass(stage)].join(' ')}>{stage.label}</p>
+              {/* Who the order is waiting on — the one thing someone checking a
+                  stalled order is actually trying to find out. */}
+              <span className="app-meta text-app-faint">· {stage.actor}</span>
             </div>
-            {step.detail && <p className="app-meta mt-0.5 text-app-faint">{step.detail}</p>}
+            {stage.at && <p className="app-meta mt-0.5 text-app-faint">{formatDate(stage.at)}</p>}
+            {stage.explanation && (
+              <p className="app-meta mt-0.5 text-app-faint">{stage.explanation}</p>
+            )}
           </div>
         </li>
       ))}
