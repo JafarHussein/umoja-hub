@@ -3,7 +3,12 @@ import { createHash } from 'node:crypto';
 import { loadEnvConfig } from '@next/env';
 import { encode } from 'next-auth/jwt';
 import mongoose from 'mongoose';
-import { connectDB } from '@/lib/db';
+import {
+  connectToE2EDatabase,
+  dropE2EDatabase,
+  resolveE2EDatabaseUri,
+  writeHarnessMarker,
+} from './database';
 import UserModel from '@/lib/models/User.model';
 import OrderModel from '@/lib/models/Order.model';
 import WithdrawalRequestModel from '@/lib/models/WithdrawalRequest.model';
@@ -123,6 +128,10 @@ const FIXTURE_SIM_CHECKOUT_ID = 'ws_CO_sim_e2e';
 // screens resolve real records.
 // ---------------------------------------------------------------------------
 
+// Identifies this run in the harness marker, so a database left behind by an
+// interrupted run can be told apart from the one the current run built.
+const RUN_ID = `e2e-${new Date().toISOString()}-${process.pid}`;
+
 const SESSION_MAX_AGE = 24 * 60 * 60; // matches authOptions.session.maxAge
 // Non-secure cookie name: NEXTAUTH_URL is http://localhost in dev/CI, so
 // NextAuth uses the unprefixed name (the `__Secure-` prefix is https-only).
@@ -189,7 +198,20 @@ export default async function globalSetup(): Promise<void> {
     throw new Error('NEXTAUTH_SECRET is required to mint e2e session tokens.');
   }
 
-  await connectDB();
+  // Everything below writes fixtures. It goes to the harness's own database or
+  // it does not happen at all — see e2e/support/database.ts for why there is no
+  // fallback to MONGODB_URI.
+  //
+  // Drop first, and before connecting the models. Dropping first means a run
+  // killed mid-flight — which never reaches its teardown — cannot leave the
+  // next one inheriting its state. Doing it before `connectToE2EDatabase`
+  // means the ownership guard runs before any model can create a collection,
+  // and the indexes Mongoose builds on connect land on a database that is not
+  // about to be dropped underneath them.
+  await dropE2EDatabase(resolveE2EDatabaseUri());
+  await connectToE2EDatabase();
+  await writeHarnessMarker(RUN_ID);
+
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
   const idsByKey = new Map<string, string>();
