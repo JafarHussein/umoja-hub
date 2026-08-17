@@ -80,6 +80,43 @@ describe('buildOrderJourney', () => {
     expect(stages.find((s) => s.key === 'review')?.status).toBe('BLOCKED');
   });
 
+  it('speaks to each reader about their own money in the second person', () => {
+    // Caught on the rendered page, not by a test: a completed order told the
+    // farmer "they can now request a payout" — about the farmer. Every other
+    // stage addresses the reader directly, and one that slips into the third
+    // person makes a single timeline read as though it is about someone else.
+    const completed = { ...PAID, fulfillmentStatus: OrderFulfillmentStatus.COMPLETED };
+
+    expect(buildOrderJourney(completed, 'FARMER').find((s) => s.key === 'released')?.explanation)
+      .toMatch(/you can now request a payout/);
+    expect(buildOrderJourney(completed, 'BUYER').find((s) => s.key === 'released')?.explanation)
+      .toMatch(/they can now request a payout/);
+  });
+
+  it('does not claim to be holding money on an order that was never paid', () => {
+    // Also caught on the page, not by a test. The closing stage read "Held by
+    // UmojaHub until you confirm receipt" whatever the payment had done — so a
+    // failed order, and one whose payment we cannot confirm either way, both
+    // asserted custody of money we may never have received.
+    for (const paymentStatus of [
+      OrderPaymentStatus.FAILED,
+      OrderPaymentStatus.UNRESOLVED,
+      OrderPaymentStatus.PENDING_PAYMENT,
+    ]) {
+      const released = buildOrderJourney(
+        { paymentStatus, fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT },
+        'BUYER'
+      ).find((s) => s.key === 'released');
+      expect(released?.explanation).not.toMatch(/^Held by UmojaHub/);
+      expect(released?.explanation).toMatch(/once the order is paid/);
+    }
+
+    // And still says it plainly when the money genuinely is held.
+    expect(
+      buildOrderJourney(PAID, 'BUYER').find((s) => s.key === 'released')?.explanation
+    ).toMatch(/^Held by UmojaHub/);
+  });
+
   it('ends a refunded order with the refund and never with a release', () => {
     const stages = buildOrderJourney(
       { ...PAID, paymentStatus: OrderPaymentStatus.REFUNDED },

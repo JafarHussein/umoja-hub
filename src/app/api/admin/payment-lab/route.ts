@@ -57,7 +57,20 @@ export async function GET(): Promise<NextResponse> {
           timeout: { $sum: { $cond: [{ $eq: ['$eventType', 'TIMEOUT'] }, 1, 0] } },
           duplicate: { $sum: { $cond: [{ $eq: ['$eventType', 'DUPLICATE'] }, 1, 0] } },
           lost: { $sum: { $cond: [{ $eq: ['$eventType', 'LOST'] }, 1, 0] } },
-          cancelled: { $sum: { $cond: [{ $eq: ['$resultCode', 1032] }, 1, 0] } },
+          // Counted on the FAILED row only. Every cancellation writes two rows
+          // -- CALLBACK_RECEIVED carrying the code, then FAILED carrying it
+          // again -- so counting the code alone double-counted, and the panel
+          // showed more payments cancelled than had failed at all. A number
+          // that cannot be true is worse than one that is missing.
+          cancelled: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$resultCode', 1032] }, { $eq: ['$eventType', 'FAILED'] }] },
+                1,
+                0,
+              ],
+            },
+          },
           initiated: { $sum: { $cond: [{ $eq: ['$eventType', 'INITIATED'] }, 1, 0] } },
           avgCompletionMs: {
             $avg: {

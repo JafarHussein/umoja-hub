@@ -219,15 +219,28 @@ export function buildOrderJourney(
       key: 'released',
       label: 'Payment released',
       explanation: isCompleted
-        ? 'Released to the farmer. It has cleared, and they can now request a payout.'
+        ? // Addressed to the reader, like every other stage. "They can now
+          // request a payout" was shown to the farmer about the farmer.
+          viewer === 'FARMER'
+          ? 'Released to you. It has cleared, and you can now request a payout.'
+          : 'Released to the farmer. It has cleared, and they can now request a payout.'
         : underReview
           ? 'On hold until the review concludes.'
-          : // Addressed to whoever is reading. This stage and "Buyer received"
-            // describe the same act by the same person, and naming them two
-            // different ways made one journey sound like two.
-            viewer === 'BUYER'
-            ? 'Held by UmojaHub until you confirm receipt.'
-            : 'Held by UmojaHub until the buyer confirms receipt.',
+          : // Only a claim of custody once there is something in custody. On an
+            // order that failed, or one whose payment we cannot confirm, "held
+            // by UmojaHub until you confirm receipt" asserts we are holding
+            // money we may never have received. The conditional says the same
+            // thing about what happens next without claiming it has begun.
+            isPaid
+            ? viewer === 'BUYER'
+              ? 'Held by UmojaHub until you confirm receipt.'
+              : 'Held by UmojaHub until the buyer confirms receipt.'
+            : // Addressed to whoever is reading. This stage and "Buyer received"
+              // describe the same act by the same person, and naming them two
+              // different ways made one journey sound like two.
+              viewer === 'BUYER'
+              ? 'Released to the farmer once the order is paid and you confirm receipt.'
+              : 'Released to the farmer once the order is paid and the buyer confirms receipt.',
       actor: 'UmojaHub',
       at: null,
       status: isCompleted ? 'DONE' : 'UPCOMING',
