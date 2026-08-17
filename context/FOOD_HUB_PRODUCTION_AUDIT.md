@@ -244,11 +244,11 @@ should be, and the top card of the **mediation queue** is `E2E-FAR-0002` reading
 farmer id is deliberately dangling. Those two screens are the ones a panel is most likely to be
 shown. Still not application code, but no longer only hygiene.
 
-Fix options, none taken yet because this is test infrastructure rather than Food Hub product code
-and the choice belongs to the owner: point the e2e fixtures at a separate database, add a
-`globalTeardown` that removes exactly what `global-setup` created (the fixtures are already
-addressed by fixed ids and refs, so this is contained), or accept it and re-run `npm run demo`
-after any e2e run and before any demonstration.
+**CLOSED 2026-08-17.** The owner directed the first option, and it was taken: the harness now
+requires its own database (`MONGODB_E2E_URI`), refuses to run without one, and drops it on every
+run. Full record — architecture, guards, and the isolation and contamination test results — is in
+`context/FOOD_HUB_PRESENTATION_CLEANUP.md`. The historical residue was removed once at the source's
+retirement, and the presentation database now scans clean with zero orphaned records.
 
 ### O4 · Deployment · The Daraja query path has never met the live API
 `queryPaymentStatus` is implemented against `/mpesa/stkpushquery/v1/query` and unit-tested, but
