@@ -6,6 +6,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
+  DataItem,
+  DataList,
+  Disclosure,
   EmptyState,
   Modal,
   Page,
@@ -18,8 +21,10 @@ import {
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimeline, OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
-import { EscrowExplainer } from '@/components/foodhub/EscrowExplainer';
+import { MoneyStatement, NextStep } from '@/components/foodhub/MoneyStatement';
+import { escrowNarrative } from '@/lib/foodhub/escrowNarrative';
 import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
+import { escrowReferenceFor } from '@/lib/foodhub/receipt';
 import { FulfillmentStageControl } from '@/components/foodhub/FulfillmentStageControl';
 import {
   MediationPanel,
@@ -303,7 +308,8 @@ export default function FarmerOrdersPage(): React.ReactElement {
     }
   }
 
-  function formatDate(iso: string): string {
+  function formatDate(iso: string | null): string {
+    if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-KE', {
       day: 'numeric',
       month: 'short',
@@ -335,6 +341,28 @@ export default function FarmerOrdersPage(): React.ReactElement {
       </Page>
     );
   }
+
+  // The escrow narrative for whichever order is open. Derived once, then read
+  // three times: the headline is the status of the money, what releases it is
+  // the consequence attached to the action, and what to do when it goes wrong
+  // sits behind disclosure. Null when no order is open, which is also what
+  // gates the modal below.
+  const money = selectedOrder
+    ? escrowNarrative(
+        orderEscrowState(
+          {
+            paymentStatus: selectedOrder.paymentStatus,
+            fulfillmentStatus: selectedOrder.fulfillmentStatus,
+            confirmedByFarmerAt: selectedOrder.confirmedByFarmerAt ?? null,
+          },
+          isMediationOpen(mediation)
+        ),
+        'FARMER',
+        selectedOrder.totalAmountKES,
+        selectedOrder.buyer.firstName,
+        selectedOrder.paymentStatus
+      )
+    : null;
 
   const awaitingDispatch = orders.filter((o) => o.canConfirmDispatch).length;
 
@@ -468,97 +496,102 @@ export default function FarmerOrdersPage(): React.ReactElement {
       )}
 
       {/* Order detail modal */}
-      {selectedOrder && (
+      {selectedOrder && money && (
         <Modal
           open={selectedOrder !== null}
           onClose={() => setSelectedOrder(null)}
           title={`Order ${selectedOrder.orderReferenceId}`}
           className="max-w-lg"
         >
-          <div className="space-y-5">
-            {/* Summary */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-app-control bg-app-sunken p-3">
-                <p className="app-label mb-1 text-app-muted">Crop</p>
-                <p className="app-body capitalize text-app-ink">{selectedOrder.cropName}</p>
-              </div>
-              <div className="rounded-app-control bg-app-sunken p-3">
-                <p className="app-label mb-1 text-app-muted">Quantity</p>
-                <p className="app-data-m text-app-ink">
-                  {selectedOrder.quantityOrdered} {selectedOrder.unit.toLowerCase()}
-                </p>
-              </div>
-              <div className="rounded-app-control bg-app-sunken p-3">
-                <p className="app-label mb-1 text-app-muted">Total</p>
-                <p className="app-data-m text-app-ink">
-                  KSh {selectedOrder.totalAmountKES.toLocaleString()}
-                </p>
-              </div>
-              <div className="rounded-app-control bg-app-sunken p-3">
-                <p className="app-label mb-1 text-app-muted">Collection</p>
-                <p className="app-body capitalize text-app-ink">
-                  {selectedOrder.fulfillmentType.toLowerCase()}
-                </p>
-              </div>
-            </div>
-
-            {/* Buyer */}
-            <div>
-              <p className="app-label mb-2 text-app-muted">Buyer</p>
-              <p className="app-body text-app-ink">
-                {selectedOrder.buyer.firstName} {selectedOrder.buyer.lastName}
-              </p>
-              <p className="app-body text-app-muted">{selectedOrder.buyerPhone}</p>
-            </div>
-
-            {/* What is happening to this money, and what governs it.
-                The farmer previously got two hand-written blocks: one while
-                PAID + IN_FULFILLMENT, one on a refund. Between them they cover
-                two of the six escrow states, so the screen fell silent in
-                exactly the ones a farmer chases us about — an order under
-                review, and one whose money has cleared but not yet been paid
-                out. Neither block said what would move the money or what to do
-                if it did not. This is the same component the buyer's order
-                uses, told from the farmer's side, where the exposure is
-                delivering and not being paid rather than paying and not
-                receiving. */}
-            <EscrowExplainer
-              escrowState={orderEscrowState(
-                {
-                  paymentStatus: selectedOrder.paymentStatus,
-                  fulfillmentStatus: selectedOrder.fulfillmentStatus,
-                  confirmedByFarmerAt: selectedOrder.confirmedByFarmerAt ?? null,
-                },
-                isMediationOpen(mediation)
-              )}
-              viewer="FARMER"
+          <div className="space-y-6">
+            {/* ── 1 · The statement ───────────────────────────────────────── */}
+            <MoneyStatement
+              label={money.label}
               amountKES={selectedOrder.totalAmountKES}
-              counterpartyName={selectedOrder.buyer.firstName}
+              status={money.headline}
+              tone={money.tone}
+              evidence={
+                <span>
+                  <span className="app-data-m text-app-muted">
+                    {selectedOrder.orderReferenceId}
+                  </span>{' '}
+                  · {selectedOrder.buyer.firstName} {selectedOrder.buyer.lastName}
+                </span>
+              }
             />
 
+            {/* ── 2 · The next step ───────────────────────────────────────── */}
 
-            {/* Receipt — available from the moment payment is confirmed */}
-            {(selectedOrder.paymentStatus === OrderPaymentStatus.PAID ||
-              selectedOrder.paymentStatus === OrderPaymentStatus.REFUNDED) && (
-              <Link
-                href={`/dashboard/farmer/orders/${selectedOrder._id}/receipt`}
-                className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline px-3 py-2.5 transition-colors duration-150 hover:bg-app-sunken"
-              >
-                <span>
-                  <span className="app-body-strong block text-app-ink">View receipt</span>
-                  <span className="app-meta text-app-muted">
-                    M-Pesa reference and the full transaction history.
-                  </span>
-                </span>
-                <span aria-hidden className="app-body text-app-muted">
-                  →
-                </span>
-              </Link>
+            {/* The consequence is about the money. The operational instruction
+                ("as soon as you hand it to the carrier") is on the timeline
+                stage below, and appending it here made one sentence say the
+                same thing twice. */}
+            {selectedOrder.canConfirmDispatch && (
+              <NextStep title="Confirm dispatch" consequence={money.releasedBy}>
+                <div className="space-y-3">
+                  {selectedOrder.paidAt && (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="app-meta text-app-muted">
+                        Confirming within 24 h of payment keeps your reliability score on time.
+                      </p>
+                      <HandoverCountdown paidAt={selectedOrder.paidAt} />
+                    </div>
+                  )}
+                  <Button
+                    isLoading={confirmingId === selectedOrder._id}
+                    onClick={() => void confirmDispatch(selectedOrder._id)}
+                  >
+                    Confirm dispatch
+                  </Button>
+                </div>
+              </NextStep>
             )}
 
-            {/* Timeline */}
-            <div>
-              <p className="app-label mb-3 text-app-muted">Order progress</p>
+            {/* Dispatched and waiting on the buyer. The useful action is no
+                longer a button on this order, it is telling the buyer where the
+                produce has got to, which is what makes them confirm. */}
+            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
+              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+              selectedOrder.confirmedByFarmerAt && (
+                <NextStep
+                  title="Tell the buyer where it is"
+                  consequence={money.releasedBy}
+                >
+                  <FulfillmentStageControl
+                    orderId={selectedOrder._id}
+                    currentStage={selectedOrder.fulfillmentStage ?? null}
+                    onAdvanced={(stage) => {
+                      setSelectedOrder((prev) => (prev ? { ...prev, fulfillmentStage: stage } : prev));
+                      setOrders((prev) =>
+                        prev.map((o) =>
+                          o._id === selectedOrder._id ? { ...o, fulfillmentStage: stage } : o
+                        )
+                      );
+                    }}
+                  />
+                </NextStep>
+              )}
+
+            {selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.COMPLETED &&
+              selectedOrder.paymentStatus === OrderPaymentStatus.PAID && (
+                <NextStep title="Request your payout" consequence={money.releasedBy}>
+                  <Link
+                    href="/dashboard/farmer/ledger"
+                    className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+                  >
+                    Go to your payments
+                    <span aria-hidden>→</span>
+                  </Link>
+                </NextStep>
+              )}
+
+            {selectedOrder.paymentStatus === OrderPaymentStatus.UNRESOLVED && (
+              <NextStep title="Hold this order" consequence={money.releasedBy} />
+            )}
+
+            {/* ── 3 · The journey ─────────────────────────────────────────── */}
+            <section className="space-y-4 border-t border-app-hairline pt-6">
+              <h3 className="app-h2 text-app-ink">How this order is going</h3>
               <OrderTimelineDetailed
                 paymentStatus={selectedOrder.paymentStatus}
                 fulfillmentStatus={selectedOrder.fulfillmentStatus}
@@ -569,60 +602,9 @@ export default function FarmerOrdersPage(): React.ReactElement {
                 viewer="FARMER"
                 hasOpenMediation={isMediationOpen(mediation)}
               />
-            </div>
+            </section>
 
-            {/* Fulfilment progress — only meaningful once dispatch is confirmed */}
-            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
-              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
-              selectedOrder.confirmedByFarmerAt && (
-                <div className="border-t border-app-hairline pt-4">
-                  <FulfillmentStageControl
-                    orderId={selectedOrder._id}
-                    currentStage={selectedOrder.fulfillmentStage ?? null}
-                    onAdvanced={(stage) => {
-                      setSelectedOrder((prev) =>
-                        prev ? { ...prev, fulfillmentStage: stage } : prev
-                      );
-                      setOrders((prev) =>
-                        prev.map((o) =>
-                          o._id === selectedOrder._id ? { ...o, fulfillmentStage: stage } : o
-                        )
-                      );
-                    }}
-                  />
-                </div>
-              )}
-
-            {/* When does the farmer get paid? Stated, not left to guesswork. */}
-            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
-              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
-              selectedOrder.confirmedByFarmerAt &&
-              !mediation && (
-                <div className="rounded-app-control border border-app-hairline bg-app-sunken px-3 py-2.5">
-                  <p className="app-label text-app-muted">When you get paid</p>
-                  <p className="app-meta mt-1 text-app-muted">
-                    The buyer releases the funds by confirming receipt. If they have not confirmed{' '}
-                    {Math.round(FARMER_ESCALATION_HOURS / 24)} days after your dispatch, you can ask
-                    UmojaHub to review the order and decide.
-                  </p>
-                  {!canEscalate && (
-                    <p className="app-meta mt-1 text-app-faint">
-                      You can ask for a review from{' '}
-                      {new Date(
-                        new Date(selectedOrder.confirmedByFarmerAt).getTime() +
-                          FARMER_ESCALATION_HOURS * 3_600_000
-                      ).toLocaleDateString('en-KE', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                      .
-                    </p>
-                  )}
-                </div>
-              )}
-
-            {/* The case, if there is one — visible to both sides */}
+            {/* The case, when there is one — both accounts, all photos. */}
             {mediation && (
               <MediationPanel
                 orderId={selectedOrder._id}
@@ -632,56 +614,103 @@ export default function FarmerOrdersPage(): React.ReactElement {
               />
             )}
 
-            {/* Farmer-initiated escalation */}
-            {canEscalate && (
-              <div className="space-y-3 border-t border-app-hairline pt-4">
-                {!escalateOpen ? (
-                  <>
-                    <p className="app-body-strong text-app-ink">
-                      The buyer has not confirmed receipt
-                    </p>
-                    <p className="app-meta text-app-muted">
-                      Your payment stays held until they do. Ask UmojaHub to review the order and
-                      decide what happens to the funds.
-                    </p>
-                    <Button variant="secondary" onClick={() => setEscalateOpen(true)}>
-                      Ask UmojaHub to review
-                    </Button>
-                  </>
-                ) : (
-                  <EscalateForm
-                    orderId={selectedOrder._id}
-                    categories={FARMER_MEDIATION_CATEGORIES}
-                    onFiled={() => {
-                      setEscalateOpen(false);
-                      void fetchMediation(selectedOrder._id);
-                    }}
-                  />
-                )}
-              </div>
-            )}
+            {/* ── 4 · The detail ──────────────────────────────────────────── */}
+            <div className="border-b border-app-hairline">
+              <Disclosure summary="Order details">
+                <DataList>
+                  <DataItem label="Produce">
+                    <span className="capitalize">{selectedOrder.cropName}</span>
+                  </DataItem>
+                  <DataItem label="Quantity" numeric>
+                    {selectedOrder.quantityOrdered.toLocaleString()}{' '}
+                    {selectedOrder.unit.toLowerCase()}
+                  </DataItem>
+                  <DataItem label="Total" numeric>
+                    KSh {selectedOrder.totalAmountKES.toLocaleString()}
+                  </DataItem>
+                  <DataItem label="Collection">
+                    <span className="capitalize">
+                      {selectedOrder.fulfillmentType.toLowerCase()}
+                    </span>
+                  </DataItem>
+                  <DataItem label="Buyer">
+                    {selectedOrder.buyer.firstName} {selectedOrder.buyer.lastName}
+                  </DataItem>
+                  <DataItem label="Buyer phone" numeric>
+                    {selectedOrder.buyerPhone}
+                  </DataItem>
+                  <DataItem label="Order placed">{formatDate(selectedOrder.createdAt)}</DataItem>
+                </DataList>
+              </Disclosure>
 
-            {/* Action */}
-            {selectedOrder.canConfirmDispatch && (
-              <div className="space-y-3">
-                {selectedOrder.paidAt && (
-                  <div className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline bg-app-sunken p-3">
-                    <p className="app-meta text-app-muted">
-                      Confirm within 24 h of payment to keep your reliability score on-time.
-                    </p>
-                    <HandoverCountdown paidAt={selectedOrder.paidAt} />
+              {(selectedOrder.paymentStatus === OrderPaymentStatus.PAID ||
+                selectedOrder.paymentStatus === OrderPaymentStatus.REFUNDED) && (
+                <Disclosure summary="Payment details">
+                  <DataList>
+                    <DataItem label="Order reference" numeric>
+                      {selectedOrder.orderReferenceId}
+                    </DataItem>
+                    <DataItem label="Escrow reference" numeric>
+                      {escrowReferenceFor(selectedOrder.orderReferenceId)}
+                    </DataItem>
+                    <DataItem label="Method">M-PESA</DataItem>
+                    <DataItem label="Buyer paid on">{formatDate(selectedOrder.paidAt ?? null)}</DataItem>
+                  </DataList>
+                  <div className="pt-4">
+                    <Link
+                      href={`/dashboard/farmer/orders/${selectedOrder._id}/receipt`}
+                      className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+                    >
+                      View the full receipt and transaction history
+                      <span aria-hidden>→</span>
+                    </Link>
                   </div>
-                )}
-                <Button
-                  size="lg"
-                  className="w-full"
-                  isLoading={confirmingId === selectedOrder._id}
-                  onClick={() => void confirmDispatch(selectedOrder._id)}
-                >
-                  Confirm dispatch
-                </Button>
-              </div>
-            )}
+                </Disclosure>
+              )}
+
+              <Disclosure summary="If something goes wrong">
+                <div className="space-y-4">
+                  <p className="app-body max-w-app-prose text-pretty text-app-muted">
+                    {money.ifItGoesWrong}
+                  </p>
+
+                  {selectedOrder.confirmedByFarmerAt &&
+                    selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
+                    selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT &&
+                    (canEscalate ? (
+                      escalateOpen ? (
+                        <EscalateForm
+                          orderId={selectedOrder._id}
+                          categories={FARMER_MEDIATION_CATEGORIES}
+                          onFiled={() => {
+                            setEscalateOpen(false);
+                            void fetchMediation(selectedOrder._id);
+                          }}
+                        />
+                      ) : (
+                        <Button variant="secondary" onClick={() => setEscalateOpen(true)}>
+                          Ask UmojaHub to review
+                        </Button>
+                      )
+                    ) : (
+                      <p className="app-meta text-app-faint">
+                        If the buyer has not confirmed{' '}
+                        {Math.round(FARMER_ESCALATION_HOURS / 24)} days after your dispatch, you can
+                        ask UmojaHub to review the order and decide. That is from{' '}
+                        {new Date(
+                          new Date(selectedOrder.confirmedByFarmerAt).getTime() +
+                            FARMER_ESCALATION_HOURS * 3_600_000
+                        ).toLocaleDateString('en-KE', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                        .
+                      </p>
+                    ))}
+                </div>
+              </Disclosure>
+            </div>
           </div>
         </Modal>
       )}

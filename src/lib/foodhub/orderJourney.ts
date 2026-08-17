@@ -95,12 +95,12 @@ function paymentExplanation(paymentStatus: string, viewer: JourneyViewer | undef
       return 'Held by UmojaHub until the produce is confirmed received.';
     case OrderPaymentStatus.FAILED:
       return buyer
-        ? 'The payment did not go through. Nothing left your account — you can try again from this order.'
+        ? 'The payment did not go through. Nothing left your account, and you can try again from this order.'
         : 'The payment did not go through, so no money is being held for this order.';
     case OrderPaymentStatus.UNRESOLVED:
       // The one state where the platform must not claim to know.
       return buyer
-        ? 'M-Pesa could not tell us whether you were charged. UmojaHub is checking by hand — please do not pay again yet.'
+        ? 'M-Pesa could not tell us whether you were charged. UmojaHub is checking by hand, so please do not pay again yet.'
         : 'M-Pesa could not confirm whether the buyer was charged. UmojaHub is checking by hand.';
     case OrderPaymentStatus.REFUNDED:
       return 'The payment was made and has since been returned to the buyer.';
@@ -145,7 +145,13 @@ export function buildOrderJourney(
     {
       key: 'paid',
       label: 'Payment confirmed',
-      explanation: paymentExplanation(order.paymentStatus, viewer),
+      // Once the money is in, where it sits is the statement's job at the top
+      // of the screen, and the timestamp on this stage says the rest. Repeating
+      // "held by UmojaHub until you confirm" here put the same sentence on the
+      // page three times over: in the statement, on this stage, and on the
+      // release stage below. The timeline's job is the sequence, not the state.
+      explanation:
+        isPaid || isRefunded ? null : paymentExplanation(order.paymentStatus, viewer),
       // Whoever the order is waiting on. Before payment that is the buyer, at
       // their handset; after it, UmojaHub, holding the money. On an unresolved
       // payment it is UmojaHub too — we are checking the M-Pesa record by hand,
@@ -176,10 +182,13 @@ export function buildOrderJourney(
     {
       key: 'received',
       label: 'Buyer received',
+      // States who is being waited on. The instruction to check the produce
+      // before confirming lives on the action itself, where it can actually be
+      // acted on; saying it twice made the timeline argue with the button.
       explanation: order.receivedByBuyerAt
         ? null
         : viewer === 'BUYER'
-          ? 'Check the produce, then confirm receipt — that is what pays the farmer.'
+          ? 'Waiting for you to confirm the produce arrived.'
           : 'Waiting for the buyer to confirm the produce reached them.',
       actor: who(viewer, 'BUYER'),
       at: iso(order.receivedByBuyerAt),
@@ -232,9 +241,12 @@ export function buildOrderJourney(
             // money we may never have received. The conditional says the same
             // thing about what happens next without claiming it has begun.
             isPaid
-            ? viewer === 'BUYER'
-              ? 'Held by UmojaHub until you confirm receipt.'
-              : 'Held by UmojaHub until the buyer confirms receipt.'
+            ? // What happens at this stage, not where the money is now. The
+              // statement above already says it is held, and this stage is the
+              // one that has not happened yet.
+              viewer === 'BUYER'
+              ? 'Released to the farmer when you confirm receipt.'
+              : 'Released to you when the buyer confirms receipt.'
             : // Addressed to whoever is reading. This stage and "Buyer received"
               // describe the same act by the same person, and naming them two
               // different ways made one journey sound like two.

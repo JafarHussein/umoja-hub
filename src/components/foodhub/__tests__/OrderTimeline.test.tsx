@@ -53,7 +53,7 @@ describe('OrderTimelineDetailed', () => {
 
   it('addresses the buyer directly about the step the buyer must take', () => {
     render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
-    expect(screen.getByText(/then confirm receipt/)).toBeInTheDocument();
+    expect(screen.getByText(/Waiting for you to confirm the produce arrived/)).toBeInTheDocument();
   });
 
   it('tells the farmer whom the same step is waiting on', () => {
@@ -67,13 +67,13 @@ describe('OrderTimelineDetailed', () => {
   });
 
   it('addresses the buyer the same way in both steps that describe their act', () => {
-    // "Confirm receipt once the produce reaches you" and "held in escrow until
-    // the buyer confirms receipt" describe one act by one person. Mixing the
-    // second and third person across two adjacent steps made a single timeline
-    // read as though it were written about someone else halfway down.
+    // Both steps describe one act by one person. Mixing the second and third
+    // person across two adjacent steps made a single timeline read as though it
+    // were written about someone else halfway down.
     render(<OrderTimelineDetailed {...PAID} viewer="BUYER" />);
-    expect(screen.getByText(/Held by UmojaHub until you confirm receipt/)).toBeInTheDocument();
-    expect(screen.queryByText(/until the buyer confirms receipt/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Waiting for you to confirm the produce arrived/)).toBeInTheDocument();
+    expect(screen.getByText(/Released to the farmer when you confirm receipt/)).toBeInTheDocument();
+    expect(screen.queryByText(/the buyer confirms receipt/)).not.toBeInTheDocument();
   });
 
   it('stops saying a paid order is awaiting payment', () => {

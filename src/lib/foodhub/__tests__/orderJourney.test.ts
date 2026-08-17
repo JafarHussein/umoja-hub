@@ -107,14 +107,35 @@ describe('buildOrderJourney', () => {
         { paymentStatus, fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT },
         'BUYER'
       ).find((s) => s.key === 'released');
-      expect(released?.explanation).not.toMatch(/^Held by UmojaHub/);
       expect(released?.explanation).toMatch(/once the order is paid/);
     }
 
-    // And still says it plainly when the money genuinely is held.
+    // On a paid order the stage describes what will happen at it, without
+    // restating custody: the statement at the top of the screen already says
+    // the money is held, and repeating it here put the same sentence on the
+    // page three times.
     expect(
       buildOrderJourney(PAID, 'BUYER').find((s) => s.key === 'released')?.explanation
-    ).toMatch(/^Held by UmojaHub/);
+    ).toBe('Released to the farmer when you confirm receipt.');
+  });
+
+  it('leaves the money-location sentence to the statement once payment has landed', () => {
+    // Read off the rendered page: "Held by UmojaHub until…" appeared in the
+    // statement, on the payment stage and on the release stage of one screen.
+    // The timeline's job is the sequence; where the money sits is stated once.
+    const paidStage = buildOrderJourney(PAID, 'BUYER').find((s) => s.key === 'paid');
+    expect(paidStage?.explanation).toBeNull();
+    expect(paidStage?.at).not.toBeNull();
+
+    // It still explains itself while the payment is the thing in question.
+    const pending = buildOrderJourney(
+      {
+        paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
+        fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
+      },
+      'BUYER'
+    ).find((s) => s.key === 'paid');
+    expect(pending?.explanation).toMatch(/Enter your M-Pesa PIN/);
   });
 
   it('ends a refunded order with the refund and never with a release', () => {
