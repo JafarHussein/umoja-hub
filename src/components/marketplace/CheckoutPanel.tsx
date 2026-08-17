@@ -3,14 +3,33 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
-import { Alert } from '@/components/app';
+import { Alert, DataItem, DataList, Disclosure } from '@/components/app';
+import { MoneyStatement, NextStep } from '@/components/foodhub/MoneyStatement';
+import { SimulationNotice } from '@/components/foodhub/SimulationNotice';
 import { FulfillmentType, ListingUnit, OrderPaymentStatus } from '@/types';
 
-// Buyer checkout (Marketplace Rebuild, Stage 7 — ported to the .theme-app
-// tokens). The order-creation + M-Pesa STK-push polling logic is preserved
-// verbatim from the retired dark CheckoutForm; only the presentation changed.
-// Stage 8 deepens the checkout *experience* (order summary, escrow steps,
-// delivery expectations) on top of this panel.
+// ---------------------------------------------------------------------------
+// Buyer checkout — pay, wait, learn what happened.
+//
+// The order-creation and polling logic is preserved. What changed is what the
+// buyer is told while it runs.
+//
+// The waiting screen used to run a 90-second depleting progress bar beside
+// "Waiting for confirmation", which reads as a deadline on the payment. It is
+// not: it is how long this component watches. The real STK prompt lives about
+// thirty seconds and the payment session outlives our poll either way. The bar
+// is gone; the recorded events stay, because those are facts.
+//
+// The serious one: when that window closed, the screen said "No confirmation
+// arrived from M-Pesa. Nothing has been charged - you can try again", and the
+// retry returned to an empty form, so the next submit created a SECOND order
+// and a second STK push. Neither half was safe. After ninety seconds the
+// platform does not know whether the buyer was charged, which is the entire
+// reason UNRESOLVED and reconciliation exist, and a buyer who entered their PIN
+// at second eighty-nine could pay twice. The window closing now says only what
+// it means, and sends the buyer to the order, where the poll continues and
+// reconciliation runs.
+// ---------------------------------------------------------------------------
 
 export interface ICheckoutPanelProps {
   listingId: string;
@@ -31,10 +50,13 @@ type CheckoutState =
   | 'awaiting_payment'
   | 'paid'
   | 'failed'
-  | 'timeout'
+  // The poll window closed with no answer. Distinct from 'failed': we do not
+  // know what happened, and must not imply that we do.
+  | 'still_checking'
   | 'inventory_unavailable'
   | 'error';
 
+/** How long this screen watches. Not how long the payment lives. */
 const POLL_WINDOW_SECONDS = 90;
 
 interface IOrderResult {
@@ -59,55 +81,58 @@ interface IPaymentSessionEvent {
 interface IPaymentStatusResponse {
   paymentStatus: OrderPaymentStatus;
   mpesaTransactionId?: string | null;
+  isSimulated?: boolean;
   events?: IPaymentSessionEvent[];
 }
 
 function clockTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-KE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /**
- * What the payment session has actually recorded, newest last, with the time
- * each step happened.
+ * What the payment session has actually recorded, oldest first.
  *
- * Checkout was built on a request/response model — submit, await, render an
- * outcome — so between the button and the result there was one spinner, and the
- * simulator's real behaviour (a scheduled outcome, a genuine M-Pesa receipt
- * number, duplicate-callback handling) was invisible. Everything below is read
- * from PaymentEventLog: if the server has not written it, it does not appear.
+ * This is the honest replacement for a spinner. Every line is a row the backend
+ * wrote; if the server has not written it, it does not appear, and nothing here
+ * moves on its own to suggest progress that is not happening.
  */
 function SessionLog({ events }: { events: IPaymentSessionEvent[] }): React.ReactElement | null {
   if (events.length === 0) return null;
   return (
-    <div className="space-y-2" aria-live="polite">
-      <p className="app-label text-app-muted">Payment session</p>
-      <ol className="space-y-1.5">
-        {events.map((e) => (
-          <li key={`${e.type}-${e.occurredAt}`} className="flex items-baseline gap-2.5">
-            <span className="app-data-s shrink-0 text-app-faint">{clockTime(e.occurredAt)}</span>
-            <span className="app-meta text-app-body">
-              {e.label}
-              {e.detail && <span className="text-app-faint"> · {e.detail}</span>}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol className="space-y-2.5" aria-live="polite" aria-label="What has happened so far">
+      {events.map((e) => (
+        <li key={`${e.type}-${e.occurredAt}`} className="flex gap-3">
+          <span className="app-data-m w-12 shrink-0 pt-px text-app-faint">
+            {clockTime(e.occurredAt)}
+          </span>
+          <span className="min-w-0">
+            <span className="app-body block text-app-ink">{e.label}</span>
+            {e.detail && <span className="app-meta block text-app-muted">{e.detail}</span>}
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
 /**
- * Why a payment did not go through, in the words Safaricom used.
+ * Why a payment did not go through, in the words the platform recorded.
  *
- * Every non-success used to collapse to "Payment was declined." — which is
- * wrong for a timeout, wrong for an unreachable handset, and unhelpful for
- * insufficient funds, where the buyer can fix it in thirty seconds if only they
- * are told. The reason is already on the event; it just was not read.
+ * Every non-success used to collapse to "Payment was declined" — wrong for a
+ * timeout, wrong for an unreachable handset, and unhelpful for insufficient
+ * funds, where the buyer can fix it in thirty seconds if only they are told.
  */
 function failureReason(events: IPaymentSessionEvent[]): string | null {
   for (let i = events.length - 1; i >= 0; i -= 1) {
     const e = events[i];
-    if (e && e.detail && (e.type === 'FAILED' || e.type === 'TIMEOUT' || e.type === 'CALLBACK_RECEIVED')) {
+    if (
+      e &&
+      e.detail &&
+      (e.type === 'FAILED' || e.type === 'TIMEOUT' || e.type === 'CALLBACK_RECEIVED')
+    ) {
       return e.detail;
     }
   }
@@ -133,10 +158,9 @@ export function CheckoutPanel({
   const [state, setState] = useState<CheckoutState>('idle');
   const [orderResult, setOrderResult] = useState<IOrderResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [remainingSeconds, setRemainingSeconds] = useState(POLL_WINDOW_SECONDS);
-  // What the payment session has actually recorded, and the receipt it produced.
   const [sessionEvents, setSessionEvents] = useState<IPaymentSessionEvent[]>([]);
   const [mpesaReceipt, setMpesaReceipt] = useState<string | null>(null);
+  const [isSimulated, setIsSimulated] = useState(false);
 
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -154,16 +178,12 @@ export function CheckoutPanel({
   const startPolling = useCallback(
     (orderId: string) => {
       const deadline = Date.now() + POLL_WINDOW_SECONDS * 1_000;
-      setRemainingSeconds(POLL_WINDOW_SECONDS);
 
       let tick = 0;
       const timer = setInterval(() => {
-        const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1_000));
-        setRemainingSeconds(remaining);
-
         if (Date.now() >= deadline) {
           stopPolling();
-          setState('timeout');
+          setState('still_checking');
           return;
         }
 
@@ -175,17 +195,18 @@ export function CheckoutPanel({
             const res = await fetch(`/api/orders/${orderId}/payment-status`);
             if (!res.ok) return;
             const data = (await res.json()) as IPaymentStatusResponse;
-            // Narration updates on every poll, including while still pending —
-            // that is the whole point. The buyer watches M-Pesa respond rather
-            // than watching a spinner and hoping.
             if (data.events) setSessionEvents(data.events);
             if (data.mpesaTransactionId) setMpesaReceipt(data.mpesaTransactionId);
+            if (data.isSimulated !== undefined) setIsSimulated(data.isSimulated);
             if (data.paymentStatus === OrderPaymentStatus.PAID) {
               stopPolling();
               setState('paid');
             } else if (data.paymentStatus === OrderPaymentStatus.FAILED) {
               stopPolling();
               setState('failed');
+            } else if (data.paymentStatus === OrderPaymentStatus.UNRESOLVED) {
+              stopPolling();
+              setState('still_checking');
             }
           } catch {
             // transient network error — continue polling
@@ -202,7 +223,15 @@ export function CheckoutPanel({
     setQuantity((q) => Math.min(maxQuantity, Math.max(1, q + delta)));
   }
 
-  function handleRetry(): void {
+  /**
+   * Back to an empty form.
+   *
+   * Only ever offered where we know no money moved: an order that never
+   * reached the provider, or stock that was gone before payment began. It is
+   * deliberately NOT offered after a payment we could not confirm — starting a
+   * fresh checkout there is how a buyer pays twice.
+   */
+  function startOver(): void {
     stopPolling();
     setOrderResult(null);
     setErrorMessage(null);
@@ -232,7 +261,10 @@ export function CheckoutPanel({
       const body = (await res.json()) as { data?: IOrderResult; error?: string; code?: string };
 
       if (!res.ok) {
-        if (body.code === 'ORDER_INSUFFICIENT_STOCK' || body.code === 'FARMER_LISTING_UNAVAILABLE') {
+        if (
+          body.code === 'ORDER_INSUFFICIENT_STOCK' ||
+          body.code === 'FARMER_LISTING_UNAVAILABLE'
+        ) {
           setErrorMessage(body.error ?? 'This quantity is no longer available.');
           setState('inventory_unavailable');
           return;
@@ -257,169 +289,220 @@ export function CheckoutPanel({
     }
   }
 
-  // ── Awaiting M-Pesa PIN ─────────────────────────────────────────────────
-  if (state === 'awaiting_payment' && orderResult) {
-    const rows: { label: string; value: string }[] = [
-      { label: 'Pay to', value: 'UmojaHub' },
-      { label: 'Amount', value: `KSh ${orderResult.totalAmountKES.toLocaleString()}` },
-      { label: 'Phone', value: `+254${phoneSuffix}` },
-      { label: 'Reference', value: orderResult.orderReferenceId },
-      // The session identifier M-Pesa issued for this request. It is what
-      // Safaricom support asks for, and the platform already had it.
-      { label: 'Session', value: orderResult.mpesaCheckoutRequestId },
-    ];
+  // Detail that belongs on the record but not in the buyer's face while they
+  // are being asked to enter a PIN. The checkout session id is what Safaricom
+  // support asks for, and it is one disclosure away rather than in a table.
+  function PaymentDetail({ order }: { order: IOrderResult }): React.ReactElement {
     return (
-      <div className="space-y-5">
-        <div className="flex items-center gap-2.5">
-          <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-app-pill bg-app-brand" aria-hidden="true" />
-          <div>
-            <p className="app-body-strong text-app-ink">STK push sent</p>
-            <p className="app-meta text-app-muted">Check your phone and enter your M-Pesa PIN to confirm.</p>
-          </div>
+      <Disclosure summary="Payment details">
+        <DataList>
+          {mpesaReceipt && (
+            <DataItem label="M-Pesa receipt" numeric>
+              {mpesaReceipt}
+            </DataItem>
+          )}
+          <DataItem label="Order reference" numeric>
+            {order.orderReferenceId}
+          </DataItem>
+          <DataItem label="Paid to">UmojaHub</DataItem>
+          <DataItem label="From" numeric>
+            +254{phoneSuffix}
+          </DataItem>
+          <DataItem label="Method">M-PESA</DataItem>
+          <DataItem label="Checkout session" numeric>
+            {order.mpesaCheckoutRequestId}
+          </DataItem>
+        </DataList>
+      </Disclosure>
+    );
+  }
+
+  // ── Waiting for the buyer's PIN ─────────────────────────────────────────
+  if (state === 'awaiting_payment' && orderResult) {
+    return (
+      <div className="space-y-6">
+        <MoneyStatement
+          label="Paying now"
+          amountKES={orderResult.totalAmountKES}
+          status={
+            isSimulated
+              ? 'The payment request has been sent and is being processed. No PIN is requested on your handset.'
+              : `A payment request has been sent to +254${phoneSuffix}. Enter your M-Pesa PIN on your phone to complete it.`
+          }
+          tone="checking"
+          evidence={<span>To UmojaHub · {orderResult.orderReferenceId}</span>}
+        />
+
+        {isSimulated && <SimulationNotice />}
+
+        <section className="space-y-3 border-t border-app-hairline pt-5">
+          <h3 className="app-label text-app-muted">What has happened so far</h3>
+          {sessionEvents.length === 0 ? (
+            <p className="app-meta text-app-faint">
+              Waiting for M-Pesa. Each step appears here as it is recorded.
+            </p>
+          ) : (
+            <SessionLog events={sessionEvents} />
+          )}
+        </section>
+
+        <div className="border-y border-app-hairline">
+          <PaymentDetail order={orderResult} />
         </div>
-
-        <div className="overflow-hidden rounded-app-control border border-app-hairline">
-          {rows.map(({ label, value }) => (
-            <div
-              key={label}
-              className="flex items-center justify-between border-b border-app-hairline px-3 py-2.5 last:border-0"
-            >
-              <span className="app-body text-app-muted">{label}</span>
-              <span className="app-data-m text-app-ink">{value}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-2" role="timer" aria-live="polite">
-          <div className="flex items-center justify-between">
-            <p className="app-body text-app-muted">Waiting for confirmation</p>
-            <p className="app-data-m text-app-ink">{remainingSeconds}s</p>
-          </div>
-          <div className="h-1 overflow-hidden rounded-app-pill bg-app-sunken">
-            <div
-              className="h-full bg-app-brand transition-all duration-1000 ease-linear"
-              style={{ width: `${(remainingSeconds / POLL_WINDOW_SECONDS) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <SessionLog events={sessionEvents} />
-
-        <p className="app-meta text-app-faint">
-          Enter your PIN on your phone. We&apos;ll stop checking after {POLL_WINDOW_SECONDS} seconds
-          and let you retry.
-        </p>
       </div>
     );
   }
 
   // ── Payment confirmed ───────────────────────────────────────────────────
   if (state === 'paid' && orderResult) {
-    const rows: { label: string; value: string; mono: boolean }[] = [
-      // The receipt number first: it is what a buyer matches against the SMS on
-      // their handset, and the platform stored it without ever showing it.
-      ...(mpesaReceipt ? [{ label: 'M-Pesa receipt', value: mpesaReceipt, mono: true }] : []),
-      { label: 'Reference', value: orderResult.orderReferenceId, mono: true },
-      { label: 'Amount', value: `KSh ${orderResult.totalAmountKES.toLocaleString()}`, mono: true },
-      { label: 'Crop', value: cropName, mono: false },
-      {
-        label: 'Collection',
-        value: fulfillmentType === FulfillmentType.PICKUP ? `Collect · ${pickupCounty}` : 'Delivery',
-        mono: false,
-      },
-    ];
     return (
-      <div className="space-y-5">
-        <div className="flex items-center gap-2.5">
-          <span className="h-2 w-2 flex-shrink-0 rounded-app-pill bg-app-success" aria-hidden="true" />
-          <p className="app-body-strong text-app-ink">Payment confirmed</p>
-        </div>
+      <div className="space-y-6">
+        <MoneyStatement
+          label="Amount paid"
+          amountKES={orderResult.totalAmountKES}
+          status={`Held by UmojaHub until you confirm the produce arrived. ${farmerName || 'The farmer'} has not been paid yet.`}
+          tone="settled"
+          evidence={
+            <>
+              {mpesaReceipt && (
+                <span>
+                  M-Pesa receipt <span className="app-data-m text-app-muted">{mpesaReceipt}</span>
+                </span>
+              )}
+              {isSimulated && <SimulationNotice variant="badge" />}
+            </>
+          }
+        />
 
-        <div className="overflow-hidden rounded-app-control border border-app-hairline">
-          {rows.map(({ label, value, mono }) => (
-            <div
-              key={label}
-              className="flex items-center justify-between border-b border-app-hairline px-3 py-2.5 last:border-0"
-            >
-              <span className="app-body text-app-muted">{label}</span>
-              <span className={cn('text-app-ink', mono ? 'app-data-m' : 'app-body capitalize')}>
-                {value}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-start gap-2.5 rounded-app-control border border-app-brand-border bg-app-brand-surface p-3">
-          <span aria-hidden className="app-title leading-none text-app-brand">🔒</span>
-          <p className="app-meta text-app-muted">
-            <span className="app-body-strong text-app-ink">Held in escrow.</span> Your payment is
-            protected until you confirm you received your order — then it is released to the farmer.
-          </p>
-        </div>
-
-        <SessionLog events={sessionEvents} />
-
-        <p className="app-meta text-app-faint">You will receive an M-Pesa SMS confirmation shortly.</p>
-
-        <Link
-          href="/dashboard/buyer/orders"
-          className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
+        <NextStep
+          title="Next, the farmer sends your order"
+          consequence={`${farmerName || 'The farmer'} has been told to prepare your ${cropName.toLowerCase()}. When it reaches you, confirm receipt on the order and the payment is released to them. Until you do, UmojaHub holds it.`}
         >
-          View my orders
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2.5 6H9.5M6.5 3L9.5 6L6.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Link>
+          <Link
+            href="/dashboard/buyer/orders"
+            className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+          >
+            Track this order
+            <span aria-hidden>→</span>
+          </Link>
+        </NextStep>
+
+        <section className="space-y-3 border-t border-app-hairline pt-5">
+          <h3 className="app-label text-app-muted">What happened</h3>
+          <SessionLog events={sessionEvents} />
+        </section>
+
+        <div className="border-y border-app-hairline">
+          <PaymentDetail order={orderResult} />
+        </div>
       </div>
     );
   }
 
-  // ── Checkout form ───────────────────────────────────────────────────────
-  const showError =
-    state === 'error' || state === 'failed' || state === 'timeout' || state === 'inventory_unavailable';
+  // ── The window closed without an answer ─────────────────────────────────
+  //
+  // Not a failure, and not stated as one. The order exists, its poll continues
+  // on the order screen, and reconciliation will ask M-Pesa what happened.
+  if (state === 'still_checking' && orderResult) {
+    return (
+      <div className="space-y-6">
+        <MoneyStatement
+          label="Payment being checked"
+          amountKES={orderResult.totalAmountKES}
+          status="We have not had a final answer from M-Pesa yet, so we cannot say whether this payment went through."
+          tone="checking"
+          evidence={<span>{orderResult.orderReferenceId}</span>}
+        />
 
-  // A failure states the reason M-Pesa actually gave. "Payment was declined"
-  // covered insufficient funds, a cancelled prompt, an unreachable handset and
-  // a busy line alike — and only one of those is a decline. The reason was on
-  // the event all along; nothing read it.
-  const recordedReason = failureReason(sessionEvents);
+        <NextStep
+          title="Do not pay again yet"
+          consequence="Check your M-Pesa messages. If the money left your account, UmojaHub will complete this order and you will see it on your orders page. If it did not, the order closes and the produce goes back on sale. Paying again now is the one thing that could cost you twice."
+        >
+          <Link
+            href="/dashboard/buyer/orders"
+            className="app-body inline-flex items-center gap-1.5 text-app-brand transition-colors duration-150 hover:text-app-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+          >
+            Go to this order
+            <span aria-hidden>→</span>
+          </Link>
+        </NextStep>
 
+        <section className="space-y-3 border-t border-app-hairline pt-5">
+          <h3 className="app-label text-app-muted">What has happened so far</h3>
+          <SessionLog events={sessionEvents} />
+        </section>
+
+        <div className="border-y border-app-hairline">
+          <PaymentDetail order={orderResult} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── The payment did not go through ──────────────────────────────────────
+  //
+  // An established failure, which is a different thing from the state above:
+  // M-Pesa answered, and the answer was no. Nothing was charged, so returning
+  // to the form is safe here.
+  if (state === 'failed' && orderResult) {
+    const reason = failureReason(sessionEvents);
+    return (
+      <div className="space-y-6">
+        <MoneyStatement
+          label="Payment not completed"
+          amountKES={orderResult.totalAmountKES}
+          status={reason ?? 'M-Pesa did not complete this payment. Nothing left your account.'}
+          tone="stopped"
+          evidence={<span>{orderResult.orderReferenceId}</span>}
+        />
+
+        <NextStep
+          title="Try again"
+          consequence={`Nothing has been charged. The produce is back on sale, so the same order is only available while ${farmerName || 'the farmer'} still has the stock.`}
+        >
+          <button
+            type="button"
+            onClick={startOver}
+            className="app-body-strong h-11 rounded-app-control bg-app-brand px-5 text-app-on-brand transition-colors duration-150 hover:bg-app-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
+          >
+            Start again
+          </button>
+        </NextStep>
+
+        <section className="space-y-3 border-t border-app-hairline pt-5">
+          <h3 className="app-label text-app-muted">What happened</h3>
+          <SessionLog events={sessionEvents} />
+        </section>
+      </div>
+    );
+  }
+
+  // ── The form ────────────────────────────────────────────────────────────
+  const showError = state === 'error' || state === 'inventory_unavailable';
   const errorText =
-    state === 'failed'
-      ? (recordedReason ?? 'M-Pesa did not complete the payment.')
-      : state === 'timeout'
-        ? 'No confirmation arrived from M-Pesa. Nothing has been charged — you can try again.'
-        : state === 'inventory_unavailable'
-          ? `${errorMessage ?? 'This quantity is no longer available.'} Refresh to see current stock.`
-          : (errorMessage ?? 'Something went wrong.');
+    state === 'inventory_unavailable'
+      ? `${errorMessage ?? 'This quantity is no longer available.'} Refresh to see current stock.`
+      : (errorMessage ?? 'Something went wrong.');
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div>
-        <p className="app-label text-app-muted">Checkout</p>
         <h2 className="app-h2 text-app-ink">Pay with M-Pesa</h2>
-      </div>
-
-      {/* Who you're buying from */}
-      <div className="flex items-center justify-between gap-3 rounded-app-control border border-app-hairline bg-app-sunken px-3 py-2.5">
-        <div className="min-w-0">
-          <p className="app-meta text-app-muted">Buying from</p>
-          <p className="app-body-strong flex items-center gap-1.5 truncate text-app-ink">
-            {farmerName || '—'}
-            {farmerVerified && (
-              <span className="app-label text-app-success" aria-label="Verified farmer">
-                ✓
-              </span>
-            )}
-          </p>
-        </div>
-        {trustScore != null && trustScore > 0 && (
-          <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-app-pill bg-app-brand-surface px-2 py-0.5">
-            <span aria-hidden className="text-app-brand">◆</span>
-            <span className="app-label text-app-muted">Trust</span>
-            <span className="app-data-m text-app-brand">{trustScore}</span>
-          </span>
-        )}
+        <p className="app-meta mt-1 text-app-muted">
+          Buying from {farmerName || 'this farmer'}
+          {farmerVerified && (
+            <span className="text-app-success">
+              {' '}
+              <span aria-hidden>✓</span> verified
+            </span>
+          )}
+          {trustScore != null && trustScore > 0 && (
+            <>
+              {' '}
+              · trust score <span className="app-data-m text-app-ink">{trustScore}</span>
+            </>
+          )}
+        </p>
       </div>
 
       {showError && (
@@ -437,20 +520,15 @@ export function CheckoutPanel({
             ) : (
               <button
                 type="button"
-                onClick={handleRetry}
+                onClick={startOver}
                 className="app-body-strong flex-shrink-0 underline underline-offset-2"
               >
-                Retry
+                Try again
               </button>
             )}
           </div>
         </Alert>
       )}
-
-      {/* What the attempt actually did, kept on screen after it failed. A buyer
-          deciding whether to try again wants to see how far it got — and a
-          farmer or administrator asked about it later needs the same record. */}
-      {(state === 'failed' || state === 'timeout') && <SessionLog events={sessionEvents} />}
 
       {/* Quantity */}
       <div className="space-y-1.5">
@@ -460,7 +538,7 @@ export function CheckoutPanel({
             type="button"
             onClick={() => adjustQuantity(-1)}
             disabled={quantity <= 1}
-            className="flex h-10 w-10 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
+            className="flex h-11 w-11 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
             aria-label="Decrease quantity"
           >
             <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor" aria-hidden="true">
@@ -472,15 +550,17 @@ export function CheckoutPanel({
             min={1}
             max={maxQuantity}
             value={quantity}
-            onChange={(e) => setQuantity(Math.min(maxQuantity, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+            onChange={(e) =>
+              setQuantity(Math.min(maxQuantity, Math.max(1, parseInt(e.target.value, 10) || 1)))
+            }
             aria-label="Quantity"
-            className="app-data-m h-10 w-16 rounded-app-control border border-app-hairline bg-app-card text-center text-app-ink focus:border-app-brand focus:outline-none focus:ring-1 focus:ring-app-brand"
+            className="app-data-m h-11 w-16 rounded-app-control border border-app-hairline bg-app-card text-center text-app-ink focus:border-app-brand focus:outline-none focus:ring-1 focus:ring-app-brand"
           />
           <button
             type="button"
             onClick={() => adjustQuantity(1)}
             disabled={quantity >= maxQuantity}
-            className="flex h-10 w-10 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
+            className="flex h-11 w-11 items-center justify-center rounded-app-control border border-app-hairline text-app-ink transition-colors duration-150 hover:border-app-border-strong disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
             aria-label="Increase quantity"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
@@ -488,11 +568,13 @@ export function CheckoutPanel({
               <rect x="4" width="2" height="10" rx="1" />
             </svg>
           </button>
-          <span className="app-meta text-app-faint">of {maxQuantity.toLocaleString()} avail.</span>
+          <span className="app-meta text-app-faint">
+            of {maxQuantity.toLocaleString()} available
+          </span>
         </div>
       </div>
 
-      {/* Fulfillment */}
+      {/* Fulfilment */}
       <div className="space-y-1.5">
         <p className="app-meta text-app-muted">How you&apos;ll get it</p>
         <div className="flex gap-2" role="group" aria-label="How you'll get it">
@@ -503,7 +585,7 @@ export function CheckoutPanel({
               onClick={() => setFulfillmentType(type)}
               aria-pressed={fulfillmentType === type}
               className={cn(
-                'app-body h-10 flex-1 rounded-app-control border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring',
+                'app-body h-11 flex-1 rounded-app-control border transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring',
                 fulfillmentType === type
                   ? 'border-app-brand bg-app-brand text-app-on-brand'
                   : 'border-app-hairline bg-app-card text-app-body hover:border-app-border-strong'
@@ -522,7 +604,9 @@ export function CheckoutPanel({
 
       {/* Phone */}
       <div className="space-y-1.5">
-        <p className="app-meta text-app-muted">M-Pesa number</p>
+        <label htmlFor="mpesa-number" className="app-meta block text-app-muted">
+          M-Pesa number
+        </label>
         <div
           className={cn(
             'flex items-stretch rounded-app-control border bg-app-card transition-colors duration-150',
@@ -533,6 +617,7 @@ export function CheckoutPanel({
             +254
           </span>
           <input
+            id="mpesa-number"
             type="tel"
             inputMode="numeric"
             placeholder="700000000"
@@ -541,27 +626,26 @@ export function CheckoutPanel({
             onChange={(e) => setPhoneSuffix(e.target.value.replace(/\D/g, '').slice(0, 9))}
             onFocus={() => setPhoneFocused(true)}
             onBlur={() => setPhoneFocused(false)}
-            className="app-data-m flex-1 bg-transparent px-3 py-2.5 text-app-ink focus:outline-none"
-            aria-label="M-Pesa phone number (9 digits after country code)"
+            className="app-data-m min-h-[44px] flex-1 bg-transparent px-3 text-app-ink focus:outline-none"
             required
           />
         </div>
-        <p className="app-meta text-app-faint">Number registered with your M-Pesa account</p>
+        <p className="app-meta text-app-faint">The number registered with your M-Pesa account</p>
       </div>
 
-      {/* Order summary */}
-      <div className="overflow-hidden rounded-app-control border border-app-hairline">
-        <div className="flex items-center justify-between px-3 py-2.5">
+      {/* What you pay. The total is the figure, so it is set as one. */}
+      <div className="space-y-2 border-t border-app-hairline pt-5">
+        <div className="flex items-baseline justify-between">
           <span className="app-body text-app-muted">
             {quantity.toLocaleString()} {unit.toLowerCase()} × KSh {pricePerUnit.toLocaleString()}
           </span>
-          <span className="app-data-m text-app-ink">KSh {totalKES.toLocaleString()}</span>
+          <span className="app-data-m text-app-muted">KSh {totalKES.toLocaleString()}</span>
         </div>
-        <div className="flex items-center justify-between border-t border-app-hairline px-3 py-2.5">
+        <div className="flex items-baseline justify-between">
           <span className="app-body text-app-muted">Platform fee</span>
-          <span className="app-body text-app-success">Free</span>
+          <span className="app-body text-app-muted">None</span>
         </div>
-        <div className="flex items-center justify-between border-t border-app-hairline bg-app-sunken px-3 py-2.5">
+        <div className="flex items-baseline justify-between pt-1">
           <span className="app-body-strong text-app-ink">Total</span>
           <span className="app-data-l text-app-ink">KSh {totalKES.toLocaleString()}</span>
         </div>
@@ -570,32 +654,20 @@ export function CheckoutPanel({
       <button
         type="submit"
         disabled={state === 'submitting' || phoneSuffix.length !== 9 || quantity < 1}
-        className="app-body-strong h-11 w-full rounded-app-control bg-app-brand text-app-on-brand transition-colors duration-150 hover:bg-app-brand-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-1 focus-visible:ring-offset-app-canvas"
+        className="app-body-strong h-12 w-full rounded-app-control bg-app-brand text-app-on-brand transition-colors duration-150 hover:bg-app-brand-hover disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-ring"
       >
-        {state === 'submitting' ? 'Placing order…' : `Pay KSh ${totalKES.toLocaleString()} with M-Pesa`}
+        {state === 'submitting'
+          ? 'Sending the payment request…'
+          : `Pay KSh ${totalKES.toLocaleString()}`}
       </button>
 
-      {/* Escrow explainer — reduces uncertainty about when the farmer is paid */}
-      <div className="space-y-2 rounded-app-control border border-app-brand-border bg-app-brand-surface p-3">
-        <p className="app-label flex items-center gap-1.5 text-app-brand">
-          <span aria-hidden>🔒</span>
-          How your payment is protected
-        </p>
-        <ol className="space-y-1.5">
-          {[
-            'You pay now — the money is held safely in escrow, not sent to the farmer yet.',
-            'The farmer dispatches your order.',
-            'You confirm you received it — only then is the payment released to the farmer.',
-          ].map((step, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="app-data-m flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-app-pill bg-app-brand text-app-on-brand">
-                {i + 1}
-              </span>
-              <span className="app-meta text-app-muted">{step}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
+      {/* What paying actually does. Said once, at the moment of commitment,
+          because this is where a buyer decides whether to trust a stranger. */}
+      <p className="app-meta text-pretty text-app-muted">
+        Your money is held by UmojaHub, not sent to {farmerName || 'the farmer'}. They are paid only
+        when you confirm the produce reached you. If it never arrives, ask us to review the order and
+        we can return your money.
+      </p>
     </form>
   );
 }

@@ -33,17 +33,26 @@ export interface IPaymentSessionEvent {
 interface IPaymentEventLean {
   eventType: string;
   resultCode?: number | null;
+  reason?: string | null;
   occurredAt?: Date | string | null;
 }
 
 // The vocabulary comes from the receipt so the live session and the permanent
 // record describe the same event with the same sentence. A buyer who watched
 // "M-Pesa responded" go by should find that exact line on the receipt later.
+//
+// The recorded `reason` is preferred over the result-code gloss for the same
+// reason the receipt prefers it: it was written by the code that caused the
+// event and says why, where a code only says what. Without this the waiting
+// screen said strictly less about an event than the receipt did about the same
+// event, which is an odd thing for the live view to do.
 function narrate(events: IPaymentEventLean[]): IPaymentSessionEvent[] {
   return events.map((e) => ({
     type: e.eventType,
     label: PAYMENT_LABEL[e.eventType] ?? e.eventType,
-    detail: typeof e.resultCode === 'number' ? (RESULT_CODE_DETAIL[e.resultCode] ?? null) : null,
+    detail:
+      e.reason ??
+      (typeof e.resultCode === 'number' ? (RESULT_CODE_DETAIL[e.resultCode] ?? null) : null),
     occurredAt: new Date(e.occurredAt ?? Date.now()).toISOString(),
   }));
 }
@@ -52,7 +61,7 @@ async function sessionEvents(orderId: string): Promise<IPaymentSessionEvent[]> {
   try {
     const { default: PaymentEventLog } = await import('@/lib/models/PaymentEventLog.model');
     const rows = (await PaymentEventLog.find({ orderId })
-      .select('eventType resultCode occurredAt')
+      .select('eventType resultCode reason occurredAt')
       .sort({ occurredAt: 1 })
       .lean()) as unknown as IPaymentEventLean[];
     return narrate(rows);
