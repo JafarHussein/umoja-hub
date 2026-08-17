@@ -525,6 +525,7 @@ export default function BuyerOrderDetailPage(): React.ReactElement {
         <OrderTimelineDetailed
           paymentStatus={order.paymentStatus}
           fulfillmentStatus={order.fulfillmentStatus}
+          createdAt={order.createdAt}
           paidAt={order.paidAt}
           confirmedByFarmerAt={order.confirmedByFarmerAt}
           receivedByBuyerAt={order.receivedByBuyerAt}
