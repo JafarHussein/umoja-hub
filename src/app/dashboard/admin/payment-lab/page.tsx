@@ -82,6 +82,10 @@ interface ILabResponse {
   simulationActive: boolean;
   /** The loaded fixture and the workflow it exists to exercise. Null under a real provider. */
   simulationProfile: { name: string; purpose: string } | null;
+  /** The real-STK demonstration configuration, and whether the bridge is usable. */
+  realStkDemo: boolean;
+  demoAmountKES: number | null;
+  demoBridgeAvailable: boolean;
   /** Orders where the platform does not know whether the buyer was charged. */
   unresolvedPayments: IUnresolvedPayment[];
   metrics: IMetrics;
@@ -207,6 +211,28 @@ export default function AdminPaymentLabPage(): React.ReactElement {
     }
   }, [status, session, router, fetchData]);
 
+  async function confirmForDemo(orderId: string, reference: string): Promise<void> {
+    setFiring(orderId);
+    setNotice(null);
+    try {
+      const res = await fetch('/api/admin/payment-lab', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, action: 'demo_confirm' }),
+      });
+      const body = (await res.json()) as { data?: { reference: string }; error?: string };
+      if (!res.ok) throw new Error(body.error ?? 'Could not confirm this payment.');
+      setNotice(
+        `${reference} confirmed by the demonstration bridge as ${body.data?.reference}. The audit trail attributes it to UmojaHub, not to Safaricom.`
+      );
+      await fetchData();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : 'An error occurred.');
+    } finally {
+      setFiring(null);
+    }
+  }
+
   async function fire(orderId: string): Promise<void> {
     const action = selectedActions[orderId] ?? 'success';
     setFiring(orderId);
@@ -273,7 +299,14 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Header */}
       <PageHeader
         title="Payment Lab"
-        description="Drive payment scenarios against live orders and watch orders, notifications, audit, and trust react exactly as in production. The only thing simulated is the M-Pesa callback."
+        // Provider-aware, because the old sentence ("the only thing simulated
+        // is the M-Pesa callback") is false under the sandbox, where the
+        // callback is the most real part of the whole chain.
+        description={
+          data.simulationActive
+            ? 'Drive payment scenarios against live orders and watch orders, notifications, audit and trust react exactly as in production. The M-Pesa leg is simulated; everything downstream of it is not.'
+            : 'Payment requests reach Safaricom and its callbacks reach this server. Orders, notifications, audit and trust react exactly as in production.'
+        }
         actions={
           <span
             className={cn(
@@ -288,10 +321,26 @@ export default function AdminPaymentLabPage(): React.ReactElement {
         }
       />
 
-      {!data.simulationActive && (
+      {!data.simulationActive && !data.realStkDemo && (
         <Alert tone="warning">
           A real Daraja provider is active; scenario triggers are disabled. Metrics below reflect
           real payment events.
+        </Alert>
+      )}
+
+      {/* What the operator is actually looking at. Stated here rather than
+          inferred from the provider pill, because the difference between a
+          simulated payment and a real sandbox one is the whole argument. */}
+      {data.realStkDemo && (
+        <Alert tone="info">
+          <span className="app-body-strong">Real STK demonstration.</span> Payment requests go to
+          Safaricom&apos;s Daraja sandbox for a nominal{' '}
+          <span className="app-data-m">KSh {data.demoAmountKES ?? 1}</span>, while each order keeps
+          its true total. The sandbox issues real references and sends a real callback, but cannot
+          complete a payment: its test handset has nobody to enter a PIN. Use{' '}
+          <span className="app-body-strong">Confirm for demonstration</span> to record the
+          confirmation against UmojaHub rather than Safaricom, which is how the audit trail will
+          describe it.
         </Alert>
       )}
 
@@ -467,6 +516,20 @@ export default function AdminPaymentLabPage(): React.ReactElement {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  {/* The bridge. Present only under the demonstration
+                      configuration with the Daraja sandbox active, because that
+                      is the only situation it exists for: a real STK Push that
+                      Safaricom cannot complete. */}
+                  {data.demoBridgeAvailable && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      isLoading={firing === o.orderId}
+                      onClick={() => void confirmForDemo(o.orderId, o.orderReferenceId)}
+                    >
+                      Confirm for demonstration
+                    </Button>
+                  )}
                   <select
                     aria-label={`Scenario for ${o.orderReferenceId}`}
                     value={selectedActions[o.orderId] ?? 'success'}
