@@ -7,8 +7,6 @@ import {
   Button,
   EmptyState,
   Input,
-  MetricGrid,
-  MetricTile,
   Modal,
   Page,
   PageHeader,
@@ -106,17 +104,23 @@ function RequestPill({ status }: { status: WithdrawalRequestStatus }): React.Rea
 // Per-payment escrow pill. A payment is HELD until the buyer confirms receipt,
 // then RELEASABLE (it counts toward the available balance). Derived from the
 // order's fulfillment status — the only two states a PAID ledger row can be in.
+//
+// The glyph is geometric rather than a padlock emoji. Emoji render differently
+// on every handset and carry no meaning here; these two are the redundant
+// encoding that lets the state be read without relying on colour.
 function EscrowPill({ status }: { status: OrderFulfillmentStatus }): React.ReactElement {
   const releasable = status === OrderFulfillmentStatus.COMPLETED;
   return (
     <span
       className={cn(
         'app-label inline-flex items-center gap-1 rounded-app-pill px-2 py-0.5',
-        releasable ? 'bg-app-success-surface text-app-success' : 'bg-app-warning-surface text-app-warning'
+        releasable
+          ? 'bg-app-success-surface text-app-success'
+          : 'bg-app-warning-surface text-app-warning'
       )}
     >
-      <span aria-hidden>{releasable ? '✓' : '🔒'}</span>
-      {releasable ? 'Cleared' : 'Held in escrow'}
+      <span aria-hidden>{releasable ? '✓' : '◷'}</span>
+      {releasable ? 'Cleared' : 'Held'}
     </span>
   );
 }
@@ -265,41 +269,50 @@ export default function FarmerLedgerPage(): React.ReactElement {
         }
       />
 
-      {/* Balance summary — the escrow story: held → releasable → available */}
-      <PageSection>
-        <MetricGrid columns={3}>
-          <MetricTile
-            label="Held in escrow"
-            value={formatKES(balance?.heldKES ?? 0)}
-            caption="Paid by buyers, waiting on them to confirm they received the produce."
-          />
-          <MetricTile
-            label="Cleared"
-            value={formatKES(balance?.releasableKES ?? 0)}
-            caption={
-              balance && balance.committedPayoutsKES > 0
-                ? `Confirmed received. ${formatKES(balance.committedPayoutsKES)} of this is already committed to a payout request.`
-                : 'Confirmed received by the buyer and counted toward what you can withdraw.'
-            }
-          />
-          <MetricTile
-            label="Available to withdraw"
-            value={formatKES(availableKES)}
-            emphasis
-            caption={
-              balance && balance.inDisputeKES > 0
-                ? `${formatKES(balance.inDisputeKES)} is held back while an order is under review.`
-                : 'Yours to request whenever you want it. An administrator releases each payout.'
-            }
-          />
-        </MetricGrid>
+      {/* One figure first: what this farmer can actually ask for today. The
+          other two are the story behind it and belong under it, not beside it
+          at the same size — a farmer opening this screen is asking how much
+          they can take home, not for a three-way comparison. */}
+      <section aria-label="Your balance">
+        <p className="app-label text-app-muted">Available to withdraw</p>
+        <p className="app-data-xl mt-2 text-app-ink">{formatKES(availableKES)}</p>
+        <p className="app-body mt-2 max-w-app-prose text-pretty text-app-muted">
+          {hasOpenRequest
+            ? 'You have a payout request awaiting review. You can file another once it is resolved.'
+            : availableKES > 0
+              ? 'Yours to request whenever you want it. An administrator releases each payout to your M-Pesa number.'
+              : 'Money appears here once a buyer confirms they received your produce.'}
+          {balance && balance.inDisputeKES > 0 && (
+            <>
+              {' '}
+              <span className="text-app-warning">
+                {formatKES(balance.inDisputeKES)} is held back while an order is under review.
+              </span>
+            </>
+          )}
+        </p>
 
-        {hasOpenRequest && (
-          <p className="app-body text-app-muted">
-            You have a payout request awaiting review. You can file another once it is resolved.
-          </p>
-        )}
-      </PageSection>
+        <dl className="mt-5 flex flex-wrap gap-x-10 border-t border-app-hairline">
+          <div className="min-w-0 flex-1 basis-48 py-3">
+            <dt className="app-label text-app-muted">Held</dt>
+            <dd className="app-data-m mt-1 text-app-ink">{formatKES(balance?.heldKES ?? 0)}</dd>
+            <dd className="app-meta mt-0.5 text-app-faint">
+              Paid by buyers, waiting on them to confirm the produce arrived.
+            </dd>
+          </div>
+          <div className="min-w-0 flex-1 basis-48 py-3">
+            <dt className="app-label text-app-muted">Cleared</dt>
+            <dd className="app-data-m mt-1 text-app-ink">
+              {formatKES(balance?.releasableKES ?? 0)}
+            </dd>
+            <dd className="app-meta mt-0.5 text-app-faint">
+              {balance && balance.committedPayoutsKES > 0
+                ? `${formatKES(balance.committedPayoutsKES)} of this is already committed to a payout request.`
+                : 'Confirmed received, and counted toward what you can withdraw.'}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       {/* Payout request history */}
       <PageSection title="Payout requests">

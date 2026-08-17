@@ -102,7 +102,12 @@ function formatDate(iso: string | null): string {
   });
 }
 
-function SummaryCard({
+// A closed figure: money that has already gone where it was going. These are
+// the record, not the obligation, so they sit in a quiet row rather than in
+// cards of the same size as the custody total. Five equal cards gave "held in
+// custody" — the only number the platform actually owes anybody — the same
+// weight as "settled", which is money that left months ago.
+function ClosedFigure({
   label,
   amount,
   meta,
@@ -112,10 +117,10 @@ function SummaryCard({
   meta: string;
 }): React.ReactElement {
   return (
-    <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
-      <p className="app-label text-app-muted">{label}</p>
-      <p className="app-data-l mt-3 font-app-mono text-app-ink">{formatKES(amount)}</p>
-      <p className="app-meta mt-2 text-pretty text-app-muted">{meta}</p>
+    <div className="min-w-0 flex-1 basis-40 py-3">
+      <dt className="app-label text-app-muted">{label}</dt>
+      <dd className="app-data-m mt-1 text-app-ink">{formatKES(amount)}</dd>
+      <dd className="app-meta mt-0.5 text-app-faint">{meta}</dd>
     </div>
   );
 }
@@ -245,35 +250,49 @@ export default function AdminEscrowPage(): React.ReactElement {
         description="Funds the platform holds in custody on behalf of farmers. Money is released only after the buyer confirms receipt; an open dispute holds it until you resolve the mediation."
       />
 
-      {/* Totals */}
+      {/* The custody position. One figure, because there is one figure an
+          operator or an auditor asks for first: how much of other people's
+          money is the platform holding right now, and how much of it cannot
+          move because somebody is arguing about it. */}
       {totals && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <SummaryCard
-            label="Held in escrow"
-            amount={totals.heldKES}
-            meta={`${totals.heldCount} order${totals.heldCount !== 1 ? 's' : ''} awaiting receipt`}
-          />
-          <SummaryCard
-            label="Releasable"
-            amount={totals.releasableKES}
-            meta={`${totals.releasableCount} confirmed received`}
-          />
-          <SummaryCard
-            label="In dispute"
-            amount={totals.inDisputeKES}
-            meta={`${totals.inDisputeCount} blocked pending review`}
-          />
-          <SummaryCard
-            label="Refunded"
-            amount={totals.refundedKES}
-            meta={`${totals.refundedCount} returned to buyers`}
-          />
-          <SummaryCard
-            label="Settled"
-            amount={totals.settledKES}
-            meta="paid out to farmers"
-          />
-        </div>
+        <section aria-label="Custody position">
+          <p className="app-label text-app-muted">Held in custody right now</p>
+          <p className="app-data-xl mt-2 text-app-ink">{formatKES(totals.heldKES)}</p>
+          <p className="app-body mt-2 max-w-app-prose text-pretty text-app-muted">
+            Across {totals.heldCount} order{totals.heldCount !== 1 ? 's' : ''} awaiting a buyer
+            confirmation.
+            {totals.inDisputeCount > 0 ? (
+              <>
+                {' '}
+                <span className="text-app-warning">
+                  {formatKES(totals.inDisputeKES)} of it is blocked by {totals.inDisputeCount} open
+                  review{totals.inDisputeCount !== 1 ? 's' : ''}
+                </span>{' '}
+                and cannot move until you decide.
+              </>
+            ) : (
+              ' Nothing is blocked by a review.'
+            )}
+          </p>
+
+          <dl className="mt-5 flex flex-wrap gap-x-10 border-t border-app-hairline">
+            <ClosedFigure
+              label="Cleared"
+              amount={totals.releasableKES}
+              meta={`${totals.releasableCount} confirmed received`}
+            />
+            <ClosedFigure
+              label="Refunded"
+              amount={totals.refundedKES}
+              meta={`${totals.refundedCount} returned to buyers`}
+            />
+            <ClosedFigure
+              label="Settled"
+              amount={totals.settledKES}
+              meta="paid out to farmers"
+            />
+          </dl>
+        </section>
       )}
 
       {/* Filter */}

@@ -217,10 +217,15 @@ export function TransactionReceipt({ orderId }: ITransactionReceiptProps): React
           </div>
         </header>
 
-        {/* Amount — the figure the reader is looking for */}
-        <div className="border-b border-app-hairline px-5 py-4">
-          <p className="app-label text-app-muted">{isRefunded ? 'Amount refunded' : 'Amount paid'}</p>
-          <p className="app-data-l text-app-ink">KSh {receipt.totalAmountKES.toLocaleString()}</p>
+        {/* Amount — the figure the reader is looking for, at the size every
+            other money surface now sets its primary figure. */}
+        <div className="border-b border-app-hairline px-5 py-5">
+          <p className="app-label text-app-muted">
+            {isRefunded ? 'Amount refunded' : 'Amount paid'}
+          </p>
+          <p className="app-data-xl mt-1 text-app-ink">
+            KSh {receipt.totalAmountKES.toLocaleString()}
+          </p>
         </div>
 
         {/* Detail rows */}

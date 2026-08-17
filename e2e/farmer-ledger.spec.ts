@@ -30,9 +30,12 @@ test('settlement ledger shows the escrow balance, line item, and held state', as
   // escrow, surfaced both on the Held card and as a ledger line item.
   await expect(page.getByText('KSh 4,000').first()).toBeVisible();
 
-  // Escrow is now the mandated framing (the old "no escrow" copy rule is retired).
-  await expect(page.getByText('Held in escrow').first()).toBeVisible();
-  await expect(page.getByText('Cleared').first()).toBeVisible();
+  // Escrow is the mandated framing. The balance now leads with one figure —
+  // what the farmer can actually withdraw — with held and cleared beneath it,
+  // so these are the supporting figures rather than three equal tiles.
+  await expect(page.getByText('Held', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Cleared', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Available to withdraw')).toBeVisible();
 
   // The PAID fixture order surfaces as a settlement line item.
   await expect(page.getByText('E2E-FAR-0001')).toBeVisible();
