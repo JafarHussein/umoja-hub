@@ -35,6 +35,25 @@ export async function resetRun(runId?: string): Promise<ResetResult | null> {
 
   let deleted = 0;
   for (const [collection, ids] of byCollection) {
+    // A ledger can outlive the model that wrote it.
+    //
+    // `mongoose.model(name)` THROWS for an unregistered model, and this loop ran
+    // it mid-delete. A run recorded against a model that was later retired —
+    // `NgoOrganization`, from an ecosystem-simulation branch that was never
+    // merged — therefore killed the reset partway through: users, institutions,
+    // suppliers and articles were already deleted, the crash landed before the
+    // rest, and `npm run demo` then failed identically on every subsequent run
+    // because the same ledger row was still there.
+    //
+    // The result was a database with 8 users but 49 listings and 223 orders
+    // pointing at people who no longer existed, and no documented way back.
+    // A retired model must be skippable: the documents are unreachable by this
+    // script anyway, and stranding the whole seed over one stale name is far
+    // worse than leaving a few rows behind.
+    if (!mongoose.modelNames().includes(collection)) {
+      log(`  ${collection}: SKIPPED — no such model is registered any more (${ids.length} ids left in place)`);
+      continue;
+    }
     const model = mongoose.model(collection);
     const res = await model.deleteMany({ _id: { $in: ids } });
     deleted += res.deletedCount ?? 0;
