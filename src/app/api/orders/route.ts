@@ -22,6 +22,7 @@ import {
   OrderFulfillmentStatus,
   ListingStatus,
   UserStatus,
+  PaymentEventActor,
   PaymentEventType,
   MediationRequestStatus,
 } from '@/types';
@@ -476,6 +477,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         amount: totalAmountKES,
         paymentReference: order.orderReferenceId,
         checkoutRequestId: mpesaCheckoutRequestId,
+        actor: PaymentEventActor.BUYER,
+        // The first event in the chain — there is no prior status to record,
+        // and leaving it unset says that more honestly than inventing one.
+        newStatus: OrderPaymentStatus.PENDING_PAYMENT,
+        reason: 'The buyer placed this order. An STK prompt was sent to their handset.',
+        correlationId: requestId,
         occurredAt: new Date(),
       }).catch(() => {});
     }

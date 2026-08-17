@@ -131,8 +131,20 @@ describe('reconcileStuckPayments', () => {
       LISTING_ID,
       expect.objectContaining({ $inc: { quantityAvailable: 20 } })
     );
+    // The row has to carry its own causation and its own transition. An audit
+    // that records only "RECONCILED" leaves a reader unable to tell a payment
+    // the network killed from one the platform closed out on nobody's
+    // instruction — which is the distinction the whole state exists to draw.
     expect(mockPaymentLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'RECONCILED', orderId: ORDER_ID })
+      expect.objectContaining({
+        eventType: 'RECONCILED',
+        orderId: ORDER_ID,
+        actor: 'SYSTEM',
+        previousStatus: 'PENDING_PAYMENT',
+        newStatus: 'FAILED',
+        reason: expect.stringContaining('No callback arrived'),
+        correlationId: expect.any(String),
+      })
     );
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'b1', title: 'Payment not completed' })
@@ -233,7 +245,15 @@ describe('reconcileStuckPayments — asking before concluding', () => {
     // else while the question is open turns one unknown into a second wrong.
     expect(mockListingFindByIdAndUpdate).not.toHaveBeenCalled();
     expect(mockPaymentLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'UNRESOLVED' })
+      expect.objectContaining({
+        eventType: 'UNRESOLVED',
+        actor: 'SYSTEM',
+        previousStatus: 'PENDING_PAYMENT',
+        newStatus: 'UNRESOLVED',
+        // The reason must not claim the payment failed — that is the one
+        // sentence this state exists to avoid writing.
+        reason: expect.stringContaining('could not say whether the buyer was charged'),
+      })
     );
     // An administrator has to settle it by hand.
     expect(mockNotifyAdmins).toHaveBeenCalled();

@@ -13,6 +13,7 @@ import {
   ListingStatus,
   OrderFulfillmentStatus,
   OrderPaymentStatus,
+  PaymentEventActor,
   PaymentEventType,
   Role,
 } from '@/types';
@@ -139,6 +140,35 @@ export async function POST(
         listingStatus: ListingStatus.AVAILABLE,
       });
 
+      // A cancel moves the order to FAILED and puts the produce back on sale,
+      // and until now it did so leaving nothing in the payment trail. Replaying
+      // the log therefore showed an order that failed with no event that failed
+      // it — indistinguishable from a payment the network killed. A buyer
+      // walking away is a different fact and belongs on the record as one.
+      {
+        const { default: PaymentEventLog } = await import('@/lib/models/PaymentEventLog.model');
+        PaymentEventLog.create({
+          provider: getActiveProviderName(),
+          eventType: PaymentEventType.RECONCILED,
+          orderId: order._id,
+          buyerId: order.buyerId,
+          farmerId: order.farmerId,
+          amount: order.totalAmountKES,
+          paymentReference: order.orderReferenceId,
+          // An order can be cancelled before a payment session ever opened.
+          ...(order.mpesaCheckoutRequestId
+            ? { checkoutRequestId: order.mpesaCheckoutRequestId }
+            : {}),
+          actor: PaymentEventActor.BUYER,
+          previousStatus: OrderPaymentStatus.PENDING_PAYMENT,
+          newStatus: OrderPaymentStatus.FAILED,
+          reason:
+            'The buyer cancelled the order before paying. The produce was returned to the marketplace immediately rather than waiting for the reconciliation sweep.',
+          correlationId: requestId,
+          occurredAt: new Date(),
+        }).catch(() => {});
+      }
+
       logger.info('orders', 'Buyer cancelled an unpaid order', {
         requestId,
         orderId,
@@ -229,6 +259,10 @@ export async function POST(
       throw stkError;
     }
 
+    // Captured before the update below rather than assumed from RETRYABLE, so
+    // the row keeps telling the truth if what may be retried ever widens.
+    const statusBefore = String(order.paymentStatus);
+
     await Order.findByIdAndUpdate(order._id, {
       $set: {
         paymentStatus: OrderPaymentStatus.PENDING_PAYMENT,
@@ -252,6 +286,11 @@ export async function POST(
         amount: order.totalAmountKES,
         paymentReference: order.orderReferenceId,
         checkoutRequestId,
+        actor: PaymentEventActor.BUYER,
+        previousStatus: statusBefore,
+        newStatus: OrderPaymentStatus.PENDING_PAYMENT,
+        reason: 'The buyer retried payment on this order. A new STK prompt was sent to their handset.',
+        correlationId: requestId,
         occurredAt: new Date(),
       }).catch(() => {});
     }

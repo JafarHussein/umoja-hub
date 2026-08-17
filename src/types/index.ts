@@ -425,6 +425,26 @@ export enum PaymentEventType {
   UNRESOLVED = 'UNRESOLVED',
 }
 
+/**
+ * Who caused a payment event.
+ *
+ * The log recorded buyerId and farmerId on every row — the parties to the
+ * order — but never which of them, or neither, actually acted. A buyer
+ * cancelling on their handset, Safaricom timing the prompt out, and our own
+ * reconciliation closing the payment are three different things, and the log
+ * could not tell them apart after the fact. Causation, not participation.
+ */
+export enum PaymentEventActor {
+  /** The buyer acted: opened a payment session, entered or refused a PIN. */
+  BUYER = 'BUYER',
+  /** M-Pesa spoke — a callback, a status query answer, an expiry. */
+  PROVIDER = 'PROVIDER',
+  /** UmojaHub itself acted with nobody prompting it: reconciliation, sweeps. */
+  SYSTEM = 'SYSTEM',
+  /** An administrator acted by hand. */
+  ADMIN = 'ADMIN',
+}
+
 // ---------------------------------------------------------------------------
 // Escrow — a derived view over Order + MediationRequest, not a stored wallet.
 // The platform receives buyer funds to its M-Pesa shortcode at payment (PAID),
@@ -577,3 +597,20 @@ export const MEDIATION_ESCALATION_HOURS = 48;
 // upcountry transport and a buyer's inspection, short enough that a farmer's
 // money is never stranded indefinitely by silence.
 export const FARMER_ESCALATION_HOURS = 168;
+
+/**
+ * How long a payment may sit unconfirmed before reconciliation goes and asks
+ * the provider what happened to it.
+ *
+ * The STK prompt itself lives roughly 30 seconds, and the usual guidance is to
+ * begin sweeping after about five minutes — long enough that a merely slow
+ * callback has arrived, short enough that a buyer is not left watching a dead
+ * screen with produce reserved against a payment nobody is chasing.
+ *
+ * Lives here rather than in `lib/payments/reconcile` because it is also what an
+ * operator is told on the Payment Lab, and that is a client component: importing
+ * it from the reconciler would pull mongoose, the models and the DB singleton
+ * into the browser bundle to read one number. `reconcile` re-exports it, so
+ * there is still exactly one definition.
+ */
+export const STUCK_PAYMENT_TIMEOUT_MINUTES = 5;
