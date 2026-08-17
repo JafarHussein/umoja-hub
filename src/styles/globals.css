@@ -374,6 +374,23 @@ body {
     background-size: 200% 100%;
     animation: shimmer 1.8s ease-in-out infinite;
   }
+
+  /* The two tokens above are both `--c-white`, so this gradient shimmers white
+     on white: the animation runs and nothing moves. On the app's warm canvas a
+     loading block therefore rendered as a plain white rectangle, which reads as
+     an empty card rather than as something arriving — the inverse of the rule
+     that an interface must never imply activity that is not happening, and it
+     is on every app screen with a loading state.
+     Bound to the app's own surfaces, where the two values genuinely differ. */
+  .theme-app .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--app-sunken)) 25%,
+      rgb(var(--app-hairline)) 50%,
+      rgb(var(--app-sunken)) 75%
+    );
+    background-size: 200% 100%;
+  }
 }
 
 /* Selection */
