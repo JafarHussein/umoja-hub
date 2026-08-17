@@ -536,22 +536,6 @@ export default function FarmerOrdersPage(): React.ReactElement {
               counterpartyName={selectedOrder.buyer.firstName}
             />
 
-            {/* The buyer's money could not be confirmed either way. Escrow has
-                no state for this — nothing is held, and nothing has failed —
-                so it is said here rather than through the explainer, which
-                would otherwise have to claim one or the other. */}
-            {selectedOrder.paymentStatus === OrderPaymentStatus.UNRESOLVED && (
-              <div className="rounded-app-control border border-app-warning/40 bg-app-warning-surface p-3">
-                <p className="app-meta text-app-muted">
-                  <span className="app-body-strong text-app-ink">
-                    We are checking this payment.
-                  </span>{' '}
-                  M-Pesa did not confirm whether {selectedOrder.buyer.firstName} was charged, so
-                  UmojaHub is checking by hand. Your produce stays reserved for this order
-                  meanwhile. Do not dispatch it until this order shows as paid.
-                </p>
-              </div>
-            )}
 
             {/* Receipt — available from the moment payment is confirmed */}
             {(selectedOrder.paymentStatus === OrderPaymentStatus.PAID ||

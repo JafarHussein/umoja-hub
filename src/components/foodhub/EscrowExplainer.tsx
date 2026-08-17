@@ -63,6 +63,21 @@ function explain(
           : 'If the payment does not go through, the order closes and your produce returns to the marketplace.',
       };
 
+    case EscrowState.UNKNOWN:
+      return {
+        // Says nothing about where the money is, because we do not know. Every
+        // sentence here is written to survive being wrong in either direction.
+        headline: buyer
+          ? `We could not confirm your payment of KSh ${amount} either way.`
+          : `We could not confirm whether ${other} was charged.`,
+        releasedBy: buyer
+          ? 'Check your M-Pesa messages. If the money left your account, UmojaHub will complete this order — please do not pay again in the meantime. If it did not, we will close the order and put the produce back on sale.'
+          : `The produce stays reserved for this order while UmojaHub checks the M-Pesa record. Do not dispatch it until this order shows as paid.`,
+        ifItGoesWrong: buyer
+          ? 'Someone at UmojaHub is checking this by hand and you will be told the outcome. If you were charged, you will not lose the money.'
+          : `You will be told the outcome. If ${other} was charged, the order continues as normal from there.`,
+      };
+
     case EscrowState.HELD:
       return {
         headline: buyer

@@ -29,6 +29,14 @@ export function orderEscrowState(
     return EscrowState.REFUNDED;
   }
 
+  // We asked M-Pesa and could not find out. Distinct from NO_FUNDS, which is a
+  // claim that nothing was taken — a claim we are in no position to make here,
+  // and one the buyer's own order page used to make on this exact state while
+  // the notification beside it said to go and check their M-Pesa messages.
+  if (order.paymentStatus === OrderPaymentStatus.UNRESOLVED) {
+    return EscrowState.UNKNOWN;
+  }
+
   // Funds only ever enter escrow on a confirmed payment.
   if (order.paymentStatus !== OrderPaymentStatus.PAID) {
     return EscrowState.NO_FUNDS;

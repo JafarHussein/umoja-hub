@@ -457,6 +457,18 @@ export enum PaymentEventActor {
 export enum EscrowState {
   // Order not yet paid (PENDING_PAYMENT) or payment failed — nothing is held.
   NO_FUNDS = 'NO_FUNDS',
+  // The payment timed out and the provider could not say whether the buyer was
+  // charged (OrderPaymentStatus.UNRESOLVED).
+  //
+  // This used to project to NO_FUNDS, which made every escrow surface state
+  // that nothing had been taken from the buyer's account — on the same order
+  // whose notification told them to check their M-Pesa messages because the
+  // money may well have gone. Not knowing is not the same as knowing nothing
+  // was taken, and it is the one distinction this platform is careful about
+  // everywhere else. It is a state of its own so that no surface can collapse
+  // it into a claim by accident: the maps that switch on EscrowState are
+  // exhaustive, so anything that renders escrow must now say what it means.
+  UNKNOWN = 'UNKNOWN',
   // Paid and in fulfilment, farmer has not yet confirmed dispatch.
   HELD = 'HELD',
   // Paid and in fulfilment, farmer confirmed dispatch — awaiting buyer receipt.

@@ -57,6 +57,9 @@ interface IReceiptEvent {
 
 const ESCROW_STATE_LABEL: Record<EscrowState, string> = {
   [EscrowState.NO_FUNDS]: 'No funds held',
+  // Not "no funds held" — we do not know that, and a receipt is the last place
+  // to guess about it.
+  [EscrowState.UNKNOWN]: 'Payment being checked',
   [EscrowState.HELD]: 'Held in escrow',
   [EscrowState.HELD_DISPATCHED]: 'Held — awaiting your confirmation',
   [EscrowState.HELD_UNDER_REVIEW]: 'Held — under mediation',
@@ -71,6 +74,7 @@ function escrowPillState(state: EscrowState): 'verified' | 'pending' | 'in-trans
     case EscrowState.REFUNDED:
       return 'denied';
     case EscrowState.HELD_UNDER_REVIEW:
+    case EscrowState.UNKNOWN:
       return 'pending';
     default:
       return 'in-transit';

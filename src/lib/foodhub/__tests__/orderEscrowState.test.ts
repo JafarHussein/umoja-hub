@@ -76,4 +76,16 @@ describe('orderEscrowState', () => {
       )
     ).toBe(EscrowState.REFUNDED);
   });
+
+  it('never reports an unconfirmed payment as money that was not taken', () => {
+    // UNRESOLVED used to project to NO_FUNDS, so the buyer's order page stated
+    // nothing had left their account on the one order where we had told them,
+    // by notification, to go and check whether it had.
+    expect(
+      orderEscrowState({
+        paymentStatus: OrderPaymentStatus.UNRESOLVED,
+        fulfillmentStatus: OrderFulfillmentStatus.AWAITING_PAYMENT,
+      })
+    ).toBe(EscrowState.UNKNOWN);
+  });
 });

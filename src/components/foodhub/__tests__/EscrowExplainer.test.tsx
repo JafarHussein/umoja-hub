@@ -84,3 +84,31 @@ describe('EscrowExplainer — every state answers both questions', () => {
     expect(screen.getByText('If something goes wrong')).toBeInTheDocument();
   });
 });
+
+describe('EscrowExplainer — a payment nobody can confirm', () => {
+  // The single most important thing this component must never do. UNRESOLVED
+  // used to project to NO_FUNDS, whose buyer copy reads "Nothing has been taken
+  // from your account yet" — stated on the same order whose notification told
+  // the buyer to check their M-Pesa messages because the money may well have
+  // gone. Every sentence in this state has to survive being wrong either way.
+  it('does not tell the buyer their money is safe, or that it is gone', () => {
+    render(<EscrowExplainer {...base} escrowState={EscrowState.UNKNOWN} viewer="BUYER" />);
+
+    expect(screen.getByText(/could not confirm your payment of KSh 5,896/i)).toBeInTheDocument();
+    expect(screen.getByText(/Check your M-Pesa messages/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nothing has been taken/)).not.toBeInTheDocument();
+  });
+
+  it('tells the buyer not to pay twice while we are checking', () => {
+    // Paying again is the expensive mistake available to a buyer here, and the
+    // only one they can make on their own.
+    render(<EscrowExplainer {...base} escrowState={EscrowState.UNKNOWN} viewer="BUYER" />);
+    expect(screen.getByText(/do not pay again/i)).toBeInTheDocument();
+  });
+
+  it('tells the farmer to hold the produce rather than dispatch on an unpaid order', () => {
+    render(<EscrowExplainer {...base} escrowState={EscrowState.UNKNOWN} viewer="FARMER" />);
+    expect(screen.getByText(/stays reserved/)).toBeInTheDocument();
+    expect(screen.getByText(/Do not dispatch it until this order shows as paid/)).toBeInTheDocument();
+  });
+});

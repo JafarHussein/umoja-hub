@@ -71,6 +71,9 @@ const FILTER_TABS: { key: LedgerFilter; label: string }[] = [
 
 const ESCROW_PILL: Record<EscrowState, { state: StatusState; label: string }> = {
   [EscrowState.NO_FUNDS]: { state: 'pending', label: 'No funds' },
+  // Deliberately not settleable below: an administrator must not release or
+  // refund money the platform cannot yet confirm it received.
+  [EscrowState.UNKNOWN]: { state: 'pending', label: 'Being checked' },
   [EscrowState.HELD]: { state: 'in-transit', label: 'Held' },
   [EscrowState.HELD_DISPATCHED]: { state: 'in-transit', label: 'Dispatched' },
   [EscrowState.HELD_UNDER_REVIEW]: { state: 'pending', label: 'In review' },

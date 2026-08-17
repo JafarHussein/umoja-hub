@@ -147,8 +147,16 @@ export function buildOrderJourney(
       label: 'Payment confirmed',
       explanation: paymentExplanation(order.paymentStatus, viewer),
       // Whoever the order is waiting on. Before payment that is the buyer, at
-      // their handset; after it, UmojaHub, holding the money.
-      actor: isPaid || isRefunded ? 'UmojaHub holds the funds' : who(viewer, 'BUYER'),
+      // their handset; after it, UmojaHub, holding the money. On an unresolved
+      // payment it is UmojaHub too — we are checking the M-Pesa record by hand,
+      // and naming the buyer there would ask them to act on the one screen
+      // where we have just told them not to pay again.
+      actor:
+        isPaid || isRefunded
+          ? 'UmojaHub holds the funds'
+          : order.paymentStatus === OrderPaymentStatus.UNRESOLVED
+            ? 'UmojaHub'
+            : who(viewer, 'BUYER'),
       at: iso(order.paidAt),
       status: isPaid || isRefunded ? 'DONE' : isFailedish(order.paymentStatus) ? 'BLOCKED' : 'CURRENT',
       ...(isFailedish(order.paymentStatus) ? { tone: 'danger' as const } : {}),

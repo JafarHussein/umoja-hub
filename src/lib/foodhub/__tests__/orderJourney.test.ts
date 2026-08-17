@@ -61,10 +61,13 @@ describe('buildOrderJourney', () => {
       },
       'BUYER'
     );
-    const explanation = stages.find((s) => s.key === 'paid')?.explanation ?? '';
-    expect(explanation).toMatch(/could not tell us/i);
-    expect(explanation).not.toMatch(/did not go through/i);
-    expect(stages.find((s) => s.key === 'paid')?.status).not.toBe('DONE');
+    const paid = stages.find((s) => s.key === 'paid');
+    expect(paid?.explanation).toMatch(/could not tell us/i);
+    expect(paid?.explanation).not.toMatch(/did not go through/i);
+    expect(paid?.status).not.toBe('DONE');
+    // And it is us who has to act, not them. Naming the buyer here would ask
+    // them to do something on the one screen telling them not to pay again.
+    expect(paid?.actor).toBe('UmojaHub');
   });
 
   it('keeps the whole journey when an order goes under review', () => {
