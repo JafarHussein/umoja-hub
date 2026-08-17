@@ -196,32 +196,42 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
               </div>
             </div>
 
-            {/* Transaction protections */}
+            {/* What the buyer is protected by, before they commit.
+                The one canonical telling of escrow on this page. The checkout
+                panel opposite used to repeat it in its own words a few hundred
+                pixels away, which is the same duplication the order screens
+                were carrying: one mechanism, described twice, differently.
+                Paying is where the promise becomes concrete, and the confirmed
+                state says so there; deciding is what happens here.
+
+                No icon per row. The bold lead-in already separates the three,
+                and a glyph beside every line is decoration on a surface whose
+                whole job is to be believed. */}
             <div className="space-y-2.5 rounded-app-card border border-app-brand-border bg-app-brand-surface p-4">
               <SectionLabel>Your protections</SectionLabel>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2.5">
-                  <span aria-hidden className="app-title leading-none text-app-brand">🔒</span>
+              <ul className="space-y-2.5">
+                <li>
                   <p className="app-meta text-app-muted">
-                    <span className="app-body-strong text-app-ink">Escrow-protected payment.</span> Your
-                    money is held by the platform and released to the farmer only when you confirm you
-                    received your order.
+                    {/* Same sentence the buyer will read on the order once they
+                        have paid. One mechanism, one vocabulary, start to end. */}
+                    <span className="app-body-strong text-app-ink">Your money is held.</span>{' '}
+                    UmojaHub holds your payment rather than sending it to the farmer. They are paid
+                    only when you confirm the produce reached you.
                   </p>
                 </li>
                 {listing.isVerifiedListing && (
-                  <li className="flex items-start gap-2.5">
-                    <span aria-hidden className="app-body-strong leading-none text-app-brand">✓</span>
+                  <li>
                     <p className="app-meta text-app-muted">
-                      <span className="app-body-strong text-app-ink">Verified farmer.</span> Identity
-                      reviewed and approved by UmojaHub administrators.
+                      <span className="app-body-strong text-app-ink">This farmer is verified.</span>{' '}
+                      Their identity was reviewed and approved by a UmojaHub administrator.
                     </p>
                   </li>
                 )}
-                <li className="flex items-start gap-2.5">
-                  <span aria-hidden className="app-body-strong leading-none text-app-brand">⚖</span>
+                <li>
                   <p className="app-meta text-app-muted">
-                    <span className="app-body-strong text-app-ink">Platform mediation.</span> If
-                    something goes wrong, our team can step in to resolve it.
+                    <span className="app-body-strong text-app-ink">You can ask us to step in.</span>{' '}
+                    If the produce never arrives, or arrives wrong, ask UmojaHub to review the order.
+                    We can return your money.
                   </p>
                 </li>
               </ul>
@@ -289,9 +299,12 @@ export default async function ListingDetailPage({ params }: IPageProps): Promise
                 farmerVerified={listing.isVerifiedListing}
                 {...(trust && trust.compositeScore > 0 ? { trustScore: trust.compositeScore } : {})}
               />
-              <p className="app-meta mt-6 text-center text-app-faint">
-                Secure M-Pesa checkout · no platform fee.
-              </p>
+              {/* "Secure M-Pesa checkout · no platform fee." lived here. Both
+                  halves were already on the screen: the fee is a line in the
+                  order summary directly above, and what makes the checkout safe
+                  is stated in full under "Your protections" opposite. A third
+                  reassurance in smaller type adds no fact and reads as padding
+                  under the one button that spends money. */}
             </div>
           </aside>
         </div>

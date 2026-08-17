@@ -661,13 +661,13 @@ export function CheckoutPanel({
           : `Pay KSh ${totalKES.toLocaleString()}`}
       </button>
 
-      {/* What paying actually does. Said once, at the moment of commitment,
-          because this is where a buyer decides whether to trust a stranger. */}
-      <p className="app-meta text-pretty text-app-muted">
-        Your money is held by UmojaHub, not sent to {farmerName || 'the farmer'}. They are paid only
-        when you confirm the produce reached you. If it never arrives, ask us to review the order and
-        we can return your money.
-      </p>
+      {/* No escrow explainer here.
+          This panel sits beside "Your protections" on the listing page, which
+          is the canonical telling and carries two protections this would not.
+          A second version a few hundred pixels away is the same fault the order
+          screens had: one mechanism described twice, in different words. The
+          promise becomes concrete after payment, and the confirmed state says
+          it there. */}
     </form>
   );
 }
