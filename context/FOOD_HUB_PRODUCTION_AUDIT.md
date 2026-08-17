@@ -141,6 +141,35 @@ exists to prevent. Both surfaces now use the handset's word.
 **Regression risk** Low — additive projection plus a label change.
 **Commit** `e6a2e78`
 
+### D10 · S1 · The demo seed failed about half the time, decided only by its RNG seed
+**Workflow** `npm run demo` — commerce phase, farmer payout requests.
+**Root cause** `WithdrawalRequest` carries a unique index on `farmerId` partial-filtered to status
+`REQUESTED`: a farmer may queue exactly one payout at a time. The generator drew up to two requests
+per farmer and picked each status *independently* from a list containing `REQUESTED` at weight 3,
+so two open requests landed on one farmer about 9% of the time. Across the eligible farmers the
+whole seed died on `E11000`.
+**Effect** S1 by consequence rather than by money: the seed is the demonstration. It could pass a
+rehearsal and fail on the morning of a presentation, with nothing changed in between.
+**Fix** The second request settles instead of queueing, so generated data obeys the rule the
+platform actually enforces rather than contradicting it.
+**Regression risk** Low — narrows the status draw for a second request only.
+**Commit** `72daae2`
+
+### D11 · S1 · A failed reset left the database unusable, with no way back
+**Workflow** `npm run demo` — reset before reseed.
+**Root cause** `mongoose.model(name)` **throws** for an unregistered model, and `resetRun` called it
+mid-delete loop. A ledger row naming a model that had since been retired (`NgoOrganization`, from an
+unmerged branch) killed the reset partway through.
+**Effect** Users, institutions, suppliers and articles were already deleted, the crash landed before
+the rest, and every later `npm run demo` failed identically because the same ledger row was still
+there. The result was a database holding 8 users but 49 listings and 223 orders belonging to people
+who no longer existed — the seeder's own recovery path was the thing that was broken.
+**Fix** Retired models are skipped and reported. Those documents are already unreachable from this
+script; stranding an entire seed over one stale collection name is far worse than leaving rows
+behind.
+**Regression risk** Low — the skip is reported, not silent, so a genuine mistake is still visible.
+**Commit** `dda13a2`
+
 ---
 
 ## Decision record · The payment and escrow posture
@@ -202,6 +231,25 @@ that was not paid, because the documented invariant `grossReceived = held + rele
 `E2E-FAR-0002` carries an open mediation. Test-data hygiene in the dev database, not application
 code; `npm run demo:reset` clears it. Worth clearing before any demo.
 
+**Upgraded 2026-08-17 — worse than first recorded, and it comes back by itself.** The fixtures are
+not a one-off residue. `e2e/support/global-setup.ts` provisions them into the database named by
+`MONGODB_URI` — the same database the demo uses — and there is no teardown, so **every Playwright
+run re-injects them.** Clearing before a demo is therefore not enough: running the test suite
+afterwards undoes it.
+
+They also land in the worst places. Driven live as an administrator, the top row of the
+**verification queue** is `E2E Unverified Farmer` with a blank county and `—` where the document
+should be, and the top card of the **mediation queue** is `E2E-FAR-0002` reading
+*"Farmer: Unknown farmer"* — the dangling-reference fallback, working correctly, on a fixture whose
+farmer id is deliberately dangling. Those two screens are the ones a panel is most likely to be
+shown. Still not application code, but no longer only hygiene.
+
+Fix options, none taken yet because this is test infrastructure rather than Food Hub product code
+and the choice belongs to the owner: point the e2e fixtures at a separate database, add a
+`globalTeardown` that removes exactly what `global-setup` created (the fixtures are already
+addressed by fixed ids and refs, so this is contained), or accept it and re-run `npm run demo`
+after any e2e run and before any demonstration.
+
 ### O4 · Deployment · The Daraja query path has never met the live API
 `queryPaymentStatus` is implemented against `/mpesa/stkpushquery/v1/query` and unit-tested, but
 `PAYMENT_PROVIDER` defaults to `simulation`, so only the simulator's implementation has ever
@@ -220,10 +268,39 @@ production-grade than expected — real Safaricom result codes, a realistic fail
 including lost callbacks, one shared processor for both providers, a two-layer reconciliation sweep
 — so it was corrected rather than rebuilt.
 
+**The farmer's and the administrator's own views of the corrected workflows** — driven live in a
+browser on 2026-08-17 with real seeded credentials, which was the gap this list previously named.
+Farmer: sign-in, listings, profile, orders, ledger, prices. Unverified farmer: the publication gate
+holds and explains itself. Administrator: verification queue, escrow, payouts, mediation. All render
+correctly, with the escrow and settlement copy reading as designed. No defect found on any of them;
+the only thing wrong on those screens is the fixture data of O3.
+
+## Investigated and cleared — record so they are not chased twice
+
+Three findings from the live audit looked like defects and were not. Each is recorded because the
+symptom is convincing enough to cost another session.
+
+- **"A seeded farmer cannot sign in."** The audit probe filled the credentials form, waited six
+  seconds and found itself still on `/auth/login` with the submit button disabled and no error. The
+  account is fine: the same credentials return `200` with a session cookie over HTTP. On a sign-in
+  the client calls `router.push('/onboarding/welcome')`, which the middleware bounces to the role
+  dashboard — **two routes the Next dev server compiles on demand**, which took longer than the
+  probe's six-second wait. Warm the routes first and the same test lands on
+  `/dashboard/farmer/listings` in 8.5s. A dev-server artifact, consistent with the standing note
+  that dev-mode lazy-compile behaviour is not an app bug.
+- **"The buyer's order detail page renders nothing."** The probe's click-through never completed
+  inside its wait. Navigated directly, the page is complete and correct — the four-zone transaction
+  surface, the escrow sentence naming the farmer, the M-Pesa receipt code beside the simulation
+  badge, and the journey — with **zero console errors**.
+- **"There is no search on the marketplace."** There is. `MarketplaceSearch` renders
+  `type="text"` with `role="combobox"` and `aria-label="Search the marketplace"` inside a
+  `role="search"` form; the probe was looking for `input[type="search"]`.
+
+The lesson is the standing one in reverse: driving the rendered page catches what tests miss, but a
+probe is not the page either. Confirm a suspected defect a second way before recording it.
+
 ## Not yet audited
 
-Listing creation and editing · farmer verification and the admin verification queue · ratings ·
-trust score · price intelligence · suppliers · groups · knowledge · assistant · notifications and
-email · responsive behaviour · **the farmer's and admin's own views of the workflows corrected
-above** (the buyer's side has been driven in a browser; the farmer's and admin's have been read and
-tested but not clicked through).
+Listing creation and editing · farmer verification decisions taken through the queue (the queue
+itself now renders) · ratings · trust score · price intelligence · suppliers · groups · knowledge ·
+assistant · notifications and email · responsive behaviour.
