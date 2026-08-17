@@ -18,6 +18,8 @@ import {
 } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { OrderTimeline, OrderTimelineDetailed } from '@/components/foodhub/OrderTimeline';
+import { EscrowExplainer } from '@/components/foodhub/EscrowExplainer';
+import { orderEscrowState } from '@/lib/foodhub/orderEscrowState';
 import { FulfillmentStageControl } from '@/components/foodhub/FulfillmentStageControl';
 import {
   MediationPanel,
@@ -423,6 +425,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
                   <OrderTimeline
                     paymentStatus={order.paymentStatus}
                     fulfillmentStatus={order.fulfillmentStatus}
+                    createdAt={order.createdAt}
                     paidAt={order.paidAt}
                     confirmedByFarmerAt={order.confirmedByFarmerAt}
                     receivedByBuyerAt={order.receivedByBuyerAt}
@@ -508,30 +511,44 @@ export default function FarmerOrdersPage(): React.ReactElement {
               <p className="app-body text-app-muted">{selectedOrder.buyerPhone}</p>
             </div>
 
-            {/* Escrow status — what the buyer's payment means for the farmer */}
-            {selectedOrder.paymentStatus === OrderPaymentStatus.PAID &&
-              selectedOrder.fulfillmentStatus === OrderFulfillmentStatus.IN_FULFILLMENT && (
-                <div className="flex items-start gap-3 rounded-app-control border border-app-brand-border bg-app-brand-surface p-3">
-                  <span className="app-title leading-none text-app-brand" aria-hidden>
-                    🔒
-                  </span>
-                  <p className="app-meta text-app-muted">
-                    <span className="app-body-strong text-app-ink">The buyer has paid.</span> Their{' '}
-                    <span className="app-data-m text-app-ink">
-                      KSh {selectedOrder.totalAmountKES.toLocaleString()}
-                    </span>{' '}
-                    is held in escrow and released to you once they confirm they have received this
-                    order.
-                  </p>
-                </div>
+            {/* What is happening to this money, and what governs it.
+                The farmer previously got two hand-written blocks: one while
+                PAID + IN_FULFILLMENT, one on a refund. Between them they cover
+                two of the six escrow states, so the screen fell silent in
+                exactly the ones a farmer chases us about — an order under
+                review, and one whose money has cleared but not yet been paid
+                out. Neither block said what would move the money or what to do
+                if it did not. This is the same component the buyer's order
+                uses, told from the farmer's side, where the exposure is
+                delivering and not being paid rather than paying and not
+                receiving. */}
+            <EscrowExplainer
+              escrowState={orderEscrowState(
+                {
+                  paymentStatus: selectedOrder.paymentStatus,
+                  fulfillmentStatus: selectedOrder.fulfillmentStatus,
+                  confirmedByFarmerAt: selectedOrder.confirmedByFarmerAt ?? null,
+                },
+                isMediationOpen(mediation)
               )}
+              viewer="FARMER"
+              amountKES={selectedOrder.totalAmountKES}
+              counterpartyName={selectedOrder.buyer.firstName}
+            />
 
-            {/* Refunded — escrow returned to the buyer by mediation */}
-            {selectedOrder.paymentStatus === OrderPaymentStatus.REFUNDED && (
-              <div className="rounded-app-control border border-app-hairline bg-app-info-surface p-3">
+            {/* The buyer's money could not be confirmed either way. Escrow has
+                no state for this — nothing is held, and nothing has failed —
+                so it is said here rather than through the explainer, which
+                would otherwise have to claim one or the other. */}
+            {selectedOrder.paymentStatus === OrderPaymentStatus.UNRESOLVED && (
+              <div className="rounded-app-control border border-app-warning/40 bg-app-warning-surface p-3">
                 <p className="app-meta text-app-muted">
-                  <span className="app-body-strong text-app-ink">Refunded to buyer.</span> The
-                  platform returned the held funds following a mediation decision.
+                  <span className="app-body-strong text-app-ink">
+                    We are checking this payment.
+                  </span>{' '}
+                  M-Pesa did not confirm whether {selectedOrder.buyer.firstName} was charged, so
+                  UmojaHub is checking by hand. Your produce stays reserved for this order
+                  meanwhile. Do not dispatch it until this order shows as paid.
                 </p>
               </div>
             )}
@@ -561,6 +578,7 @@ export default function FarmerOrdersPage(): React.ReactElement {
               <OrderTimelineDetailed
                 paymentStatus={selectedOrder.paymentStatus}
                 fulfillmentStatus={selectedOrder.fulfillmentStatus}
+                createdAt={selectedOrder.createdAt}
                 paidAt={selectedOrder.paidAt}
                 confirmedByFarmerAt={selectedOrder.confirmedByFarmerAt}
                 receivedByBuyerAt={selectedOrder.receivedByBuyerAt}
