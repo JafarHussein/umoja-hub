@@ -8,6 +8,8 @@ import { paymentLabActionSchema, type PaymentLabAction } from '@/lib/validation/
 import { forceOutcomeForOrder } from '@/lib/payments/simulationProvider';
 import { getActiveProviderName, isSimulationActive } from '@/lib/payments';
 import { getSimulationConfig } from '@/lib/payments/simulationConfig';
+import { STUCK_PAYMENT_TIMEOUT_MINUTES } from '@/lib/payments/reconcile';
+import { computePlatformEscrowPosition } from '@/lib/foodhub/escrow';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, SimulatedOutcome, OrderPaymentStatus } from '@/types';
 
@@ -77,10 +79,18 @@ export async function GET(): Promise<NextResponse> {
       avgCompletionMs: agg?.avgCompletionMs ? Math.round(agg.avgCompletionMs) : 0,
     };
 
+    // Awaiting callback, oldest first.
+    //
+    // Sorted newest-first before, which is the wrong end: the row that needs an
+    // operator is the one that has been waiting longest with a buyer's produce
+    // reserved behind it, and with a cap of 15 those were the rows that fell off
+    // the list. `paymentRequestedAt` is the start of the CURRENT session — a
+    // retry reopens a payment on an order that may be days old, and ageing it
+    // from createdAt would report a fresh prompt as long overdue.
     const pendingRaw = await Order.find({ paymentStatus: OrderPaymentStatus.PENDING_PAYMENT })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: 1 })
       .limit(15)
-      .select('orderReferenceId cropName totalAmountKES buyerId createdAt')
+      .select('orderReferenceId cropName totalAmountKES buyerId createdAt paymentRequestedAt')
       .lean();
 
     const { default: User } = await import('@/lib/models/User.model');
@@ -90,8 +100,13 @@ export async function GET(): Promise<NextResponse> {
       .lean();
     const buyerMap = new Map(buyers.map((b) => [String(b._id), b]));
 
+    const now = Date.now();
     const pendingOrders = pendingRaw.map((o) => {
       const buyer = buyerMap.get(String(o.buyerId));
+      const sessionStarted = o.paymentRequestedAt ?? o.createdAt;
+      const waitingMinutes = sessionStarted
+        ? Math.max(0, Math.floor((now - new Date(sessionStarted).getTime()) / 60_000))
+        : 0;
       return {
         orderId: String(o._id),
         orderReferenceId: o.orderReferenceId,
@@ -99,6 +114,14 @@ export async function GET(): Promise<NextResponse> {
         totalAmountKES: o.totalAmountKES,
         buyerName: buyer ? `${buyer.firstName ?? ''} ${buyer.lastName ?? ''}`.trim() : 'Unknown',
         createdAt: o.createdAt,
+        // How long this payment has been silent, and whether it is now old
+        // enough for reconciliation to go and ask the provider about it. Both
+        // matter to an operator because the buyer's produce is reserved for the
+        // whole of that wait: this list doubles as the reservations approaching
+        // release, which is what makes the inventory consequence visible rather
+        // than something inferred from a timeout constant in the source.
+        waitingMinutes,
+        reconciliationDue: waitingMinutes >= STUCK_PAYMENT_TIMEOUT_MINUTES,
       };
     });
 
@@ -151,8 +174,20 @@ export async function GET(): Promise<NextResponse> {
       paymentReference: e.paymentReference ?? null,
       resultCode: e.resultCode ?? null,
       processingTimeMs: e.processingTimeMs ?? null,
+      // Causation, the transition, and the thread that ties one payment
+      // session's events together. The feed showed an event type and an amount,
+      // which is enough to see that something happened and never enough to see
+      // what it did or who did it.
+      actor: e.actor ?? null,
+      previousStatus: e.previousStatus ?? null,
+      newStatus: e.newStatus ?? null,
+      reason: e.reason ?? null,
+      correlationId: e.correlationId ?? null,
       occurredAt: e.occurredAt,
     }));
+
+    // How much of other people's money the platform is holding right now.
+    const escrowPosition = await computePlatformEscrowPosition();
 
     // Which fixture is loaded, and what it is for. Surfaced rather than left in
     // an env var so the outcome mix on this screen is never mistaken for a
@@ -168,6 +203,7 @@ export async function GET(): Promise<NextResponse> {
           ? { name: simConfig.profile, purpose: simConfig.purpose }
           : null,
         metrics,
+        escrowPosition,
         pendingOrders,
         unresolvedPayments,
         recentEvents,

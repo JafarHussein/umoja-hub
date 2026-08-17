@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button, Alert, Page, PageHeader } from '@/components/app';
 import { cn } from '@/lib/cn';
-import { Role } from '@/types';
+import { Role, STUCK_PAYMENT_TIMEOUT_MINUTES } from '@/types';
 import { PAYMENT_LAB_ACTIONS, type PaymentLabAction } from '@/lib/validation/paymentLabSchema';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 
@@ -33,6 +33,10 @@ interface IPendingOrder {
   totalAmountKES: number;
   buyerName: string;
   createdAt: string;
+  /** How long this payment session has been silent. */
+  waitingMinutes: number;
+  /** Old enough for reconciliation to query the provider about it. */
+  reconciliationDue: boolean;
 }
 
 interface IEvent {
@@ -42,7 +46,23 @@ interface IEvent {
   paymentReference: string | null;
   resultCode: number | null;
   processingTimeMs: number | null;
+  /** Who caused it. Null on rows written before the field existed. */
+  actor: string | null;
+  previousStatus: string | null;
+  newStatus: string | null;
+  reason: string | null;
+  correlationId: string | null;
   occurredAt: string;
+}
+
+/** What the platform is holding on other people's behalf, right now. */
+interface IEscrowPosition {
+  heldKES: number;
+  heldOrders: number;
+  underReviewKES: number;
+  underReviewOrders: number;
+  clearedKES: number;
+  clearedOrders: number;
 }
 
 interface IUnresolvedPayment {
@@ -65,6 +85,7 @@ interface ILabResponse {
   /** Orders where the platform does not know whether the buyer was charged. */
   unresolvedPayments: IUnresolvedPayment[];
   metrics: IMetrics;
+  escrowPosition: IEscrowPosition;
   pendingOrders: IPendingOrder[];
   recentEvents: IEvent[];
 }
@@ -94,6 +115,17 @@ const EVENT_TONE: Record<string, EventTone> = {
   DUPLICATE: 'warning',
   LOST: 'danger',
   RECONCILED: 'warning',
+  // Was absent, so the one event meaning "we do not know whether this buyer was
+  // charged" rendered in the same neutral grey as a routine callback.
+  UNRESOLVED: 'danger',
+};
+
+// Who caused an event, in the words an operator reading an audit uses.
+const ACTOR_LABEL: Record<string, string> = {
+  BUYER: 'Buyer',
+  PROVIDER: 'M-Pesa',
+  SYSTEM: 'UmojaHub',
+  ADMIN: 'Administrator',
 };
 
 const TONE_CLASS: Record<EventTone, string> = {
@@ -108,6 +140,13 @@ const SELECT_CLASS =
 
 function formatKES(amount?: number | null): string {
   return amount != null ? `KSh ${amount.toLocaleString()}` : '—';
+}
+
+function formatWait(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ${minutes % 60}m`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
 
 function formatTime(iso: string): string {
@@ -275,6 +314,56 @@ export default function AdminPaymentLabPage(): React.ReactElement {
         </div>
       )}
 
+      {/* What the platform is holding on other people's behalf.
+          The first question an auditor asks about an escrow, and the number a
+          float has to cover. It was derivable one farmer at a time and so in
+          practice unanswerable — every other figure on this page counts events,
+          and none of them said how much money was actually in custody. */}
+      <section className="rounded-app-card border border-app-hairline bg-app-card p-4">
+        <p className="app-body-strong text-app-ink">Escrow position</p>
+        <p className="app-meta mt-0.5 text-app-muted">
+          Buyers&apos; money the platform is holding right now, and money that has cleared but not
+          yet been paid out.
+        </p>
+        <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-app-control bg-app-sunken p-3">
+            <dt className="app-label text-app-muted">Held — awaiting confirmation</dt>
+            <dd className="app-data-l mt-1 text-app-ink">
+              KSh {data.escrowPosition.heldKES.toLocaleString()}
+            </dd>
+            <p className="app-meta mt-0.5 text-app-faint">
+              across {data.escrowPosition.heldOrders} order
+              {data.escrowPosition.heldOrders === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div className="rounded-app-control bg-app-sunken p-3">
+            <dt className="app-label text-app-muted">Of that, blocked by a review</dt>
+            <dd
+              className={cn(
+                'app-data-l mt-1',
+                data.escrowPosition.underReviewKES > 0 ? 'text-app-warning' : 'text-app-ink'
+              )}
+            >
+              KSh {data.escrowPosition.underReviewKES.toLocaleString()}
+            </dd>
+            <p className="app-meta mt-0.5 text-app-faint">
+              across {data.escrowPosition.underReviewOrders} order
+              {data.escrowPosition.underReviewOrders === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div className="rounded-app-control bg-app-sunken p-3">
+            <dt className="app-label text-app-muted">Cleared — awaiting payout</dt>
+            <dd className="app-data-l mt-1 text-app-ink">
+              KSh {data.escrowPosition.clearedKES.toLocaleString()}
+            </dd>
+            <p className="app-meta mt-0.5 text-app-faint">
+              across {data.escrowPosition.clearedOrders} order
+              {data.escrowPosition.clearedOrders === 1 ? '' : 's'}
+            </p>
+          </div>
+        </dl>
+      </section>
+
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((s) => (
@@ -338,6 +427,12 @@ export default function AdminPaymentLabPage(): React.ReactElement {
       {/* Trigger panel — awaiting-payment orders */}
       <section className="space-y-3">
         <h2 className="app-h2 text-app-ink">Awaiting payment</h2>
+        <p className="app-meta text-app-muted">
+          Oldest first. Each of these has produce reserved behind it that no other buyer can order.
+          Once a session has been silent for {STUCK_PAYMENT_TIMEOUT_MINUTES} minutes, reconciliation
+          asks M-Pesa what happened and either completes the order, releases the produce, or raises
+          it to the queue above.
+        </p>
         {data.pendingOrders.length === 0 ? (
           <div className="rounded-app-card border border-app-hairline bg-app-card px-4 py-8 text-center">
             <p className="app-body text-app-muted">
@@ -357,6 +452,18 @@ export default function AdminPaymentLabPage(): React.ReactElement {
                   </p>
                   <p className="app-meta truncate text-app-faint">
                     {o.buyerName} · {formatKES(o.totalAmountKES)}
+                  </p>
+                  {/* How long the produce has been reserved against a payment
+                      nobody has heard back about. */}
+                  <p
+                    className={cn(
+                      'app-meta mt-0.5',
+                      o.reconciliationDue ? 'text-app-warning' : 'text-app-faint'
+                    )}
+                  >
+                    {o.reconciliationDue
+                      ? `Silent ${formatWait(o.waitingMinutes)} — due for reconciliation`
+                      : `Waiting ${formatWait(o.waitingMinutes)}`}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -410,21 +517,46 @@ export default function AdminPaymentLabPage(): React.ReactElement {
             {data.recentEvents.map((e, i) => (
               <div
                 key={`${e.occurredAt}-${i}`}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-app-hairline px-4 py-3 last:border-0"
+                className="border-b border-app-hairline px-4 py-3 last:border-0"
               >
-                <div className="flex min-w-0 items-center gap-2">
-                  <EventBadge eventType={e.eventType} />
-                  <span className="app-meta truncate font-app-mono text-app-faint">
-                    {e.paymentReference ?? '—'}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <EventBadge eventType={e.eventType} />
+                    {/* Who caused it. The feed used to attribute nothing, so a
+                        buyer cancelling and our own sweep closing a payment out
+                        read identically. */}
+                    {e.actor && (
+                      <span className="app-meta shrink-0 text-app-muted">
+                        {ACTOR_LABEL[e.actor] ?? e.actor}
+                      </span>
+                    )}
+                    <span className="app-meta truncate font-app-mono text-app-faint">
+                      {e.paymentReference ?? '—'}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-4">
+                    {/* What it moved. Equal values are shown as a dash rather
+                        than hidden — an event that changed nothing is a fact
+                        worth being able to see. */}
+                    {e.newStatus && (
+                      <span className="app-meta font-app-mono text-app-faint">
+                        {e.previousStatus && e.previousStatus !== e.newStatus
+                          ? `${e.previousStatus} → ${e.newStatus}`
+                          : e.previousStatus
+                            ? `${e.newStatus} — unchanged`
+                            : e.newStatus}
+                      </span>
+                    )}
+                    <span className="app-data-m text-app-muted">{formatKES(e.amount)}</span>
+                    {e.resultCode != null && (
+                      <span className="app-meta font-app-mono text-app-faint">
+                        code {e.resultCode}
+                      </span>
+                    )}
+                    <span className="app-meta text-app-faint">{formatTime(e.occurredAt)}</span>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-4">
-                  <span className="app-data-m text-app-muted">{formatKES(e.amount)}</span>
-                  {e.resultCode != null && (
-                    <span className="app-meta font-app-mono text-app-faint">code {e.resultCode}</span>
-                  )}
-                  <span className="app-meta text-app-faint">{formatTime(e.occurredAt)}</span>
-                </div>
+                {e.reason && <p className="app-meta mt-1 text-app-faint">{e.reason}</p>}
               </div>
             ))}
           </div>
