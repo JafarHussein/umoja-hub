@@ -270,7 +270,37 @@ around the corrected behaviour, and a second test added for the case the old one
 
 ---
 
-## 12. What is deliberately not changing
+## 12. The listing page (swept 2026-08-17)
+
+The marketplace listing page explained escrow **three times**: "Your protections" carried it in
+full, the checkout panel opposite repeated it in its own words, and a line under the pay button read
+*"Secure M-Pesa checkout · no platform fee"* — whose fee half was already a row in the order summary
+directly above it.
+
+One telling now, in **"Your protections"**, which is where the marketplace direction assigns it:
+the Opportunity Review layer explains *"recourse mechanisms · payment protection"* because that is
+where the buyer decides. It also carries two protections the checkout footnote never did (verified
+identity, mediation). The panel opposite says nothing about escrow — the promise becomes concrete
+after payment, and the confirmed state says it there.
+
+The three items lost their per-row icons (including the padlock emoji, F5) and were rewritten into
+the same vocabulary the buyer meets on the order afterwards, so one mechanism is described one way
+from the marketplace through to release.
+
+**Not swept:** `components/website/topics/*` also describe escrow. That is the public website, which
+is out of scope and shipped.
+
+### A defect the sweep turned up
+
+The price-fairness block rendered as a plain white card on the warm canvas. It was not empty, it was
+**loading**. `.skeleton` builds its shimmer from `--surface` and `--surface-raised`, and both resolve
+to `--c-white` — a white-on-white gradient, so the animation runs and nothing moves. Every app screen
+with a loading state was showing a flat rectangle instead of something arriving. Now bound to the
+app's own surfaces.
+
+---
+
+## 13. What is deliberately not changing
 
 - The payment state machine, provider abstraction, callback processor, reconciliation, event log.
 - `orderJourney` derivation and `EscrowExplainer` copy logic. Both are recent, tested, and correct.
