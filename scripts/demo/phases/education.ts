@@ -139,65 +139,109 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         continue;
       }
 
-      // Lecturer review.
-      const lecturer = rng.pick(world.lecturers);
-      const lecAt = daysAfter(peerAt, rng.int(1, 5));
-      const verified = decision === LecturerDecision.VERIFIED;
-      const baseLo = verified ? 3 : decision === LecturerDecision.DENIED ? 1 : 2;
-      const baseHi = verified ? 5 : decision === LecturerDecision.DENIED ? 3 : 4;
-      const sc = {
-        problemUnderstanding: rng.int(baseLo, baseHi),
-        solutionQuality: rng.int(baseLo, baseHi),
-        processQuality: rng.int(baseLo, baseHi),
-        aiUsage: rng.int(baseLo, baseHi),
+      await ProjectEngagement.updateOne({ _id: engagement._id }, { $set: { peerReviewId: peer._id } });
+
+      // One pass of the review cycle: a lecturer judges the work as it stands at
+      // this revision, and everything that follows from the judgement is
+      // recorded — the immutable audit entry, the lecturer's effectiveness, and
+      // the student's notification.
+      const reviewPass = async (revisionNumber: number, passDecision: string, at: Date): Promise<void> => {
+        const lecturer = rng.pick(world.lecturers);
+        const passVerified = passDecision === LecturerDecision.VERIFIED;
+        const baseLo = passVerified ? 3 : passDecision === LecturerDecision.DENIED ? 1 : 2;
+        const baseHi = passVerified ? 5 : passDecision === LecturerDecision.DENIED ? 3 : 4;
+        const sc = {
+          problemUnderstanding: rng.int(baseLo, baseHi),
+          solutionQuality: rng.int(baseLo, baseHi),
+          processQuality: rng.int(baseLo, baseHi),
+          aiUsage: rng.int(baseLo, baseHi),
+        };
+        const lecReview = ledger.track('LecturerReview', await createDoc(LecturerReview, {
+          engagementId: engagement._id, lecturerId: lecturer.id, revisionNumber, decision: passDecision,
+          scores: sc,
+          comments: {
+            problemUnderstanding: lecturerComment(rng, 'problemUnderstanding', passVerified),
+            solutionQuality: lecturerComment(rng, 'solutionQuality', passVerified),
+            processQuality: lecturerComment(rng, 'processQuality', passVerified),
+            aiUsage: lecturerComment(rng, 'aiUsage', passVerified),
+            overallFeedback: passVerified
+              ? revisionNumber > 0
+                ? 'The revisions addressed the feedback — verified.'
+                : 'Strong, honest work — verified.'
+              : 'See per-dimension feedback.',
+          },
+          rejectionReason: passDecision === LecturerDecision.DENIED ? 'The submission did not meet the verification bar for this tier.' : undefined,
+          createdAt: at, updatedAt: at,
+        }));
+
+        await ProjectEngagement.updateOne({ _id: engagement._id }, { $set: { lecturerReviewId: lecReview._id } });
+
+        // Verification audit log (immutable trail).
+        batcher.add(VerificationAuditLog, 'VerificationAuditLog', {
+          engagementId: engagement._id, studentId: student.id, lecturerId: lecturer.id, decision: passDecision,
+          documentHashes: { problemBreakdown: documents.problemBreakdown.hash, approachPlan: documents.approachPlan.hash, finalReflection: documents.finalReflection.hash },
+          // No githubSnapshot — see the note on the engagement above. The live
+          // route writes zeros here because nothing gathers commit evidence; the
+          // seeder must not claim more than the platform can.
+          reviewScores: sc,
+          recordedAt: at,
+        });
+
+        // Lecturer effectiveness accumulation.
+        const lid = String(lecturer.id);
+        const stat = lecturerStats.get(lid) ?? { total: 0, verified: 0, revision: 0, denied: 0, scoreSum: 0, scoreCount: 0, lastAt: at };
+        stat.total += 1;
+        if (passVerified) stat.verified += 1;
+        else if (passDecision === LecturerDecision.DENIED) stat.denied += 1;
+        else stat.revision += 1;
+        const avgSc = (sc.problemUnderstanding + sc.solutionQuality + sc.processQuality + sc.aiUsage) / 4;
+        stat.scoreSum += avgSc; stat.scoreCount += 1;
+        if (at > stat.lastAt) stat.lastAt = at;
+        lecturerStats.set(lid, stat);
+
+        await pushNotification(batcher, {
+          userId: student.id, type: NotificationType.REVIEW_UPDATE,
+          title: passVerified ? 'Project verified' : passDecision === LecturerDecision.DENIED ? 'Project not verified' : 'Revision requested',
+          body: passVerified ? 'A lecturer signed off your project.' : 'A lecturer reviewed your project — see the feedback.',
+          relatedEntity: { kind: 'ProjectEngagement', id: engagement._id }, createdAt: at,
+        });
+
+        if (passVerified) verifiedCount++;
       };
-      const lecReview = ledger.track('LecturerReview', await createDoc(LecturerReview, {
-        engagementId: engagement._id, lecturerId: lecturer.id, decision,
-        scores: sc,
-        comments: {
-          problemUnderstanding: lecturerComment(rng, 'problemUnderstanding', verified),
-          solutionQuality: lecturerComment(rng, 'solutionQuality', verified),
-          processQuality: lecturerComment(rng, 'processQuality', verified),
-          aiUsage: lecturerComment(rng, 'aiUsage', verified),
-          overallFeedback: verified ? 'Strong, honest work — verified.' : 'See per-dimension feedback.',
-        },
-        rejectionReason: decision === LecturerDecision.DENIED ? 'The submission did not meet the verification bar for this tier.' : undefined,
-        createdAt: lecAt, updatedAt: lecAt,
-      }));
 
-      await ProjectEngagement.updateOne({ _id: engagement._id }, { $set: { peerReviewId: peer._id, lecturerReviewId: lecReview._id } });
+      const lecAt = daysAfter(peerAt, rng.int(1, 5));
+      await reviewPass(0, decision, lecAt);
 
-      // Verification audit log (immutable trail).
-      batcher.add(VerificationAuditLog, 'VerificationAuditLog', {
-        engagementId: engagement._id, studentId: student.id, lecturerId: lecturer.id, decision,
-        documentHashes: { problemBreakdown: documents.problemBreakdown.hash, approachPlan: documents.approachPlan.hash, finalReflection: documents.finalReflection.hash },
-        // No githubSnapshot — see the note on the engagement above. The live
-        // route writes zeros here because nothing gathers commit evidence; the
-        // seeder must not claim more than the platform can.
-        reviewScores: sc,
-        recordedAt: lecAt,
-      });
+      // Some of the students asked to revise went back and did the work. This
+      // is the loop the whole Hub exists for — feedback, revision, a second
+      // reading — and until the revision transition existed the platform could
+      // not represent it at all, so no demonstration could ever show it.
+      if (decision === LecturerDecision.REVISION_REQUIRED && rng.bool(0.5)) {
+        const resumedAt = daysAfter(lecAt, rng.int(1, 4));
+        const rePeerAt = daysAfter(resumedAt, rng.int(4, 12));
+        const reReviewer = rng.pick(world.students.filter((s) => s.id !== student.id));
+        const rePeer = ledger.track('PeerReview', await createDoc(PeerReview, {
+          engagementId: engagement._id, reviewerId: reReviewer.id, submittedAt: rePeerAt,
+          status: PeerReviewStatus.SUBMITTED,
+          scores: { codeQuality: rng.int(3, 5), documentationClarity: rng.int(3, 5) },
+          comments: { codeQuality: peerComment(rng, true), documentationClarity: peerComment(rng, true) },
+          createdAt: daysAfter(resumedAt, 1), updatedAt: rePeerAt,
+        }));
 
-      // Lecturer effectiveness accumulation.
-      const lid = String(lecturer.id);
-      const stat = lecturerStats.get(lid) ?? { total: 0, verified: 0, revision: 0, denied: 0, scoreSum: 0, scoreCount: 0, lastAt: lecAt };
-      stat.total += 1;
-      if (verified) stat.verified += 1;
-      else if (decision === LecturerDecision.DENIED) stat.denied += 1;
-      else stat.revision += 1;
-      const avgSc = (sc.problemUnderstanding + sc.solutionQuality + sc.processQuality + sc.aiUsage) / 4;
-      stat.scoreSum += avgSc; stat.scoreCount += 1;
-      if (lecAt > stat.lastAt) stat.lastAt = lecAt;
-      lecturerStats.set(lid, stat);
+        const reLecAt = daysAfter(rePeerAt, rng.int(1, 5));
+        const secondDecision = rng.bool(0.75) ? LecturerDecision.VERIFIED : LecturerDecision.REVISION_REQUIRED;
+        await reviewPass(1, secondDecision, reLecAt);
 
-      await pushNotification(batcher, {
-        userId: student.id, type: NotificationType.REVIEW_UPDATE,
-        title: verified ? 'Project verified' : decision === LecturerDecision.DENIED ? 'Project not verified' : 'Revision requested',
-        body: verified ? 'A lecturer signed off your project.' : 'A lecturer reviewed your project — see the feedback.',
-        relatedEntity: { kind: 'ProjectEngagement', id: engagement._id }, createdAt: lecAt,
-      });
-
-      if (verified) verifiedCount++;
+        await ProjectEngagement.updateOne({ _id: engagement._id }, {
+          $set: {
+            revisionNumber: 1,
+            peerReviewId: rePeer._id,
+            status: secondDecision === LecturerDecision.VERIFIED ? ProjectStatus.VERIFIED : ProjectStatus.REVISION_REQUIRED,
+            ...(secondDecision === LecturerDecision.VERIFIED ? { verifiedAt: daysAfter(reLecAt, rng.int(1, 3)) } : {}),
+            updatedAt: reLecAt,
+          },
+        });
+      }
     }
 
     await User.updateOne({ _id: student.id }, { $set: { 'studentData.completedProjectCount': verifiedCount, 'studentData.currentTier': tier } });

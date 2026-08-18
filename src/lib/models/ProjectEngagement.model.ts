@@ -54,6 +54,10 @@ const projectEngagementSchema = new Schema(
     },
     brief: { type: Schema.Types.Mixed },
     briefContextId: { type: Schema.Types.ObjectId, ref: 'BriefContextLibrary' },
+    // Advances every time the student resumes work after a lecturer asks for
+    // revisions. Reviews are recorded against it, so a project can go round the
+    // loop as many times as it needs to without overwriting its own history.
+    revisionNumber: { type: Number, default: 0, min: 0 },
     githubRepoUrl: { type: String },
     githubRepoName: { type: String },
     issueUrl: { type: String },
@@ -91,6 +95,7 @@ export interface ProjectEngagementDoc {
   status: string;
   brief?: Record<string, unknown>;
   briefContextId?: mongoose.Types.ObjectId;
+  revisionNumber: number;
   githubRepoUrl?: string;
   githubRepoName?: string;
   issueUrl?: string;

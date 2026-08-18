@@ -16,6 +16,8 @@ import type { IBlockerEntry } from '@/components/education/BlockersTab';
 import type { IAIUsageEntry } from '@/components/education/AIUsageTab';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import { normalizeBrief, type NormalizedBrief } from '@/lib/education/brief';
+import { LecturerFeedbackCard } from '@/components/education/LecturerFeedbackCard';
+import type { ILecturerReview } from '@/components/education/LecturerFeedbackCard';
 
 // ── Engagement type ───────────────────────────────────────────────────────────
 
@@ -34,8 +36,10 @@ interface IActiveEngagement {
   status: ProjectStatus;
   brief: Record<string, unknown>;
   documents: IEngagementDocuments;
+  revisionNumber: number;
   createdAt: string;
 }
+
 
 // Raw shape from API — documents arrays may be missing before normalization
 interface IRawEngagement {
@@ -51,6 +55,7 @@ interface IRawEngagement {
     blockerLog?: IBlockerEntry[];
     aiUsageLog?: IAIUsageEntry[];
   };
+  revisionNumber?: number;
   createdAt: string;
 }
 
@@ -221,6 +226,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [engagement, setEngagement] = useState<IActiveEngagement | null>(null);
+  const [reviews, setReviews] = useState<ILecturerReview[]>([]);
   const [actionState, setActionState] = useState<ActionState>('idle');
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
@@ -243,6 +249,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
       const raw = body.data;
       setEngagement({
         ...raw,
+        revisionNumber: raw.revisionNumber ?? 0,
         documents: {
           blockerLog: raw.documents?.blockerLog ?? [],
           aiUsageLog: raw.documents?.aiUsageLog ?? [],
@@ -258,6 +265,18 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         },
       });
       setPageState('ready');
+
+      // Feedback is fetched whatever the status: a student revising is back in
+      // IN_PROGRESS and still needs to read what they were asked to fix.
+      try {
+        const reviewRes = await fetch(`/api/education/engagements/${raw._id}/reviews`);
+        if (reviewRes.ok) {
+          const reviewBody = (await reviewRes.json()) as { data: ILecturerReview[] };
+          setReviews(reviewBody.data ?? []);
+        }
+      } catch {
+        // The workspace is usable without the feedback panel; leave it empty.
+      }
     } catch {
       setPageState('error');
     }
@@ -334,7 +353,12 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         return;
       }
 
-      setEngagement({ ...engagement, status: ProjectStatus.IN_PROGRESS });
+      const body = (await res.json()) as { data?: { revisionNumber?: number } };
+      setEngagement({
+        ...engagement,
+        status: ProjectStatus.IN_PROGRESS,
+        revisionNumber: body.data?.revisionNumber ?? engagement.revisionNumber,
+      });
       setActionState('idle');
     } catch {
       setActionError('Network error. Try again.');
@@ -436,6 +460,9 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         <div className="space-y-6 md:col-span-8">
           {/* Brief card */}
           <BriefCard brief={brief} />
+
+          {/* Lecturer feedback — renders nothing until there is a decision */}
+          <LecturerFeedbackCard reviews={reviews} />
 
           {/* Workspace tabs */}
           <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
@@ -610,9 +637,22 @@ export default function ProjectWorkspacePage(): React.ReactElement {
               <p className="app-body text-app-muted">Awaiting review</p>
             )}
 
-            {/* REVISION_REQUIRED */}
+            {/* REVISION_REQUIRED — the loop continues rather than ending here */}
             {engagement.status === ProjectStatus.REVISION_REQUIRED && (
-              <Alert tone="warning">Revision required — check lecturer feedback.</Alert>
+              <>
+                <Alert tone="warning">
+                  Your lecturer asked for revisions. Their feedback is on this page — take it back
+                  into the workspace, then submit again.
+                </Alert>
+                <Button
+                  className="w-full"
+                  isLoading={actionState === 'beginning'}
+                  onClick={() => void handleBeginProject()}
+                >
+                  Resume work
+                </Button>
+                {actionError && <Alert tone="danger">{actionError}</Alert>}
+              </>
             )}
 
             {/* VERIFIED */}

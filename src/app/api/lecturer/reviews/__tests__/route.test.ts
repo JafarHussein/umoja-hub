@@ -295,7 +295,26 @@ describe('POST /api/lecturer/reviews', () => {
     expect(res.status).toBe(404);
   });
 
-  it('returns 409 when a review for this engagement already exists', async () => {
+  it('reviews a resubmitted revision against its own revision number', async () => {
+    setupHappyPath();
+    // The student was asked to revise, resumed the work and submitted again:
+    // the engagement is on revision 1 and its revision-0 review is history.
+    mockEngagementFindOne.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ ...ACTIVE_ENGAGEMENT, revisionNumber: 1 }),
+    });
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(201);
+    expect(mockLecturerReviewFindOne).toHaveBeenCalledWith(
+      expect.objectContaining({ engagementId: VALID_ENGAGEMENT_ID, revisionNumber: 1 })
+    );
+    expect(mockLecturerReviewCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ revisionNumber: 1 })
+    );
+  });
+
+  it('returns 409 when this revision has already been reviewed', async () => {
     mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
     mockEngagementFindOne.mockReturnValue({
       lean: jest.fn().mockResolvedValue(ACTIVE_ENGAGEMENT),

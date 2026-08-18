@@ -115,10 +115,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Idempotency: prevent duplicate reviews for the same engagement
-    const existingReview = await LecturerReview.findOne({ engagementId } as object).lean();
+    // Idempotency, scoped to the pass being judged. It used to reject any second
+    // review of an engagement, which meant a project sent back for revisions
+    // could never be reviewed again — the student's corrected work had nowhere
+    // to go. A resubmission arrives with a higher revision number and is
+    // reviewable; the same pass is still judged only once.
+    const revisionNumber = (raw as unknown as { revisionNumber?: number }).revisionNumber ?? 0;
+    const existingReview = await LecturerReview.findOne({
+      engagementId,
+      revisionNumber,
+    } as object).lean();
     if (existingReview) {
-      throw new AppError('A review for this engagement already exists.', 409, 'DB_DUPLICATE');
+      throw new AppError('This revision has already been reviewed.', 409, 'DB_DUPLICATE');
     }
 
     const { decision, scores, comments, rejectionReason } = parsed.data;
@@ -140,6 +148,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const lecturerReview = await LecturerReview.create({
       engagementId,
       lecturerId,
+      revisionNumber,
       decision,
       scores,
       comments: commentsDoc,

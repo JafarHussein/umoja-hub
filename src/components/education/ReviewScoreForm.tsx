@@ -21,14 +21,14 @@ export interface IReviewScoreFormProps {
 
 type SubmitState = 'idle' | 'submitting';
 
-const SCORE_DIMS = [
+export const SCORE_DIMS = [
   { key: 'problemUnderstanding', label: 'Problem understanding' },
   { key: 'solutionQuality', label: 'Solution quality' },
   { key: 'processQuality', label: 'Process quality' },
   { key: 'aiUsage', label: 'AI usage' },
 ] as const;
 
-type ScoreDim = (typeof SCORE_DIMS)[number]['key'];
+export type ScoreDim = (typeof SCORE_DIMS)[number]['key'];
 
 const DECISIONS = [
   { value: LecturerDecision.VERIFIED, label: 'Verified' },
