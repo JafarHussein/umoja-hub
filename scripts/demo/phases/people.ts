@@ -317,10 +317,14 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
 
   // ---- Lecturers (verified so they can review) ----
   const LECTURER_ARCHETYPES = ['strict', 'balanced', 'detailed'];
-  for (let i = 0; i < 3; i++) {
+  // One verified lecturer per institution, not three spread at random. A
+  // lecturer may only review their own institution's students, so an
+  // institution with no lecturer is an institution whose students can never
+  // have their work read by anybody.
+  for (let i = 0; i < world.institutions.length; i++) {
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
-    const inst = world.institutions[i % world.institutions.length]!;
+    const inst = world.institutions[i]!;
     const archetype = LECTURER_ARCHETYPES[i % LECTURER_ARCHETYPES.length]!;
     const joinedAt = joinDate(rng, 9);
     const email = makeEmail(p.name, last);
@@ -351,7 +355,7 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         updatedAt: joinedAt,
       })
     );
-    world.lecturers.push(person(p, last, inst.county, archetype, user._id, joinedAt));
+    world.lecturers.push({ ...person(p, last, inst.county, archetype, user._id, joinedAt), institutionId: inst.id });
   }
 
   // ---- Students (assigned to institutions) ----
@@ -403,7 +407,7 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         updatedAt: joinedAt,
       })
     );
-    world.students.push(person(p, last, inst.county, archetype, user._id, joinedAt));
+    world.students.push({ ...person(p, last, inst.county, archetype, user._id, joinedAt), institutionId: inst.id });
   }
 
   // The admin steward (mediation / payout actor) is the canonical admin account

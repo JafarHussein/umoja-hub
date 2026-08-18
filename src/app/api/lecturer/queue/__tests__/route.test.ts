@@ -12,10 +12,12 @@ import { ProjectStatus } from '@/types';
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
 const mockUserFindById = jest.fn();
+const mockUserFind = jest.fn();
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
     findById: jest.fn((...a: unknown[]) => mockUserFindById(...a)),
+    find: jest.fn((...a: unknown[]) => mockUserFind(...a)),
   },
 }));
 
@@ -41,8 +43,23 @@ const STUDENT_SESSION = { user: { id: 'student-001', role: 'STUDENT', firstName:
 const VERIFIED_LECTURER = {
   _id: 'lecturer-001',
   role: 'LECTURER',
-  lecturerData: { isVerified: true, universityAffiliation: 'University of Nairobi' },
+  lecturerData: {
+    isVerified: true,
+    institutionId: 'institution-001',
+    universityAffiliation: 'University of Nairobi',
+  },
 };
+// Verified, but with nothing recorded to scope them to.
+const UNAFFILIATED_LECTURER = {
+  _id: 'lecturer-001',
+  role: 'LECTURER',
+  lecturerData: { isVerified: true },
+};
+
+/** The students of the lecturer's own institution. */
+function cohortIs(studentIds: string[]): void {
+  mockUserFind.mockReturnValue({ distinct: jest.fn().mockResolvedValue(studentIds) });
+}
 const UNVERIFIED_LECTURER = {
   _id: 'lecturer-001',
   role: 'LECTURER',
@@ -72,8 +89,9 @@ describe('GET /api/lecturer/queue', () => {
     (getServerSession as jest.Mock).mockResolvedValue(LECTURER_SESSION);
   });
 
-  it('returns the review queue for a verified lecturer', async () => {
+  it("returns the queue, scoped to the lecturer's own students", async () => {
     mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
+    cohortIs(['student-001', 'student-002']);
     mockEngagementFind.mockReturnValue({
       populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(SAMPLE_ENGAGEMENTS) }),
     });
@@ -84,12 +102,16 @@ describe('GET /api/lecturer/queue', () => {
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(2);
     expect(mockEngagementFind).toHaveBeenCalledWith(
-      expect.objectContaining({ status: ProjectStatus.UNDER_LECTURER_REVIEW })
+      expect.objectContaining({
+        status: ProjectStatus.UNDER_LECTURER_REVIEW,
+        studentId: { $in: ['student-001', 'student-002'] },
+      })
     );
   });
 
   it('returns an empty array when no engagements are in the queue', async () => {
     mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
+    cohortIs(['student-001']);
     mockEngagementFind.mockReturnValue({
       populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }),
     });
@@ -99,6 +121,19 @@ describe('GET /api/lecturer/queue', () => {
 
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(0);
+  });
+
+  // Showing an unscopeable lecturer every institution's students is the defect
+  // the scoping replaced, so the queue is withheld rather than widened.
+  it('withholds the queue from a lecturer with no institution on record', async () => {
+    mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(UNAFFILIATED_LECTURER) });
+
+    const res = await GET(makeRequest());
+    const body = await res.json() as { data: unknown[] };
+
+    expect(res.status).toBe(200);
+    expect(body.data).toHaveLength(0);
+    expect(mockEngagementFind).not.toHaveBeenCalled();
   });
 
   it('returns 403 when the lecturer is not yet verified', async () => {

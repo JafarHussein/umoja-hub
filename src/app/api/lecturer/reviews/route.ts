@@ -6,6 +6,7 @@ import { connectDB } from '@/lib/db';
 import { lecturerReviewSchema } from '@/lib/validation/educationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, LecturerDecision, ProjectStatus, NotificationType } from '@/types';
+import { cohortStudentIds } from '@/lib/education/cohort';
 import { notify } from '@/lib/notifications/notify';
 import type { LecturerReviewDoc } from '@/lib/models/LecturerReview.model';
 
@@ -102,9 +103,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       '@/lib/models/LecturerEffectiveness.model'
     );
 
+    // A decision may only be recorded against this lecturer's own students —
+    // the queue and the detail view are scoped the same way, and this is the
+    // one that actually writes.
+    const cohortIds = await cohortStudentIds(lecturer.lecturerData);
+    if (cohortIds === null) {
+      throw new AppError(
+        'Engagement not found or not ready for lecturer review.',
+        404,
+        'DB_NOT_FOUND'
+      );
+    }
+
     const raw = await ProjectEngagement.findOne({
       _id: engagementId,
       status: ProjectStatus.UNDER_LECTURER_REVIEW,
+      studentId: { $in: cohortIds },
     } as object).lean();
 
     if (!raw) {

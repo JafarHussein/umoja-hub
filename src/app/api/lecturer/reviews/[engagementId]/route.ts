@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
 import { Role, ProjectStatus } from '@/types';
+import { cohortStudentIds } from '@/lib/education/cohort';
 
 // ---------------------------------------------------------------------------
 // GET /api/lecturer/reviews/[engagementId]
@@ -49,9 +50,22 @@ export async function GET(
     // the published /trust methodology promises this. The scores are revealed
     // in the POST /api/lecturer/reviews response after the decision is
     // recorded. Supersedes the earlier client-side masking approach.
+    // Scoped to the lecturer's own institution. Another university's student is
+    // reported as not found rather than forbidden — the same posture the rest of
+    // the Hub takes, and it tells an outsider nothing about what exists.
+    const cohortIds = await cohortStudentIds(lecturer.lecturerData);
+    if (cohortIds === null) {
+      throw new AppError(
+        'Engagement not found or not ready for lecturer review.',
+        404,
+        'DB_NOT_FOUND'
+      );
+    }
+
     const engagement = await ProjectEngagement.findOne({
       _id: engagementId,
       status: ProjectStatus.UNDER_LECTURER_REVIEW,
+      studentId: { $in: cohortIds },
     } as object)
       .select('-peerReviewId')
       .populate('studentId', 'firstName lastName')

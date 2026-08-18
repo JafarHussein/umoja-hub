@@ -374,7 +374,7 @@ export async function validate(): Promise<boolean> {
 
   const engagementIds = idsOf('ProjectEngagement');
   const engagements = await ProjectEngagement.find({ _id: { $in: engagementIds } })
-    .select('track status brief peerReviewId')
+    .select('track status brief peerReviewId studentId')
     .lean();
   const badBriefs = engagements.filter((e) => !isValidBrief(e.track as ProjectTrack, e.brief));
   ok(
@@ -409,6 +409,68 @@ export async function validate(): Promise<boolean> {
     'nothing awaiting review has already been judged',
     prematureReviews === 0,
     `${prematureReviews} contradictions`
+  );
+
+  // Who belongs to which institution — the fact both remaining checks turn on,
+  // now that a lecturer is scoped to their own students.
+  const institutionOf = new Map<string, string>();
+  for (const u of await User.find({ _id: { $in: userIds } })
+    .select('role studentData.institutionId lecturerData.institutionId')
+    .lean()) {
+    const institutionId =
+      u.role === Role.LECTURER ? u.lecturerData?.institutionId : u.studentData?.institutionId;
+    if (institutionId) institutionOf.set(String(u._id), String(institutionId));
+  }
+
+  // "The queue has work in it" is no longer one fact but one per lecturer: a
+  // verified lecturer whose own students have nothing pending opens an empty
+  // screen, which is what a presenter would discover in front of the panel.
+  const verifiedLecturers = await User.find({
+    _id: { $in: userIds },
+    role: Role.LECTURER,
+    'lecturerData.isVerified': true,
+  })
+    .select('email lecturerData.institutionId')
+    .lean();
+  const queuedInstitutions = new Set(
+    queued.map((e) => institutionOf.get(String(e.studentId))).filter(Boolean) as string[]
+  );
+  const lecturersWithEmptyQueue = verifiedLecturers.filter(
+    (l) =>
+      !l.lecturerData?.institutionId ||
+      !queuedInstitutions.has(String(l.lecturerData.institutionId))
+  );
+  ok(
+    'every verified lecturer has work waiting in their own queue',
+    lecturersWithEmptyQueue.length === 0,
+    lecturersWithEmptyQueue.length === 0
+      ? `${verifiedLecturers.length} lecturers`
+      : `empty for ${lecturersWithEmptyQueue.map((l) => l.email).join(', ')}`
+  );
+
+  // A lecturer may only review their own institution's students. Seeded data
+  // that crosses institutions would be work the application itself would never
+  // have put in front of that lecturer.
+  const lecturerReviews = await LecturerReview.find({ _id: { $in: idsOf('LecturerReview') } })
+    .select('engagementId lecturerId')
+    .lean();
+  const studentOfEngagement = new Map(
+    (
+      await ProjectEngagement.find({ _id: { $in: engagementIds } })
+        .select('studentId')
+        .lean()
+    ).map((e) => [String(e._id), String(e.studentId)])
+  );
+  const crossInstitution = lecturerReviews.filter((r) => {
+    const studentId = studentOfEngagement.get(String(r.engagementId));
+    const studentInstitution = studentId ? institutionOf.get(studentId) : undefined;
+    const lecturerInstitution = institutionOf.get(String(r.lecturerId));
+    return !studentInstitution || !lecturerInstitution || studentInstitution !== lecturerInstitution;
+  });
+  ok(
+    'every lecturer review was written by a lecturer at the student’s institution',
+    crossInstitution.length === 0,
+    `${lecturerReviews.length - crossInstitution.length}/${lecturerReviews.length} in institution`
   );
 
   // Nothing may display commit evidence: the platform has no GitHub API

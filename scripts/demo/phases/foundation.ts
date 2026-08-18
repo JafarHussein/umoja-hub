@@ -230,6 +230,7 @@ export async function generateFoundation(ctx: SimContext): Promise<FoundationRes
       gender,
       joinedAt,
       archetype: ACCOUNT_ARCHETYPE[account.email] ?? 'average',
+      ...(institution ? { institutionId: institution.id } : {}),
       ...(account.role === Role.FARMER ? { crops: listableCropsFor(account) } : {}),
     };
 

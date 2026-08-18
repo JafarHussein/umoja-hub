@@ -15,11 +15,13 @@ jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined)
 
 const mockUserFindById = jest.fn();
 const mockUserUpdateOne = jest.fn();
+const mockUserFind = jest.fn();
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
     findById: jest.fn((...a: unknown[]) => mockUserFindById(...a)),
     updateOne: jest.fn((...a: unknown[]) => mockUserUpdateOne(...a)),
+    find: jest.fn((...a: unknown[]) => mockUserFind(...a)),
   },
 }));
 
@@ -81,7 +83,11 @@ const VALID_ENGAGEMENT_ID = '64a1b2c3d4e5f6a7b8c9d0e1';
 
 const VERIFIED_LECTURER = {
   _id: 'lecturer-001',
-  lecturerData: { isVerified: true, universityAffiliation: 'University of Nairobi' },
+  lecturerData: {
+    isVerified: true,
+    institutionId: 'institution-001',
+    universityAffiliation: 'University of Nairobi',
+  },
 };
 const UNVERIFIED_LECTURER = { _id: 'lecturer-001', lecturerData: { isVerified: false } };
 
@@ -150,6 +156,10 @@ function makeRequest(body: unknown) {
 
 function setupHappyPath() {
   mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
+  // The lecturer's own students — the only work they may judge.
+  mockUserFind.mockReturnValue({
+    distinct: jest.fn().mockResolvedValue(['student-001', 'student-002']),
+  });
   mockEngagementFindOne.mockReturnValue({
     lean: jest.fn().mockResolvedValue(ACTIVE_ENGAGEMENT),
   });
@@ -288,11 +298,35 @@ describe('POST /api/lecturer/reviews', () => {
   });
 
   it('returns 404 when engagement is not found or not UNDER_LECTURER_REVIEW', async () => {
-    mockUserFindById.mockReturnValue({ lean: jest.fn().mockResolvedValue(VERIFIED_LECTURER) });
+    setupHappyPath();
     mockEngagementFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
 
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(404);
+  });
+
+  // A lecturer belongs to their students. The queue and the detail view are
+  // scoped the same way; this is the call that actually writes a decision.
+  it("looks for the engagement only among the lecturer's own students", async () => {
+    setupHappyPath();
+
+    await POST(makeRequest(VALID_BODY));
+
+    expect(mockEngagementFindOne).toHaveBeenCalledWith(
+      expect.objectContaining({ studentId: { $in: ['student-001', 'student-002'] } })
+    );
+  });
+
+  it('refuses to record a decision when the lecturer has no institution on record', async () => {
+    setupHappyPath();
+    mockUserFindById.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ _id: 'lecturer-001', lecturerData: { isVerified: true } }),
+    });
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(404);
+    expect(mockLecturerReviewCreate).not.toHaveBeenCalled();
   });
 
   it('reviews a resubmitted revision against its own revision number', async () => {

@@ -21,20 +21,26 @@ jest.mock('@/lib/models/ProjectEngagement.model', () => ({
   },
 }));
 
-const mockUserFindOne = jest.fn();
+const mockUserFindById = jest.fn();
+const mockUserFind = jest.fn();
 jest.mock('@/lib/models/User.model', () => ({
   __esModule: true,
   default: {
-    findOne: jest.fn((...a: unknown[]) => mockUserFindOne(...a)),
+    findById: jest.fn((...a: unknown[]) => mockUserFindById(...a)),
+    find: jest.fn((...a: unknown[]) => mockUserFind(...a)),
   },
 }));
 
 const mockPeerReviewCreate = jest.fn();
+const mockPeerReviewFind = jest.fn();
+const mockPeerReviewAggregate = jest.fn();
 const mockPeerReviewFindByIdAndDelete = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/lib/models/PeerReview.model', () => ({
   __esModule: true,
   default: {
     create: jest.fn((...a: unknown[]) => mockPeerReviewCreate(...a)),
+    find: jest.fn((...a: unknown[]) => mockPeerReviewFind(...a)),
+    aggregate: jest.fn((...a: unknown[]) => mockPeerReviewAggregate(...a)),
     findByIdAndDelete: jest.fn((...a: unknown[]) => mockPeerReviewFindByIdAndDelete(...a)),
   },
 }));
@@ -78,6 +84,23 @@ const PEER_REVIEWER = { _id: 'reviewer-001', role: 'STUDENT', status: 'ACTIVE' }
 const CREATED_REVIEW = { _id: 'peer-review-001', engagementId: VALID_ID, reviewerId: 'reviewer-001', status: 'ASSIGNED' };
 const UPDATED_ENGAGEMENT = { ...IN_PROGRESS_ENGAGEMENT, status: ProjectStatus.UNDER_PEER_REVIEW, peerReviewId: 'peer-review-001' };
 
+// The author, their cohort, each candidate's outstanding assignments and who
+// has already read this engagement — the four reads the reviewer choice makes.
+function cohort(candidates: { _id: string }[]): void {
+  mockUserFindById.mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      lean: jest.fn().mockResolvedValue({ studentData: { institutionId: 'institution-001' } }),
+    }),
+  });
+  mockUserFind.mockReturnValue({
+    select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(candidates) }),
+  });
+  mockPeerReviewAggregate.mockResolvedValue([]);
+  mockPeerReviewFind.mockReturnValue({
+    select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }),
+  });
+}
+
 describe('POST /api/education/engagements/[id]/submit', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -86,7 +109,7 @@ describe('POST /api/education/engagements/[id]/submit', () => {
 
   it('creates a peer review and transitions engagement to UNDER_PEER_REVIEW, returning 201', async () => {
     mockEngagementFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(IN_PROGRESS_ENGAGEMENT) });
-    mockUserFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(PEER_REVIEWER) });
+    cohort([PEER_REVIEWER]);
     mockPeerReviewCreate.mockResolvedValue(CREATED_REVIEW);
     mockEngagementFindOneAndUpdate.mockResolvedValue(UPDATED_ENGAGEMENT);
 
@@ -102,6 +125,40 @@ describe('POST /api/education/engagements/[id]/submit', () => {
       expect.objectContaining({ status: ProjectStatus.IN_PROGRESS }),
       expect.objectContaining({ $set: expect.objectContaining({ status: ProjectStatus.UNDER_PEER_REVIEW }) }),
       { new: true }
+    );
+  });
+
+  // The assignment used to be an unsorted findOne, so one student received
+  // effectively every peer review on the platform.
+  it('gives the work to the student carrying the least of it', async () => {
+    mockEngagementFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(IN_PROGRESS_ENGAGEMENT) });
+    cohort([{ _id: 'reviewer-busy' }, { _id: 'reviewer-free' }]);
+    mockPeerReviewAggregate.mockResolvedValue([{ _id: 'reviewer-busy', n: 3 }]);
+    mockPeerReviewCreate.mockResolvedValue(CREATED_REVIEW);
+    mockEngagementFindOneAndUpdate.mockResolvedValue(UPDATED_ENGAGEMENT);
+
+    await POST(makeRequest(), { params: makeParams(VALID_ID) });
+
+    expect(mockPeerReviewCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ reviewerId: 'reviewer-free' })
+    );
+  });
+
+  it('gives a resubmitted project a reader who has not already judged it', async () => {
+    mockEngagementFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(IN_PROGRESS_ENGAGEMENT) });
+    cohort([{ _id: 'reviewer-first-pass' }, { _id: 'reviewer-fresh' }]);
+    mockPeerReviewFind.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([{ reviewerId: 'reviewer-first-pass' }]),
+      }),
+    });
+    mockPeerReviewCreate.mockResolvedValue(CREATED_REVIEW);
+    mockEngagementFindOneAndUpdate.mockResolvedValue(UPDATED_ENGAGEMENT);
+
+    await POST(makeRequest(), { params: makeParams(VALID_ID) });
+
+    expect(mockPeerReviewCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ reviewerId: 'reviewer-fresh' })
     );
   });
 
@@ -159,7 +216,7 @@ describe('POST /api/education/engagements/[id]/submit', () => {
 
   it('returns 503 when no peer reviewer is available', async () => {
     mockEngagementFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(IN_PROGRESS_ENGAGEMENT) });
-    mockUserFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+    cohort([]);
 
     const res = await POST(makeRequest(), { params: makeParams(VALID_ID) });
     const body = await res.json() as { code: string };
@@ -170,7 +227,7 @@ describe('POST /api/education/engagements/[id]/submit', () => {
 
   it('returns 409 and cleans up the peer review when a race condition is detected', async () => {
     mockEngagementFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(IN_PROGRESS_ENGAGEMENT) });
-    mockUserFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(PEER_REVIEWER) });
+    cohort([PEER_REVIEWER]);
     mockPeerReviewCreate.mockResolvedValue(CREATED_REVIEW);
     mockEngagementFindOneAndUpdate.mockResolvedValue(null);
 

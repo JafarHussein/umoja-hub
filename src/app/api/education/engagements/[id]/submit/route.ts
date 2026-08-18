@@ -7,6 +7,7 @@ import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { notify } from '@/lib/notifications/notify';
 import { Role, ProjectStatus, PeerReviewStatus, UserStatus, NotificationType } from '@/types';
 import type { ProjectEngagementDoc } from '@/lib/models/ProjectEngagement.model';
+import { selectPeerReviewer } from '@/lib/education/peerReviewer';
 
 // ---------------------------------------------------------------------------
 // POST /api/education/engagements/[id]/submit — Submit project for peer review
@@ -67,12 +68,50 @@ export async function POST(
     }
 
     const { default: User } = await import('@/lib/models/User.model');
+    const { default: PeerReview } = await import('@/lib/models/PeerReview.model');
 
-    const reviewer = await User.findOne({
-      role: Role.STUDENT,
-      status: UserStatus.ACTIVE,
-      _id: { $ne: studentId },
-    }).lean();
+    // Ask this student's own cohort first. Reading a peer's work is more useful
+    // when the reader is studying alongside them, and it keeps the query bounded
+    // — but a student whose institution has nobody else must still be able to
+    // submit, so the search widens rather than failing.
+    const author = await User.findById(studentId).select('studentData.institutionId').lean();
+    const institutionId = author?.studentData?.institutionId;
+
+    const eligible = { role: Role.STUDENT, status: UserStatus.ACTIVE, _id: { $ne: studentId } };
+    let candidateDocs = institutionId
+      ? await User.find({ ...eligible, 'studentData.institutionId': institutionId } as object)
+          .select('_id')
+          .lean()
+      : [];
+    if (candidateDocs.length === 0) {
+      candidateDocs = await User.find(eligible as object)
+        .select('_id')
+        .lean();
+    }
+
+    // Outstanding assignments per candidate — the load the choice balances.
+    const candidateIds = candidateDocs.map((c) => c._id);
+    const openCounts = await PeerReview.aggregate<{ _id: mongoose.Types.ObjectId; n: number }>([
+      { $match: { reviewerId: { $in: candidateIds }, status: PeerReviewStatus.ASSIGNED } },
+      { $group: { _id: '$reviewerId', n: { $sum: 1 } } },
+    ]);
+    const openByReviewer = new Map(openCounts.map((row) => [String(row._id), row.n]));
+
+    // Whoever read an earlier revision of this project has already formed a view
+    // of it.
+    const previousReviewers = (
+      await PeerReview.find({ engagementId: id } as object)
+        .select('reviewerId')
+        .lean()
+    ).map((r) => String(r.reviewerId));
+
+    const reviewer = selectPeerReviewer({
+      candidates: candidateDocs.map((c) => ({
+        id: String(c._id),
+        openAssignments: openByReviewer.get(String(c._id)) ?? 0,
+      })),
+      excludeIds: previousReviewers,
+    });
 
     if (!reviewer) {
       throw new AppError(
@@ -82,11 +121,9 @@ export async function POST(
       );
     }
 
-    const { default: PeerReview } = await import('@/lib/models/PeerReview.model');
-
     const peerReview = await PeerReview.create({
       engagementId: id,
-      reviewerId: reviewer._id,
+      reviewerId: reviewer.id,
       status: PeerReviewStatus.ASSIGNED,
     });
 
@@ -111,7 +148,7 @@ export async function POST(
       requestId,
       engagementId: id,
       studentId,
-      reviewerId: String(reviewer._id),
+      reviewerId: reviewer.id,
       peerReviewId: String(peerReview._id),
     });
 
@@ -123,7 +160,7 @@ export async function POST(
       relatedEntity: { kind: 'ProjectEngagement', id },
     });
     void notify({
-      userId: String(reviewer._id),
+      userId: reviewer.id,
       type: NotificationType.REVIEW_UPDATE,
       title: 'You have a new peer review to complete',
       body: 'A fellow student has submitted a project for your review. Open your peer-review queue to read their work and give structured feedback.',

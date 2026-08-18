@@ -49,11 +49,30 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   const { default: VerificationAuditLog } = await import('../../../src/lib/models/VerificationAuditLog.model');
 
   const lecturerStats = new Map<string, LecturerStat>();
+  // Every institution's lecturers must open their queue and find work in it.
+  // Left to chance, a whole university's queue comes up empty — which is what
+  // the presenter would discover in front of the panel.
+  const institutionsWithQueuedWork = new Set<string>();
 
   for (const student of world.students) {
     const activity = activityFor(student.archetype);
     const tier = rng.pick([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]);
     let verifiedCount = 0;
+
+    // A lecturer may only review their own institution's students, so this
+    // student's work can only reach a review if their institution has a
+    // verified lecturer. Where it does not, their projects stay in the states
+    // before review rather than being judged by a stranger the application
+    // would never have shown the work to.
+    const faculty = world.lecturers.filter(
+      (l) => l.institutionId && String(l.institutionId) === String(student.institutionId)
+    );
+
+    // Peers, in the order the application would choose them: a reader from the
+    // student's own cohort where one exists, anyone else where it does not.
+    const others = world.students.filter((s) => s.id !== student.id);
+    const cohort = others.filter((s) => String(s.institutionId) === String(student.institutionId));
+    const peerPool = cohort.length > 0 ? cohort : others;
 
     const n = rng.int(activity.engagements[0], activity.engagements[1]);
     for (let e = 0; e < n; e++) {
@@ -68,14 +87,18 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       // lecturer. That last state was never generated before, which is why the
       // review queue — the centrepiece of the lecturer's day — was structurally
       // empty in every demonstration.
-      const reviewable = student.archetype !== 'new' && rng.bool(0.85);
+      const reviewable = faculty.length > 0 && student.archetype !== 'new' && rng.bool(0.85);
+      const institutionKey = String(student.institutionId);
+      const firstForInstitution =
+        faculty.length > 0 && !institutionsWithQueuedWork.has(institutionKey);
       let decision: string | null = null;
       let awaitingLecturer = false;
       if (reviewable) {
-        if (rng.bool(0.22)) awaitingLecturer = true;
+        if (firstForInstitution || rng.bool(0.22)) awaitingLecturer = true;
         else if (rng.bool(activity.verifyRate)) decision = LecturerDecision.VERIFIED;
         else decision = rng.bool(0.8) ? LecturerDecision.REVISION_REQUIRED : LecturerDecision.DENIED;
       }
+      if (awaitingLecturer) institutionsWithQueuedWork.add(institutionKey);
 
       const pbAt = daysAfter(startedAt, rng.int(1, 4));
       const apAt = daysAfter(pbAt, rng.int(1, 3));
@@ -122,7 +145,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
 
       // Peer review by a different student. It is submitted in both cases —
       // an engagement only reaches a lecturer once a peer has read it.
-      const reviewer = rng.pick(world.students.filter((s) => s.id !== student.id));
+      const reviewer = rng.pick(peerPool);
       const peerGood = rng.bool(0.7);
       const peer = ledger.track('PeerReview', await createDoc(PeerReview, {
         engagementId: engagement._id, reviewerId: reviewer.id, submittedAt: peerAt,
@@ -146,7 +169,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       // recorded — the immutable audit entry, the lecturer's effectiveness, and
       // the student's notification.
       const reviewPass = async (revisionNumber: number, passDecision: string, at: Date): Promise<void> => {
-        const lecturer = rng.pick(world.lecturers);
+        const lecturer = rng.pick(faculty);
         const passVerified = passDecision === LecturerDecision.VERIFIED;
         const baseLo = passVerified ? 3 : passDecision === LecturerDecision.DENIED ? 1 : 2;
         const baseHi = passVerified ? 5 : passDecision === LecturerDecision.DENIED ? 3 : 4;
@@ -219,7 +242,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       if (decision === LecturerDecision.REVISION_REQUIRED && rng.bool(0.5)) {
         const resumedAt = daysAfter(lecAt, rng.int(1, 4));
         const rePeerAt = daysAfter(resumedAt, rng.int(4, 12));
-        const reReviewer = rng.pick(world.students.filter((s) => s.id !== student.id));
+        const reReviewer = rng.pick(peerPool);
         const rePeer = ledger.track('PeerReview', await createDoc(PeerReview, {
           engagementId: engagement._id, reviewerId: reReviewer.id, submittedAt: rePeerAt,
           status: PeerReviewStatus.SUBMITTED,
