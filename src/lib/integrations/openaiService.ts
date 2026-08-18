@@ -7,6 +7,8 @@
 import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
 import { StudentTier } from '@/types';
+import { aiBriefSchema, openSourceBriefSchema } from '@/lib/education/brief';
+import type { AIBrief, OpenSourceBrief } from '@/lib/education/brief';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = 'gpt-4o-mini';
@@ -29,28 +31,11 @@ interface OpenAIResponse {
 // Public brief types — stored as ProjectEngagement.brief (Mixed field)
 // ---------------------------------------------------------------------------
 
-export interface GeneratedAIBrief {
-  title: string;
-  clientPersona: {
-    businessType: string;
-    county: string;
-    context: string;
-  };
-  problemStatement: string;
-  coreRequirements: string[];
-  technicalConstraints: string[];
-  kenyanContextConstraints: string[];
-  deliverables: string[];
-  suggestedTechStack: string[];
-  estimatedComplexity: 'LOW' | 'MEDIUM' | 'HIGH';
-}
-
-export interface GeneratedOpenSourceBrief {
-  repoUrl: string;
-  repoName: string;
-  contributionGoal: string;
-  proposedApproach: string;
-}
+// The canonical brief contract lives in `@/lib/education/brief` and is shared
+// by this service, the demo seeder and the workspace that renders it. These
+// aliases keep existing importers working.
+export type GeneratedAIBrief = AIBrief;
+export type GeneratedOpenSourceBrief = OpenSourceBrief;
 
 // ---------------------------------------------------------------------------
 // BriefContextItem — mirrors BriefContextLibrary subdocument shape
@@ -168,21 +153,27 @@ Respond with exactly this JSON schema:
     { role: 'user', content: userPrompt },
   ]);
 
-  let brief: GeneratedAIBrief;
+  let raw: unknown;
   try {
-    brief = JSON.parse(content) as GeneratedAIBrief;
+    raw = JSON.parse(content);
   } catch {
     logger.error('openaiService', 'Failed to parse AI brief JSON', { content });
     throw new AppError('Brief generation returned malformed data.', 503, 'AI_SERVICE_ERROR');
   }
 
-  if (!brief.title || !brief.problemStatement || !Array.isArray(brief.coreRequirements)) {
-    logger.error('openaiService', 'AI brief missing required fields', { brief });
+  // Validated against the same schema the seeder writes and the workspace
+  // renders. A model response that does not conform is rejected here rather
+  // than persisted into a Mixed column for the UI to fall over later.
+  const parsed = aiBriefSchema.safeParse(raw);
+  if (!parsed.success) {
+    logger.error('openaiService', 'AI brief did not match the brief contract', {
+      issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
+    });
     throw new AppError('Brief generation returned incomplete data.', 503, 'AI_SERVICE_ERROR');
   }
 
   logger.info('openaiService', 'AI brief generated', { tier, industry: context?.industryName });
-  return brief;
+  return parsed.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,31 +192,41 @@ Always respond with a single valid JSON object — no markdown, no extra text.`;
   const userPrompt = `A student wants to contribute to: ${repoUrl} (${repoName}).
 Write a realistic contribution plan. Respond with exactly this JSON schema:
 {
-  "repoUrl": "${repoUrl}",
-  "repoName": "${repoName}",
+  "title": "string — a short name for the contribution",
   "contributionGoal": "string — 1-2 sentences on what kind of contribution to make",
   "proposedApproach": "string — 2-3 sentences on finding an issue and making the contribution"
 }`;
 
-  try {
-    const content = await callOpenAI([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]);
+  const content = await callOpenAI([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
 
-    const brief = JSON.parse(content) as GeneratedOpenSourceBrief;
-    return { ...brief, repoUrl, repoName };
-  } catch (error) {
-    logger.warn('openaiService', 'OpenSourceBrief generation failed — using fallback', {
-      repoName,
-      error,
-    });
-    return {
-      repoUrl,
-      repoName,
-      contributionGoal: `Contribute a meaningful improvement to ${repoName} by fixing a bug or implementing a small feature.`,
-      proposedApproach:
-        'Browse open issues labelled "good first issue" or "help wanted". Fork the repo, implement the fix on a feature branch, and open a pull request with a clear description of the changes.',
-    };
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    logger.error('openaiService', 'Failed to parse open-source brief JSON', { repoName });
+    throw new AppError('Brief generation returned malformed data.', 503, 'AI_SERVICE_ERROR');
   }
+
+  // There used to be a fallback here that returned a generic paragraph about
+  // looking for "good first issue" labels. It was indistinguishable from a real
+  // plan, so a student could be handed boilerplate believing it had been
+  // written for their repository. Failing honestly is better than that: the
+  // route surfaces a 503 and the student can try again.
+  const parsed = openSourceBriefSchema.safeParse({
+    ...(raw as Record<string, unknown>),
+    repoUrl,
+    repoName,
+  });
+  if (!parsed.success) {
+    logger.error('openaiService', 'Open-source brief did not match the brief contract', {
+      repoName,
+      issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
+    });
+    throw new AppError('Brief generation returned incomplete data.', 503, 'AI_SERVICE_ERROR');
+  }
+
+  return parsed.data;
 }

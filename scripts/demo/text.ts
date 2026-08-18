@@ -103,27 +103,100 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function aiBrief(rng: Rng, title: string, tier: string): Record<string, unknown> {
+// Briefs are written to the ONE canonical contract in src/lib/education/brief.ts
+// — the same schema the OpenAI service must satisfy and the student workspace
+// renders. They disagreed before, and the cost was a workspace that crashed on
+// every seeded project: the seeder wrote `clientPersona` as a string and no
+// `estimatedComplexity` at all, while the page read `clientPersona.businessType`
+// and called `.toLowerCase()` on the complexity. Anything added here must keep
+// `aiBriefSchema.safeParse` passing; `npm run demo:validate` now checks it.
+const CLIENT_PERSONAS: { businessType: string; county: string; context: string }[] = [
+  {
+    businessType: 'Agribusiness cooperative',
+    county: 'Nakuru',
+    context:
+      'Coordinates deliveries from about 300 smallholder members and reconciles their payments by hand every week.',
+  },
+  {
+    businessType: 'County health office',
+    county: 'Machakos',
+    context:
+      'Runs eleven clinics whose stock and patient visit records are kept in paper registers at each site.',
+  },
+  {
+    businessType: 'SACCO',
+    county: 'Nairobi',
+    context:
+      'Serves boda-boda riders with daily loan repayments that are currently tracked in a spreadsheet.',
+  },
+  {
+    businessType: 'Secondary school',
+    county: 'Kisumu',
+    context:
+      'Manages fee statements, results and parent communication across 1,200 students with no central system.',
+  },
+  {
+    businessType: 'Matatu sacco',
+    county: 'Kiambu',
+    context:
+      'Operates 40 vehicles and cannot tell which routes are profitable without collating handwritten daily returns.',
+  },
+  {
+    businessType: 'Agrodealer',
+    county: 'Eldoret',
+    context: 'Two branches whose seed and fertiliser stock is counted manually at the end of each week.',
+  },
+];
+
+const COMPLEXITY_BY_TIER: Record<string, 'LOW' | 'MEDIUM' | 'HIGH'> = {
+  BEGINNER: 'LOW',
+  INTERMEDIATE: 'MEDIUM',
+  ADVANCED: 'HIGH',
+};
+
+export function aiBrief(
+  rng: Rng,
+  title: string,
+  tier: string,
+  stack: string[] = []
+): Record<string, unknown> {
+  const persona = rng.pick(CLIENT_PERSONAS);
   return {
     title,
-    tier,
-    clientPersona: rng.pick([
-      'A Nairobi-based agribusiness coordinating smallholder supply',
-      'A county health office digitising clinic operations',
-      'A SACCO serving boda-boda riders',
-      'A rural agrodealer struggling with paper stock records',
-    ]),
-    problemStatement: `Design and build a working solution for: ${title}. The client needs something usable on low-end Android phones and patchy connectivity.`,
-    constraints: [
-      'Must work on intermittent 3G connectivity',
-      'M-Pesa is the only viable payment rail',
-      'Users have low digital literacy',
+    clientPersona: persona,
+    problemStatement: `${persona.context} They need a working system for: ${title}. It has to be usable on low-end Android phones over an intermittent connection.`,
+    coreRequirements: [
+      'Record the core entities the client works with, with validation',
+      'Authenticate users and separate what each role may see',
+      'Produce the weekly summary the client currently compiles by hand',
+      'Work correctly when the connection drops mid-operation',
+      'Expose the data through an API the client can integrate with later',
+    ],
+    technicalConstraints: [
+      'Must run acceptably on a low-end Android device over 3G',
+      'No paid third-party service may be required to operate it',
+    ],
+    kenyanContextConstraints: [
+      'M-Pesa is the only payment rail the client and their users have',
+      'Users have low digital literacy — the flow must survive being got wrong',
     ],
     deliverables: [
-      'A deployed, working prototype',
-      'A short architecture write-up',
-      'A reflection on trade-offs made',
+      'A deployed, working system',
+      'A short architecture write-up covering the data model and the API',
+      'A reflection on the trade-offs made',
     ],
+    suggestedTechStack: stack.length > 0 ? stack : ['Node.js', 'MongoDB', 'React'],
+    estimatedComplexity: COMPLEXITY_BY_TIER[tier] ?? 'MEDIUM',
+  };
+}
+
+export function openSourceBrief(repoUrl: string, repoName: string): Record<string, unknown> {
+  return {
+    title: `Contribute to ${repoName}`,
+    repoUrl,
+    repoName,
+    contributionGoal: `Land a reviewed change in ${repoName} — a bug fix or a small feature that the maintainers accept.`,
+    proposedApproach: `Read the contributing guide and reproduce an open issue locally before changing anything. Work on a branch, keep the change small enough to review, and open a pull request that explains the problem and the reasoning behind the fix.`,
   };
 }
 

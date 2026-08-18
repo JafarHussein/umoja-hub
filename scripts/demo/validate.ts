@@ -21,6 +21,9 @@ import {
   OrderFulfillmentStatus,
   EscrowEventType,
   FarmerTrustTier,
+  ProjectTrack,
+  ProjectStatus,
+  PeerReviewStatus,
 } from '../../src/types';
 
 interface Check {
@@ -357,6 +360,67 @@ export async function validate(): Promise<boolean> {
     'every listing is priced in its trading unit, within the Kenyan market band',
     offPrice.length === 0,
     `${offPrice.length} out of band`
+  );
+
+  // ---- Education Hub ----
+  // The brief is a Mixed column, so Mongoose validates nothing about it. It is
+  // checked here against the one contract the app renders — the disagreement
+  // between seeder and app is what crashed the student workspace on every
+  // seeded project, silently, while every other check passed.
+  const { default: ProjectEngagement } = await import('../../src/lib/models/ProjectEngagement.model');
+  const { default: PeerReview } = await import('../../src/lib/models/PeerReview.model');
+  const { default: LecturerReview } = await import('../../src/lib/models/LecturerReview.model');
+  const { isValidBrief } = await import('../../src/lib/education/brief');
+
+  const engagementIds = idsOf('ProjectEngagement');
+  const engagements = await ProjectEngagement.find({ _id: { $in: engagementIds } })
+    .select('track status brief peerReviewId')
+    .lean();
+  const badBriefs = engagements.filter((e) => !isValidBrief(e.track as ProjectTrack, e.brief));
+  ok(
+    'every engagement brief matches the brief contract',
+    badBriefs.length === 0,
+    `${engagements.length - badBriefs.length}/${engagements.length} valid`
+  );
+
+  // A queue with nothing in it cannot be demonstrated, and the lecturer review
+  // is the centrepiece of the Hub.
+  const queued = engagements.filter((e) => e.status === ProjectStatus.UNDER_LECTURER_REVIEW);
+  ok('the lecturer review queue has work in it', queued.length > 0, `${queued.length} awaiting review`);
+
+  const queuedIds = queued.map((e) => e._id);
+  const queuedWithPeer = queued.filter((e) => Boolean(e.peerReviewId)).length;
+  ok(
+    'every queued engagement has been through peer review',
+    queuedWithPeer === queued.length,
+    `${queuedWithPeer}/${queued.length}`
+  );
+  const submittedPeer = await PeerReview.countDocuments({
+    engagementId: { $in: queuedIds },
+    status: PeerReviewStatus.SUBMITTED,
+  });
+  ok(
+    'the peer review on a queued engagement is submitted, not just assigned',
+    submittedPeer === queued.length,
+    `${submittedPeer}/${queued.length} submitted`
+  );
+  const prematureReviews = await LecturerReview.countDocuments({ engagementId: { $in: queuedIds } });
+  ok(
+    'nothing awaiting review has already been judged',
+    prematureReviews === 0,
+    `${prematureReviews} contradictions`
+  );
+
+  // Nothing may display commit evidence: the platform has no GitHub API
+  // integration, so any commit count on screen would have been invented here.
+  const fabricatedCommits = await ProjectEngagement.countDocuments({
+    _id: { $in: engagementIds },
+    'githubSnapshot.commitCount': { $gt: 0 },
+  } as object);
+  ok(
+    'no engagement claims commit evidence the platform cannot gather',
+    fabricatedCommits === 0,
+    `${fabricatedCommits} fabricated snapshots`
   );
 
   // ---- No placeholder text ----

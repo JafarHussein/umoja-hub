@@ -470,6 +470,21 @@ export const PROJECT_TITLES: string[] = [
   'School fees payment and statement portal',
 ];
 
+// Repositories a Kenyan CS student could realistically contribute to — every
+// one of them real, public and active. The open-source track records a URL the
+// student supplies and never verifies it, so seeding invented repositories put
+// unreachable links on screen. These resolve.
+export const OSS_REPOSITORIES: { name: string; url: string }[] = [
+  { name: 'ushahidi/platform', url: 'https://github.com/ushahidi/platform' },
+  { name: 'openmrs/openmrs-core', url: 'https://github.com/openmrs/openmrs-core' },
+  { name: 'dhis2/dhis2-core', url: 'https://github.com/dhis2/dhis2-core' },
+  { name: 'apache/fineract', url: 'https://github.com/apache/fineract' },
+  { name: 'dimagi/commcare-hq', url: 'https://github.com/dimagi/commcare-hq' },
+  { name: 'openstreetmap/iD', url: 'https://github.com/openstreetmap/iD' },
+  { name: 'frappe/erpnext', url: 'https://github.com/frappe/erpnext' },
+  { name: 'fastapi/fastapi', url: 'https://github.com/fastapi/fastapi' },
+];
+
 export const STUDENT_INTERESTS: string[] = [
   'Full-stack web development', 'Mobile app development', 'Data engineering',
   'FinTech', 'AgriTech', 'DevOps', 'AI/ML', 'Backend systems',

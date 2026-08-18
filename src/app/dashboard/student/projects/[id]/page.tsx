@@ -15,27 +15,7 @@ import type { DocumentType, IProcessDocument } from '@/components/education/Docu
 import type { IBlockerEntry } from '@/components/education/BlockersTab';
 import type { IAIUsageEntry } from '@/components/education/AIUsageTab';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
-
-// ── Brief type definitions ────────────────────────────────────────────────────
-
-interface IAIBrief {
-  title: string;
-  clientPersona: { businessType: string; county: string; context: string };
-  problemStatement: string;
-  coreRequirements: string[];
-  technicalConstraints: string[];
-  kenyanContextConstraints: string[];
-  deliverables: string[];
-  suggestedTechStack: string[];
-  estimatedComplexity: 'LOW' | 'MEDIUM' | 'HIGH';
-}
-
-interface IOpenSourceBrief {
-  repoUrl: string;
-  repoName: string;
-  contributionGoal: string;
-  proposedApproach: string;
-}
+import { normalizeBrief, type NormalizedBrief } from '@/lib/education/brief';
 
 // ── Engagement type ───────────────────────────────────────────────────────────
 
@@ -136,105 +116,75 @@ function BulletList({ items }: { items: string[] }): React.ReactElement {
   );
 }
 
-// ── AI Brief card ─────────────────────────────────────────────────────────────
+// ── Brief card ────────────────────────────────────────────────────────────────
 
-function AIBriefCard({ brief }: { brief: IAIBrief }): React.ReactElement {
+// One card for every track and every vintage of stored brief. It renders a
+// normalized view rather than the raw Mixed column: two shapes of brief already
+// exist in the database, and reading the raw object is exactly what made this
+// page crash for every seeded student.
+function BriefCard({ brief }: { brief: NormalizedBrief }): React.ReactElement {
   return (
     <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
       <div>
-        <p className="app-label mb-1 text-app-muted">Brief</p>
+        <p className="app-label mb-1 text-app-muted">
+          {brief.kind === 'open-source' ? 'Open-source brief' : 'Brief'}
+        </p>
         <h2 className="app-h2 text-app-ink">{brief.title}</h2>
       </div>
 
-      <div className="space-y-0">
-        <div className="flex items-start justify-between border-b border-app-hairline py-2.5">
-          <span className="app-body mr-4 flex-shrink-0 text-app-muted">Client</span>
-          <span className="app-body text-right text-app-ink">
-            {brief.clientPersona.businessType} · {brief.clientPersona.county}
-          </span>
-        </div>
-        <div className="flex items-start justify-between border-b border-app-hairline py-2.5">
-          <span className="app-body mr-4 flex-shrink-0 text-app-muted">Complexity</span>
-          <span
-            className={cn(
-              'app-label inline-flex items-center rounded-app-pill px-2 py-0.5 capitalize',
-              COMPLEXITY_PILL[brief.estimatedComplexity]
-            )}
-          >
-            {brief.estimatedComplexity.toLowerCase()}
-          </span>
-        </div>
-      </div>
-
-      <div>
-        <p className="app-label mb-1.5 text-app-muted">Problem statement</p>
-        <p className="app-body leading-relaxed text-app-muted">{brief.problemStatement}</p>
-      </div>
-
-      {brief.coreRequirements.length > 0 && (
-        <div>
-          <p className="app-label mb-1.5 text-app-muted">Core requirements</p>
-          <BulletList items={brief.coreRequirements} />
-        </div>
+      {brief.degraded && (
+        <Alert tone="warning">
+          Part of this brief was written before the current format and could not be read. Everything
+          the record does hold is shown below.
+        </Alert>
       )}
 
-      {brief.deliverables.length > 0 && (
-        <div>
-          <p className="app-label mb-1.5 text-app-muted">Deliverables</p>
-          <BulletList items={brief.deliverables} />
-        </div>
-      )}
-
-      {brief.suggestedTechStack.length > 0 && (
-        <div>
-          <p className="app-label mb-1.5 text-app-muted">Suggested stack</p>
-          <div className="flex flex-wrap gap-1.5">
-            {brief.suggestedTechStack.map((tech) => (
+      {(brief.facts.length > 0 || brief.complexity !== null) && (
+        <div className="space-y-0">
+          {brief.facts.map((fact) => (
+            <div
+              key={fact.label}
+              className="flex items-start justify-between border-b border-app-hairline py-2.5"
+            >
+              <span className="app-body mr-4 flex-shrink-0 text-app-muted">{fact.label}</span>
+              <span className="app-body text-right text-app-ink">{fact.value}</span>
+            </div>
+          ))}
+          {brief.complexity !== null && (
+            <div className="flex items-start justify-between border-b border-app-hairline py-2.5">
+              <span className="app-body mr-4 flex-shrink-0 text-app-muted">Complexity</span>
               <span
-                key={tech}
-                className="app-label rounded-app-pill border border-app-hairline bg-app-sunken px-2 py-0.5 text-app-muted"
+                className={cn(
+                  'app-label inline-flex items-center rounded-app-pill px-2 py-0.5 capitalize',
+                  COMPLEXITY_PILL[brief.complexity]
+                )}
               >
-                {tech}
+                {brief.complexity.toLowerCase()}
               </span>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
-    </div>
-  );
-}
 
-// ── Open Source Brief card ────────────────────────────────────────────────────
+      {brief.summary && (
+        <div>
+          <p className="app-label mb-1.5 text-app-muted">
+            {brief.kind === 'open-source' ? 'Contribution goal' : 'Problem statement'}
+          </p>
+          <p className="app-body leading-relaxed text-app-muted">{brief.summary}</p>
+        </div>
+      )}
 
-function OpenSourceBriefCard({ brief }: { brief: IOpenSourceBrief }): React.ReactElement {
-  return (
-    <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
-      <div>
-        <p className="app-label mb-1 text-app-muted">Open Source Brief</p>
-        <h2 className="app-h2 text-app-ink">{brief.repoName}</h2>
-      </div>
-
-      <div className="flex items-center justify-between border-b border-app-hairline py-2.5">
-        <span className="app-body text-app-muted">Repository</span>
-        <a
-          href={brief.repoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="app-data-m text-app-brand transition-colors duration-150 hover:text-app-brand-hover"
-        >
-          {brief.repoUrl.replace('https://github.com/', '')}
-        </a>
-      </div>
-
-      <div>
-        <p className="app-label mb-1.5 text-app-muted">Contribution goal</p>
-        <p className="app-body leading-relaxed text-app-muted">{brief.contributionGoal}</p>
-      </div>
-
-      <div>
-        <p className="app-label mb-1.5 text-app-muted">Proposed approach</p>
-        <p className="app-body leading-relaxed text-app-muted">{brief.proposedApproach}</p>
-      </div>
+      {brief.sections.map((s) => (
+        <div key={s.heading}>
+          <p className="app-label mb-1.5 text-app-muted">{s.heading}</p>
+          {s.items.length === 1 ? (
+            <p className="app-body leading-relaxed text-app-muted">{s.items[0]}</p>
+          ) : (
+            <BulletList items={s.items} />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -456,12 +406,8 @@ export default function ProjectWorkspacePage(): React.ReactElement {
     );
   }
 
-  const isAIBrief = engagement.track === ProjectTrack.AI_BRIEF;
-  const brief = engagement.brief;
-
-  const briefTitle = isAIBrief
-    ? ((brief as Partial<IAIBrief>).title ?? engagement.track)
-    : ((brief as Partial<IOpenSourceBrief>).repoName ?? engagement.track);
+  const brief = normalizeBrief(engagement.track, engagement.brief);
+  const briefTitle = brief.title;
 
   const tabsUnlocked = engagement.status !== ProjectStatus.BRIEF_GENERATED;
 
@@ -489,11 +435,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         {/* Left — brief + workspace tabs */}
         <div className="space-y-6 md:col-span-8">
           {/* Brief card */}
-          {isAIBrief ? (
-            <AIBriefCard brief={brief as unknown as IAIBrief} />
-          ) : (
-            <OpenSourceBriefCard brief={brief as unknown as IOpenSourceBrief} />
-          )}
+          <BriefCard brief={brief} />
 
           {/* Workspace tabs */}
           <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
