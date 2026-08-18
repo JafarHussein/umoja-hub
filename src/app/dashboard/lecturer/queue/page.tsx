@@ -146,7 +146,7 @@ export default function LecturerQueuePage(): React.ReactElement {
     <Page>
       <PageHeader
         title="Pending Reviews"
-        description="Projects that have cleared peer review and are waiting on your decision. Your verdict is what turns a student's work into something an employer can trust, so nothing publishes until you have read it."
+        description="Projects that have cleared peer review and are waiting on your reading. This is where a student finds out whether the engineering holds up — and what to do about it where it does not."
         meta={
           queue.length > 0 ? (
             <span>
