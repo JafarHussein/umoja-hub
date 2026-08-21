@@ -49,7 +49,9 @@ export const briefRequestSchema = z.object({
 const trimmedList = (max: number, message: string) =>
   z.array(z.string().trim().min(3, message).max(300)).max(max);
 
-export const projectAssignmentSchema = z.object({
+// The rules, written once. Both schemas below are built from these, and the
+// defaults are added only where they belong — see the note on editing.
+const assignmentFields = {
   title: z.string().trim().min(5, 'Give the project a name').max(140),
   problemStatement: z
     .string()
@@ -58,8 +60,8 @@ export const projectAssignmentSchema = z.object({
     .max(2000),
   coreRequirements: trimmedList(12, 'Each requirement needs a few words')
     .min(1, 'Say what has to be built'),
-  deliverables: trimmedList(10, 'Each deliverable needs a few words').default([]),
-  technicalConstraints: trimmedList(10, 'Each constraint needs a few words').default([]),
+  deliverables: trimmedList(10, 'Each deliverable needs a few words'),
+  technicalConstraints: trimmedList(10, 'Each constraint needs a few words'),
   knowledgeAreas: z
     .array(z.enum(Object.values(KnowledgeArea) as [KnowledgeArea, ...KnowledgeArea[]]))
     .min(1, 'Say which subjects this project exercises')
@@ -67,13 +69,38 @@ export const projectAssignmentSchema = z.object({
   targetYear: z.number().int().min(1).max(MAX_PROGRAMME_YEARS),
   targetSemester: z.number().int().min(1).max(MAX_SEMESTERS_PER_YEAR),
   audience: z.enum([AssignmentAudience.COHORT, AssignmentAudience.NAMED]),
-  assignedStudentIds: z.array(objectId).max(60).default([]),
+  assignedStudentIds: z.array(objectId).max(60),
   capacity: z.number().int().min(1).max(200).optional(),
   status: z.enum([AssignmentStatus.DRAFT, AssignmentStatus.OPEN, AssignmentStatus.CLOSED]),
+};
+
+export const projectAssignmentSchema = z.object({
+  ...assignmentFields,
+  // A project written without deliverables has none, and a cohort offer names
+  // nobody. On the way in, absent genuinely does mean empty.
+  deliverables: assignmentFields.deliverables.default([]),
+  technicalConstraints: assignmentFields.technicalConstraints.default([]),
+  assignedStudentIds: assignmentFields.assignedStudentIds.default([]),
 });
 
-/** Editing an existing project — every field optional, same rules. */
-export const projectAssignmentUpdateSchema = projectAssignmentSchema.partial();
+/**
+ * Editing an existing project — every field optional, same rules, and
+ * deliberately *not* `projectAssignmentSchema.partial()`.
+ *
+ * `.partial()` makes a field optional but leaves its default in place, so a
+ * request carrying nothing but `{ status: 'CLOSED' }` parsed into four keys:
+ * the status the lecturer sent, plus empty deliverables, empty constraints and
+ * an empty student list they never mentioned. Two things followed. Closing an
+ * offer counted as rewriting the brief, so a lecturer could not withdraw a
+ * project once anybody had started it — the one escape hatch the refusal
+ * itself points them to. And any small edit to an untaken project silently
+ * cleared its deliverables and constraints, and un-named every student on a
+ * named project, which is what makes such a project visible at all.
+ *
+ * On the way in an absent list means an empty one; on the way through an edit
+ * it means "leave this alone", and the two must not share a schema.
+ */
+export const projectAssignmentUpdateSchema = z.object(assignmentFields).partial();
 
 export type ProjectAssignmentInput = z.infer<typeof projectAssignmentSchema>;
 

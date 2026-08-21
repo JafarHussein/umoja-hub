@@ -48,6 +48,7 @@ interface IAssignment {
   targetYear: number;
   targetSemester: number;
   audience: AssignmentAudience;
+  assignedStudentIds?: string[];
   status: AssignmentStatus;
   capacity?: number;
   takenBy: number;
@@ -65,6 +66,26 @@ const STATUS_LABEL: Record<AssignmentStatus, string> = {
   [AssignmentStatus.OPEN]: 'Open — your students can take it up',
   [AssignmentStatus.CLOSED]: 'Closed — nobody new can take it up',
 };
+
+/** How many students a named project was written for. */
+function namedCount(a: IAssignment): number {
+  return a.assignedStudentIds?.length ?? 0;
+}
+
+/**
+ * What this project's status means for the people it was written for.
+ *
+ * "Your students can take it up" is true of a cohort offer and false of a named
+ * one, where exactly the people on it can and nobody else can see it at all.
+ */
+function statusLabel(a: IAssignment): string {
+  if (a.status === AssignmentStatus.OPEN && a.audience === AssignmentAudience.NAMED) {
+    return namedCount(a) === 1
+      ? 'Open — the student you named can take it up'
+      : 'Open — the students you named can take it up';
+  }
+  return STATUS_LABEL[a.status];
+}
 
 /** A textarea where each non-empty line is one item. */
 function LineList({
@@ -436,12 +457,18 @@ export default function LecturerProjectsPage(): React.ReactElement {
             <div className="flex items-start justify-between gap-6">
               <div className="min-w-0 space-y-1">
                 <p className="app-body-strong text-app-ink">{a.title}</p>
+                {/* Who it goes to, before what it covers. A named project
+                    ignores the year and semester entirely — printing them as
+                    though they decided anything would misdescribe the one rule
+                    that makes naming worth having. */}
                 <p className="app-meta text-app-muted">
-                  Year {a.targetYear}, semester {a.targetSemester} ·{' '}
-                  {a.knowledgeAreas.map((k) => KNOWLEDGE_AREAS[k]?.label ?? k).join(', ')}
+                  {a.audience === AssignmentAudience.NAMED
+                    ? `${namedCount(a)} named ${namedCount(a) === 1 ? 'student' : 'students'} — nobody else sees it`
+                    : `Year ${a.targetYear}, semester ${a.targetSemester}`}{' '}
+                  · {a.knowledgeAreas.map((k) => KNOWLEDGE_AREAS[k]?.label ?? k).join(', ')}
                 </p>
                 <p className="app-meta text-app-muted">
-                  {STATUS_LABEL[a.status]} · taken by {a.takenBy}
+                  {statusLabel(a)} · taken by {a.takenBy}
                   {a.capacity ? ` of ${a.capacity}` : ''}
                 </p>
               </div>

@@ -4,6 +4,7 @@
 // live route fully populates). All backdated and causally ordered.
 
 import crypto from 'crypto';
+import type mongoose from 'mongoose';
 import type { SimContext, World } from '../world';
 import { createDoc, pushNotification } from '../helpers';
 import { between, daysAgo, daysAfter } from '../clock';
@@ -36,6 +37,16 @@ function activityFor(archetype: string): StudentActivity {
     default: return { engagements: [0, 1], verifyRate: 0 }; // 'new'
   }
 }
+
+// How far along a student would plausibly be, used wherever the seeder has to
+// name one student rather than leave a guarantee to the dice.
+const ACTIVITY_RANK: Record<string, number> = {
+  prolific: 4,
+  high: 3,
+  average: 2,
+  revision: 1,
+  new: 0,
+};
 
 interface LecturerStat {
   total: number; verified: number; revision: number; denied: number;
@@ -190,26 +201,56 @@ export interface SeededAssignment {
   setBy: string;
 }
 
-// Work the lecturers set themselves. Every verified lecturer writes one, so a
-// demonstration can open any lecturer's account and find their own projects
-// there rather than an empty screen that has to be explained away.
+/** What the assignment pass hands the engagement pass. */
+interface SeededAssignments {
+  /** Every open cohort offer, by institution — how a student finds theirs. */
+  byInstitution: Map<string, SeededAssignment[]>;
+  /**
+   * The student who takes each offer up, by student id.
+   *
+   * Take-up is settled here rather than left to a coin toss in the engagement
+   * loop, and settled per project rather than per institution. Both mattered:
+   * an institution-wide guarantee was satisfied the moment any one of its
+   * lecturers had a student, which is how the demo world came to have every
+   * take-up sitting on generated lecturers while Dr Ndung'u — the account the
+   * presentation actually opens — showed four projects and nobody on any of
+   * them.
+   */
+  takeUp: Map<string, SeededAssignment>;
+}
+
+// Work the lecturers set themselves.
+//
+// A lecturer sets work for the semesters they teach, so each one writes the
+// projects aimed at the cohorts they actually have. Dealing a single project
+// per lecturer off a rotating list was the wrong shape: the year and semester
+// it targeted agreed with any given student's roughly one time in eight, so an
+// institution could hold a project no student it was written for would ever be
+// offered.
 async function generateAssignments(
   ctx: SimContext,
-  world: World
-): Promise<Map<string, SeededAssignment[]>> {
+  world: World,
+  academics: Map<string, StudentAcademics>
+): Promise<SeededAssignments> {
   const { ledger } = ctx;
   const { default: ProjectAssignment } = await import(
     '../../../src/lib/models/ProjectAssignment.model'
   );
 
   const byInstitution = new Map<string, SeededAssignment[]>();
+  // Which of the canonical projects an institution has already had written.
+  // Two lecturers at one university both writing "Clinic queue and referral
+  // tracker" is the same project offered twice by different people, which is
+  // not a thing a student should ever see on the list.
+  const spokenFor = new Map<string, Set<string>>();
 
-  for (let i = 0; i < world.lecturers.length; i++) {
-    const lecturer = world.lecturers[i]!;
-    if (!lecturer.institutionId) continue;
-    const source = LECTURER_PROJECTS[i % LECTURER_PROJECTS.length]!;
-    const createdAt = daysAfter(lecturer.joinedAt, 20);
-
+  const write = async (
+    lecturer: World['lecturers'][number],
+    source: (typeof LECTURER_PROJECTS)[number],
+    createdAt: Date,
+    audience: AssignmentAudience,
+    assignedStudentIds: mongoose.Types.ObjectId[]
+  ): Promise<SeededAssignment> => {
     const doc = ledger.track(
       'ProjectAssignment',
       await createDoc(ProjectAssignment, {
@@ -223,39 +264,114 @@ async function generateAssignments(
         knowledgeAreas: source.knowledgeAreas,
         targetYear: source.targetYear,
         targetSemester: source.targetSemester,
-        audience: AssignmentAudience.COHORT,
-        assignedStudentIds: [],
+        audience,
+        assignedStudentIds,
         status: AssignmentStatus.OPEN,
         createdAt,
         updatedAt: createdAt,
       })
     );
+    return { ...source, _id: doc._id, setBy: lecturer.fullName };
+  };
 
+  for (let i = 0; i < world.lecturers.length; i++) {
+    const lecturer = world.lecturers[i]!;
+    if (!lecturer.institutionId) continue;
     const key = String(lecturer.institutionId);
-    const list = byInstitution.get(key) ?? [];
-    list.push({
-      _id: doc._id,
-      title: source.title,
-      problemStatement: source.problemStatement,
-      coreRequirements: source.coreRequirements,
-      deliverables: source.deliverables,
-      technicalConstraints: source.technicalConstraints,
-      knowledgeAreas: source.knowledgeAreas,
-      targetYear: source.targetYear,
-      targetSemester: source.targetSemester,
-      setBy: lecturer.fullName,
-    });
-    byInstitution.set(key, list);
+    const createdAt = daysAfter(lecturer.joinedAt, 20);
+
+    const ownStudents = world.students.filter(
+      (s) => s.institutionId && String(s.institutionId) === key
+    );
+    const cohortOf = (id: unknown): string | null => {
+      const a = academics.get(String(id));
+      return a ? `${a.anchor.year}-${a.anchor.semester}` : null;
+    };
+    const cohorts = new Set(
+      ownStudents.map((s) => cohortOf(s.id)).filter((c): c is string => c !== null)
+    );
+
+    // Only the projects that reach somebody, and only the ones a colleague has
+    // not already set. Falling back to a rotation entry when nothing matched —
+    // which is what this did first — put an offer on the lecturer's screen
+    // aimed at a semester none of their students are in: it could never be
+    // accepted, and would sit there reading "0 students" for the length of the
+    // demonstration. The lecturer still has work on file in that case, because
+    // the named project below is written regardless.
+    const taken = spokenFor.get(key) ?? new Set<string>();
+    const written = LECTURER_PROJECTS.filter(
+      (p) => cohorts.has(`${p.targetYear}-${p.targetSemester}`) && !taken.has(p.title)
+    );
+    for (const p of written) taken.add(p.title);
+    spokenFor.set(key, taken);
+
+    const offers = byInstitution.get(key) ?? [];
+    for (const source of written) {
+      offers.push(await write(lecturer, source, createdAt, AssignmentAudience.COHORT, []));
+    }
+    byInstitution.set(key, offers);
+
+    // ---- One named project ----
+    // That a lecturer naming a student overrules every cohort filter is the
+    // strongest claim the feature makes, and nothing in the demo world
+    // exercised it. So each lecturer also names the student their open offers
+    // cannot reach — somebody out of step with the cohort, which is exactly the
+    // case a lecturer would reach for this for.
+    const outOfStep =
+      ownStudents.find((s) => {
+        const cohort = cohortOf(s.id);
+        return (
+          cohort !== null && !written.some((p) => `${p.targetYear}-${p.targetSemester}` === cohort)
+        );
+      }) ?? ownStudents.find((s) => cohortOf(s.id) !== null);
+
+    if (outOfStep) {
+      const spare =
+        LECTURER_PROJECTS.find((p) => !taken.has(p.title)) ??
+        LECTURER_PROJECTS[(i + 1) % LECTURER_PROJECTS.length]!;
+      // Deliberately kept out of `offers`: a named project is left open and
+      // untaken so a demonstration can show a student accepting one live.
+      await write(lecturer, spare, createdAt, AssignmentAudience.NAMED, [outOfStep.id]);
+    }
   }
 
-  return byInstitution;
+  // Who takes what up. One student per open offer — the most active one in the
+  // cohort it was aimed at, and a different student each time, so no lecturer
+  // is left with an offer nobody accepted while a colleague's has three.
+  const takeUp = new Map<string, SeededAssignment>();
+  const claimed = new Set<string>();
+  for (const [key, offers] of byInstitution) {
+    for (const offer of offers) {
+      const candidate = world.students
+        .filter((s) => s.institutionId && String(s.institutionId) === key)
+        .filter((s) => !claimed.has(String(s.id)))
+        .filter((s) => {
+          const a = academics.get(String(s.id));
+          return (
+            a !== undefined &&
+            a.anchor.year === offer.targetYear &&
+            a.anchor.semester === offer.targetSemester
+          );
+        })
+        .sort((a, b) => (ACTIVITY_RANK[b.archetype] ?? 0) - (ACTIVITY_RANK[a.archetype] ?? 0))[0];
+      if (!candidate) continue;
+      claimed.add(String(candidate.id));
+      takeUp.set(String(candidate.id), offer);
+    }
+  }
+
+  return { byInstitution, takeUp };
 }
 
 export async function generateEducation(ctx: SimContext, world: World): Promise<void> {
   const { rng, ledger, batcher } = ctx;
 
   const academics = await generateEnrolments(ctx, world);
-  const assignmentsByInstitution = await generateAssignments(ctx, world);
+  const { byInstitution: assignmentsByInstitution, takeUp } = await generateAssignments(
+    ctx,
+    world,
+    academics
+  );
 
   if (world.students.length < 2 || world.lecturers.length === 0) return;
 
@@ -278,13 +394,6 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   // lecturer opened an empty screen. So one student per institution is named in
   // advance — the most active one, who would plausibly be furthest along — and
   // their first project is queued regardless of how the dice fall.
-  const ACTIVITY_RANK: Record<string, number> = {
-    prolific: 4,
-    high: 3,
-    average: 2,
-    revision: 1,
-    new: 0,
-  };
   const queueGuarantor = new Map<string, string>();
   for (const student of world.students) {
     if (!student.institutionId) continue;
@@ -327,19 +436,27 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
 
     // A project their own lecturer set, aimed at the semester they are in.
     // Only the first engagement uses it: a student takes up an offer once.
-    const offered = (assignmentsByInstitution.get(String(student.institutionId)) ?? []).find(
-      (a) =>
-        a.targetYear === academic.anchor.year && a.targetSemester === academic.anchor.semester
-    );
+    // The one they were named for wins over merely the first that matches, so
+    // take-up spreads across the lecturers who set the work rather than piling
+    // onto whichever of them the seeder happened to write first.
+    const guaranteed = takeUp.get(String(student.id));
+    const offered =
+      guaranteed ??
+      (assignmentsByInstitution.get(String(student.institutionId)) ?? []).find(
+        (a) =>
+          a.targetYear === academic.anchor.year && a.targetSemester === academic.anchor.semester
+      );
 
-    // A guarantor must have at least one project, or there is nothing to queue.
+    // A guarantor must have at least one project, or there is nothing to queue —
+    // and the same holds for a student who is to take up their lecturer's work.
     const isGuarantor = queueGuarantor.get(String(student.institutionId)) === String(student.id);
     const drawn = rng.int(activity.engagements[0], activity.engagements[1]);
-    const n = isGuarantor ? Math.max(1, drawn) : drawn;
+    const n = isGuarantor || guaranteed ? Math.max(1, drawn) : drawn;
     for (let e = 0; e < n; e++) {
       const title = rng.pick(PROJECT_TITLES);
       const stack = rng.sample(TECH_STACKS, rng.int(2, 4));
-      const takesOffer = e === 0 && offered !== undefined && rng.bool(0.7);
+      const takesOffer =
+        e === 0 && offered !== undefined && (guaranteed !== undefined || rng.bool(0.7));
       const track = takesOffer
         ? ProjectTrack.LECTURER_ASSIGNED
         : rng.bool(0.6)

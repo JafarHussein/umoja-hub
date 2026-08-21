@@ -579,6 +579,160 @@ export async function validate(): Promise<boolean> {
     `${programmeCount} programmes, ${publishedUnitIds.size} units, ${unmappedUnits} unmapped`
   );
 
+// ---- Work a lecturer set ----
+  // The Hub's second way in. A generated brief is the platform's guess at what
+  // a student should build; a lecturer's project is the judgement of the person
+  // who teaches them, and none of it was checked before.
+  const { default: ProjectAssignment } = await import('../../src/lib/models/ProjectAssignment.model');
+  const { isEligible } = await import('../../src/lib/education/assignment');
+  const { AssignmentAudience, AssignmentStatus } = await import('../../src/types');
+
+  const assignments = await ProjectAssignment.find({
+    _id: { $in: idsOf('ProjectAssignment') },
+  } as object).lean();
+
+  const lecturersWithNoProjects = verifiedLecturers.filter(
+    (l) => !assignments.some((a) => String(a.lecturerId) === String(l._id))
+  );
+  ok(
+    'every verified lecturer has projects of their own on file',
+    lecturersWithNoProjects.length === 0,
+    lecturersWithNoProjects.length === 0
+      ? `${assignments.length} projects across ${verifiedLecturers.length} lecturers`
+      : `none set by ${lecturersWithNoProjects.map((l) => l.email).join(', ')}`
+  );
+
+  // An offer aimed at a semester none of that lecturer's students are in is an
+  // offer nobody can accept — the shape the seeder had before, where a single
+  // project was dealt per lecturer and matched roughly one student in eight.
+  const takenUp = engagements.filter((e) => e.track === ProjectTrack.LECTURER_ASSIGNED);
+  ok(
+    'students have taken up work their lecturers set',
+    takenUp.length > 0,
+    `${takenUp.length} of ${engagements.length} projects were set by a lecturer`
+  );
+
+  // A lecturer's words reach the student unaltered. No model may rewrite them,
+  // so the brief on the engagement must still be the project as written.
+  const assignmentById = new Map(assignments.map((a) => [String(a._id), a]));
+  const rewritten = takenUp.filter((e) => {
+    const brief = e.brief as
+      | { assignmentId?: string; problemStatement?: string; coreRequirements?: string[] }
+      | undefined;
+    const source = brief?.assignmentId ? assignmentById.get(String(brief.assignmentId)) : undefined;
+    return (
+      !source ||
+      source.problemStatement !== brief?.problemStatement ||
+      source.coreRequirements.join('\u0000') !== (brief?.coreRequirements ?? []).join('\u0000')
+    );
+  });
+  ok(
+    'every lecturer-set brief still reads exactly as the lecturer wrote it',
+    rewritten.length === 0,
+    `${takenUp.length - rewritten.length}/${takenUp.length} unaltered`
+  );
+
+  // A project can only be offered where its author teaches.
+  const lecturerInstitution = new Map(
+    verifiedLecturers.map((l) => [String(l._id), String(l.lecturerData?.institutionId ?? '')])
+  );
+  const misfiled = assignments.filter(
+    (a) => lecturerInstitution.get(String(a.lecturerId)) !== String(a.institutionId)
+  );
+  ok(
+    'every project is offered at the institution of the lecturer who set it',
+    misfiled.length === 0,
+    `${assignments.length - misfiled.length}/${assignments.length} correctly filed`
+  );
+
+  // The strongest rule the feature makes: naming a student overrules every
+  // cohort filter, and a named project is invisible to everybody else. Checked
+  // by running the application's own eligibility rule over every seeded
+  // student, which is the only way to know the two halves both hold.
+  const named = assignments.filter((a) => a.audience === AssignmentAudience.NAMED);
+  const contextByStudent = new Map(
+    enrolments.map((e) => [String(e.studentId), toAcademicContext(e)])
+  );
+  const namedFaults = named.filter((a) => {
+    const record = a as unknown as Parameters<typeof isEligible>[0];
+    const invited = (a.assignedStudentIds ?? []).map(String);
+    return seededStudentIds.some((id) => {
+      const studentId = String(id);
+      const eligible = isEligible(record, {
+        studentId,
+        institutionId: institutionOf.get(studentId),
+        academic: contextByStudent.get(studentId) ?? null,
+      });
+      // Eligible exactly when named: no wider, no narrower.
+      return eligible !== invited.includes(studentId);
+    });
+  });
+  ok(
+    'a named project reaches its student and nobody else',
+    named.length > 0 && namedFaults.length === 0,
+    named.length === 0
+      ? 'no named project exists to prove the rule with'
+      : `${named.length - namedFaults.length}/${named.length} correctly scoped`
+  );
+
+  // An offer still open that nobody can see is dead weight on the student's
+  // screen; every open project must reach at least one student.
+  const unreachable = assignments
+    .filter((a) => a.status === AssignmentStatus.OPEN)
+    .filter((a) => {
+      const record = a as unknown as Parameters<typeof isEligible>[0];
+      return !seededStudentIds.some((id) =>
+        isEligible(record, {
+          studentId: String(id),
+          institutionId: institutionOf.get(String(id)),
+          academic: contextByStudent.get(String(id)) ?? null,
+        })
+      );
+    });
+  ok(
+    'every open project reaches at least one student it was written for',
+    unreachable.length === 0,
+    unreachable.length === 0
+      ? `${assignments.length} projects`
+      : `${unreachable.length} offered to nobody: ${unreachable.map((a) => a.title).join('; ')}`
+  );
+
+  // Take-up per project, not merely somewhere in the world. A guarantee that
+  // only said "some lecturer-set work has been taken up" was satisfied while
+  // every single take-up sat on generated lecturers and Dr Ndung'u — the
+  // account a presentation actually signs into — showed four projects with
+  // nobody on any of them. Named projects are excluded: they are left open and
+  // untaken on purpose, so a student can be shown accepting one live.
+  const takenByAssignment = new Map<string, number>();
+  for (const e of takenUp) {
+    const id = (e.brief as { assignmentId?: string } | undefined)?.assignmentId;
+    if (id) takenByAssignment.set(String(id), (takenByAssignment.get(String(id)) ?? 0) + 1);
+  }
+  const cohortOffers = assignments.filter((a) => a.audience === AssignmentAudience.COHORT);
+  const unaccepted = cohortOffers.filter((a) => !takenByAssignment.get(String(a._id)));
+  ok(
+    'every project a lecturer set for their cohort has a student working on it',
+    unaccepted.length === 0,
+    unaccepted.length === 0
+      ? `${cohortOffers.length} cohort offers, all accepted`
+      : `${unaccepted.length} with nobody on them: ${unaccepted.map((a) => a.title).join('; ')}`
+  );
+
+  // The same project offered twice at one university, by two different
+  // lecturers, is one project a student sees on their list twice.
+  const seen = new Set<string>();
+  const duplicated = cohortOffers.filter((a) => {
+    const key = `${String(a.institutionId)}::${a.title}`;
+    if (seen.has(key)) return true;
+    seen.add(key);
+    return false;
+  });
+  ok(
+    'no institution offers the same project twice',
+    duplicated.length === 0,
+    `${duplicated.length} duplicates`
+  );
+
   // ---- No placeholder text ----
   // A guard against exactly the thing the demo must never show a panel.
   const placeholder = /lorem ipsum|TODO|FIXME|John Doe|Jane Smith|test test|xxx+|placeholder/i;
