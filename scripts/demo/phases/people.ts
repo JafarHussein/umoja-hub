@@ -364,7 +364,12 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
   for (let i = 0; i < 12; i++) {
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
-    const inst = rng.pick(world.institutions);
+    // Dealt round-robin, not picked at random. Twelve independent picks over
+    // four universities leaves one of them with almost nobody often enough to
+    // matter, and a university with no cohort is a lecturer with nothing to
+    // read — discovered in front of the panel rather than here. Which
+    // archetype a student is stays random; where they study does not.
+    const inst = world.institutions[i % world.institutions.length]!;
     const archetype = rng.weighted(STUDENT_ARCHETYPES);
     const joinedAt = joinDate(rng, 9);
     const email = makeEmail(p.name, last);

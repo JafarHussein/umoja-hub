@@ -79,6 +79,14 @@ interface IDeclaredUnit {
   areas: string[];
 }
 
+/** The record as it stands on the server, so the form can open on it. */
+interface ISavedEnrolment {
+  programmeId: string | null;
+  year: number;
+  semester: number;
+  unitIds: string[];
+}
+
 const TYPE_IT_OUT = 'SELF';
 
 const AREA_LABELS = ALL_KNOWLEDGE_AREAS.map((a) => KNOWLEDGE_AREAS[a].label);
@@ -106,6 +114,7 @@ export default function AcademicContextPage(): React.ReactElement {
   const [semester, setSemester] = useState(1);
   const [pickedUnitIds, setPickedUnitIds] = useState<string[]>([]);
   const [declaredUnits, setDeclaredUnits] = useState<IDeclaredUnit[]>([blankUnit()]);
+  const [saved, setSaved] = useState<ISavedEnrolment | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -121,15 +130,40 @@ export default function AcademicContextPage(): React.ReactElement {
 
       if (enrolmentRes.ok) {
         const body = (await enrolmentRes.json()) as {
-          data: { programmeId: string | null; context: IAcademicContext | null } | null;
+          data: {
+            programmeId: string | null;
+            currentUnitIds?: string[];
+            context: IAcademicContext | null;
+          } | null;
         };
-        if (body.data?.context) {
-          setContext(body.data.context);
-          setYear(body.data.context.currentYear);
-          setSemester(body.data.context.currentSemester);
-          setDiscipline(body.data.context.discipline);
-          if (body.data.programmeId) setProgrammeId(body.data.programmeId);
-          else setProgrammeName(body.data.context.programmeName);
+        const saved = body.data;
+        if (saved?.context) {
+          setContext(saved.context);
+          setYear(saved.context.currentYear);
+          setSemester(saved.context.currentSemester);
+          setDiscipline(saved.context.discipline);
+          // The form opens on the record the student already has. Opening blank
+          // meant that changing one unit meant retyping all of them, and a save
+          // from a half-filled form would quietly replace a good record.
+          setSaved({
+            programmeId: saved.programmeId,
+            year: saved.context.currentYear,
+            semester: saved.context.currentSemester,
+            unitIds: saved.currentUnitIds ?? [],
+          });
+          if (saved.programmeId) {
+            setProgrammeId(saved.programmeId);
+          } else {
+            setProgrammeName(saved.context.programmeName);
+            setDeclaredUnits(
+              saved.context.currentUnits.map((unit) => ({
+                key: crypto.randomUUID(),
+                code: unit.code ?? '',
+                title: unit.title,
+                areas: unit.areaLabels.filter((label) => AREA_BY_LABEL.has(label)),
+              }))
+            );
+          }
         }
       }
     } catch {
@@ -163,9 +197,16 @@ export default function AcademicContextPage(): React.ReactElement {
 
   // Moving to another year or semester invalidates the previous selection —
   // silently carrying it over would attach last semester's units to this one.
+  // Coming back to the semester already on record restores what was picked,
+  // rather than making the student rebuild their own answer.
   useEffect(() => {
-    setPickedUnitIds([]);
-  }, [programmeId, year, semester]);
+    const isSavedSemester =
+      saved !== null &&
+      saved.programmeId === programmeId &&
+      saved.year === year &&
+      saved.semester === semester;
+    setPickedUnitIds(isSavedSemester ? saved.unitIds : []);
+  }, [programmeId, year, semester, saved]);
 
   const maxYear = programme?.durationYears ?? MAX_PROGRAMME_YEARS;
   const maxSemester = programme?.semestersPerYear ?? 2;
@@ -238,6 +279,12 @@ export default function AcademicContextPage(): React.ReactElement {
       }
 
       if (body.data?.context) setContext(body.data.context);
+      setSaved({
+        programmeId: usingCurriculum ? programmeId : null,
+        year,
+        semester,
+        unitIds: usingCurriculum ? pickedUnitIds : [],
+      });
       setMessage({ tone: 'success', text: 'Saved. Your next project will be written from this.' });
     } catch {
       setMessage({ tone: 'danger', text: 'Network error. Check your connection and try again.' });

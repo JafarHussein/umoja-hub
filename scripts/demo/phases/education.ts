@@ -196,6 +196,38 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   // the presenter would discover in front of the panel.
   const institutionsWithQueuedWork = new Set<string>();
 
+  // The guarantee used to live inside `if (reviewable)`, which is decided by
+  // the same dice it exists to override: an institution whose students all came
+  // up 'new', or lost the 0.85 coin toss every time, never reached it and its
+  // lecturer opened an empty screen. So one student per institution is named in
+  // advance — the most active one, who would plausibly be furthest along — and
+  // their first project is queued regardless of how the dice fall.
+  const ACTIVITY_RANK: Record<string, number> = {
+    prolific: 4,
+    high: 3,
+    average: 2,
+    revision: 1,
+    new: 0,
+  };
+  const queueGuarantor = new Map<string, string>();
+  for (const student of world.students) {
+    if (!student.institutionId) continue;
+    const key = String(student.institutionId);
+    const hasFaculty = world.lecturers.some(
+      (l) => l.institutionId && String(l.institutionId) === key
+    );
+    if (!hasFaculty) continue;
+    const incumbent = queueGuarantor.get(key);
+    const incumbentRank = incumbent
+      ? (ACTIVITY_RANK[
+          world.students.find((s) => String(s.id) === incumbent)?.archetype ?? 'new'
+        ] ?? 0)
+      : -1;
+    if ((ACTIVITY_RANK[student.archetype] ?? 0) > incumbentRank) {
+      queueGuarantor.set(key, String(student.id));
+    }
+  }
+
   for (const student of world.students) {
     const activity = activityFor(student.archetype);
     const academic = academics.get(String(student.id));
@@ -217,7 +249,10 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
     const cohort = others.filter((s) => String(s.institutionId) === String(student.institutionId));
     const peerPool = cohort.length > 0 ? cohort : others;
 
-    const n = rng.int(activity.engagements[0], activity.engagements[1]);
+    // A guarantor must have at least one project, or there is nothing to queue.
+    const isGuarantor = queueGuarantor.get(String(student.institutionId)) === String(student.id);
+    const drawn = rng.int(activity.engagements[0], activity.engagements[1]);
+    const n = isGuarantor ? Math.max(1, drawn) : drawn;
     for (let e = 0; e < n; e++) {
       const title = rng.pick(PROJECT_TITLES);
       const stack = rng.sample(TECH_STACKS, rng.int(2, 4));
@@ -230,14 +265,16 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       // lecturer. That last state was never generated before, which is why the
       // review queue — the centrepiece of the lecturer's day — was structurally
       // empty in every demonstration.
-      const reviewable = faculty.length > 0 && student.archetype !== 'new' && rng.bool(0.85);
       const institutionKey = String(student.institutionId);
-      const firstForInstitution =
-        faculty.length > 0 && !institutionsWithQueuedWork.has(institutionKey);
+      const mustQueue =
+        isGuarantor && faculty.length > 0 && !institutionsWithQueuedWork.has(institutionKey);
+      const reviewable =
+        faculty.length > 0 &&
+        (mustQueue || (student.archetype !== 'new' && rng.bool(0.85)));
       let decision: string | null = null;
       let awaitingLecturer = false;
       if (reviewable) {
-        if (firstForInstitution || rng.bool(0.22)) awaitingLecturer = true;
+        if (mustQueue || rng.bool(0.22)) awaitingLecturer = true;
         else if (rng.bool(activity.verifyRate)) decision = LecturerDecision.VERIFIED;
         else decision = rng.bool(0.8) ? LecturerDecision.REVISION_REQUIRED : LecturerDecision.DENIED;
       }

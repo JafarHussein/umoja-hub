@@ -33,6 +33,11 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       data: {
         programmeId: enrolment.programmeId ? String(enrolment.programmeId) : null,
+        // The ids the student already picked, so the form opens on their own
+        // record rather than on a blank one they have to fill in again.
+        currentUnitIds: enrolment.currentUnits
+          .map((u) => (u.unitId ? String(u.unitId) : null))
+          .filter((id): id is string => id !== null),
         context: toAcademicContext(enrolment as EnrolmentRecord),
       },
     });
