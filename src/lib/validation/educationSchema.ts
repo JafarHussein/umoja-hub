@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProjectTrack, StudentTier, LecturerDecision, REVIEW_MIN_WORD_COUNT, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
+import { ProjectTrack, LecturerDecision, REVIEW_MIN_WORD_COUNT, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
 
 const countWords = (text: string): number =>
   text
@@ -9,7 +9,10 @@ const countWords = (text: string): number =>
 
 export const briefRequestSchema = z.object({
   track: z.enum([ProjectTrack.OPEN_SOURCE, ProjectTrack.AI_BRIEF]),
-  tier: z.enum([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]),
+  // The student's engineering interest — a filter over valid projects, not a
+  // difficulty dial. The difficulty tier this replaced was the one project
+  // origin the Hub's premise forbids.
+  interest: z.string().trim().min(2).max(60).optional(),
   githubRepoUrl: z.string().url('Must be a valid GitHub URL').optional(),
 });
 
@@ -121,9 +124,6 @@ const briefContextEntrySchema = z.object({
   problemDomains: z.array(z.string().min(1)),
   kenyanConstraints: z.array(z.string().min(1)),
   exampleProjects: z.array(z.string().min(1)),
-  targetTiers: z
-    .array(z.enum([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]))
-    .min(1, 'At least one target tier is required'),
 });
 
 export const briefContextLibraryUpdateSchema = z.object({

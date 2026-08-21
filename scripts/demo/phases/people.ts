@@ -36,7 +36,6 @@ import {
   OnboardingStage,
   VerificationStatus,
   DocumentType,
-  StudentTier,
   InstitutionType,
   SupplierInputCategory,
   SupplierVerificationStatus,
@@ -368,11 +367,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
     const inst = rng.pick(world.institutions);
     const archetype = rng.weighted(STUDENT_ARCHETYPES);
     const joinedAt = joinDate(rng, 9);
-    const tier = rng.weighted<string>([
-      [StudentTier.BEGINNER, 4],
-      [StudentTier.INTERMEDIATE, 3],
-      [StudentTier.ADVANCED, 2],
-    ]);
     const email = makeEmail(p.name, last);
     const domain = rng.pick(KENYAN_UNIVERSITIES.find((u) => u.name === inst.name)?.domains ?? ['students.uonbi.ac.ke']);
     const user = ledger.track(
@@ -392,7 +386,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         profilePhotoUrl: nextFace(p.gender),
         bio: `${rng.pick(STUDENT_INTERESTS)} student at ${inst.name}.`,
         studentData: {
-          currentTier: tier,
           techStackPreferences: rng.sample(TECH_STACKS, rng.int(2, 5)),
           universityAffiliation: inst.name,
           institutionId: inst.id,

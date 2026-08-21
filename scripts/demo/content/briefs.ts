@@ -4,7 +4,6 @@
 // scripts/seed.ts.
 
 import type mongoose from 'mongoose';
-import { StudentTier } from '../../../src/types';
 
 export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<string, unknown> {
   return {
@@ -46,7 +45,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'Input supply verification and counterfeit detection tool',
           'Cooperative group buying platform',
         ],
-        targetTiers: [StudentTier.BEGINNER, StudentTier.INTERMEDIATE],
       },
       {
         id: 'health-community',
@@ -78,7 +76,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'CHW patient visit and referral tracking app',
           'Community health commodity stock management system',
         ],
-        targetTiers: [StudentTier.INTERMEDIATE, StudentTier.ADVANCED],
       },
       {
         id: 'fintech-sme',
@@ -111,7 +108,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'SME invoice management and M-Pesa reconciliation tool',
           'SACCO member portal with loan application and tracking',
         ],
-        targetTiers: [StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED],
       },
       {
         id: 'edtech-secondary',
@@ -143,7 +139,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'CBC student portfolio and competency tracking system',
           'School resource library and lesson planning tool',
         ],
-        targetTiers: [StudentTier.BEGINNER, StudentTier.INTERMEDIATE],
       },
       {
         id: 'transport-logistics',
@@ -180,7 +175,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'Matatu route and capacity management system',
           'Cargo booking and tracking platform for SME logistics',
         ],
-        targetTiers: [StudentTier.INTERMEDIATE, StudentTier.ADVANCED],
       },
       {
         id: 'water-utilities',
@@ -216,7 +210,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'Mobile meter reading and billing platform',
           'Water leak report and repair tracking system',
         ],
-        targetTiers: [StudentTier.INTERMEDIATE, StudentTier.ADVANCED],
       },
       {
         id: 'tourism-hospitality',
@@ -253,7 +246,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'Safari lodge booking and operations management system',
           'Tour itinerary builder and guide scheduling platform',
         ],
-        targetTiers: [StudentTier.BEGINNER, StudentTier.INTERMEDIATE],
       },
       {
         id: 'waste-recycling',
@@ -290,7 +282,6 @@ export function briefContextLibrary(adminId: mongoose.Types.ObjectId): Record<st
           'Waste picker registration and M-Pesa payment platform',
           'Recyclable material marketplace and price discovery tool',
         ],
-        targetTiers: [StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED],
       },
     ],
   };

@@ -1,5 +1,4 @@
 import type {
-  StudentTier,
   ProjectTrack,
   ProjectStatus,
   LecturerDecision,
@@ -46,7 +45,8 @@ export interface IProjectEngagement {
   _id: string;
   studentId: string;
   track: ProjectTrack;
-  tier: StudentTier;
+  interest?: string;
+  industryName?: string;
   status: ProjectStatus;
   brief?: Record<string, unknown>;
   briefContextId?: string;
@@ -163,7 +163,6 @@ export interface IBriefContext {
   problemDomains: string[];
   kenyanConstraints: string[];
   exampleProjects: string[];
-  targetTiers: StudentTier[];
 }
 
 export interface IBriefContextLibrary {

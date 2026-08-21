@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { ProjectTrack, ProjectStatus, StudentTier } from '@/types';
+import { ProjectTrack, ProjectStatus } from '@/types';
 
 const processDocumentSchema = new Schema(
   {
@@ -46,7 +46,16 @@ const projectEngagementSchema = new Schema(
   {
     studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     track: { type: String, enum: Object.values(ProjectTrack), required: true },
-    tier: { type: String, enum: Object.values(StudentTier), required: true },
+    // The engineering interest the brief was shaped around, and the Kenyan
+    // problem domain it was set in. Both are recorded so the next project can
+    // move on rather than repeating: a degree spent in one industry is not the
+    // breadth this exists to give.
+    //
+    // A `tier` stood here — a difficulty the student picked for themselves, and
+    // the only thing besides the track that decided what they were given. It is
+    // gone: the units decide what the work must exercise.
+    interest: { type: String, trim: true },
+    industryName: { type: String, trim: true },
     status: {
       type: String,
       enum: Object.values(ProjectStatus),
@@ -91,7 +100,8 @@ projectEngagementSchema.set('toJSON', {
 export interface ProjectEngagementDoc {
   studentId: mongoose.Types.ObjectId;
   track: string;
-  tier: string;
+  interest?: string;
+  industryName?: string;
   status: string;
   brief?: Record<string, unknown>;
   briefContextId?: mongoose.Types.ObjectId;

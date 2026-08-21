@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Role, ProjectTrack, StudentTier } from '@/types';
+import { Role, ProjectTrack } from '@/types';
 import {
   Button,
   Card,
+  EmptyState,
   Form,
   FormActions,
   FormSection,
@@ -31,17 +32,21 @@ const TRACK_LABEL: Record<ProjectTrack, string> = {
 };
 
 const TRACK_HINT: Record<ProjectTrack, string> = {
-  [ProjectTrack.AI_BRIEF]: 'Receive an AI-generated client brief tailored to your tier.',
-  [ProjectTrack.OPEN_SOURCE]: 'Contribute to a real open-source GitHub repository.',
+  [ProjectTrack.AI_BRIEF]:
+    'A brief written for a real Kenyan client, against the units you are taking now.',
+  [ProjectTrack.OPEN_SOURCE]:
+    'A contribution plan for a real open-source repository, aimed at the part of it your units cover.',
 };
 
-const TIER_LABEL: Record<StudentTier, string> = {
-  [StudentTier.BEGINNER]: 'Beginner',
-  [StudentTier.INTERMEDIATE]: 'Intermediate',
-  [StudentTier.ADVANCED]: 'Advanced',
-};
+interface IAcademicContextView {
+  programmeName: string;
+  currentYear: number;
+  currentSemester: number;
+  currentUnits: Array<{ code?: string; title: string; areaLabels: string[] }>;
+  provenanceLabel: string;
+}
 
-// Segmented control button — shared by the track and tier selectors.
+// Segmented control button for the track selector.
 function SegButton({
   selected,
   onClick,
@@ -77,17 +82,40 @@ export default function NewProjectPage(): React.ReactElement {
 
   const [formState, setFormState] = useState<FormState>('form');
   const [track, setTrack] = useState<ProjectTrack>(ProjectTrack.AI_BRIEF);
-  const [tier, setTier] = useState<StudentTier>(StudentTier.BEGINNER);
+  const [interest, setInterest] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [academic, setAcademic] = useState<IAcademicContextView | null>(null);
+  const [academicLoaded, setAcademicLoaded] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push(loginUrlWithIntent());
       return;
     }
-    if (status === 'authenticated' && session.user.role !== Role.STUDENT) {
-      router.push('/auth/unauthorized');
+    if (status === 'authenticated') {
+      if (session.user.role !== Role.STUDENT) {
+        router.push('/auth/unauthorized');
+        return;
+      }
+      // The brief is written from the coursework, so the coursework is fetched
+      // before the form is offered — a student with none is sent to record it
+      // rather than allowed to fill this in and be refused at the end.
+      void (async () => {
+        try {
+          const res = await fetch('/api/education/enrolment');
+          if (res.ok) {
+            const body = (await res.json()) as {
+              data: { context: IAcademicContextView | null } | null;
+            };
+            setAcademic(body.data?.context ?? null);
+          }
+        } catch {
+          setAcademic(null);
+        } finally {
+          setAcademicLoaded(true);
+        }
+      })();
     }
   }, [status, session, router]);
 
@@ -107,7 +135,7 @@ export default function NewProjectPage(): React.ReactElement {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           track,
-          tier,
+          ...(interest.trim() && { interest: interest.trim() }),
           ...(track === ProjectTrack.OPEN_SOURCE && { githubRepoUrl: githubUrl }),
         }),
       });
@@ -138,10 +166,27 @@ export default function NewProjectPage(): React.ReactElement {
     setFormState('form');
   }
 
-  if (status === 'loading') {
+  if (status === 'loading' || !academicLoaded) {
     return (
       <Page width="focus">
         <div className="skeleton h-8 w-56 rounded" />
+        <div className="skeleton h-64 rounded-app-card" />
+      </Page>
+    );
+  }
+
+  if (!academic) {
+    return (
+      <Page width="focus">
+        <PageHeader
+          title="Create project brief"
+          description="A project is written from what you are studying — the units you are taking decide what the work has to make you practise."
+        />
+        <EmptyState
+          title="Tell us what you are studying first"
+          description="We write the brief from the units you are carrying this semester. Record them once and it takes a minute; you can change them whenever your semester does."
+          action={{ label: 'Record my coursework', href: '/dashboard/student/academic' }}
+        />
       </Page>
     );
   }
@@ -172,8 +217,37 @@ export default function NewProjectPage(): React.ReactElement {
     <Page width="focus">
       <PageHeader
         title="Create project brief"
-        description="Two choices decide what you get: the kind of work you want to do, and how hard it should be. We write the brief from those, and a lecturer reviews what you build against it."
+        description="Your units decide what the project has to make you practise. You choose where the work comes from, and we write the brief against your coursework — then a lecturer reviews what you build against it."
       />
+
+      {/* Stated before the form, not after it: the student should be able to see
+          what their project is about to be written from, and correct it if the
+          semester has moved on. */}
+      <Card>
+        <p className="app-label text-app-body">Your brief will be written from</p>
+        <p className="app-body mt-1 text-app-ink">
+          {academic.programmeName} · year {academic.currentYear}, semester{' '}
+          {academic.currentSemester}
+        </p>
+        <ul className="mt-3 space-y-1">
+          {academic.currentUnits.map((unit) => (
+            <li key={`${unit.code ?? ''}${unit.title}`} className="app-body text-app-ink">
+              {unit.code ? `${unit.code} · ` : ''}
+              {unit.title}
+              <span className="app-meta text-app-muted"> — {unit.areaLabels.join(', ')}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="app-meta mt-3 text-app-muted">
+          {academic.provenanceLabel}.{' '}
+          <a
+            href="/dashboard/student/academic"
+            className="text-app-brand underline underline-offset-2"
+          >
+            Change what you are studying
+          </a>
+        </p>
+      </Card>
 
       <Card pad="generous">
         <Form onSubmit={handleSubmit} noValidate>
@@ -231,19 +305,17 @@ export default function NewProjectPage(): React.ReactElement {
           </FormSection>
 
           <FormSection
-            title="How hard should it be?"
-            description="Pick the tier that stretches you. A harder tier is more engineering to see through to a finished, reviewed system."
+            title="What kind of engineering interests you?"
+            description="This decides which of several valid projects you get — never how demanding it is. Your units set the bar; this shapes the parts that are free."
           >
-            <div className="space-y-2.5">
-              <p className="app-label text-app-body">Difficulty tier</p>
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Difficulty tier">
-                {(Object.values(StudentTier) as StudentTier[]).map((t) => (
-                  <SegButton key={t} selected={tier === t} onClick={() => setTier(t)}>
-                    {TIER_LABEL[t]}
-                  </SegButton>
-                ))}
-              </div>
-            </div>
+            <Input
+              label="Engineering interest"
+              optional
+              placeholder="e.g. Backend systems, security, data engineering"
+              value={interest}
+              onChange={(e) => setInterest(e.target.value)}
+              hint="Leave this blank and we use the interest on your profile."
+            />
           </FormSection>
 
           <FormActions note="Generating the brief takes 10–20 seconds. You can start over if it isn't the project you wanted.">

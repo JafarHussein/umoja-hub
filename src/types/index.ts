@@ -239,12 +239,6 @@ export enum FarmerTrustTier {
   PREMIUM = 'PREMIUM',
 }
 
-export enum StudentTier {
-  BEGINNER = 'BEGINNER',
-  INTERMEDIATE = 'INTERMEDIATE',
-  ADVANCED = 'ADVANCED',
-}
-
 // ---------------------------------------------------------------------------
 // Academic context
 //

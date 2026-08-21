@@ -86,7 +86,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const engagement = raw as unknown as ProjectEngagementDoc;
-    const briefTitle = (engagement.brief as { title?: string } | null)?.title ?? 'your current project';
+    // The mentor used to be told the project's title and the student's
+    // difficulty tier, and nothing else — it could not mentor on the actual
+    // project. The brief now records what the work was set against, so the
+    // mentor is told the same thing the lecturer will be reading it against.
+    const briefValue = engagement.brief as {
+      title?: string;
+      problemStatement?: string;
+      academicAnchor?: { units?: string[]; year?: number };
+    } | null;
+    const briefTitle = briefValue?.title ?? 'your current project';
+    const anchorUnits = briefValue?.academicAnchor?.units ?? [];
+    const courseworkLine =
+      anchorUnits.length > 0
+        ? `They are in year ${briefValue?.academicAnchor?.year ?? 1} and the project was set against these units: ${anchorUnits.join(', ')}. Steer them towards the concepts those units cover.`
+        : 'Their coursework is not on record, so do not assume what they have been taught.';
+    const problemLine = briefValue?.problemStatement
+      ? `The problem they are solving: ${briefValue.problemStatement}`
+      : '';
 
     const { default: MentorSession } = await import('@/lib/models/MentorSession.model');
 
@@ -127,7 +144,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     // Build Groq messages: system prompt + last 20 messages from session
-    const systemPrompt = `You are an AI mentor for a ${engagement.tier} computer science student in Kenya working on "${briefTitle}".
+    const systemPrompt = `You are an AI mentor for a Kenyan computer science student working on "${briefTitle}".
+${courseworkLine}
+${problemLine}
 Your role is to guide without writing code for the student directly.
 Ask Socratic questions, explain concepts, and encourage independent problem-solving.
 Keep responses concise and grounded in East African tech constraints (mobile-first, M-Pesa, intermittent connectivity).

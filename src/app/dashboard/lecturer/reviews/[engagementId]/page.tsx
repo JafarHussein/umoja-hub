@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { Role, ProjectTrack, StudentTier } from '@/types';
+import { Role, ProjectTrack } from '@/types';
 import { Alert } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { ReviewScoreForm } from '@/components/education/ReviewScoreForm';
@@ -47,7 +47,6 @@ interface IStudentRef {
 interface IEngagementDetail {
   _id: string;
   track: ProjectTrack;
-  tier: StudentTier;
   brief: Record<string, unknown>;
   studentId: IStudentRef | string | null;
   documents: {
@@ -86,6 +85,27 @@ function briefTitle(engagement: IEngagementDetail): string {
     return (engagement.brief as { title?: string }).title ?? 'AI Brief';
   }
   return (engagement.brief as { repoName?: string }).repoName ?? 'Open Source Project';
+}
+
+interface IAcademicAnchor {
+  units: string[];
+  year: number;
+  semester: number;
+  provenance: string;
+}
+
+// The coursework the project was set against, if the brief records it. Briefs
+// written before the academic model exists have none, and showing nothing is
+// the only honest option — an assumed unit list would be worse than a gap.
+function academicAnchor(engagement: IEngagementDetail): IAcademicAnchor | null {
+  const raw = (engagement.brief as { academicAnchor?: Partial<IAcademicAnchor> })?.academicAnchor;
+  if (!raw?.units?.length) return null;
+  return {
+    units: raw.units,
+    year: raw.year ?? 1,
+    semester: raw.semester ?? 1,
+    provenance: raw.provenance ?? 'Coursework record not stated',
+  };
 }
 
 // Track labels with correct acronym casing (CSS capitalize would render
@@ -228,6 +248,7 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
   // here after submission, delivered by the decision response.
   const peerReview = revealedPeerReview ?? engagement.peerReviewId ?? null;
   const activeDoc = engagement.documents[activeDocTab];
+  const anchor = academicAnchor(engagement);
 
   return (
     <div className="mx-auto w-full max-w-app-page space-y-10">
@@ -242,9 +263,18 @@ export default function LecturerReviewDetailPage(): React.ReactElement {
         <div>
           <h1 className="app-h1 text-app-ink">{briefTitle(engagement)}</h1>
           <p className="app-meta mt-1 text-app-muted">{studentFullName(engagement.studentId)}</p>
+          {/* The units this was set against, and whose word that rests on. You
+              are assessing whether the work exercises the coursework, so the
+              coursework belongs at the top of the page — where a difficulty the
+              student picked for themselves used to sit. */}
+          {anchor && (
+            <p className="app-meta mt-1 text-app-muted">
+              Set against {anchor.units.join(', ')} · year {anchor.year}, semester{' '}
+              {anchor.semester} · {anchor.provenance}
+            </p>
+          )}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
-          <MetaPill>{engagement.tier.replace(/_/g, ' ').toLowerCase()}</MetaPill>
           <MetaPill>{TRACK_LABEL[engagement.track]}</MetaPill>
         </div>
       </div>

@@ -12,12 +12,13 @@ import {
   aiBrief, openSourceBrief, problemBreakdown, approachPlan, finalReflection,
   blockerEntry, aiUsageEntry, lecturerComment, peerComment,
 } from '../text';
+import type { SeedAcademicAnchor } from '../text';
 import {
   spineFor, SELF_DECLARED_PROGRAMME_NAMES, PROGRAMME_SEMESTERS_PER_YEAR,
 } from '../content/curriculum';
 import {
   ProjectTrack, ProjectStatus, PeerReviewStatus, LecturerDecision,
-  StudentTier, NotificationType, AcademicDiscipline, AcademicProvenance,
+  NotificationType, AcademicDiscipline, AcademicProvenance, ACADEMIC_PROVENANCE_LABEL,
 } from '../../../src/types';
 
 function sha256(s: string): string {
@@ -40,21 +41,43 @@ interface LecturerStat {
   scoreSum: number; scoreCount: number; lastAt: Date;
 }
 
+export interface StudentAcademics {
+  anchor: SeedAcademicAnchor;
+  interest: string;
+}
+
 // Every student is studying something, whether or not their university has
 // published a curriculum here. Both provenances therefore exist in the demo
 // world: a student at UoN or JKUAT picks their semester off the published
 // programme, and a student at Strathmore or Moi types the same facts out. The
 // second is the majority case in Kenya today, so a demonstration that only ever
 // showed the first would be showing a product we do not have.
-async function generateEnrolments(ctx: SimContext, world: World): Promise<void> {
+async function generateEnrolments(
+  ctx: SimContext,
+  world: World
+): Promise<Map<string, StudentAcademics>> {
   const { rng, ledger } = ctx;
 
   const { default: AcademicProgramme } = await import('../../../src/lib/models/AcademicProgramme.model');
   const { default: CurriculumUnit } = await import('../../../src/lib/models/CurriculumUnit.model');
   const { default: StudentEnrolment } = await import('../../../src/lib/models/StudentEnrolment.model');
 
+  const { default: User } = await import('../../../src/lib/models/User.model');
+
   const programmes = await AcademicProgramme.find({}).lean();
   const units = await CurriculumUnit.find({}).lean();
+  const academics = new Map<string, StudentAcademics>();
+
+  // The interest the account already declares, not a second one invented here —
+  // a profile and a project that disagree about what a student is into is the
+  // kind of thing a panel notices immediately.
+  const interestOf = new Map(
+    (
+      await User.find({ _id: { $in: world.students.map((s) => s.id) } })
+        .select('studentData.primaryInterest')
+        .lean()
+    ).map((u) => [String(u._id), u.studentData?.primaryInterest ?? 'Backend systems'])
+  );
 
   const unitsByProgramme = new Map<string, typeof units>();
   for (const unit of units) {
@@ -134,13 +157,29 @@ async function generateEnrolments(ctx: SimContext, world: World): Promise<void> 
       'StudentEnrolment',
       await createDoc(StudentEnrolment, { ...doc, createdAt: recordedAt, updatedAt: recordedAt })
     );
+
+    academics.set(String(student.id), {
+      anchor: {
+        programmeName: doc.programmeName,
+        year: doc.currentYear,
+        semester: doc.currentSemester,
+        units: doc.currentUnits.map((u) =>
+          'code' in u && u.code ? `${u.code} ${u.title}` : u.title
+        ),
+        knowledgeAreas: [...new Set(doc.currentUnits.flatMap((u) => u.knowledgeAreas))],
+        provenance: ACADEMIC_PROVENANCE_LABEL[doc.provenance],
+      },
+      interest: interestOf.get(String(student.id)) ?? 'Backend systems',
+    });
   }
+
+  return academics;
 }
 
 export async function generateEducation(ctx: SimContext, world: World): Promise<void> {
   const { rng, ledger, batcher } = ctx;
 
-  await generateEnrolments(ctx, world);
+  const academics = await generateEnrolments(ctx, world);
 
   if (world.students.length < 2 || world.lecturers.length === 0) return;
 
@@ -159,7 +198,8 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
 
   for (const student of world.students) {
     const activity = activityFor(student.archetype);
-    const tier = rng.pick([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]);
+    const academic = academics.get(String(student.id));
+    if (!academic) continue;
     let verifiedCount = 0;
 
     // A lecturer may only review their own institution's students, so this
@@ -227,9 +267,11 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
           : rng.pick([ProjectStatus.IN_PROGRESS, ProjectStatus.BRIEF_GENERATED, ProjectStatus.UNDER_PEER_REVIEW]);
 
       const engagement = ledger.track('ProjectEngagement', await createDoc(ProjectEngagement, {
-        studentId: student.id, track, tier,
+        studentId: student.id, track, interest: academic.interest,
         status,
-        brief: repo ? openSourceBrief(repo.url, repo.name) : aiBrief(rng, title, tier, stack),
+        brief: repo
+          ? openSourceBrief(repo.url, repo.name, academic.anchor)
+          : aiBrief(rng, title, academic.anchor, stack, academic.interest),
         githubRepoUrl: repo?.url,
         githubRepoName: repo?.name,
         documents,
@@ -296,7 +338,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
                 : 'Strong, honest work — verified.'
               : 'See per-dimension feedback.',
           },
-          rejectionReason: passDecision === LecturerDecision.DENIED ? 'The submission did not meet the verification bar for this tier.' : undefined,
+          rejectionReason: passDecision === LecturerDecision.DENIED ? 'The submission did not meet the engineering bar for the units it was set against.' : undefined,
           createdAt: at, updatedAt: at,
         }));
 
@@ -370,7 +412,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       }
     }
 
-    await User.updateOne({ _id: student.id }, { $set: { 'studentData.completedProjectCount': verifiedCount, 'studentData.currentTier': tier } });
+    await User.updateOne({ _id: student.id }, { $set: { 'studentData.completedProjectCount': verifiedCount } });
   }
 
   // Write lecturer effectiveness aggregates.

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Role, ProjectTrack, StudentTier } from '@/types';
+import { Role, ProjectTrack } from '@/types';
 import { EmptyState, Page, PageHeader } from '@/components/app';
 import { VerificationLockout } from '@/components/shared/VerificationLockout';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
@@ -17,7 +17,6 @@ interface IStudentRef {
 interface IQueueItem {
   _id: string;
   track: ProjectTrack;
-  tier: StudentTier;
   brief: Record<string, unknown>;
   studentId: IStudentRef | string | null;
   createdAt: string;
@@ -40,6 +39,16 @@ function studentName(studentId: IStudentRef | string | null | undefined): string
   const { firstName = '', lastName = '' } = studentId;
   const full = `${firstName} ${lastName}`.trim();
   return full || 'Unknown student';
+}
+
+// What the project was set against. A lecturer scanning the queue needs to see
+// the coursework, not a difficulty the student chose for themselves — that pill
+// told them nothing about whether the work belongs to what they teach.
+function courseworkLine(item: IQueueItem): string | null {
+  const anchor = (item.brief as { academicAnchor?: { units?: string[]; year?: number } })
+    ?.academicAnchor;
+  if (!anchor?.units?.length) return null;
+  return `Year ${anchor.year ?? 1} · ${anchor.units.slice(0, 2).join(', ')}${anchor.units.length > 2 ? ` +${anchor.units.length - 2}` : ''}`;
 }
 
 function briefTitle(item: IQueueItem): string {
@@ -174,12 +183,12 @@ export default function LecturerQueuePage(): React.ReactElement {
             >
               <div className="min-w-0 space-y-1">
                 <p className="app-body-strong truncate text-app-ink">{briefTitle(item)}</p>
-                <p className="app-meta text-app-muted">{studentName(item.studentId)}</p>
+                <p className="app-meta text-app-muted">
+                  {studentName(item.studentId)}
+                  {courseworkLine(item) && <> · {courseworkLine(item)}</>}
+                </p>
               </div>
               <div className="flex flex-shrink-0 items-center gap-3">
-                <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2.5 py-1 capitalize text-app-muted">
-                  {item.tier.replace(/_/g, ' ').toLowerCase()}
-                </span>
                 <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2.5 py-1 text-app-muted">
                   {TRACK_LABEL[item.track]}
                 </span>

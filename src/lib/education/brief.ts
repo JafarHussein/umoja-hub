@@ -25,9 +25,33 @@ import { ProjectTrack } from '@/types';
 export const BRIEF_COMPLEXITY = ['LOW', 'MEDIUM', 'HIGH'] as const;
 export type BriefComplexity = (typeof BRIEF_COMPLEXITY)[number];
 
+/**
+ * What the brief was written from — the coursework link, recorded on the brief
+ * itself so a lecturer reading it months later can see which units it was meant
+ * to exercise, and whether that claim was institution-backed or the student's
+ * own word. Written by the route from the enrolment, never by the model.
+ */
+export const academicAnchorSchema = z.object({
+  programmeName: z.string().trim().min(1),
+  year: z.number().int().min(1),
+  semester: z.number().int().min(1),
+  units: z.array(z.string().trim().min(1)).min(1),
+  knowledgeAreas: z.array(z.string().trim().min(1)).min(1),
+  provenance: z.string().trim().min(1),
+});
+
 /** A brief written for a project the student builds from nothing. */
 export const aiBriefSchema = z.object({
   title: z.string().trim().min(1),
+  academicAnchor: academicAnchorSchema,
+  /**
+   * What this project must make the student able to do — stated against the
+   * units, not against the technology. Stripped from the contract when nothing
+   * produced it; it returns here with its producer.
+   */
+  learningOutcomes: z.array(z.string().trim().min(1)).min(1),
+  /** The pressure that makes the coursework load-bearing rather than decorative. */
+  architecturalChallenge: z.string().trim().min(1),
   clientPersona: z.object({
     businessType: z.string().trim().min(1),
     county: z.string().trim().min(1),
@@ -45,6 +69,7 @@ export const aiBriefSchema = z.object({
 /** A brief for contributing to a repository that already exists. */
 export const openSourceBriefSchema = z.object({
   title: z.string().trim().min(1),
+  academicAnchor: academicAnchorSchema,
   repoUrl: z.string().trim().min(1),
   repoName: z.string().trim().min(1),
   contributionGoal: z.string().trim().min(1),
@@ -122,6 +147,11 @@ export function normalizeBrief(track: string | undefined, raw: unknown): Normali
         title: b.title,
         summary: b.contributionGoal,
         facts: [
+          {
+            label: 'Written from',
+            value: `${b.academicAnchor.units.join(', ')} — year ${b.academicAnchor.year}, semester ${b.academicAnchor.semester}`,
+          },
+          { label: 'Coursework record', value: b.academicAnchor.provenance },
           { label: 'Repository', value: b.repoName },
           { label: 'Source', value: b.repoUrl },
         ],
@@ -133,11 +163,18 @@ export function normalizeBrief(track: string | undefined, raw: unknown): Normali
 
     const repoName = asString(value.repoName) || asString(value.repo);
     const repoUrl = asString(value.repoUrl);
+    const osAnchor = academicAnchorSchema.safeParse(value.academicAnchor);
     return {
       kind: 'unrecognised',
       title: asString(value.title) || 'Open-source contribution',
       summary: asString(value.contributionGoal),
       facts: [
+        ...(osAnchor.success
+          ? [
+              { label: 'Written from', value: osAnchor.data.units.join(', ') },
+              { label: 'Coursework record', value: osAnchor.data.provenance },
+            ]
+          : []),
         ...(repoName ? [{ label: 'Repository', value: repoName }] : []),
         ...(repoUrl ? [{ label: 'Source', value: repoUrl }] : []),
       ],
@@ -155,10 +192,17 @@ export function normalizeBrief(track: string | undefined, raw: unknown): Normali
       title: b.title,
       summary: b.problemStatement,
       facts: [
+        {
+          label: 'Written from',
+          value: `${b.academicAnchor.units.join(', ')} — year ${b.academicAnchor.year}, semester ${b.academicAnchor.semester}`,
+        },
+        { label: 'Coursework record', value: b.academicAnchor.provenance },
         { label: 'Client', value: `${b.clientPersona.businessType} · ${b.clientPersona.county}` },
         { label: 'Situation', value: b.clientPersona.context },
       ],
       sections: [
+        { heading: 'What this must teach you', items: b.learningOutcomes },
+        { heading: 'The engineering problem', items: [b.architecturalChallenge] },
         { heading: 'Core requirements', items: b.coreRequirements },
         ...section('Technical constraints', b.technicalConstraints),
         ...section('Kenyan context', b.kenyanContextConstraints),
@@ -190,12 +234,30 @@ export function normalizeBrief(track: string | undefined, raw: unknown): Normali
     ? (complexityRaw as BriefComplexity)
     : null;
 
+  // The academic anchor postdates the first briefs, so a record written before
+  // it simply has none. Surfaced when present, absent without comment when not
+  // — an invented coursework link would be worse than a missing one.
+  const anchor = academicAnchorSchema.safeParse(value.academicAnchor);
+
   return {
     kind: 'unrecognised',
     title: asString(value.title) || 'Project brief',
     summary: asString(value.problemStatement),
-    facts: personaText ? [{ label: 'Client', value: personaText }] : [],
+    facts: [
+      ...(anchor.success
+        ? [
+            { label: 'Written from', value: anchor.data.units.join(', ') },
+            { label: 'Coursework record', value: anchor.data.provenance },
+          ]
+        : []),
+      ...(personaText ? [{ label: 'Client', value: personaText }] : []),
+    ],
     sections: [
+      ...section('What this must teach you', asStringArray(value.learningOutcomes)),
+      ...section(
+        'The engineering problem',
+        [asString(value.architecturalChallenge)].filter(Boolean)
+      ),
       // `constraints` is the older field name; both are surfaced.
       ...section('Core requirements', asStringArray(value.coreRequirements)),
       ...section(

@@ -3,8 +3,20 @@ import { ProjectTrack } from '@/types';
 import { aiBrief, openSourceBrief } from '../../../../scripts/demo/text';
 import { Rng, seedFromString } from '../../../../scripts/demo/rng';
 
+const SEED_ANCHOR = {
+  programmeName: 'BSc Computer Science',
+  year: 2,
+  semester: 1,
+  units: ['SCS 231 Database Systems I', 'SCS 232 Operating Systems I'],
+  knowledgeAreas: ['DATABASE_SYSTEMS', 'OPERATING_SYSTEMS'],
+  provenance: 'From your institution’s published curriculum',
+};
+
 const validAIBrief = {
   title: 'SMS market price alerts',
+  academicAnchor: SEED_ANCHOR,
+  learningOutcomes: ['Design a schema from the queries the system must answer.'],
+  architecturalChallenge: 'Two writers can touch the same record at the same time.',
   clientPersona: {
     businessType: 'Agribusiness cooperative',
     county: 'Nakuru',
@@ -60,16 +72,25 @@ describe('brief contract', () => {
       expect(view.degraded).toBe(false);
       expect(view.title).toBe('SMS market price alerts');
       expect(view.complexity).toBe('MEDIUM');
-      expect(view.facts[0]).toEqual({
+      // The coursework leads, because that is what the project is for.
+      expect(view.facts[0]!.label).toBe('Written from');
+      expect(view.facts[0]!.value).toContain('SCS 231 Database Systems I');
+      expect(view.facts[1]).toEqual({
+        label: 'Coursework record',
+        value: 'From your institution’s published curriculum',
+      });
+      expect(view.facts).toContainEqual({
         label: 'Client',
         value: 'Agribusiness cooperative · Nakuru',
       });
+      expect(view.sections.map((s) => s.heading)).toContain('What this must teach you');
       expect(view.sections.map((s) => s.heading)).toContain('Core requirements');
     });
 
     it('renders a conforming open-source brief', () => {
       const view = normalizeBrief(ProjectTrack.OPEN_SOURCE, {
         title: 'Contribute to ushahidi/platform',
+        academicAnchor: SEED_ANCHOR,
         repoUrl: 'https://github.com/ushahidi/platform',
         repoName: 'ushahidi/platform',
         contributionGoal: 'Land a reviewed change.',
@@ -118,14 +139,38 @@ describe('brief contract', () => {
   describe('the demo seeder writes the same contract the app reads', () => {
     it('emits a valid AI brief', () => {
       const rng = new Rng(seedFromString('brief-contract-test'));
-      const brief = aiBrief(rng, 'Clinic appointment booking', 'INTERMEDIATE', ['Node.js']);
+      const brief = aiBrief(rng, 'Clinic appointment booking', SEED_ANCHOR, ['Node.js']);
 
       expect(aiBriefSchema.safeParse(brief).success).toBe(true);
       expect(normalizeBrief(ProjectTrack.AI_BRIEF, brief).degraded).toBe(false);
     });
 
+    it('writes the learning outcomes out of the student’s own knowledge areas', () => {
+      const rng = new Rng(seedFromString('brief-contract-test'));
+      const brief = aiBrief(rng, 'Clinic appointment booking', SEED_ANCHOR, ['Node.js']) as {
+        learningOutcomes: string[];
+        architecturalChallenge: string;
+      };
+
+      expect(brief.learningOutcomes.join(' ')).toContain('Database Systems');
+      expect(brief.architecturalChallenge).toContain('Database Systems');
+    });
+
+    it('takes its complexity from the year of study, not from a choice', () => {
+      const rng = new Rng(seedFromString('brief-contract-test'));
+      const first = aiBrief(rng, 'A', { ...SEED_ANCHOR, year: 1 }) as { estimatedComplexity: string };
+      const final = aiBrief(rng, 'B', { ...SEED_ANCHOR, year: 4 }) as { estimatedComplexity: string };
+
+      expect(first.estimatedComplexity).toBe('LOW');
+      expect(final.estimatedComplexity).toBe('HIGH');
+    });
+
     it('emits a valid open-source brief', () => {
-      const brief = openSourceBrief('https://github.com/apache/fineract', 'apache/fineract');
+      const brief = openSourceBrief(
+        'https://github.com/apache/fineract',
+        'apache/fineract',
+        SEED_ANCHOR
+      );
 
       expect(isValidBrief(ProjectTrack.OPEN_SOURCE, brief)).toBe(true);
       expect(normalizeBrief(ProjectTrack.OPEN_SOURCE, brief).degraded).toBe(false);

@@ -13,48 +13,50 @@ import {
 
 describe('briefRequestSchema', () => {
   it('accepts an AI_BRIEF track request', () => {
-    expect(
-      briefRequestSchema.safeParse({ track: 'AI_BRIEF', tier: 'BEGINNER' }).success
-    ).toBe(true);
+    expect(briefRequestSchema.safeParse({ track: 'AI_BRIEF' }).success).toBe(true);
   });
 
   it('accepts an OPEN_SOURCE track request with GitHub URL', () => {
     expect(
       briefRequestSchema.safeParse({
         track: 'OPEN_SOURCE',
-        tier: 'INTERMEDIATE',
         githubRepoUrl: 'https://github.com/some/repo',
       }).success
     ).toBe(true);
   });
 
-  it('accepts all valid tiers', () => {
-    for (const tier of ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as const) {
-      expect(briefRequestSchema.safeParse({ track: 'AI_BRIEF', tier }).success).toBe(true);
-    }
+  it('accepts an optional engineering interest', () => {
+    expect(
+      briefRequestSchema.safeParse({ track: 'AI_BRIEF', interest: 'Information security' }).success
+    ).toBe(true);
+  });
+
+  // The difficulty tier was the one project origin the Hub's premise forbids —
+  // a student choosing for themselves how hard their work should be. A request
+  // that still carries one is accepted and the field simply ignored, rather
+  // than an old client being broken; nothing reads it.
+  it('no longer has a difficulty tier to reject', () => {
+    const parsed = briefRequestSchema.safeParse({ track: 'AI_BRIEF', tier: 'EXPERT' });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect('tier' in parsed.data).toBe(false);
+  });
+
+  it('rejects an interest too short to mean anything', () => {
+    expect(briefRequestSchema.safeParse({ track: 'AI_BRIEF', interest: 'x' }).success).toBe(false);
   });
 
   it('rejects invalid track', () => {
-    expect(
-      briefRequestSchema.safeParse({ track: 'MANUAL', tier: 'BEGINNER' }).success
-    ).toBe(false);
-  });
-
-  it('rejects invalid tier', () => {
-    expect(
-      briefRequestSchema.safeParse({ track: 'AI_BRIEF', tier: 'EXPERT' }).success
-    ).toBe(false);
+    expect(briefRequestSchema.safeParse({ track: 'MANUAL' }).success).toBe(false);
   });
 
   it('rejects missing track', () => {
-    expect(briefRequestSchema.safeParse({ tier: 'BEGINNER' }).success).toBe(false);
+    expect(briefRequestSchema.safeParse({ interest: 'Backend systems' }).success).toBe(false);
   });
 
   it('rejects invalid GitHub URL', () => {
     expect(
       briefRequestSchema.safeParse({
         track: 'OPEN_SOURCE',
-        tier: 'BEGINNER',
         githubRepoUrl: 'not-a-url',
       }).success
     ).toBe(false);

@@ -4,6 +4,7 @@
 
 import { Rng } from './rng';
 import type { SeedCrop } from './dictionaries';
+import { KNOWLEDGE_AREAS, isKnowledgeArea } from '../../src/lib/education/knowledgeAreas';
 
 // ---------------------------------------------------------------------------
 // Listing descriptions
@@ -148,21 +149,63 @@ const CLIENT_PERSONAS: { businessType: string; county: string; context: string }
   },
 ];
 
-const COMPLEXITY_BY_TIER: Record<string, 'LOW' | 'MEDIUM' | 'HIGH'> = {
-  BEGINNER: 'LOW',
-  INTERMEDIATE: 'MEDIUM',
-  ADVANCED: 'HIGH',
-};
+// What a seeded brief was written from. Mirrors the academicAnchor the live
+// route records off the student's enrolment, so a seeded project and a
+// generated one are the same shape and the same claim.
+export interface SeedAcademicAnchor {
+  programmeName: string;
+  year: number;
+  semester: number;
+  units: string[];
+  knowledgeAreas: string[];
+  provenance: string;
+}
+
+// Complexity follows from where the student is in the degree. It used to follow
+// from a difficulty they picked for themselves, which is the one project origin
+// the Hub's premise rules out.
+function complexityForYear(year: number): 'LOW' | 'MEDIUM' | 'HIGH' {
+  if (year <= 1) return 'LOW';
+  if (year >= 4) return 'HIGH';
+  return 'MEDIUM';
+}
+
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export function aiBrief(
   rng: Rng,
   title: string,
-  tier: string,
-  stack: string[] = []
+  anchor: SeedAcademicAnchor,
+  stack: string[] = [],
+  interest?: string
 ): Record<string, unknown> {
   const persona = rng.pick(CLIENT_PERSONAS);
+
+  // The outcomes are read out of the knowledge-area profiles rather than
+  // written generically, so a seeded brief genuinely says what the student's
+  // own units require of it — which is the whole claim the Hub makes.
+  const leading = anchor.knowledgeAreas.filter(isKnowledgeArea).slice(0, 3);
+  const learningOutcomes =
+    leading.length > 0
+      ? leading.map((area) => {
+          const profile = KNOWLEDGE_AREAS[area];
+          const capability = profile.capabilities[0] ?? 'apply the unit in a working system';
+          return `${sentenceCase(capability)} — the part of ${profile.label} this project rests on.`;
+        })
+      : ['Build, deploy and defend one working system end to end.'];
+
+  const primary = leading[0];
+  const architecturalChallenge = primary
+    ? `${sentenceCase(KNOWLEDGE_AREAS[primary].architecturalPressures[0] ?? 'a constraint the naive design cannot meet')} is what makes ${KNOWLEDGE_AREAS[primary].label} load-bearing here rather than decorative. Design around it early: ${KNOWLEDGE_AREAS[primary].antiPatterns[0] ?? 'a system that avoids the pressure'} will not pass review, however finished it looks.`
+    : `The system has to keep working when the connection drops mid-operation, and that constraint has to shape the design rather than be patched on at the end.`;
+
   return {
     title,
+    academicAnchor: anchor,
+    learningOutcomes,
+    architecturalChallenge,
     clientPersona: persona,
     problemStatement: `${persona.context} They need a working system for: ${title}. It has to be usable on low-end Android phones over an intermittent connection.`,
     coreRequirements: [
@@ -175,6 +218,7 @@ export function aiBrief(
     technicalConstraints: [
       'Must run acceptably on a low-end Android device over 3G',
       'No paid third-party service may be required to operate it',
+      ...(interest ? [`Leave room for ${interest} in the part of the design that is free`] : []),
     ],
     kenyanContextConstraints: [
       'M-Pesa is the only payment rail the client and their users have',
@@ -186,13 +230,18 @@ export function aiBrief(
       'A reflection on the trade-offs made',
     ],
     suggestedTechStack: stack.length > 0 ? stack : ['Node.js', 'MongoDB', 'React'],
-    estimatedComplexity: COMPLEXITY_BY_TIER[tier] ?? 'MEDIUM',
+    estimatedComplexity: complexityForYear(anchor.year),
   };
 }
 
-export function openSourceBrief(repoUrl: string, repoName: string): Record<string, unknown> {
+export function openSourceBrief(
+  repoUrl: string,
+  repoName: string,
+  anchor: SeedAcademicAnchor
+): Record<string, unknown> {
   return {
     title: `Contribute to ${repoName}`,
+    academicAnchor: anchor,
     repoUrl,
     repoName,
     contributionGoal: `Land a reviewed change in ${repoName} — a bug fix or a small feature that the maintainers accept.`,

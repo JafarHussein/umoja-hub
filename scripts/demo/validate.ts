@@ -548,6 +548,24 @@ export async function validate(): Promise<boolean> {
     `${publishedCount - unbacked.length}/${publishedCount} backed`
   );
 
+  // A brief with no coursework link is a brief the Hub cannot justify. The
+  // contract now requires the anchor, so an engagement that lost it would fail
+  // the brief-parse check above too — this names the reason directly.
+  const anchorless = (
+    await ProjectEngagement.find({ _id: { $in: engagementIds } })
+      .select('brief.academicAnchor')
+      .lean()
+  ).filter((e) => {
+    const anchor = (e.brief as { academicAnchor?: { units?: string[] } } | undefined)
+      ?.academicAnchor;
+    return !anchor?.units?.length;
+  });
+  ok(
+    'every project records the coursework it was set against',
+    anchorless.length === 0,
+    `${engagementIds.length - anchorless.length}/${engagementIds.length} anchored`
+  );
+
   const programmeCount = await AcademicProgramme.countDocuments({
     _id: { $in: idsOf('AcademicProgramme') },
   } as object);

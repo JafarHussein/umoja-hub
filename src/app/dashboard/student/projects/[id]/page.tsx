@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { Role, ProjectStatus, ProjectTrack, StudentTier } from '@/types';
+import { Role, ProjectStatus, ProjectTrack } from '@/types';
 import { Button, Alert } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { ProjectStatusStepper } from '@/components/education/ProjectStatusStepper';
@@ -32,7 +32,6 @@ interface IEngagementDocuments {
 interface IActiveEngagement {
   _id: string;
   track: ProjectTrack;
-  tier: StudentTier;
   status: ProjectStatus;
   brief: Record<string, unknown>;
   documents: IEngagementDocuments;
@@ -45,7 +44,6 @@ interface IActiveEngagement {
 interface IRawEngagement {
   _id: string;
   track: ProjectTrack;
-  tier: StudentTier;
   status: ProjectStatus;
   brief: Record<string, unknown>;
   documents?: {
