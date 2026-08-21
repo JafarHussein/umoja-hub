@@ -66,6 +66,25 @@ export const aiBriefSchema = z.object({
   estimatedComplexity: z.enum(BRIEF_COMPLEXITY),
 });
 
+/**
+ * A brief a lecturer wrote. No model is involved, so there is nothing to
+ * validate a generator against — but it is held to the same contract as a
+ * generated one, because a student should not be able to tell from the shape
+ * of their workspace which kind they were given.
+ */
+export const assignedBriefSchema = z.object({
+  title: z.string().trim().min(1),
+  academicAnchor: academicAnchorSchema,
+  assignmentId: z.string().trim().min(1),
+  setBy: z.string().trim().min(1),
+  problemStatement: z.string().trim().min(1),
+  coreRequirements: z.array(z.string().trim().min(1)).min(1),
+  technicalConstraints: z.array(z.string().trim().min(1)).default([]),
+  deliverables: z.array(z.string().trim().min(1)).default([]),
+  /** The areas the lecturer says it exercises — their claim, not ours. */
+  exercises: z.array(z.string().trim().min(1)).min(1),
+});
+
 /** A brief for contributing to a repository that already exists. */
 export const openSourceBriefSchema = z.object({
   title: z.string().trim().min(1),
@@ -78,9 +97,12 @@ export const openSourceBriefSchema = z.object({
 
 export type AIBrief = z.infer<typeof aiBriefSchema>;
 export type OpenSourceBrief = z.infer<typeof openSourceBriefSchema>;
+export type AssignedBrief = z.infer<typeof assignedBriefSchema>;
 
 export function briefSchemaFor(track: ProjectTrack): z.ZodTypeAny {
-  return track === ProjectTrack.OPEN_SOURCE ? openSourceBriefSchema : aiBriefSchema;
+  if (track === ProjectTrack.OPEN_SOURCE) return openSourceBriefSchema;
+  if (track === ProjectTrack.LECTURER_ASSIGNED) return assignedBriefSchema;
+  return aiBriefSchema;
 }
 
 /** True when `value` is a well-formed brief for the given track. */
@@ -104,7 +126,7 @@ export interface BriefSection {
 
 export interface NormalizedBrief {
   /** Which shape was recognised. `unrecognised` still renders. */
-  kind: 'ai' | 'open-source' | 'unrecognised';
+  kind: 'ai' | 'open-source' | 'assigned' | 'unrecognised';
   title: string;
   summary: string;
   facts: BriefFact[];
@@ -137,6 +159,57 @@ function section(heading: string, items: string[]): BriefSection[] {
 export function normalizeBrief(track: string | undefined, raw: unknown): NormalizedBrief {
   const value = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const isOpenSource = track === ProjectTrack.OPEN_SOURCE;
+
+  if (track === ProjectTrack.LECTURER_ASSIGNED) {
+    const parsed = assignedBriefSchema.safeParse(value);
+    if (parsed.success) {
+      const b = parsed.data;
+      return {
+        kind: 'assigned',
+        title: b.title,
+        summary: b.problemStatement,
+        facts: [
+          // Who set it leads. A student needs to know at a glance that a person
+          // who teaches them chose this, not a generator.
+          { label: 'Set by', value: b.setBy },
+          {
+            label: 'Written from',
+            value: `${b.academicAnchor.units.join(', ')} — year ${b.academicAnchor.year}, semester ${b.academicAnchor.semester}`,
+          },
+          { label: 'Coursework record', value: b.academicAnchor.provenance },
+        ],
+        sections: [
+          { heading: 'What this must exercise', items: b.exercises },
+          { heading: 'Core requirements', items: b.coreRequirements },
+          ...section('Technical constraints', b.technicalConstraints),
+          ...section('Deliverables', b.deliverables),
+        ],
+        complexity: null,
+        degraded: false,
+      };
+    }
+
+    const assignedAnchor = academicAnchorSchema.safeParse(value.academicAnchor);
+    return {
+      kind: 'unrecognised',
+      title: asString(value.title) || 'Project set by your lecturer',
+      summary: asString(value.problemStatement),
+      facts: [
+        ...(asString(value.setBy) ? [{ label: 'Set by', value: asString(value.setBy) }] : []),
+        ...(assignedAnchor.success
+          ? [{ label: 'Written from', value: assignedAnchor.data.units.join(', ') }]
+          : []),
+      ],
+      sections: [
+        ...section('What this must exercise', asStringArray(value.exercises)),
+        ...section('Core requirements', asStringArray(value.coreRequirements)),
+        ...section('Technical constraints', asStringArray(value.technicalConstraints)),
+        ...section('Deliverables', asStringArray(value.deliverables)),
+      ],
+      complexity: null,
+      degraded: true,
+    };
+  }
 
   if (isOpenSource) {
     const parsed = openSourceBriefSchema.safeParse(value);

@@ -112,6 +112,7 @@ function academicAnchor(engagement: IEngagementDetail): IAcademicAnchor | null {
 // "AI_BRIEF" as "Ai Brief").
 const TRACK_LABEL: Record<ProjectTrack, string> = {
   [ProjectTrack.AI_BRIEF]: 'AI Brief',
+  [ProjectTrack.LECTURER_ASSIGNED]: 'Set by a lecturer',
   [ProjectTrack.OPEN_SOURCE]: 'Open Source',
 };
 

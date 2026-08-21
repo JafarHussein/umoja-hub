@@ -28,6 +28,7 @@ interface IEngagementResult {
 
 const TRACK_LABEL: Record<ProjectTrack, string> = {
   [ProjectTrack.AI_BRIEF]: 'AI Brief',
+  [ProjectTrack.LECTURER_ASSIGNED]: 'Set by a lecturer',
   [ProjectTrack.OPEN_SOURCE]: 'Open Source',
 };
 
@@ -36,7 +37,19 @@ const TRACK_HINT: Record<ProjectTrack, string> = {
     'A brief written for a real Kenyan client, against the units you are taking now.',
   [ProjectTrack.OPEN_SOURCE]:
     'A contribution plan for a real open-source repository, aimed at the part of it your units cover.',
+  [ProjectTrack.LECTURER_ASSIGNED]:
+    'A project one of your lecturers wrote for their own students. They know your cohort; the platform does not.',
 };
+
+interface IAssignmentOffer {
+  _id: string;
+  title: string;
+  problemStatement: string;
+  exercises: string[];
+  matchesYourUnits: string[];
+  setBy: string;
+  full: boolean;
+}
 
 interface IAcademicContextView {
   programmeName: string;
@@ -87,6 +100,8 @@ export default function NewProjectPage(): React.ReactElement {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [academic, setAcademic] = useState<IAcademicContextView | null>(null);
   const [academicLoaded, setAcademicLoaded] = useState(false);
+  const [offers, setOffers] = useState<IAssignmentOffer[]>([]);
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -103,12 +118,26 @@ export default function NewProjectPage(): React.ReactElement {
       // rather than allowed to fill this in and be refused at the end.
       void (async () => {
         try {
-          const res = await fetch('/api/education/enrolment');
-          if (res.ok) {
-            const body = (await res.json()) as {
+          const [enrolmentRes, offersRes] = await Promise.all([
+            fetch('/api/education/enrolment'),
+            fetch('/api/education/assignments'),
+          ]);
+          if (enrolmentRes.ok) {
+            const body = (await enrolmentRes.json()) as {
               data: { context: IAcademicContextView | null } | null;
             };
             setAcademic(body.data?.context ?? null);
+          }
+          if (offersRes.ok) {
+            const body = (await offersRes.json()) as { data: IAssignmentOffer[] };
+            setOffers(body.data);
+            // A project a lecturer set for you leads. They teach you and the
+            // generator does not, so if one is waiting it is the default.
+            if (body.data.length > 0) {
+              setTrack(ProjectTrack.LECTURER_ASSIGNED);
+              const first = body.data.find((o) => !o.full);
+              if (first) setAssignmentId(first._id);
+            }
           }
         } catch {
           setAcademic(null);
@@ -122,7 +151,9 @@ export default function NewProjectPage(): React.ReactElement {
   const githubUrlTouched = githubUrl.length > 0;
   const isGithubUrlValid = GITHUB_REPO_PATTERN.test(githubUrl);
   const isSubmitDisabled =
-    formState === 'generating' || (track === ProjectTrack.OPEN_SOURCE && !isGithubUrlValid);
+    formState === 'generating' ||
+    (track === ProjectTrack.OPEN_SOURCE && !isGithubUrlValid) ||
+    (track === ProjectTrack.LECTURER_ASSIGNED && assignmentId === null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -137,6 +168,7 @@ export default function NewProjectPage(): React.ReactElement {
           track,
           ...(interest.trim() && { interest: interest.trim() }),
           ...(track === ProjectTrack.OPEN_SOURCE && { githubRepoUrl: githubUrl }),
+          ...(track === ProjectTrack.LECTURER_ASSIGNED && assignmentId && { assignmentId }),
         }),
       });
 
@@ -277,14 +309,53 @@ export default function NewProjectPage(): React.ReactElement {
             <div className="space-y-2.5">
               <p className="app-label text-app-body">Project track</p>
               <div className="flex flex-wrap gap-2" role="group" aria-label="Project track">
-                {(Object.values(ProjectTrack) as ProjectTrack[]).map((t) => (
-                  <SegButton key={t} selected={track === t} onClick={() => setTrack(t)}>
-                    {TRACK_LABEL[t]}
-                  </SegButton>
-                ))}
+                {/* The lecturer track is offered only when a lecturer has
+                    actually set something. An option that is always empty and
+                    always refuses teaches students to ignore it. */}
+                {(Object.values(ProjectTrack) as ProjectTrack[])
+                  .filter((t) => t !== ProjectTrack.LECTURER_ASSIGNED || offers.length > 0)
+                  .map((t) => (
+                    <SegButton key={t} selected={track === t} onClick={() => setTrack(t)}>
+                      {TRACK_LABEL[t]}
+                    </SegButton>
+                  ))}
               </div>
               <p className="app-meta text-app-muted">{TRACK_HINT[track]}</p>
             </div>
+
+            {/* The projects this student's own lecturers have set */}
+            {track === ProjectTrack.LECTURER_ASSIGNED && (
+              <div className="space-y-3">
+                {offers.map((offer) => (
+                  <button
+                    key={offer._id}
+                    type="button"
+                    disabled={offer.full}
+                    aria-pressed={assignmentId === offer._id}
+                    onClick={() => setAssignmentId(offer._id)}
+                    className={cn(
+                      'w-full rounded-app-control border p-4 text-left transition-colors duration-150',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring',
+                      'disabled:cursor-not-allowed disabled:opacity-60',
+                      assignmentId === offer._id
+                        ? 'border-app-brand bg-app-brand-surface'
+                        : 'border-app-hairline bg-app-card hover:border-app-border-strong'
+                    )}
+                  >
+                    <p className="app-body-strong text-app-ink">{offer.title}</p>
+                    <p className="app-meta mt-0.5 text-app-muted">Set by {offer.setBy}</p>
+                    <p className="app-body mt-2 text-app-body">{offer.problemStatement}</p>
+                    <p className="app-meta mt-2 text-app-muted">
+                      Exercises {offer.exercises.join(', ')}.{' '}
+                      {offer.matchesYourUnits.length > 0
+                        ? `${offer.matchesYourUnits.join(', ')} ${offer.matchesYourUnits.length === 1 ? 'is' : 'are'} on your units this semester.`
+                        : 'None of that is on your units this semester — your lecturer set it deliberately.'}
+                      {offer.full ? ' This one is full.' : ''}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* GitHub URL — OPEN_SOURCE only */}
             {track === ProjectTrack.OPEN_SOURCE && (
@@ -304,8 +375,9 @@ export default function NewProjectPage(): React.ReactElement {
             )}
           </FormSection>
 
-          <FormSection
-            title="What kind of engineering interests you?"
+          {track !== ProjectTrack.LECTURER_ASSIGNED && (
+            <FormSection
+              title="What kind of engineering interests you?"
             description="This decides which of several valid projects you get — never how demanding it is. Your units set the bar; this shapes the parts that are free."
           >
             <Input
@@ -315,12 +387,21 @@ export default function NewProjectPage(): React.ReactElement {
               value={interest}
               onChange={(e) => setInterest(e.target.value)}
               hint="Leave this blank and we use the interest on your profile."
-            />
-          </FormSection>
+              />
+            </FormSection>
+          )}
 
-          <FormActions note="Generating the brief takes 10–20 seconds. You can start over if it isn't the project you wanted.">
+          <FormActions
+            note={
+              track === ProjectTrack.LECTURER_ASSIGNED
+                ? 'Your lecturer wrote this brief. Starting it opens your workspace straight away.'
+                : "Generating the brief takes 10–20 seconds. You can start over if it isn't the project you wanted."
+            }
+          >
             <Button type="submit" disabled={isSubmitDisabled}>
-              Generate project brief
+              {track === ProjectTrack.LECTURER_ASSIGNED
+                ? 'Start this project'
+                : 'Generate project brief'}
             </Button>
           </FormActions>
         </Form>

@@ -33,3 +33,4 @@ import '../../src/lib/models/GroupOrder.model';
 import '../../src/lib/models/AcademicProgramme.model';
 import '../../src/lib/models/CurriculumUnit.model';
 import '../../src/lib/models/StudentEnrolment.model';
+import '../../src/lib/models/ProjectAssignment.model';

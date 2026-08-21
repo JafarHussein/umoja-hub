@@ -1,5 +1,15 @@
 import { z } from 'zod';
-import { ProjectTrack, LecturerDecision, REVIEW_MIN_WORD_COUNT, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
+import {
+  ProjectTrack,
+  LecturerDecision,
+  KnowledgeArea,
+  AssignmentAudience,
+  AssignmentStatus,
+  MAX_PROGRAMME_YEARS,
+  MAX_SEMESTERS_PER_YEAR,
+  REVIEW_MIN_WORD_COUNT,
+  MAX_ASSISTANT_MESSAGE_CHARS,
+} from '@/types';
 
 const countWords = (text: string): number =>
   text
@@ -7,14 +17,65 @@ const countWords = (text: string): number =>
     .split(/\s+/)
     .filter((w) => w.length > 0).length;
 
+const objectId = z
+  .string()
+  .trim()
+  .regex(/^[a-f\d]{24}$/i, 'Not a valid identifier');
+
 export const briefRequestSchema = z.object({
-  track: z.enum([ProjectTrack.OPEN_SOURCE, ProjectTrack.AI_BRIEF]),
+  track: z.enum([
+    ProjectTrack.OPEN_SOURCE,
+    ProjectTrack.AI_BRIEF,
+    ProjectTrack.LECTURER_ASSIGNED,
+  ]),
   // The student's engineering interest — a filter over valid projects, not a
   // difficulty dial. The difficulty tier this replaced was the one project
   // origin the Hub's premise forbids.
   interest: z.string().trim().min(2).max(60).optional(),
   githubRepoUrl: z.string().url('Must be a valid GitHub URL').optional(),
+  /** Required for LECTURER_ASSIGNED — which of their projects was chosen. */
+  assignmentId: objectId.optional(),
 });
+
+// ---------------------------------------------------------------------------
+// A lecturer writing their own project.
+//
+// The floors are deliberately low. A lecturer with sixty students and four
+// hours a week will not fill in a long form, and a form they abandon is a
+// feature that does not exist — so this asks for the problem, what has to be
+// built, and what it exercises, and treats everything else as optional.
+// ---------------------------------------------------------------------------
+
+const trimmedList = (max: number, message: string) =>
+  z.array(z.string().trim().min(3, message).max(300)).max(max);
+
+export const projectAssignmentSchema = z.object({
+  title: z.string().trim().min(5, 'Give the project a name').max(140),
+  problemStatement: z
+    .string()
+    .trim()
+    .min(40, 'Describe the problem in a couple of sentences')
+    .max(2000),
+  coreRequirements: trimmedList(12, 'Each requirement needs a few words')
+    .min(1, 'Say what has to be built'),
+  deliverables: trimmedList(10, 'Each deliverable needs a few words').default([]),
+  technicalConstraints: trimmedList(10, 'Each constraint needs a few words').default([]),
+  knowledgeAreas: z
+    .array(z.enum(Object.values(KnowledgeArea) as [KnowledgeArea, ...KnowledgeArea[]]))
+    .min(1, 'Say which subjects this project exercises')
+    .max(6, 'Six subjects is more than one project can carry'),
+  targetYear: z.number().int().min(1).max(MAX_PROGRAMME_YEARS),
+  targetSemester: z.number().int().min(1).max(MAX_SEMESTERS_PER_YEAR),
+  audience: z.enum([AssignmentAudience.COHORT, AssignmentAudience.NAMED]),
+  assignedStudentIds: z.array(objectId).max(60).default([]),
+  capacity: z.number().int().min(1).max(200).optional(),
+  status: z.enum([AssignmentStatus.DRAFT, AssignmentStatus.OPEN, AssignmentStatus.CLOSED]),
+});
+
+/** Editing an existing project — every field optional, same rules. */
+export const projectAssignmentUpdateSchema = projectAssignmentSchema.partial();
+
+export type ProjectAssignmentInput = z.infer<typeof projectAssignmentSchema>;
 
 export const documentSubmissionSchema = z.object({
   documentType: z.enum([

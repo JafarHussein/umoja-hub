@@ -425,3 +425,40 @@ export function peerComment(rng: Rng, positive: boolean): string {
         'Functional, but the code could use more comments and the structure is a bit hard to navigate.',
       ]);
 }
+
+/**
+ * The brief stored on an engagement that started from a lecturer's own project.
+ *
+ * Mirrors `assignmentToBrief` in the app, deliberately: a seeded lecturer
+ * project and a real one must be the same record, or the demonstration is of
+ * something that does not exist.
+ */
+export function assignedBrief(
+  assignment: {
+    _id: unknown;
+    title: string;
+    problemStatement: string;
+    coreRequirements: string[];
+    deliverables?: string[];
+    technicalConstraints?: string[];
+    knowledgeAreas: string[];
+  },
+  anchor: SeedAcademicAnchor,
+  setBy: string
+): Record<string, unknown> {
+  const areas = assignment.knowledgeAreas.filter(isKnowledgeArea);
+  return {
+    title: assignment.title,
+    academicAnchor: anchor,
+    assignmentId: String(assignment._id),
+    setBy,
+    problemStatement: assignment.problemStatement,
+    coreRequirements: assignment.coreRequirements,
+    technicalConstraints: assignment.technicalConstraints ?? [],
+    deliverables: assignment.deliverables ?? [],
+    exercises:
+      areas.length > 0
+        ? areas.map((a) => KNOWLEDGE_AREAS[a].label)
+        : ['Engineering judgement'],
+  };
+}

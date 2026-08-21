@@ -7,6 +7,8 @@ import { briefRequestSchema } from '@/lib/validation/educationSchema';
 import { generateAIBrief, generateOpenSourceBrief } from '@/lib/integrations/openaiService';
 import type { BriefContextInput } from '@/lib/integrations/openaiService';
 import { loadAcademicContext } from '@/lib/education/academicContext';
+import { assignmentToBrief, isEligible, takenCount } from '@/lib/education/assignment';
+import type { AssignmentRecord } from '@/lib/education/assignment';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { Role, ProjectTrack, ProjectStatus, UserStatus } from '@/types';
 
@@ -45,7 +47,7 @@ type BriefContextItem = {
 // ---------------------------------------------------------------------------
 // POST /api/education/engagements — Generate brief + create ProjectEngagement
 // Auth: STUDENT
-// Body: { track: ProjectTrack, interest?: string, githubRepoUrl?: string }
+// Body: { track, interest?, githubRepoUrl? (OPEN_SOURCE), assignmentId? (LECTURER_ASSIGNED) }
 //
 // A project starts from the units the student is taking, never from a
 // difficulty they picked for themselves. That is why there is no tier here any
@@ -72,7 +74,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { track, interest, githubRepoUrl } = parsed.data;
+    const { track, interest, githubRepoUrl, assignmentId } = parsed.data;
+
+    if (track === ProjectTrack.LECTURER_ASSIGNED && !assignmentId) {
+      return NextResponse.json(
+        {
+          error: 'Choose which of your lecturer’s projects you are starting.',
+          code: 'VALIDATION_FAILED',
+        },
+        { status: 400 }
+      );
+    }
 
     // OPEN_SOURCE requires a valid GitHub repository URL
     if (track === ProjectTrack.OPEN_SOURCE) {
@@ -193,7 +205,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     let brief: Record<string, unknown>;
     let githubRepoName: string | undefined;
 
-    if (track === ProjectTrack.OPEN_SOURCE) {
+    if (track === ProjectTrack.LECTURER_ASSIGNED) {
+      const { default: ProjectAssignment } = await import('@/lib/models/ProjectAssignment.model');
+      const assignment = (await ProjectAssignment.findById(assignmentId)
+        .populate('lecturerId', 'firstName lastName')
+        .lean()) as unknown as (AssignmentRecord & { lecturerId: unknown }) | null;
+
+      // Eligibility is re-checked here, not trusted from the list the student
+      // was shown: the offer may have closed or filled since the page loaded,
+      // and the list is a convenience, never the authority.
+      if (
+        !assignment ||
+        !isEligible(assignment, {
+          studentId,
+          institutionId: student.studentData?.institutionId,
+          academic,
+        })
+      ) {
+        throw new AppError(
+          'That project is not open to you. It may have been closed since you opened this page.',
+          404,
+          'ASSIGNMENT_UNAVAILABLE'
+        );
+      }
+
+      if (assignment.capacity && (await takenCount(assignment._id)) >= assignment.capacity) {
+        throw new AppError(
+          'That project is full. Your lecturer set a limit on how many students can take it.',
+          409,
+          'ASSIGNMENT_FULL'
+        );
+      }
+
+      const ref = assignment.lecturerId as { firstName?: string; lastName?: string } | null;
+      const setBy = `${ref?.firstName ?? ''} ${ref?.lastName ?? ''}`.trim() || 'Your lecturer';
+      brief = assignmentToBrief(assignment, academic, setBy) as unknown as Record<string, unknown>;
+    } else if (track === ProjectTrack.OPEN_SOURCE) {
       const match = githubRepoUrl!.match(/^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)/);
       githubRepoName = match ? match[1] : undefined;
       const openSourceBrief = await generateOpenSourceBrief(
@@ -218,6 +265,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       brief,
       ...(chosenInterest && { interest: chosenInterest }),
       ...(industryName && { industryName }),
+      ...(assignmentId && track === ProjectTrack.LECTURER_ASSIGNED && { assignmentId }),
       ...(briefContextId && { briefContextId }),
       ...(githubRepoUrl && { githubRepoUrl }),
       ...(githubRepoName && { githubRepoName }),

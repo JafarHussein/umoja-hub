@@ -7,9 +7,9 @@ import crypto from 'crypto';
 import type { SimContext, World } from '../world';
 import { createDoc, pushNotification } from '../helpers';
 import { between, daysAgo, daysAfter } from '../clock';
-import { PROJECT_TITLES, TECH_STACKS, OSS_REPOSITORIES } from '../dictionaries';
+import { PROJECT_TITLES, TECH_STACKS, OSS_REPOSITORIES, LECTURER_PROJECTS } from '../dictionaries';
 import {
-  aiBrief, openSourceBrief, problemBreakdown, approachPlan, finalReflection,
+  aiBrief, openSourceBrief, assignedBrief, problemBreakdown, approachPlan, finalReflection,
   blockerEntry, aiUsageEntry, lecturerComment, peerComment,
 } from '../text';
 import type { SeedAcademicAnchor } from '../text';
@@ -19,6 +19,7 @@ import {
 import {
   ProjectTrack, ProjectStatus, PeerReviewStatus, LecturerDecision,
   NotificationType, AcademicDiscipline, AcademicProvenance, ACADEMIC_PROVENANCE_LABEL,
+  AssignmentAudience, AssignmentStatus,
 } from '../../../src/types';
 
 function sha256(s: string): string {
@@ -176,10 +177,85 @@ async function generateEnrolments(
   return academics;
 }
 
+export interface SeededAssignment {
+  _id: import('mongoose').Types.ObjectId;
+  title: string;
+  problemStatement: string;
+  coreRequirements: string[];
+  deliverables: string[];
+  technicalConstraints: string[];
+  knowledgeAreas: string[];
+  targetYear: number;
+  targetSemester: number;
+  setBy: string;
+}
+
+// Work the lecturers set themselves. Every verified lecturer writes one, so a
+// demonstration can open any lecturer's account and find their own projects
+// there rather than an empty screen that has to be explained away.
+async function generateAssignments(
+  ctx: SimContext,
+  world: World
+): Promise<Map<string, SeededAssignment[]>> {
+  const { ledger } = ctx;
+  const { default: ProjectAssignment } = await import(
+    '../../../src/lib/models/ProjectAssignment.model'
+  );
+
+  const byInstitution = new Map<string, SeededAssignment[]>();
+
+  for (let i = 0; i < world.lecturers.length; i++) {
+    const lecturer = world.lecturers[i]!;
+    if (!lecturer.institutionId) continue;
+    const source = LECTURER_PROJECTS[i % LECTURER_PROJECTS.length]!;
+    const createdAt = daysAfter(lecturer.joinedAt, 20);
+
+    const doc = ledger.track(
+      'ProjectAssignment',
+      await createDoc(ProjectAssignment, {
+        lecturerId: lecturer.id,
+        institutionId: lecturer.institutionId,
+        title: source.title,
+        problemStatement: source.problemStatement,
+        coreRequirements: source.coreRequirements,
+        deliverables: source.deliverables,
+        technicalConstraints: source.technicalConstraints,
+        knowledgeAreas: source.knowledgeAreas,
+        targetYear: source.targetYear,
+        targetSemester: source.targetSemester,
+        audience: AssignmentAudience.COHORT,
+        assignedStudentIds: [],
+        status: AssignmentStatus.OPEN,
+        createdAt,
+        updatedAt: createdAt,
+      })
+    );
+
+    const key = String(lecturer.institutionId);
+    const list = byInstitution.get(key) ?? [];
+    list.push({
+      _id: doc._id,
+      title: source.title,
+      problemStatement: source.problemStatement,
+      coreRequirements: source.coreRequirements,
+      deliverables: source.deliverables,
+      technicalConstraints: source.technicalConstraints,
+      knowledgeAreas: source.knowledgeAreas,
+      targetYear: source.targetYear,
+      targetSemester: source.targetSemester,
+      setBy: lecturer.fullName,
+    });
+    byInstitution.set(key, list);
+  }
+
+  return byInstitution;
+}
+
 export async function generateEducation(ctx: SimContext, world: World): Promise<void> {
   const { rng, ledger, batcher } = ctx;
 
   const academics = await generateEnrolments(ctx, world);
+  const assignmentsByInstitution = await generateAssignments(ctx, world);
 
   if (world.students.length < 2 || world.lecturers.length === 0) return;
 
@@ -249,6 +325,13 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
     const cohort = others.filter((s) => String(s.institutionId) === String(student.institutionId));
     const peerPool = cohort.length > 0 ? cohort : others;
 
+    // A project their own lecturer set, aimed at the semester they are in.
+    // Only the first engagement uses it: a student takes up an offer once.
+    const offered = (assignmentsByInstitution.get(String(student.institutionId)) ?? []).find(
+      (a) =>
+        a.targetYear === academic.anchor.year && a.targetSemester === academic.anchor.semester
+    );
+
     // A guarantor must have at least one project, or there is nothing to queue.
     const isGuarantor = queueGuarantor.get(String(student.institutionId)) === String(student.id);
     const drawn = rng.int(activity.engagements[0], activity.engagements[1]);
@@ -256,7 +339,12 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
     for (let e = 0; e < n; e++) {
       const title = rng.pick(PROJECT_TITLES);
       const stack = rng.sample(TECH_STACKS, rng.int(2, 4));
-      const track = rng.bool(0.6) ? ProjectTrack.AI_BRIEF : ProjectTrack.OPEN_SOURCE;
+      const takesOffer = e === 0 && offered !== undefined && rng.bool(0.7);
+      const track = takesOffer
+        ? ProjectTrack.LECTURER_ASSIGNED
+        : rng.bool(0.6)
+          ? ProjectTrack.AI_BRIEF
+          : ProjectTrack.OPEN_SOURCE;
       const startedAt = between(rng, student.joinedAt, daysAgo(5));
       const repo = track === ProjectTrack.OPEN_SOURCE ? rng.pick(OSS_REPOSITORIES) : null;
 
@@ -306,9 +394,12 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       const engagement = ledger.track('ProjectEngagement', await createDoc(ProjectEngagement, {
         studentId: student.id, track, interest: academic.interest,
         status,
-        brief: repo
-          ? openSourceBrief(repo.url, repo.name, academic.anchor)
-          : aiBrief(rng, title, academic.anchor, stack, academic.interest),
+        ...(takesOffer && offered ? { assignmentId: offered._id } : {}),
+        brief: takesOffer && offered
+          ? assignedBrief(offered, academic.anchor, offered.setBy)
+          : repo
+            ? openSourceBrief(repo.url, repo.name, academic.anchor)
+            : aiBrief(rng, title, academic.anchor, stack, academic.interest),
         githubRepoUrl: repo?.url,
         githubRepoName: repo?.name,
         documents,

@@ -303,6 +303,28 @@ export const MAX_CURRENT_UNITS = 10;
 export enum ProjectTrack {
   OPEN_SOURCE = 'OPEN_SOURCE',
   AI_BRIEF = 'AI_BRIEF',
+  // A brief a lecturer wrote themselves. Their knowledge of their own cohort
+  // beats any generator, and a platform that cannot accept that is telling
+  // academics their judgement is unwelcome.
+  LECTURER_ASSIGNED = 'LECTURER_ASSIGNED',
+}
+
+/**
+ * Where a lecturer's project stands. A draft is theirs alone; an open project
+ * can be taken up; a closed one keeps its history but takes nobody new.
+ */
+export enum AssignmentStatus {
+  DRAFT = 'DRAFT',
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+}
+
+/** How a student came to be working on a lecturer's project. */
+export enum AssignmentAudience {
+  /** Offered to the lecturer's cohort; a student chooses it. */
+  COHORT = 'COHORT',
+  /** Given to named students; nobody else sees it. */
+  NAMED = 'NAMED',
 }
 
 export enum ProjectStatus {

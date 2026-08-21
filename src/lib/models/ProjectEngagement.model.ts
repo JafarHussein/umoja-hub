@@ -56,6 +56,10 @@ const projectEngagementSchema = new Schema(
     // gone: the units decide what the work must exercise.
     interest: { type: String, trim: true },
     industryName: { type: String, trim: true },
+    // Set when a lecturer's own project is what the student is working on. The
+    // project exists independently of this engagement, which is what lets a
+    // lecturer close an offer without disturbing work already under way.
+    assignmentId: { type: Schema.Types.ObjectId, ref: 'ProjectAssignment' },
     status: {
       type: String,
       enum: Object.values(ProjectStatus),
@@ -102,6 +106,7 @@ export interface ProjectEngagementDoc {
   track: string;
   interest?: string;
   industryName?: string;
+  assignmentId?: mongoose.Types.ObjectId;
   status: string;
   brief?: Record<string, unknown>;
   briefContextId?: mongoose.Types.ObjectId;
