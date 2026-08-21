@@ -13,8 +13,11 @@ import {
   blockerEntry, aiUsageEntry, lecturerComment, peerComment,
 } from '../text';
 import {
+  spineFor, SELF_DECLARED_PROGRAMME_NAMES, PROGRAMME_SEMESTERS_PER_YEAR,
+} from '../content/curriculum';
+import {
   ProjectTrack, ProjectStatus, PeerReviewStatus, LecturerDecision,
-  StudentTier, NotificationType,
+  StudentTier, NotificationType, AcademicDiscipline, AcademicProvenance,
 } from '../../../src/types';
 
 function sha256(s: string): string {
@@ -37,8 +40,108 @@ interface LecturerStat {
   scoreSum: number; scoreCount: number; lastAt: Date;
 }
 
+// Every student is studying something, whether or not their university has
+// published a curriculum here. Both provenances therefore exist in the demo
+// world: a student at UoN or JKUAT picks their semester off the published
+// programme, and a student at Strathmore or Moi types the same facts out. The
+// second is the majority case in Kenya today, so a demonstration that only ever
+// showed the first would be showing a product we do not have.
+async function generateEnrolments(ctx: SimContext, world: World): Promise<void> {
+  const { rng, ledger } = ctx;
+
+  const { default: AcademicProgramme } = await import('../../../src/lib/models/AcademicProgramme.model');
+  const { default: CurriculumUnit } = await import('../../../src/lib/models/CurriculumUnit.model');
+  const { default: StudentEnrolment } = await import('../../../src/lib/models/StudentEnrolment.model');
+
+  const programmes = await AcademicProgramme.find({}).lean();
+  const units = await CurriculumUnit.find({}).lean();
+
+  const unitsByProgramme = new Map<string, typeof units>();
+  for (const unit of units) {
+    const key = String(unit.programmeId);
+    const bucket = unitsByProgramme.get(key);
+    if (bucket) bucket.push(unit);
+    else unitsByProgramme.set(key, [unit]);
+  }
+
+  for (const student of world.students) {
+    const discipline = rng.bool(0.65) ? AcademicDiscipline.CS : AcademicDiscipline.IT;
+    // A first-year has not built anything yet; the archetypes that have
+    // engagements behind them are further into the degree.
+    const year = student.archetype === 'new' ? rng.int(1, 2) : rng.int(2, 4);
+    const semester = rng.int(1, PROGRAMME_SEMESTERS_PER_YEAR);
+    const recordedAt = daysAfter(student.joinedAt, rng.int(0, 6));
+
+    const published = programmes.filter(
+      (p) =>
+        String(p.institutionId) === String(student.institutionId) && p.discipline === discipline
+    );
+    const programme = published[0];
+    const semesterUnits = programme
+      ? (unitsByProgramme.get(String(programme._id)) ?? []).filter(
+          (u) => u.year === year && u.semester === semester
+        )
+      : [];
+
+    // Nobody registers for every unit on offer — carrying a subset is normal.
+    const enrolled =
+      semesterUnits.length > 0
+        ? rng.sample(semesterUnits, rng.int(Math.min(4, semesterUnits.length), semesterUnits.length))
+        : [];
+
+    const doc =
+      programme && enrolled.length > 0
+        ? {
+            studentId: student.id,
+            institutionId: student.institutionId,
+            programmeId: programme._id,
+            programmeName: programme.name,
+            discipline,
+            currentYear: year,
+            currentSemester: semester,
+            currentUnits: enrolled.map((u) => ({
+              unitId: u._id,
+              code: u.code,
+              title: u.title,
+              knowledgeAreas: u.knowledgeAreas,
+            })),
+            completedUnits: [],
+            provenance: AcademicProvenance.INSTITUTION_CURRICULUM,
+            provenanceRecordedAt: recordedAt,
+          }
+        : {
+            studentId: student.id,
+            ...(student.institutionId ? { institutionId: student.institutionId } : {}),
+            programmeName: SELF_DECLARED_PROGRAMME_NAMES[discipline],
+            discipline,
+            currentYear: year,
+            currentSemester: semester,
+            // Typed out by the student: the unit names are the same subjects,
+            // but nothing here carries institutional weight, and a code is only
+            // present when the student happened to write one down.
+            currentUnits: rng
+              .sample(spineFor(discipline)[year - 1]![semester - 1] ?? [], rng.int(4, 5))
+              .map((u) => ({
+                title: u.title,
+                knowledgeAreas: u.knowledgeAreas,
+              })),
+            completedUnits: [],
+            provenance: AcademicProvenance.SELF_DECLARED,
+            provenanceRecordedAt: recordedAt,
+          };
+
+    ledger.track(
+      'StudentEnrolment',
+      await createDoc(StudentEnrolment, { ...doc, createdAt: recordedAt, updatedAt: recordedAt })
+    );
+  }
+}
+
 export async function generateEducation(ctx: SimContext, world: World): Promise<void> {
   const { rng, ledger, batcher } = ctx;
+
+  await generateEnrolments(ctx, world);
+
   if (world.students.length < 2 || world.lecturers.length === 0) return;
 
   const { default: User } = await import('../../../src/lib/models/User.model');

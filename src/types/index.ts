@@ -245,6 +245,67 @@ export enum StudentTier {
   ADVANCED = 'ADVANCED',
 }
 
+// ---------------------------------------------------------------------------
+// Academic context
+//
+// Kenyan CS/IT curricula are developed against CUE guidelines benchmarked to
+// the IEEE/ACM computing curricula: institutions name the same subject
+// differently — SCS 301, BCS 2205, ICS 2304 and CIT 3151 may all be Database
+// Systems II — but the discipline underneath does not vary. The platform
+// therefore reasons about subject matter and never about institutional unit
+// codes; a per-institution unit is a *label* mapped onto this closed,
+// platform-owned taxonomy. Onboarding a new university is then a mapping
+// exercise rather than a new integration.
+// ---------------------------------------------------------------------------
+
+export enum KnowledgeArea {
+  PROGRAMMING_FUNDAMENTALS = 'PROGRAMMING_FUNDAMENTALS',
+  DATA_STRUCTURES_ALGORITHMS = 'DATA_STRUCTURES_ALGORITHMS',
+  DATABASE_SYSTEMS = 'DATABASE_SYSTEMS',
+  NETWORKING = 'NETWORKING',
+  OPERATING_SYSTEMS = 'OPERATING_SYSTEMS',
+  SOFTWARE_ENGINEERING = 'SOFTWARE_ENGINEERING',
+  WEB_DEVELOPMENT = 'WEB_DEVELOPMENT',
+  MOBILE_DEVELOPMENT = 'MOBILE_DEVELOPMENT',
+  ARTIFICIAL_INTELLIGENCE = 'ARTIFICIAL_INTELLIGENCE',
+  MACHINE_LEARNING = 'MACHINE_LEARNING',
+  DATA_ENGINEERING = 'DATA_ENGINEERING',
+  CLOUD_COMPUTING = 'CLOUD_COMPUTING',
+  DISTRIBUTED_SYSTEMS = 'DISTRIBUTED_SYSTEMS',
+  INFORMATION_SECURITY = 'INFORMATION_SECURITY',
+  HUMAN_COMPUTER_INTERACTION = 'HUMAN_COMPUTER_INTERACTION',
+  SYSTEMS_ANALYSIS_DESIGN = 'SYSTEMS_ANALYSIS_DESIGN',
+  COMPUTER_ARCHITECTURE = 'COMPUTER_ARCHITECTURE',
+  RESEARCH_METHODS = 'RESEARCH_METHODS',
+}
+
+/** The only two disciplines in scope. Other faculties are future scope. */
+export enum AcademicDiscipline {
+  CS = 'CS',
+  IT = 'IT',
+}
+
+/**
+ * How the platform came to believe a student's academic record. These are the
+ * rungs of the capability ladder that are actually implemented; self-declared
+ * data is never presented as though it had been confirmed by anyone.
+ */
+export enum AcademicProvenance {
+  SELF_DECLARED = 'SELF_DECLARED',
+  INSTITUTION_CURRICULUM = 'INSTITUTION_CURRICULUM',
+}
+
+export const ACADEMIC_PROVENANCE_LABEL: Record<AcademicProvenance, string> = {
+  [AcademicProvenance.SELF_DECLARED]: 'You told us this',
+  [AcademicProvenance.INSTITUTION_CURRICULUM]: 'From your institution’s published curriculum',
+};
+
+/** Kenyan degrees run two teaching semesters a year; a few run three. */
+export const MAX_SEMESTERS_PER_YEAR = 3;
+export const MAX_PROGRAMME_YEARS = 6;
+/** How many units a student may declare as current. A Kenyan semester is 5–8. */
+export const MAX_CURRENT_UNITS = 10;
+
 export enum ProjectTrack {
   OPEN_SOURCE = 'OPEN_SOURCE',
   AI_BRIEF = 'AI_BRIEF',

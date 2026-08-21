@@ -485,6 +485,82 @@ export async function validate(): Promise<boolean> {
     `${fabricatedCommits} fabricated snapshots`
   );
 
+  // ---- Academic context ----
+  // The Hub's whole claim is that the work comes from what the student is
+  // studying, so a seeded student with no coursework on record is a student the
+  // product cannot serve — and would be discovered on the day, not before it.
+  const { default: StudentEnrolment } = await import('../../src/lib/models/StudentEnrolment.model');
+  const { default: AcademicProgramme } = await import('../../src/lib/models/AcademicProgramme.model');
+  const { default: CurriculumUnit } = await import('../../src/lib/models/CurriculumUnit.model');
+  const { toAcademicContext } = await import('../../src/lib/education/academicContext');
+  const { AcademicProvenance } = await import('../../src/types');
+
+  const seededStudentIds = (
+    await User.find({ _id: { $in: userIds }, role: Role.STUDENT }).select('_id').lean()
+  ).map((u) => u._id);
+  const enrolments = await StudentEnrolment.find({
+    studentId: { $in: seededStudentIds },
+  } as object).lean();
+
+  ok(
+    'every student has recorded what they are studying',
+    enrolments.length === seededStudentIds.length,
+    `${enrolments.length}/${seededStudentIds.length} enrolled`
+  );
+
+  // Reads the enrolment exactly as the application does — a record the domain
+  // layer refuses to interpret is a record no brief can be written from.
+  const unreadable = enrolments.filter((e) => toAcademicContext(e) === null);
+  ok(
+    'every enrolment resolves to knowledge areas the Hub can reason with',
+    unreadable.length === 0,
+    `${enrolments.length - unreadable.length}/${enrolments.length} readable`
+  );
+
+  // Both rungs of the ladder must be present. If the demo world only ever shows
+  // institution-published coursework, the path most Kenyan students will take
+  // is the one nobody looks at.
+  const declaredCount = enrolments.filter(
+    (e) => e.provenance === AcademicProvenance.SELF_DECLARED
+  ).length;
+  const publishedCount = enrolments.length - declaredCount;
+  ok(
+    'both self-declared and institution-published coursework exist',
+    declaredCount > 0 && publishedCount > 0,
+    `${publishedCount} published, ${declaredCount} self-declared`
+  );
+
+  // An institution-published enrolment must actually cite the institution's own
+  // units; otherwise the provenance label on screen is a claim, not a fact.
+  const publishedUnitIds = new Set(
+    (await CurriculumUnit.find({ _id: { $in: idsOf('CurriculumUnit') } }).select('_id').lean()).map(
+      (u) => String(u._id)
+    )
+  );
+  const unbacked = enrolments.filter(
+    (e) =>
+      e.provenance === AcademicProvenance.INSTITUTION_CURRICULUM &&
+      !e.currentUnits.every((u) => u.unitId && publishedUnitIds.has(String(u.unitId)))
+  );
+  ok(
+    'every institution-published enrolment cites real curriculum units',
+    unbacked.length === 0,
+    `${publishedCount - unbacked.length}/${publishedCount} backed`
+  );
+
+  const programmeCount = await AcademicProgramme.countDocuments({
+    _id: { $in: idsOf('AcademicProgramme') },
+  } as object);
+  const unmappedUnits = await CurriculumUnit.countDocuments({
+    _id: { $in: idsOf('CurriculumUnit') },
+    knowledgeAreas: { $size: 0 },
+  } as object);
+  ok(
+    'the published curriculum maps every unit onto the taxonomy',
+    programmeCount > 0 && unmappedUnits === 0,
+    `${programmeCount} programmes, ${publishedUnitIds.size} units, ${unmappedUnits} unmapped`
+  );
+
   // ---- No placeholder text ----
   // A guard against exactly the thing the demo must never show a panel.
   const placeholder = /lorem ipsum|TODO|FIXME|John Doe|Jane Smith|test test|xxx+|placeholder/i;

@@ -22,6 +22,12 @@ import { knowledgeArticles } from '../content/knowledge';
 import { verifiedSuppliers } from '../content/suppliers';
 import { briefContextLibrary } from '../content/briefs';
 import {
+  PUBLISHED_CURRICULA,
+  PROGRAMME_DURATION_YEARS,
+  PROGRAMME_SEMESTERS_PER_YEAR,
+  flattenSpine,
+} from '../content/curriculum';
+import {
   DEMO_ACCOUNTS,
   DEMO_PASSWORDS,
   ACCOUNT_DEFAULTS,
@@ -144,6 +150,8 @@ export async function generateFoundation(ctx: SimContext): Promise<FoundationRes
   const { default: VerifiedSupplier } = await import('../../../src/lib/models/VerifiedSupplier.model');
   const { default: KnowledgeArticle } = await import('../../../src/lib/models/KnowledgeArticle.model');
   const { default: BriefContextLibrary } = await import('../../../src/lib/models/BriefContextLibrary.model');
+  const { default: AcademicProgramme } = await import('../../../src/lib/models/AcademicProgramme.model');
+  const { default: CurriculumUnit } = await import('../../../src/lib/models/CurriculumUnit.model');
 
   // ---- Partner institutions ----
   // Created first so the canonical students and lecturers can be linked to a
@@ -167,6 +175,37 @@ export async function generateFoundation(ctx: SimContext): Promise<FoundationRes
     );
     institutionByName.set(uni.name, { id: inst._id, county: uni.county });
     world.institutions.push({ id: inst._id, name: uni.name, county: uni.county });
+
+    // ---- Published curriculum ----
+    // Only for the institutions that have actually published one. The rest have
+    // not, and their students declare their own units — the path most Kenyan
+    // students will take, which therefore has to be present in the demo world
+    // rather than assumed to work.
+    for (const published of PUBLISHED_CURRICULA[uni.name] ?? []) {
+      const programme = ledger.track(
+        'AcademicProgramme',
+        await createDoc(AcademicProgramme, {
+          institutionId: inst._id,
+          name: published.name,
+          discipline: published.discipline,
+          durationYears: PROGRAMME_DURATION_YEARS,
+          semestersPerYear: PROGRAMME_SEMESTERS_PER_YEAR,
+          createdAt,
+          updatedAt: createdAt,
+        })
+      );
+      for (const unit of flattenSpine(published)) {
+        ledger.track(
+          'CurriculumUnit',
+          await createDoc(CurriculumUnit, {
+            programmeId: programme._id,
+            ...unit,
+            createdAt,
+            updatedAt: createdAt,
+          })
+        );
+      }
+    }
   }
 
   // ---- Canonical accounts ----

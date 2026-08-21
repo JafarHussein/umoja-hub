@@ -4,6 +4,9 @@ import type {
   ProjectStatus,
   LecturerDecision,
   PeerReviewStatus,
+  KnowledgeArea,
+  AcademicDiscipline,
+  AcademicProvenance,
 } from './index';
 
 // ---------------------------------------------------------------------------
@@ -214,6 +217,72 @@ export interface ILecturerEffectiveness {
   };
   averageCommentWordCount: number;
   lastReviewAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ---------------------------------------------------------------------------
+// Academic context
+//
+// Three entities, deliberately separate. A programme and its units belong to an
+// institution and change once a curriculum is revised. An enrolment belongs to
+// a student and changes every semester. Keeping them apart is what lets a
+// student at an institution that has never heard of UmojaHub still record what
+// they are studying.
+// ---------------------------------------------------------------------------
+
+export interface IAcademicProgramme {
+  _id: string;
+  institutionId: string;
+  name: string;
+  discipline: AcademicDiscipline;
+  durationYears: number;
+  semestersPerYear: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICurriculumUnit {
+  _id: string;
+  programmeId: string;
+  /** The institution's own code — a label, never reasoned about. */
+  code: string;
+  title: string;
+  /** Where this unit normally sits in the programme. */
+  year: number;
+  semester: number;
+  /** The mapping onto the canonical taxonomy. This is the integration surface. */
+  knowledgeAreas: KnowledgeArea[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * A unit as it stands on a student's record — a snapshot, not a reference.
+ * `unitId` is present when it came from a published curriculum and absent when
+ * the student typed it; either way the record survives a curriculum revision.
+ */
+export interface IEnrolledUnit {
+  unitId?: string;
+  code?: string;
+  title: string;
+  knowledgeAreas: KnowledgeArea[];
+}
+
+export interface IStudentEnrolment {
+  _id: string;
+  studentId: string;
+  institutionId?: string;
+  programmeId?: string;
+  /** Free text when no published programme was chosen. */
+  programmeName: string;
+  discipline: AcademicDiscipline;
+  currentYear: number;
+  currentSemester: number;
+  currentUnits: IEnrolledUnit[];
+  completedUnits: IEnrolledUnit[];
+  provenance: AcademicProvenance;
+  provenanceRecordedAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }

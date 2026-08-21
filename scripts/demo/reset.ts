@@ -25,6 +25,7 @@ const OWNED_BY_USER: Array<[string, string[]]> = [
   ['WithdrawalRequest', ['farmerId']],
   ['MediationRequest', ['farmerId', 'buyerId']],
   ['ProjectEngagement', ['studentId']],
+  ['StudentEnrolment', ['studentId']],
   ['PeerReview', ['reviewerId']],
   ['LecturerReview', ['lecturerId']],
   ['LecturerEffectiveness', ['lecturerId']],

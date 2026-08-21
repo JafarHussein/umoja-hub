@@ -30,3 +30,6 @@ import '../../src/lib/models/ChatSession.model';
 import '../../src/lib/models/MentorSession.model';
 import '../../src/lib/models/PriceAlert.model';
 import '../../src/lib/models/GroupOrder.model';
+import '../../src/lib/models/AcademicProgramme.model';
+import '../../src/lib/models/CurriculumUnit.model';
+import '../../src/lib/models/StudentEnrolment.model';
