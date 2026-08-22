@@ -97,6 +97,13 @@ const FIXTURE_ENGAGEMENT_DOC_AT = new Date('2026-01-01T00:00:00.000Z');
 // Institution document is needed to prove the boundary works.
 const FIXTURE_INSTITUTION_ID = '000000000000000000000030';
 
+// The author of the report in the lecturer's queue. A real student in the
+// lecturer's institution, and deliberately not the `student` fixture — that
+// account's workspace resolves its project through
+// /api/education/engagements/me, which returns their most recent active
+// engagement, so a second one would quietly move their spec to another project.
+const FIXTURE_REPORT_AUTHOR_ID = '000000000000000000000031';
+
 const FIXTURE_PEER_ENGAGEMENT_ID = '000000000000000000000021';
 const FIXTURE_PEER_REVIEW_ID = '000000000000000000000022';
 const FIXTURE_PEER_AUTHOR_ID = '000000000000000000000023';
@@ -532,7 +539,29 @@ export default async function globalSetup(): Promise<void> {
   // peer-review anonymity assertions. The review queue is scoped by
   // institution, so a report whose author is not a real user in the lecturer's
   // cohort can never appear in it however it is seeded.
-  const lecturerReviewStudentId = studentId ?? FIXTURE_PEER_AUTHOR_ID;
+  await UserModel.findOneAndUpdate(
+    { _id: FIXTURE_REPORT_AUTHOR_ID },
+    {
+      $set: {
+        email: 'report-author@uni.e2e.test',
+        firstName: 'Wanjiru',
+        lastName: 'Kariuki',
+        role: Role.STUDENT,
+        onboardingStage: OnboardingStage.COMPLETED,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        studentData: {
+          institutionalEmail: 'report-author@uni.e2e.test',
+          institutionalEmailVerified: true,
+          academicRegistrationNumber: 'REG-E2E-002',
+          institutionId: FIXTURE_INSTITUTION_ID,
+        },
+      },
+    },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+
+  const lecturerReviewStudentId = FIXTURE_REPORT_AUTHOR_ID;
 
   await ProjectEngagementModel.findOneAndUpdate(
     { _id: FIXTURE_LECTURER_ENGAGEMENT_ID },
