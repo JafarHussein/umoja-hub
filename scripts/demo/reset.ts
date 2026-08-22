@@ -212,3 +212,83 @@ export async function resetAllRuns(): Promise<number> {
   }
   return total;
 }
+
+// ---------------------------------------------------------------------------
+// Sign-up and sign-in throttles.
+//
+// These live in Upstash, not Mongo, so `resetAllRuns` above cannot see them —
+// and they outlive the world by design: the registration cap is a one-hour
+// window keyed on the caller's address, and every request from a demo machine
+// presents as the same address. Rehearsing the signup a dozen times therefore
+// leaves a counter that is still spent when the interview starts, and a fresh
+// world with a locked signup form is not a fresh world.
+//
+// Deliberately narrow. Only the two prefixes the auth throttles own are
+// touched, matched key by key rather than flushed, so nothing else in the cache
+// — and nothing belonging to any other deployment sharing the instance — is at
+// risk. A missing or unreachable Redis is not an error here: the throttles fall
+// back to per-process memory, which a restart clears anyway.
+const THROTTLE_PREFIXES = ['register-ip:', 'login:', 'pwreset-ip:', 'pwreset-email:'];
+
+export async function clearAuthThrottles(): Promise<number> {
+  const { createRedisClient } = await import('../../src/lib/redisClient');
+  const redis = createRedisClient('demo-reset');
+  if (!redis) return 0;
+
+  let cleared = 0;
+  try {
+    for (const prefix of THROTTLE_PREFIXES) {
+      const keys = await redis.keys(`${prefix}*`);
+      if (keys.length === 0) continue;
+      await redis.del(...keys);
+      cleared += keys.length;
+    }
+  } catch (err) {
+    // A throttle that survives is an inconvenience, not a broken world. Say so
+    // and carry on rather than failing the build over the cache.
+    log(`could not clear auth throttles (${String(err)}) — registering may be rate-limited.`);
+    return cleared;
+  }
+
+  if (cleared > 0) log(`cleared ${cleared} auth throttle counter(s) — signup is open again.`);
+  return cleared;
+}
+
+// Remove the accounts the demonstration creates through the application itself.
+//
+// Scoped to the explicit `REHEARSAL_ACCOUNTS` address list — never a pattern,
+// never "recently created", never "has no run". Those broader rules would all
+// eventually match a real person's account, and this is the only path in the
+// reset that can delete a user who signed up for themselves. Anything they
+// created is removed first, through the same owner map the other sweeps use, so
+// no orphan is left behind.
+export async function clearRehearsalAccounts(): Promise<number> {
+  const { REHEARSAL_ACCOUNTS } = await import('./content/accounts');
+  const User = mongoose.model('User');
+
+  const emails = REHEARSAL_ACCOUNTS.map((a) => a.email);
+  if (emails.length === 0) return 0;
+
+  const found = await User.find({ email: { $in: emails } })
+    .select('_id email')
+    .lean<Array<{ _id: mongoose.Types.ObjectId; email: string }>>();
+  if (found.length === 0) return 0;
+
+  const ids = found.map((u) => u._id);
+  let deleted = 0;
+  for (const [collection, fields] of OWNED_BY_USER) {
+    const res = await mongoose.model(collection).deleteMany({
+      $or: fields.map((f) => ({ [f]: { $in: ids } })),
+    });
+    deleted += res.deletedCount ?? 0;
+  }
+  const userRes = await User.deleteMany({ _id: { $in: ids } });
+  deleted += userRes.deletedCount ?? 0;
+
+  log(
+    `freed ${found.length} rehearsal account(s) so the live signup works again: ${found
+      .map((u) => u.email)
+      .join(', ')}`
+  );
+  return deleted;
+}
