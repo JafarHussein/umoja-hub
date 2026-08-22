@@ -26,11 +26,13 @@ const OWNED_BY_USER: Array<[string, string[]]> = [
   ['MediationRequest', ['farmerId', 'buyerId']],
   ['ProjectEngagement', ['studentId']],
   ['ProjectAssignment', ['lecturerId']],
+  ['ProjectDocumentation', ['studentId']],
+  ['Demonstration', ['studentId', 'lecturerId']],
+  ['DemonstrationSlot', ['lecturerId']],
   ['StudentEnrolment', ['studentId']],
   ['PeerReview', ['reviewerId']],
   ['LecturerReview', ['lecturerId']],
   ['LecturerEffectiveness', ['lecturerId']],
-  ['VerificationAuditLog', ['studentId', 'lecturerId']],
   ['Notification', ['userId']],
   ['AdminAuditLog', ['adminId']],
 ];
@@ -81,6 +83,14 @@ export async function resetRun(runId?: string): Promise<ResetResult | null> {
     deleted += res.deletedCount ?? 0;
     log(`  ${collection}: deleted ${res.deletedCount ?? 0}/${ids.length}`);
   }
+
+  // The stored report files are not documents in this database, so no ledger
+  // row covers them. Without this the demo's PDFs accumulate in the storage
+  // account on every run — the same class of leftover as the orphaned records
+  // below, one layer out.
+  const { purgeDemoReports } = await import('./documents');
+  const purged = await purgeDemoReports();
+  if (purged > 0) log(`  removed ${purged} stored report file(s).`);
 
   await SimulationRun.deleteOne({ runId: run.runId });
   log(`reset run ${run.runId} — removed ${deleted} documents + the run record.`);

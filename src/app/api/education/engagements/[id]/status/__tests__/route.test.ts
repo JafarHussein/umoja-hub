@@ -23,6 +23,7 @@ jest.mock('@/lib/models/ProjectEngagement.model', () => ({
   },
 }));
 
+
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/options', () => ({ authOptions: {} }));
 
@@ -72,8 +73,11 @@ describe('PATCH /api/education/engagements/[id]/status', () => {
     );
   });
 
-  // The defect this route existed to cause: a lecturer asking for revisions
-  // ended the project, because nothing could move it back into a workable state.
+  // The report is no longer reopened here, because it never closed. A version
+  // the lecturer sent back is one the student may already answer — the upload
+  // rule in `submissionRejection` says so, and it is tested there. Resuming
+  // moves the project; nothing about the report has to move with it.
+
   it('resumes a project the lecturer sent back, and advances the revision', async () => {
     mockFindOne.mockReturnValue({
       lean: jest.fn().mockResolvedValue(engagementAt(ProjectStatus.REVISION_REQUIRED)),

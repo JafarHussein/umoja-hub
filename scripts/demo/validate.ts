@@ -579,6 +579,234 @@ export async function validate(): Promise<boolean> {
     `${programmeCount} programmes, ${publishedUnitIds.size} units, ${unmappedUnits} unmapped`
   );
 
+// ---- The project report ----
+  // The Hub's one academic deliverable. Three separate prose documents stood
+  // here before; a lecturer's verdict was issued on them and nothing in the
+  // system required that software had been written at all.
+  const { SlotStatus } = await import('../../src/types');
+  const { default: ProjectDocumentation } = await import(
+    '../../src/lib/models/ProjectDocumentation.model'
+  );
+  const { latestVersion, documentationStage } = await import('../../src/lib/education/report');
+  const {
+    SubmissionStatus,
+    DocumentationOutcome,
+    DemonstrationStatus,
+    DemonstrationOutcome,
+  } = await import('../../src/types');
+
+  const documentation = await ProjectDocumentation.find({
+    _id: { $in: idsOf('ProjectDocumentation') },
+  } as object).lean();
+
+  // A project that reached a lecturer with nothing handed in is a project the
+  // lecturer had nothing to read. A project still being built has no report on
+  // purpose — the report is written outside UmojaHub and arrives finished.
+  const handedIn = engagements.filter(
+    (e) =>
+      e.status !== ProjectStatus.BRIEF_GENERATED && e.status !== ProjectStatus.IN_PROGRESS
+  );
+  const docByEngagement = new Map(documentation.map((d) => [String(d.engagementId), d]));
+  const reportless = handedIn.filter((e) => {
+    const record = docByEngagement.get(String(e._id));
+    return !record || (record.versions ?? []).length === 0;
+  });
+  ok(
+    'every project that reached a lecturer has a report handed in',
+    reportless.length === 0,
+    `${handedIn.length - reportless.length}/${handedIn.length} with a submitted report`
+  );
+
+  // Every stored version must point at a real file with real bytes. A version
+  // whose file was never stored fails the moment a lecturer clicks it, and
+  // there is no other way to find out.
+  const allVersions = documentation.flatMap((d) => d.versions ?? []);
+  const fileless = allVersions.filter(
+    (v) => !v.publicId || v.bytes < 1 || !v.fileName.endsWith('.pdf')
+  );
+  ok(
+    'every submitted version points at a stored PDF',
+    allVersions.length > 0 && fileless.length === 0,
+    `${allVersions.length - fileless.length}/${allVersions.length} versions with a stored file`
+  );
+
+  // The report's standing and the project's must agree. A project awaiting a
+  // lecturer whose report was already accepted is a pair of records the
+  // application could never have produced together. Read through the
+  // application's own `documentationStage`, so the check cannot disagree with
+  // what the student's screen says.
+  const contradictory = handedIn.filter((e) => {
+    const record = docByEngagement.get(String(e._id));
+    if (!record) return false;
+    const stage = documentationStage(record.versions ?? []);
+    switch (e.status) {
+      case ProjectStatus.UNDER_LECTURER_REVIEW:
+      case ProjectStatus.UNDER_PEER_REVIEW:
+        return stage !== 'WITH_LECTURER';
+      case ProjectStatus.VERIFIED:
+      case ProjectStatus.READY_FOR_DEMONSTRATION:
+      case ProjectStatus.DEMONSTRATION_SCHEDULED:
+        return stage !== 'READY_FOR_DEMONSTRATION';
+      case ProjectStatus.REVISION_REQUIRED:
+        return stage !== 'CHANGES_REQUESTED';
+      default:
+        return false;
+    }
+  });
+  ok(
+    'every report’s standing agrees with its project’s',
+    contradictory.length === 0,
+    `${handedIn.length - contradictory.length}/${handedIn.length} consistent`
+  );
+
+  // A report sent back must say what has to change. A student told only that
+  // their work needs changes cannot tell where to start, and the route refuses
+  // a decision that names nothing.
+  const returned = allVersions.filter(
+    (v) => v.review?.outcome === DocumentationOutcome.REVISION_REQUESTED
+  );
+  const directionless = returned.filter(
+    (v) => !v.review?.requiredChanges && (v.review?.pageNotes ?? []).length === 0
+  );
+  ok(
+    'every report sent back says what has to change',
+    directionless.length === 0,
+    `${returned.length - directionless.length}/${returned.length} with direction`
+  );
+
+  // Only the newest version may be live. An older one still marked submitted
+  // would put the same report in the lecturer's queue twice.
+  const doubleLive = documentation.filter((d) => {
+    const versions = d.versions ?? [];
+    const newest = latestVersion(versions);
+    return versions.some(
+      (v) => v.versionNumber !== newest?.versionNumber && v.status !== SubmissionStatus.SUPERSEDED
+    );
+  });
+  ok(
+    'only a report’s newest version is live',
+    doubleLive.length === 0,
+    `${documentation.length - doubleLive.length}/${documentation.length} with one live version`
+  );
+
+  // ---- Demonstrations ----
+  const { default: Demonstration } = await import('../../src/lib/models/Demonstration.model');
+  const { default: DemonstrationSlot } = await import('../../src/lib/models/DemonstrationSlot.model');
+
+  const demonstrations = await Demonstration.find({
+    _id: { $in: idsOf('Demonstration') },
+  } as object).lean();
+  const slots = await DemonstrationSlot.find({
+    _id: { $in: idsOf('DemonstrationSlot') },
+  } as object).lean();
+
+  // The demonstration is the centre of assessment, and a project cannot be
+  // complete without one. A seeded world where it could would contradict the
+  // rule the whole workflow rests on.
+  const completedProjects = engagements.filter((e) => e.status === ProjectStatus.VERIFIED);
+  const demoByEngagement = new Map<string, (typeof demonstrations)[number][]>();
+  for (const d of demonstrations) {
+    const key = String(d.engagementId);
+    demoByEngagement.set(key, [...(demoByEngagement.get(key) ?? []), d]);
+  }
+  const undemonstrated = completedProjects.filter((e) => {
+    const held = demoByEngagement.get(String(e._id)) ?? [];
+    return !held.some(
+      (d) =>
+        d.status === DemonstrationStatus.EVALUATED &&
+        d.evaluation?.outcome === DemonstrationOutcome.APPROVED
+    );
+  });
+  ok(
+    'every completed project was demonstrated live and approved',
+    undemonstrated.length === 0,
+    `${completedProjects.length - undemonstrated.length}/${completedProjects.length} demonstrated`
+  );
+
+  // Nobody can book what nobody offered. Without open times the demonstration
+  // workflow is unreachable from the student's screen.
+  const lecturersWithoutSlots = verifiedLecturers.filter(
+    (l) =>
+      !slots.some(
+        (s) => String(s.lecturerId) === String(l._id) && s.status === SlotStatus.OPEN
+      )
+  );
+  ok(
+    'every verified lecturer has bookable times on offer',
+    lecturersWithoutSlots.length === 0,
+    lecturersWithoutSlots.length === 0
+      ? `${slots.length} slots across ${verifiedLecturers.length} lecturers`
+      : `none open for ${lecturersWithoutSlots.map((l) => l.email).join(', ')}`
+  );
+
+  // An open slot in the past can never be booked and sits on the student's
+  // screen looking like an option.
+  const staleOpen = slots.filter(
+    (s) => s.status === SlotStatus.OPEN && s.startsAt.getTime() <= Date.now()
+  );
+  ok(
+    'no bookable time has already passed',
+    staleOpen.length === 0,
+    `${staleOpen.length} in the past`
+  );
+
+  // Two demonstrations on one slot is the failure a scheduling system exists to
+  // prevent, so it is worth asserting rather than assuming.
+  const slotUse = new Map<string, number>();
+  for (const d of demonstrations) {
+    if (d.status === DemonstrationStatus.CANCELLED || d.status === DemonstrationStatus.DECLINED) {
+      continue;
+    }
+    const key = String(d.slotId);
+    slotUse.set(key, (slotUse.get(key) ?? 0) + 1);
+  }
+  const doubleBooked = [...slotUse.values()].filter((n) => n > 1).length;
+  ok('no time is booked twice', doubleBooked === 0, `${doubleBooked} double bookings`);
+
+  // Both halves of the lecturer's demonstration screen must have something in
+  // them, or the presenter opens it and explains an empty page away.
+  const lecturersWithoutRequests = verifiedLecturers.filter(
+    (l) =>
+      !demonstrations.some(
+        (d) =>
+          String(d.lecturerId) === String(l._id) && d.status === DemonstrationStatus.REQUESTED
+      )
+  );
+  ok(
+    'every verified lecturer has a demonstration request waiting',
+    lecturersWithoutRequests.length === 0,
+    lecturersWithoutRequests.length === 0
+      ? `${verifiedLecturers.length} lecturers`
+      : `none for ${lecturersWithoutRequests.map((l) => l.email).join(', ')}`
+  );
+
+  const lecturersWithoutUpcoming = verifiedLecturers.filter(
+    (l) =>
+      !demonstrations.some(
+        (d) =>
+          String(d.lecturerId) === String(l._id) && d.status === DemonstrationStatus.SCHEDULED
+      )
+  );
+  ok(
+    'every verified lecturer has a confirmed demonstration coming up',
+    lecturersWithoutUpcoming.length === 0,
+    lecturersWithoutUpcoming.length === 0
+      ? `${verifiedLecturers.length} lecturers`
+      : `none for ${lecturersWithoutUpcoming.map((l) => l.email).join(', ')}`
+  );
+
+  // An evaluation is the record of an event. One against a meeting that has not
+  // happened would make the record worthless.
+  const prematureEvaluations = demonstrations.filter(
+    (d) => d.evaluation && d.scheduledFor.getTime() > Date.now()
+  );
+  ok(
+    'nothing was evaluated before it took place',
+    prematureEvaluations.length === 0,
+    `${prematureEvaluations.length} contradictions`
+  );
+
+
 // ---- Work a lecturer set ----
   // The Hub's second way in. A generated brief is the platform's guess at what
   // a student should build; a lecturer's project is the judgement of the person

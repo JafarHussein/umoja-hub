@@ -11,21 +11,25 @@ import { loginUrlWithIntent } from '@/lib/auth/intent';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-interface IProcessDoc {
-  content: string;
-  submittedAt: string;
-}
-
 interface IEngagementForReview {
   _id: string;
   brief: Record<string, unknown>;
-  tier: string;
   track: ProjectTrack;
-  documents: {
-    problemBreakdown?: IProcessDoc;
-    approachPlan?: IProcessDoc;
-    finalReflection?: IProcessDoc;
-  };
+}
+
+/**
+ * The version of the report this peer was asked to read.
+ *
+ * Metadata only. The document itself is fetched from the file route, which
+ * decides at the moment of each read whether this reader is still entitled to
+ * it — and which carries nothing about what the lecturer thought of the work.
+ */
+interface IPeerDocumentation {
+  versionId: string;
+  versionNumber: number;
+  fileName: string;
+  pageCount?: number;
+  submittedAt: string;
 }
 
 interface IPeerReview {
@@ -36,19 +40,12 @@ interface IPeerReview {
   comments?: { codeQuality?: string; documentationClarity?: string };
   submittedAt?: string;
   engagement: IEngagementForReview | null;
+  documentation: IPeerDocumentation | null;
 }
 
 type PageState = 'loading' | 'ready' | 'not_found' | 'error';
 type SubmitState = 'idle' | 'submitting';
-type DocTab = 'problemBreakdown' | 'approachPlan' | 'finalReflection';
 
-const DOC_TAB_LABELS: Record<DocTab, string> = {
-  problemBreakdown: 'Problem Breakdown',
-  approachPlan: 'Approach Plan',
-  finalReflection: 'Final Reflection',
-};
-
-const DOC_TABS: DocTab[] = ['problemBreakdown', 'approachPlan', 'finalReflection'];
 
 // Preset rubric criteria. Selected boxes serialize (in this fixed order) into a
 // canonical comment string per dimension — no free-text, so reviews stay
@@ -204,7 +201,6 @@ export default function PeerReviewDetailPage(): React.ReactElement {
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [review, setReview] = useState<IPeerReview | null>(null);
-  const [activeDocTab, setActiveDocTab] = useState<DocTab>('problemBreakdown');
 
   const [codeQualityScore, setCodeQualityScore] = useState(0);
   const [docClarityScore, setDocClarityScore] = useState(0);
@@ -356,7 +352,7 @@ export default function PeerReviewDetailPage(): React.ReactElement {
       : ((engagement.brief as { repoName?: string }).repoName ?? 'Open Source Project')
     : 'Unknown project';
 
-  const activeDoc = engagement?.documents?.[activeDocTab];
+  const documentation = review.documentation;
 
   return (
     <div className="mx-auto w-full max-w-app-page space-y-10">
@@ -393,55 +389,45 @@ export default function PeerReviewDetailPage(): React.ReactElement {
                   {engagement.track.replace(/_/g, ' ').toLowerCase()}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="app-body text-app-muted">Tier</span>
-                <span className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 capitalize text-app-muted">
-                  {engagement.tier.replace(/_/g, ' ').toLowerCase()}
-                </span>
-              </div>
+
             </div>
           )}
 
-          {/* Process documents */}
-          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
-            <div className="flex border-b border-app-hairline">
-              {DOC_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveDocTab(tab)}
-                  className={cn(
-                    'app-nav border-b-2 px-4 py-2.5 transition-colors duration-150',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-ring',
-                    activeDocTab === tab
-                      ? 'border-app-brand text-app-ink'
-                      : 'border-transparent text-app-muted hover:text-app-ink'
-                  )}
+          {/* Their project report. A document they wrote and handed in, opened
+              here rather than downloaded — a reader who has just written their
+              own report knows what to look for in somebody else's. */}
+          <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+            {!documentation ? (
+              <p className="app-body text-center text-app-faint">
+                This project&apos;s report is not available to read.
+              </p>
+            ) : (
+              <>
+                <p className="app-label text-app-muted">Their report</p>
+                <object
+                  data={`/api/education/engagements/${review.engagementId}/report/file/${documentation.versionId}`}
+                  type="application/pdf"
+                  className="mt-3 h-[38rem] w-full rounded-app-control border border-app-hairline"
+                  aria-label="The project report you are reviewing"
                 >
-                  {DOC_TAB_LABELS[tab]}
-                </button>
-              ))}
-            </div>
-
-            <div className="p-4">
-              {activeDoc ? (
-                <div className="space-y-2">
-                  <p className="app-meta text-app-faint">
-                    Submitted{' '}
-                    {new Date(activeDoc.submittedAt).toLocaleDateString('en-KE', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  <p className="app-body p-4 text-app-muted">
+                    Your browser will not display the PDF inline.
                   </p>
-                  <p className="app-body whitespace-pre-wrap leading-relaxed text-app-ink">
-                    {activeDoc.content}
-                  </p>
-                </div>
-              ) : (
-                <p className="app-body py-4 text-center text-app-faint">Document not submitted.</p>
-              )}
-            </div>
+                </object>
+                <a
+                  href={`/api/education/engagements/${review.engagementId}/report/file/${documentation.versionId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="app-meta mt-2 inline-block text-app-brand underline"
+                >
+                  Open in a new tab
+                </a>
+                <p className="app-meta mt-1 text-app-faint">
+                  Version {documentation.versionNumber}
+                  {documentation.pageCount ? ` · ${documentation.pageCount} pages` : ''}
+                </p>
+              </>
+            )}
           </div>
         </div>
 

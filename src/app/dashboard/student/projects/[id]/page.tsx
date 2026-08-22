@@ -4,27 +4,40 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { Role, ProjectStatus, ProjectTrack } from '@/types';
+import { Role, ProjectStatus, ProjectTrack, DemonstrationStatus } from '@/types';
 import { Button, Alert } from '@/components/app';
 import { cn } from '@/lib/cn';
 import { ProjectStatusStepper } from '@/components/education/ProjectStatusStepper';
-import { DocumentsTab } from '@/components/education/DocumentsTab';
+import {
+  ReportWorkspace,
+  type IDocumentation,
+} from '@/components/education/ReportWorkspace';
+import { DemonstrationPanel, type IDemonstration } from '@/components/education/DemonstrationPanel';
 import { BlockersTab } from '@/components/education/BlockersTab';
 import { AIUsageTab } from '@/components/education/AIUsageTab';
-import type { DocumentType, IProcessDocument } from '@/components/education/DocumentsTab';
 import type { IBlockerEntry } from '@/components/education/BlockersTab';
 import type { IAIUsageEntry } from '@/components/education/AIUsageTab';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import { normalizeBrief, type NormalizedBrief } from '@/lib/education/brief';
+import { projectProgress, type ProgressInput } from '@/lib/education/projectProgress';
 import { LecturerFeedbackCard } from '@/components/education/LecturerFeedbackCard';
 import type { ILecturerReview } from '@/components/education/LecturerFeedbackCard';
 
-// ── Engagement type ───────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// One project, end to end.
+//
+// The workspace is organised around the workflow rather than around the
+// platform's storage: build it, write it up, have it read, show it running.
+// The old page was organised around three documents and a hash, which told a
+// student what the database wanted rather than what they had to do next.
+//
+// The card at the top is the one thing a student should have to read. It says
+// where they are, what happens next, and gives them the single action that
+// moves it — assembled by `projectProgress` from the project, the report and
+// the demonstration together, so no two screens can disagree about it.
+// ---------------------------------------------------------------------------
 
 interface IEngagementDocuments {
-  problemBreakdown?: IProcessDocument;
-  approachPlan?: IProcessDocument;
-  finalReflection?: IProcessDocument;
   blockerLog: IBlockerEntry[];
   aiUsageLog: IAIUsageEntry[];
 }
@@ -39,17 +52,12 @@ interface IActiveEngagement {
   createdAt: string;
 }
 
-
-// Raw shape from API — documents arrays may be missing before normalization
 interface IRawEngagement {
   _id: string;
   track: ProjectTrack;
   status: ProjectStatus;
   brief: Record<string, unknown>;
   documents?: {
-    problemBreakdown?: IProcessDocument;
-    approachPlan?: IProcessDocument;
-    finalReflection?: IProcessDocument;
     blockerLog?: IBlockerEntry[];
     aiUsageLog?: IAIUsageEntry[];
   };
@@ -58,32 +66,16 @@ interface IRawEngagement {
 }
 
 type PageState = 'loading' | 'ready' | 'not_found' | 'error';
-type ActionState = 'idle' | 'beginning';
-type SubmitState = 'idle' | 'submitting';
-type WorkspaceTab = 'overview' | 'documents' | 'blockers' | 'ai-usage';
+type ActionState = 'idle' | 'working';
+type WorkspaceTab = 'brief' | 'report' | 'demonstration' | 'blockers' | 'ai-usage';
 
-const COMPLEXITY_PILL: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
-  LOW: 'bg-app-success-surface text-app-success',
-  MEDIUM: 'bg-app-warning-surface text-app-warning',
-  HIGH: 'bg-app-danger-surface text-app-danger',
+const TONE_CLASS: Record<string, string> = {
+  neutral: 'border-app-hairline bg-app-card',
+  action: 'border-app-brand bg-app-brand-surface',
+  waiting: 'border-app-hairline bg-app-sunken',
+  warning: 'border-app-warning bg-app-warning-surface',
+  done: 'border-app-success bg-app-success-surface',
 };
-
-const TAB_CONFIG: { id: WorkspaceTab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'documents', label: 'Documents' },
-  { id: 'blockers', label: 'Blockers' },
-  { id: 'ai-usage', label: 'AI Usage' },
-];
-
-// The three process documents whose presence gates finalization (each carries
-// its own per-document hash — there is no single compiled hash).
-const DOC_ITEMS: { type: DocumentType; label: string }[] = [
-  { type: 'problemBreakdown', label: 'Problem Breakdown' },
-  { type: 'approachPlan', label: 'Approach Plan' },
-  { type: 'finalReflection', label: 'Final Reflection' },
-];
-
-// ── Loading skeleton ──────────────────────────────────────────────────────────
 
 function PageSkeleton(): React.ReactElement {
   return (
@@ -102,8 +94,6 @@ function PageSkeleton(): React.ReactElement {
   );
 }
 
-// ── Bullet list ───────────────────────────────────────────────────────────────
-
 function BulletList({ items }: { items: string[] }): React.ReactElement {
   return (
     <ul className="space-y-1">
@@ -119,8 +109,6 @@ function BulletList({ items }: { items: string[] }): React.ReactElement {
   );
 }
 
-// ── Brief card ────────────────────────────────────────────────────────────────
-
 // One card for every track and every vintage of stored brief. It renders a
 // normalized view rather than the raw Mixed column: two shapes of brief already
 // exist in the database, and reading the raw object is exactly what made this
@@ -128,52 +116,9 @@ function BulletList({ items }: { items: string[] }): React.ReactElement {
 function BriefCard({ brief }: { brief: NormalizedBrief }): React.ReactElement {
   return (
     <div className="space-y-4 rounded-app-card border border-app-hairline bg-app-card p-6">
-      <div>
-        <p className="app-label mb-1 text-app-muted">
-          {brief.kind === 'open-source' ? 'Open-source brief' : 'Brief'}
-        </p>
-        <h2 className="app-h2 text-app-ink">{brief.title}</h2>
-      </div>
-
-      {brief.degraded && (
-        <Alert tone="warning">
-          Part of this brief was written before the current format and could not be read. Everything
-          the record does hold is shown below.
-        </Alert>
-      )}
-
-      {(brief.facts.length > 0 || brief.complexity !== null) && (
-        <div className="space-y-0">
-          {brief.facts.map((fact) => (
-            <div
-              key={fact.label}
-              className="flex items-start justify-between border-b border-app-hairline py-2.5"
-            >
-              <span className="app-body mr-4 flex-shrink-0 text-app-muted">{fact.label}</span>
-              <span className="app-body text-right text-app-ink">{fact.value}</span>
-            </div>
-          ))}
-          {brief.complexity !== null && (
-            <div className="flex items-start justify-between border-b border-app-hairline py-2.5">
-              <span className="app-body mr-4 flex-shrink-0 text-app-muted">Complexity</span>
-              <span
-                className={cn(
-                  'app-label inline-flex items-center rounded-app-pill px-2 py-0.5 capitalize',
-                  COMPLEXITY_PILL[brief.complexity]
-                )}
-              >
-                {brief.complexity.toLowerCase()}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
       {brief.summary && (
         <div>
-          <p className="app-label mb-1.5 text-app-muted">
-            {brief.kind === 'open-source' ? 'Contribution goal' : 'Problem statement'}
-          </p>
+          <p className="app-label mb-1.5 text-app-muted">The problem</p>
           <p className="app-body leading-relaxed text-app-muted">{brief.summary}</p>
         </div>
       )}
@@ -192,31 +137,6 @@ function BriefCard({ brief }: { brief: NormalizedBrief }): React.ReactElement {
   );
 }
 
-// ── Overview tab content ──────────────────────────────────────────────────────
-
-function OverviewContent({ status }: { status: ProjectStatus }): React.ReactElement {
-  if (status === ProjectStatus.BRIEF_GENERATED) {
-    return (
-      <div className="p-6 text-center">
-        <p className="app-body text-app-muted">Workspace locked</p>
-        <p className="app-meta mt-1 text-app-faint">
-          Click &quot;Begin project&quot; to start working on your brief.
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div className="p-6 text-center">
-      <p className="app-body text-app-muted">Project is active</p>
-      <p className="app-meta mt-1 text-app-faint">
-        Use the Documents, Blockers, and AI Usage tabs to track your work.
-      </p>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
-
 export default function ProjectWorkspacePage(): React.ReactElement {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -224,13 +144,36 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [engagement, setEngagement] = useState<IActiveEngagement | null>(null);
+  const [documentation, setDocumentation] = useState<IDocumentation | null>(null);
+  const [demonstrations, setDemonstrations] = useState<IDemonstration[]>([]);
   const [reviews, setReviews] = useState<ILecturerReview[]>([]);
   const [actionState, setActionState] = useState<ActionState>('idle');
   const [actionError, setActionError] = useState<string | null>(null);
-  const [submitState, setSubmitState] = useState<SubmitState>('idle');
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('overview');
-  const [finalized, setFinalized] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('brief');
+
+  const loadReport = useCallback(async (engagementId: string): Promise<void> => {
+    try {
+      const res = await fetch(`/api/education/engagements/${engagementId}/report`);
+      if (res.ok) {
+        const body = (await res.json()) as { data: IDocumentation };
+        setDocumentation(body.data);
+      }
+    } catch {
+      // The rest of the workspace is usable without it.
+    }
+  }, []);
+
+  const loadDemonstrations = useCallback(async (): Promise<void> => {
+    try {
+      const res = await fetch('/api/education/demonstrations');
+      if (res.ok) {
+        const body = (await res.json()) as { data: IDemonstration[] };
+        setDemonstrations(body.data ?? []);
+      }
+    } catch {
+      // Same.
+    }
+  }, []);
 
   const fetchEngagement = useCallback(async (): Promise<void> => {
     try {
@@ -251,18 +194,11 @@ export default function ProjectWorkspacePage(): React.ReactElement {
         documents: {
           blockerLog: raw.documents?.blockerLog ?? [],
           aiUsageLog: raw.documents?.aiUsageLog ?? [],
-          ...(raw.documents?.problemBreakdown && {
-            problemBreakdown: raw.documents.problemBreakdown,
-          }),
-          ...(raw.documents?.approachPlan && {
-            approachPlan: raw.documents.approachPlan,
-          }),
-          ...(raw.documents?.finalReflection && {
-            finalReflection: raw.documents.finalReflection,
-          }),
         },
       });
       setPageState('ready');
+
+      await Promise.all([loadReport(raw._id), loadDemonstrations()]);
 
       // Feedback is fetched whatever the status: a student revising is back in
       // IN_PROGRESS and still needs to read what they were asked to fix.
@@ -278,7 +214,7 @@ export default function ProjectWorkspacePage(): React.ReactElement {
     } catch {
       setPageState('error');
     }
-  }, [params.id]);
+  }, [params.id, loadReport, loadDemonstrations]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -294,23 +230,12 @@ export default function ProjectWorkspacePage(): React.ReactElement {
     }
   }, [status, session, router, fetchEngagement]);
 
-  // ── Callbacks ───────────────────────────────────────────────────────────────
-
-  function handleDocumentSaved(type: DocumentType, saved: IProcessDocument): void {
-    setEngagement((prev) =>
-      prev ? { ...prev, documents: { ...prev.documents, [type]: saved } } : null
-    );
-  }
-
   function handleBlockerAdded(entry: IBlockerEntry): void {
     setEngagement((prev) =>
       prev
         ? {
             ...prev,
-            documents: {
-              ...prev.documents,
-              blockerLog: [entry, ...prev.documents.blockerLog],
-            },
+            documents: { ...prev.documents, blockerLog: [entry, ...prev.documents.blockerLog] },
           }
         : null
     );
@@ -321,42 +246,29 @@ export default function ProjectWorkspacePage(): React.ReactElement {
       prev
         ? {
             ...prev,
-            documents: {
-              ...prev.documents,
-              aiUsageLog: [entry, ...prev.documents.aiUsageLog],
-            },
+            documents: { ...prev.documents, aiUsageLog: [entry, ...prev.documents.aiUsageLog] },
           }
         : null
     );
   }
 
-  // ── Actions ─────────────────────────────────────────────────────────────────
-
-  async function handleBeginProject(): Promise<void> {
+  async function handleResume(): Promise<void> {
     if (!engagement) return;
-    setActionState('beginning');
+    setActionState('working');
     setActionError(null);
-
     try {
       const res = await fetch(`/api/education/engagements/${engagement._id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'IN_PROGRESS' }),
       });
-
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
         setActionError(body.error ?? 'Could not start the project. Please try again.');
         setActionState('idle');
         return;
       }
-
-      const body = (await res.json()) as { data?: { revisionNumber?: number } };
-      setEngagement({
-        ...engagement,
-        status: ProjectStatus.IN_PROGRESS,
-        revisionNumber: body.data?.revisionNumber ?? engagement.revisionNumber,
-      });
+      await fetchEngagement();
       setActionState('idle');
     } catch {
       setActionError('Network error. Try again.');
@@ -364,37 +276,8 @@ export default function ProjectWorkspacePage(): React.ReactElement {
     }
   }
 
-  async function handleSubmitProject(): Promise<void> {
-    if (!engagement) return;
-    setSubmitState('submitting');
-    setSubmitError(null);
 
-    try {
-      const res = await fetch(`/api/education/engagements/${engagement._id}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        setSubmitError(body.error ?? 'Could not submit. Please try again.');
-        setSubmitState('idle');
-        return;
-      }
-
-      setEngagement({ ...engagement, status: ProjectStatus.UNDER_PEER_REVIEW });
-      setSubmitState('idle');
-    } catch {
-      setSubmitError('Network error. Try again.');
-      setSubmitState('idle');
-    }
-  }
-
-  // ── Render guards ────────────────────────────────────────────────────────────
-
-  if (status === 'loading' || pageState === 'loading') {
-    return <PageSkeleton />;
-  }
+  if (status === 'loading' || pageState === 'loading') return <PageSkeleton />;
 
   if (pageState === 'error') {
     return (
@@ -429,238 +312,170 @@ export default function ProjectWorkspacePage(): React.ReactElement {
   }
 
   const brief = normalizeBrief(engagement.track, engagement.brief);
-  const briefTitle = brief.title;
+  const currentDemonstration =
+    demonstrations.find((d) => d.engagementId === engagement._id) ?? null;
 
-  const tabsUnlocked = engagement.status !== ProjectStatus.BRIEF_GENERATED;
+  const progress = projectProgress({
+    projectStatus: engagement.status,
+    ...(documentation
+      ? { documentationStage: documentation.stage as NonNullable<ProgressInput['documentationStage']> }
+      : {}),
+    demonstration: currentDemonstration
+      ? { status: currentDemonstration.status, scheduledFor: currentDemonstration.scheduledFor }
+      : null,
+  });
 
-  const completedCount = DOC_ITEMS.filter((d) => engagement.documents[d.type]).length;
-  const allDocsPresent = completedCount === DOC_ITEMS.length;
+  const started = engagement.status !== ProjectStatus.BRIEF_GENERATED;
+
+  const TABS: { id: WorkspaceTab; label: string; show: boolean }[] = [
+    { id: 'brief', label: 'The brief', show: true },
+    { id: 'report', label: 'Project report', show: started },
+    {
+      id: 'demonstration',
+      label: 'Demonstration',
+      show:
+        engagement.status === ProjectStatus.READY_FOR_DEMONSTRATION ||
+        engagement.status === ProjectStatus.DEMONSTRATION_SCHEDULED ||
+        Boolean(currentDemonstration),
+    },
+    { id: 'blockers', label: 'Blockers', show: started },
+    { id: 'ai-usage', label: 'AI usage', show: started },
+  ];
+  const visibleTabs = TABS.filter((t) => t.show);
+
+  function runAction(): void {
+    if (!progress.action) return;
+    switch (progress.action.kind) {
+      case 'START':
+      case 'RESUME':
+        void handleResume();
+        break;
+      case 'SUBMIT':
+      case 'REPORT':
+        setActiveTab('report');
+        break;
+      case 'BOOK':
+        setActiveTab('demonstration');
+        break;
+    }
+  }
 
   return (
-    <div className="mx-auto w-full max-w-app-page space-y-10">
-      {/* Back link */}
-      <Link
-        href="/dashboard/student"
-        className="app-body inline-flex text-app-muted transition-colors duration-150 hover:text-app-ink"
-      >
-        ← My projects
-      </Link>
-
-      {/* Page header */}
+    <div className="mx-auto w-full max-w-app-page space-y-8">
       <div>
-        <p className="app-data-m text-app-faint">{engagement._id}</p>
-        <h1 className="app-h1 text-app-ink">{briefTitle}</h1>
+        <Link
+          href="/dashboard/student"
+          className="app-meta text-app-muted transition-colors duration-150 hover:text-app-ink"
+        >
+          ← My projects
+        </Link>
+        <h1 className="app-h1 mt-2 text-app-ink">{brief.title}</h1>
       </div>
 
-      {/* Main grid */}
+      {/* ---- Where you are, and what happens next ---- */}
+      <div className={cn('rounded-app-card border p-6', TONE_CLASS[progress.tone])}>
+        <p className="app-label text-app-muted">{progress.stage}</p>
+        <p className="app-body-strong mt-1.5 text-app-ink">{progress.nextStep}</p>
+        {progress.action && (
+          <Button
+            className="mt-4"
+            isLoading={actionState === 'working'}
+            onClick={runAction}
+          >
+            {progress.action.label}
+          </Button>
+        )}
+        {actionError && (
+          <Alert tone="danger" className="mt-3">
+            {actionError}
+          </Alert>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-        {/* Left — brief + workspace tabs */}
-        <div className="space-y-6 md:col-span-8">
-          {/* Brief card */}
-          <BriefCard brief={brief} />
-
-          {/* Lecturer feedback — renders nothing until there is a decision */}
-          <LecturerFeedbackCard reviews={reviews} />
-
-          {/* Workspace tabs */}
-          <div className="overflow-hidden rounded-app-card border border-app-hairline bg-app-card">
-            {/* Tab bar */}
-            <div className="flex border-b border-app-hairline">
-              {TAB_CONFIG.map(({ id, label }) => {
-                const isActive = activeTab === id;
-                const isLocked = id !== 'overview' && !tabsUnlocked;
-
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    disabled={isLocked}
-                    onClick={() => !isLocked && setActiveTab(id)}
-                    className={cn(
-                      'app-nav border-b-2 px-4 py-2.5 transition-colors duration-150',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-ring',
-                      isActive
-                        ? 'border-app-brand text-app-ink'
-                        : isLocked
-                          ? 'cursor-not-allowed border-transparent text-app-faint'
-                          : 'cursor-pointer border-transparent text-app-muted hover:text-app-ink'
-                    )}
-                    aria-current={isActive ? 'true' : undefined}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Tab content */}
-            {activeTab === 'overview' && <OverviewContent status={engagement.status} />}
-            {activeTab === 'documents' && tabsUnlocked && (
-              <DocumentsTab
-                engagementId={engagement._id}
-                documents={engagement.documents}
-                onDocumentSaved={handleDocumentSaved}
-              />
-            )}
-            {activeTab === 'blockers' && tabsUnlocked && (
-              <BlockersTab
-                engagementId={engagement._id}
-                initialBlockers={engagement.documents.blockerLog}
-                onBlockerAdded={handleBlockerAdded}
-              />
-            )}
-            {activeTab === 'ai-usage' && tabsUnlocked && (
-              <AIUsageTab
-                engagementId={engagement._id}
-                initialEntries={engagement.documents.aiUsageLog}
-                onEntryAdded={handleAIUsageAdded}
-              />
-            )}
+        <div className="space-y-4 md:col-span-8">
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Project workspace">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'rounded-app-control px-3 py-1.5 transition-colors duration-150',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring',
+                  activeTab === tab.id
+                    ? 'bg-app-brand-surface app-body-strong text-app-ink'
+                    : 'app-body text-app-muted hover:bg-app-sunken'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+
+          {activeTab === 'brief' && <BriefCard brief={brief} />}
+
+          {activeTab === 'report' &&
+            (documentation ? (
+              <ReportWorkspace
+                engagementId={engagement._id}
+                documentation={documentation}
+                onChange={setDocumentation}
+              />
+            ) : (
+              <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+                <p className="app-body text-app-muted">Loading your report…</p>
+              </div>
+            ))}
+
+          {activeTab === 'demonstration' && (
+            <DemonstrationPanel
+              engagementId={engagement._id}
+              projectStatus={engagement.status}
+              demonstration={currentDemonstration}
+              onChange={() => void fetchEngagement()}
+            />
+          )}
+
+          {activeTab === 'blockers' && (
+            <BlockersTab
+              engagementId={engagement._id}
+              initialBlockers={engagement.documents.blockerLog}
+              onBlockerAdded={handleBlockerAdded}
+            />
+          )}
+
+          {activeTab === 'ai-usage' && (
+            <AIUsageTab
+              engagementId={engagement._id}
+              initialEntries={engagement.documents.aiUsageLog}
+              onEntryAdded={handleAIUsageAdded}
+            />
+          )}
+
+          {reviews.length > 0 && <LecturerFeedbackCard reviews={reviews} />}
         </div>
 
-        {/* Right — stepper + actions */}
         <div className="space-y-4 md:col-span-4">
-          {/* Status stepper */}
           <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
             <p className="app-label mb-3 text-app-muted">Progress</p>
             <ProjectStatusStepper status={engagement.status} />
           </div>
 
-          {/* Action zone */}
-          <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
-            <p className="app-label text-app-muted">Actions</p>
-
-            {/* BRIEF_GENERATED */}
-            {engagement.status === ProjectStatus.BRIEF_GENERATED && (
-              <>
-                <Button
-                  className="w-full"
-                  isLoading={actionState === 'beginning'}
-                  onClick={() => void handleBeginProject()}
-                >
-                  Begin project
-                </Button>
-                {actionError && <Alert tone="danger">{actionError}</Alert>}
-              </>
-            )}
-
-            {/* IN_PROGRESS — 3/3 checklist, then Finalize & Hash → Submit */}
-            {engagement.status === ProjectStatus.IN_PROGRESS && (
-              <div className="space-y-4">
-                {/* Submission checklist */}
-                <div className="space-y-2">
-                  <p className="app-label text-app-muted">Submission checklist</p>
-                  <ul className="space-y-1.5">
-                    {DOC_ITEMS.map((item) => {
-                      const done = Boolean(engagement.documents[item.type]);
-                      return (
-                        <li key={item.type} className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              'flex h-4 w-4 items-center justify-center rounded-app-pill border text-[10px]',
-                              done
-                                ? 'border-app-brand bg-app-brand-surface text-app-brand'
-                                : 'border-app-border-strong text-app-faint'
-                            )}
-                            aria-hidden="true"
-                          >
-                            {done ? '✓' : ''}
-                          </span>
-                          <span className={cn('app-body', done ? 'text-app-ink' : 'text-app-muted')}>
-                            {item.label}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <p className="app-meta text-app-muted">
-                    {completedCount} of {DOC_ITEMS.length} documents
-                  </p>
-                </div>
-
-                {!finalized ? (
-                  <>
-                    <Button
-                      className="w-full"
-                      disabled={!allDocsPresent}
-                      onClick={() => setFinalized(true)}
-                    >
-                      Finalize &amp; Hash for Review
-                    </Button>
-                    {!allDocsPresent && (
-                      <p className="app-meta text-app-faint">
-                        Complete all 3 documents to finalize.
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Three per-document hash strings (no compiled hash) */}
-                    <p className="app-label text-app-muted">Document hashes</p>
-                    <div className="space-y-2.5">
-                      {DOC_ITEMS.map((item) => (
-                        <div key={item.type}>
-                          <p className="app-meta text-app-muted">{item.label}</p>
-                          <p className="app-data-m break-all text-app-faint">
-                            {engagement.documents[item.type]?.hash ?? '—'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      className="w-full"
-                      isLoading={submitState === 'submitting'}
-                      onClick={() => void handleSubmitProject()}
-                    >
-                      Submit for Review
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setFinalized(false)}
-                      className="app-meta text-app-muted transition-colors duration-150 hover:text-app-ink"
-                    >
-                      ← Back to editing
-                    </button>
-                    {submitError && <Alert tone="danger">{submitError}</Alert>}
-                  </div>
-                )}
+          {currentDemonstration &&
+            currentDemonstration.status === DemonstrationStatus.EVALUATED &&
+            currentDemonstration.evaluation && (
+              <div className="rounded-app-card border border-app-hairline bg-app-card p-6">
+                <p className="app-label mb-2 text-app-muted">Your demonstration</p>
+                <p className="app-body text-app-body">
+                  {currentDemonstration.evaluation.outcome === 'APPROVED'
+                    ? 'Approved by your lecturer.'
+                    : 'Your lecturer asked for more work.'}
+                </p>
               </div>
             )}
-
-            {/* Review statuses */}
-            {(engagement.status === ProjectStatus.SUBMITTED ||
-              engagement.status === ProjectStatus.UNDER_PEER_REVIEW ||
-              engagement.status === ProjectStatus.UNDER_LECTURER_REVIEW) && (
-              <p className="app-body text-app-muted">Awaiting review</p>
-            )}
-
-            {/* REVISION_REQUIRED — the loop continues rather than ending here */}
-            {engagement.status === ProjectStatus.REVISION_REQUIRED && (
-              <>
-                <Alert tone="warning">
-                  Your lecturer asked for revisions. Their feedback is on this page — take it back
-                  into the workspace, then submit again.
-                </Alert>
-                <Button
-                  className="w-full"
-                  isLoading={actionState === 'beginning'}
-                  onClick={() => void handleBeginProject()}
-                >
-                  Resume work
-                </Button>
-                {actionError && <Alert tone="danger">{actionError}</Alert>}
-              </>
-            )}
-
-            {/* VERIFIED */}
-            {engagement.status === ProjectStatus.VERIFIED && (
-              <Alert tone="success">Project verified.</Alert>
-            )}
-
-            {/* DENIED */}
-            {engagement.status === ProjectStatus.DENIED && <Alert tone="danger">Project denied.</Alert>}
-          </div>
         </div>
       </div>
     </div>

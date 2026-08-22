@@ -9,6 +9,14 @@ import {
   MAX_SEMESTERS_PER_YEAR,
   REVIEW_MIN_WORD_COUNT,
   MAX_ASSISTANT_MESSAGE_CHARS,
+  DOCUMENTATION_CHECKLIST,
+  DocumentationOutcome,
+  DemonstrationFormat,
+  DemonstrationOutcome,
+  DEMONSTRATION_CRITERIA,
+  DEMONSTRATION_MIN_MINUTES,
+  DEMONSTRATION_MAX_MINUTES,
+  DEMONSTRATION_COMMENT_MIN_WORDS,
 } from '@/types';
 
 const countWords = (text: string): number =>
@@ -104,16 +112,174 @@ export const projectAssignmentUpdateSchema = z.object(assignmentFields).partial(
 
 export type ProjectAssignmentInput = z.infer<typeof projectAssignmentSchema>;
 
-export const documentSubmissionSchema = z.object({
-  documentType: z.enum([
-    'problemBreakdown',
-    'approachPlan',
-    'finalReflection',
-  ]),
-  content: z
+// ---------------------------------------------------------------------------
+// The project report.
+//
+// The student writes their report in whatever they normally use and uploads the
+// finished PDF. Nothing here validates its prose, because nothing here can read
+// it: UmojaHub holds the standard, receives the document and gives the lecturer
+// somewhere to read it. What the platform used to check for itself — that every
+// required section is present — is now the first thing the lecturer is asked,
+// as a checklist, which is the honest place for a question only a reader can
+// answer.
+// ---------------------------------------------------------------------------
+
+/**
+ * What the student says about the version they are uploading.
+ *
+ * Optional on a first submission and worth insisting on afterwards, but the
+ * insisting belongs to the route, which knows whether a previous version was
+ * sent back. A schema that demanded it always would block the first upload for
+ * a change nobody had asked for yet.
+ */
+export const documentationSubmissionSchema = z.object({
+  studentNote: z
     .string()
     .trim()
-    .min(50, 'Document content must be at least 50 characters'),
+    .max(2000, 'Keep this short — the detail belongs in the report itself')
+    .optional(),
+});
+
+/**
+ * A lecturer's decision on one submitted version.
+ *
+ * Two instruments, and they ask different questions. The **checklist** asks
+ * whether the report contains what the standard asks for — the structural
+ * question the platform answered for itself while the report lived in a
+ * database, and which only a reader can answer now that it arrives as a PDF.
+ * The **scores** are the Hub's existing four-dimension rubric and ask how good
+ * what is there is. Neither substitutes for the other.
+ *
+ * Page notes rather than section comments, because a lecturer reading a PDF can
+ * point at a page and cannot point at a field.
+ */
+export const documentationReviewSchema = z
+  .object({
+    outcome: z.enum([
+      DocumentationOutcome.READY_FOR_DEMONSTRATION,
+      DocumentationOutcome.REVISION_REQUESTED,
+    ]),
+    scores: z.object({
+      problemUnderstanding: z.number().int().min(1).max(5),
+      solutionQuality: z.number().int().min(1).max(5),
+      processQuality: z.number().int().min(1).max(5),
+      aiUsage: z.number().int().min(1).max(5),
+    }),
+    summary: z
+      .string()
+      .trim()
+      .refine(
+        (val) => countWords(val) >= REVIEW_MIN_WORD_COUNT,
+        `Your summary must be at least ${REVIEW_MIN_WORD_COUNT} words — a student cannot act on one line`
+      )
+      .refine((val) => val.length <= 4000, 'That summary is too long'),
+    strengths: z.string().trim().max(2000).optional(),
+    concerns: z.string().trim().max(2000).optional(),
+    requiredChanges: z.string().trim().max(4000).optional(),
+    questionsForDemonstration: z.string().trim().max(2000).optional(),
+    pageNotes: z
+      .array(
+        z.object({
+          page: z.number().int().min(1, 'Page numbers start at 1'),
+          comment: z.string().trim().min(5, 'Say what is on that page').max(2000),
+        })
+      )
+      .max(50)
+      .default([]),
+    checklist: z
+      .array(
+        z.object({
+          item: z.enum(DOCUMENTATION_CHECKLIST),
+          met: z.boolean(),
+          note: z.string().trim().max(500).optional(),
+        })
+      )
+      .max(DOCUMENTATION_CHECKLIST.length)
+      .default([]),
+  })
+  .refine(
+    (data) =>
+      data.outcome === DocumentationOutcome.READY_FOR_DEMONSTRATION ||
+      (data.requiredChanges ?? '').length > 0 ||
+      data.pageNotes.length > 0,
+    {
+      // The rule the old section feedback protected, carried over intact: a
+      // student sent back with nothing named cannot tell where to start.
+      message:
+        'Say what has to change, or leave a note on the page it is on. A student sent back with nothing named cannot tell where to start.',
+      path: ['requiredChanges'],
+    }
+  );
+
+// ---------------------------------------------------------------------------
+// Demonstrations.
+// ---------------------------------------------------------------------------
+
+export const demonstrationSlotSchema = z.object({
+  startsAt: z.coerce.date(),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(DEMONSTRATION_MIN_MINUTES)
+    .max(DEMONSTRATION_MAX_MINUTES),
+  format: z.enum([DemonstrationFormat.VIDEO_CALL, DemonstrationFormat.IN_PERSON]),
+  location: z.string().trim().max(300).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const demonstrationRequestSchema = z.object({
+  engagementId: objectId,
+  slotId: objectId,
+  // What they will show, and what they know is incomplete. The floor is low on
+  // purpose — a student who writes three honest sentences here has done what
+  // the field is for.
+  studentNotes: z
+    .string()
+    .trim()
+    .min(20, 'Say what you will show, and what you already know is incomplete')
+    .max(2000),
+});
+
+export const demonstrationDeclineSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'Tell the student why, so they can act on it')
+    .max(1000),
+});
+
+export const demonstrationCancelSchema = z.object({
+  reason: z.string().trim().min(5, 'Give a reason').max(1000),
+});
+
+const demonstrationScoreShape = DEMONSTRATION_CRITERIA.reduce(
+  (acc, criterion) => {
+    acc[criterion] = z.number().int().min(1).max(5);
+    return acc;
+  },
+  {} as Record<string, z.ZodNumber>
+);
+
+const demonstrationCommentShape = DEMONSTRATION_CRITERIA.reduce(
+  (acc, criterion) => {
+    acc[criterion] = z
+      .string()
+      .trim()
+      .refine(
+        (val) => countWords(val) >= DEMONSTRATION_COMMENT_MIN_WORDS,
+        `Each comment must be at least ${DEMONSTRATION_COMMENT_MIN_WORDS} words — a score with no reasoning behind it tells the student nothing`
+      );
+    return acc;
+  },
+  {} as Record<string, z.ZodType<string>>
+);
+
+export const demonstrationEvaluationSchema = z.object({
+  scores: z.object(demonstrationScoreShape),
+  comments: z.object(demonstrationCommentShape),
+  outcome: z.enum([DemonstrationOutcome.APPROVED, DemonstrationOutcome.REVISION_REQUIRED]),
+  questioningNotes: z.string().trim().max(4000).optional(),
+  failureDuringDemonstration: z.string().trim().max(2000).optional(),
 });
 
 export const blockerLogEntrySchema = z.object({
@@ -228,7 +394,11 @@ export const mentorChatSchema = z.object({
 });
 
 export type BriefRequestInput = z.infer<typeof briefRequestSchema>;
-export type DocumentSubmissionInput = z.infer<typeof documentSubmissionSchema>;
+export type DocumentationSubmissionInput = z.infer<typeof documentationSubmissionSchema>;
+export type DocumentationReviewInput = z.infer<typeof documentationReviewSchema>;
+export type DemonstrationSlotInput = z.infer<typeof demonstrationSlotSchema>;
+export type DemonstrationRequestInput = z.infer<typeof demonstrationRequestSchema>;
+export type DemonstrationEvaluationInput = z.infer<typeof demonstrationEvaluationSchema>;
 export type BlockerLogEntryInput = z.infer<typeof blockerLogEntrySchema>;
 export type AIUsageLogEntryInput = z.infer<typeof aiUsageLogEntrySchema>;
 export type PeerReviewInput = z.infer<typeof peerReviewSchema>;

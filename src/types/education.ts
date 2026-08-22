@@ -28,12 +28,6 @@ export interface IAIUsageLogEntry {
   source: string;
 }
 
-export interface IProcessDocument {
-  content: string;
-  hash: string;
-  submittedAt: Date;
-}
-
 export interface IGithubSnapshot {
   commitCount?: number;
   lastCommitHash?: string;
@@ -53,12 +47,15 @@ export interface IProjectEngagement {
   githubRepoUrl?: string;
   githubRepoName?: string;
   issueUrl?: string;
+  /**
+   * The structured record of how the work went. The three prose documents that
+   * stood beside these two are replaced by one uploaded report; the logs stay,
+   * because they are captured while the work happens rather than reconstructed
+   * afterwards.
+   */
   documents: {
-    problemBreakdown?: IProcessDocument;
-    approachPlan?: IProcessDocument;
     blockerLog: IBlockerLogEntry[];
     aiUsageLog: IAIUsageLogEntry[];
-    finalReflection?: IProcessDocument;
   };
   githubSnapshot: IGithubSnapshot;
   peerReviewId?: string;
@@ -116,35 +113,6 @@ export interface ILecturerReview {
   rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
-}
-
-// ---------------------------------------------------------------------------
-// Verification Audit Log
-// ---------------------------------------------------------------------------
-
-export interface IVerificationAuditLog {
-  _id: string;
-  engagementId: string;
-  studentId: string;
-  lecturerId: string;
-  decision: LecturerDecision;
-  documentHashes: {
-    problemBreakdown: string;
-    approachPlan: string;
-    finalReflection: string;
-  };
-  githubSnapshot: {
-    commitCount: number;
-    lastCommitHash: string;
-    commitTimelineHash: string;
-  };
-  reviewScores: {
-    problemUnderstanding: number;
-    solutionQuality: number;
-    processQuality: number;
-    aiUsage: number;
-  };
-  recordedAt: Date;
 }
 
 // ---------------------------------------------------------------------------

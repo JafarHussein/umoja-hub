@@ -40,10 +40,14 @@ What the Education Hub is for:
 - It is the practical execution layer beside a Computer Science or Information Technology degree. Its purpose is to turn the theory taught in a unit into real engineering experience — building, reviewing, and demonstrating working software.
 - It is not a portfolio site, a CV builder, or a recruitment platform. The student owns their own portfolio and GitHub; UmojaHub exists to create the experience those later showcase.
 
-Project lifecycle (how a project is reviewed):
-1. Start a project and work on it (status: in progress). You submit process documents — a problem breakdown, an approach plan, and a final reflection.
-2. Submit for PEER REVIEW: another active student is assigned to review your work and give structured feedback.
-3. LECTURER REVIEW: a verified lecturer assesses your project against a structured rubric covering several dimensions of engineering quality.
-4. Outcome: the project is approved, sent back for revision, or denied, with written feedback in every case.
+Project lifecycle (how a project is assessed):
+1. BUILD. You start a project and build the system. While you work you can log blockers and your AI use — those stay as structured records and are what you draw on later when writing the report.
+2. WRITE ONE REPORT. There is a single project report, written to the UmojaHub Project Report Standard, covering the problem, related work, requirements, architecture, database design, technology choices, implementation, security, testing, deployment, limitations and conclusion. You write it in whatever you normally write in — Word, LaTeX, Docs — and upload the finished PDF. UmojaHub publishes the standard and shows you what belongs in each section; it does not hold your prose and does not judge your writing, which is the lecturer's job. Every version you upload is kept, along with what your lecturer said about it.
+3. LECTURER REVIEWS THE REPORT. A verified lecturer at your institution reads it and either accepts it or sends it back naming the sections that need work. If it comes back, you revise and resubmit — this can go round as many times as it needs to.
+4. BOOK A DEMONSTRATION. Once the report is accepted, you book a live demonstration in a time your lecturer has offered, and say what you will show and what you already know is incomplete.
+5. DEMONSTRATE. You run the system live — not slides — and your lecturer asks you why: why this architecture, why this database, how authorisation is enforced, what happens when something fails. This is the centre of the assessment, and it is where whether you understand what you built is actually established. If something breaks during the demonstration, you are assessed on how you respond to it, not on the fact that it happened.
+6. OUTCOME. Approved, and the project is complete; or more work is asked for, with reasons, and you revise and demonstrate again. A demonstration that goes badly is never a dead end.
+
+A peer in your cohort may also be asked to read your report. That is useful but it does not gate anything — your lecturer does not wait on it.
 
 The AI Mentor (you) guides without writing code for the student; assessment is always decided by peers and a human lecturer, never by you.`;

@@ -7,7 +7,7 @@
 //   foundation → the pinned demo accounts and authored content everything hangs off
 //   people     → the generated population around them
 //   commerce   → listings, orders, escrow, trust (derived with the real calculator)
-//   education  → engagements, peer reviews, lecturer reviews
+//   education  → engagements, project reports, lecturer reviews, demonstrations
 //   operations → the payment trail, audit history and assistant history that the
 //                first four phases imply but do not themselves write
 //
@@ -24,6 +24,7 @@ import { generateFoundation } from './phases/foundation';
 import { generatePeople } from './phases/people';
 import { generateCommerce } from './phases/commerce';
 import { generateEducation } from './phases/education';
+import { generateDemonstrations } from './phases/demonstrations';
 import { generateOperations } from './phases/operations';
 import type { World } from './world';
 import { log } from './db';
@@ -95,8 +96,13 @@ export async function runSimulation(runId: string = newRunId()): Promise<RunResu
     await generateCommerce(ctx, world);
     await batcher.flush();
 
-    log('education: engagements, peer reviews and lecturer reviews...');
+    log('education: engagements, project reports and lecturer reviews...');
     await generateEducation(ctx, world);
+
+    // After the engagements, because a demonstration is an appointment about a
+    // project and cannot be written before there is one.
+    log('education: demonstration slots and demonstrations...');
+    await generateDemonstrations(ctx, world);
     await batcher.flush();
 
     log('operations: payment trail, audit history, assistant history...');

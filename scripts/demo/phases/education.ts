@@ -3,16 +3,20 @@
 // verified/revision/denied), then materialises lecturer effectiveness (which no
 // live route fully populates). All backdated and causally ordered.
 
-import crypto from 'crypto';
 import type mongoose from 'mongoose';
 import type { SimContext, World } from '../world';
+import type { Rng } from '../rng';
 import { createDoc, pushNotification } from '../helpers';
 import { between, daysAgo, daysAfter } from '../clock';
 import { PROJECT_TITLES, TECH_STACKS, OSS_REPOSITORIES, LECTURER_PROJECTS } from '../dictionaries';
 import {
-  aiBrief, openSourceBrief, assignedBrief, problemBreakdown, approachPlan, finalReflection,
+  aiBrief, openSourceBrief, assignedBrief,
   blockerEntry, aiUsageEntry, lecturerComment, peerComment,
 } from '../text';
+import { reportSections } from '../content/reportContent';
+import { buildReportPdf, type ReportPdfSection } from '../content/reportPdf';
+import { REPORT_SECTIONS } from '../../../src/lib/education/reportStandard';
+import { uploadDemoReport } from '../documents';
 import type { SeedAcademicAnchor } from '../text';
 import {
   spineFor, SELF_DECLARED_PROGRAMME_NAMES, PROGRAMME_SEMESTERS_PER_YEAR,
@@ -20,12 +24,108 @@ import {
 import {
   ProjectTrack, ProjectStatus, PeerReviewStatus, LecturerDecision,
   NotificationType, AcademicDiscipline, AcademicProvenance, ACADEMIC_PROVENANCE_LABEL,
-  AssignmentAudience, AssignmentStatus,
+  AssignmentAudience, AssignmentStatus, SubmissionStatus, DocumentationOutcome,
+  DOCUMENTATION_CHECKLIST,
 } from '../../../src/types';
 
-function sha256(s: string): string {
-  return crypto.createHash('sha256').update(s).digest('hex');
+// The Kenyan settings a seeded report is written against. Kept beside the rest
+// of the seeder's vocabulary rather than in the content module.
+const REPORT_SETTINGS = [
+  'a county health facility',
+  'a rural technical training institute',
+  'a matatu sacco',
+  'a dairy collection cooperative',
+  'a community pharmacy chain',
+  'a school administration office',
+  'a smallholder irrigation scheme',
+];
+
+/** A filename a student would recognise as their own. */
+function slugForFile(title: string): string {
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'project'
+  );
 }
+
+/**
+ * The prose, in the standard's order and under the standard's headings.
+ *
+ * Ordered by `REPORT_SECTIONS` rather than by the object's key order, so a
+ * seeded document reads in the sequence the standard actually specifies — which
+ * is the sequence the lecturer's checklist walks in when they read it.
+ */
+function reportPdfSections(sections: Record<string, string>): ReportPdfSection[] {
+  return REPORT_SECTIONS.filter((spec) => Boolean(sections[spec.key])).map((spec) => ({
+    heading: `${spec.number}. ${spec.label}`,
+    body: sections[spec.key] as string,
+  }));
+}
+
+/**
+ * A lecturer's decision on one seeded version.
+ *
+ * The checklist is answered in full for an accepted report and left with real
+ * gaps on one sent back, because the gaps are what the student is being sent
+ * back about. Nothing here is generated at random beyond which sentence is
+ * used: a demo that showed a lecturer ticking thirteen boxes and then asking
+ * for changes would read as noise.
+ */
+function seededReview(
+  rng: Rng,
+  lecturerId: mongoose.Types.ObjectId,
+  outcome: DocumentationOutcome,
+  reviewedAt: Date
+): Record<string, unknown> {
+  const accepted = outcome === DocumentationOutcome.READY_FOR_DEMONSTRATION;
+  const unmet = accepted ? [] : ['architectureDocumented', 'testingDocumented', 'resultsPresented'];
+
+  const lo = accepted ? 3 : 2;
+  const hi = accepted ? 5 : 3;
+
+  return {
+    lecturerId,
+    outcome,
+    scores: {
+      problemUnderstanding: rng.int(lo, hi),
+      solutionQuality: rng.int(lo, hi),
+      processQuality: rng.int(lo, hi),
+      aiUsage: rng.int(lo, hi),
+    },
+    summary: accepted
+      ? 'This reads as an account of a system you built rather than a description of a category, which is the hardest part and you have done it. The architecture section carries its own weight and the limitations are honest. Bring the parts you are least sure about to the demonstration — I will ask about the data model before anything else.'
+      : 'You have clearly built something, but the report does not yet show me that you understand why you built it the way you did. The architecture section describes a pattern rather than your system, and the testing section sets out a strategy with no results in it. Both have to change before this is worth demonstrating against.',
+    ...(accepted
+      ? {
+          strengths:
+            'The problem statement is specific and the scope section says what you deliberately left out, which most reports do not.',
+        }
+      : {
+          concerns:
+            'Several figures are referred to in the text but are not in the document.',
+          requiredChanges:
+            'Rewrite the architecture section around the components you actually built and say why each is separate. Add the test results — what passed, what failed, and what you changed as a result. Include the figures you refer to.',
+        }),
+    questionsForDemonstration: accepted
+      ? 'Why this data model rather than a normalised one, and what happens to the system when the network drops mid-transaction.'
+      : undefined,
+    pageNotes: accepted
+      ? []
+      : [
+          { page: rng.int(8, 14), comment: 'This is the textbook definition. What is your architecture?' },
+          { page: rng.int(18, 26), comment: 'A test plan, not test results. What actually ran?' },
+        ],
+    checklist: DOCUMENTATION_CHECKLIST.map((item) => ({
+      item,
+      met: !unmet.includes(item),
+    })),
+    reviewedAt,
+  };
+}
+
 
 interface StudentActivity { engagements: [number, number]; verifyRate: number; }
 function activityFor(archetype: string): StudentActivity {
@@ -380,7 +480,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   const { default: PeerReview } = await import('../../../src/lib/models/PeerReview.model');
   const { default: LecturerReview } = await import('../../../src/lib/models/LecturerReview.model');
   const { default: LecturerEffectiveness } = await import('../../../src/lib/models/LecturerEffectiveness.model');
-  const { default: VerificationAuditLog } = await import('../../../src/lib/models/VerificationAuditLog.model');
+  const { default: ProjectDocumentation } = await import('../../../src/lib/models/ProjectDocumentation.model');
 
   const lecturerStats = new Map<string, LecturerStat>();
   // Every institution's lecturers must open their queue and find work in it.
@@ -486,19 +586,14 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       if (awaitingLecturer) institutionsWithQueuedWork.add(institutionKey);
 
       const pbAt = daysAfter(startedAt, rng.int(1, 4));
-      const apAt = daysAfter(pbAt, rng.int(1, 3));
-      const frAt = daysAfter(apAt, rng.int(2, 8));
+      const frAt = daysAfter(pbAt, rng.int(6, 20));
       const peerAt = daysAfter(frAt, rng.int(1, 3));
-      const pb = problemBreakdown(title);
-      const ap = approachPlan(stack);
-      const fr = finalReflection(title);
 
+      // Only the structured logs live on the engagement now. The three prose
+      // documents that stood here are one uploaded report, written below.
       const documents = {
-        problemBreakdown: { content: pb, hash: sha256(pb), submittedAt: pbAt },
-        approachPlan: { content: ap, hash: sha256(ap), submittedAt: apAt },
         blockerLog: Array.from({ length: rng.int(1, 3) }, () => ({ ...blockerEntry(rng), loggedAt: daysAfter(pbAt, rng.int(1, 5)) })),
         aiUsageLog: Array.from({ length: rng.int(1, 3) }, () => ({ ...aiUsageEntry(rng), loggedAt: daysAfter(pbAt, rng.int(1, 5)) })),
-        finalReflection: { content: fr, hash: sha256(fr), submittedAt: frAt },
       };
 
       const status = decision
@@ -530,6 +625,124 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         createdAt: startedAt,
         updatedAt: decision ? daysAfter(frAt, rng.int(2, 6)) : awaitingLecturer ? peerAt : frAt,
       }));
+
+      // The report. Every project that has reached a lecturer has one, and it
+      // is a real PDF in the same storage the application uploads to — the
+      // lecturer's screen reads the file back through the application's own
+      // authorised route, so a seeded version pointing at nothing would fail on
+      // the first click.
+      //
+      // A project still being built has none, which is the honest state: the
+      // report is written outside UmojaHub and arrives finished, so there is no
+      // half-written one for the platform to hold.
+      if (status !== ProjectStatus.BRIEF_GENERATED && status !== ProjectStatus.IN_PROGRESS) {
+        const reportTitle = takesOffer && offered ? offered.title : repo ? repo.name : title;
+        const sections = reportSections(rng, {
+          title: reportTitle,
+          stack,
+          units: academic.anchor.units,
+          programmeName: academic.anchor.programmeName,
+          year: academic.anchor.year,
+          semester: academic.anchor.semester,
+          industry: rng.pick(REPORT_SETTINGS),
+          interest: academic.interest,
+        });
+
+        const subtitle = `${student.fullName} — ${academic.anchor.programmeName}, Year ${academic.anchor.year} Semester ${academic.anchor.semester}`;
+        const fileName = `${slugForFile(reportTitle)}-report.pdf`;
+
+        // A project that was sent back and then accepted keeps both versions,
+        // because that pair — the feedback and the answer to it — is the whole
+        // point of the cycle and the demo should be able to show one.
+        const showsCycle = status === ProjectStatus.VERIFIED && rng.bool(0.4);
+        const lecturer = rng.pick(faculty);
+        const versions: Record<string, unknown>[] = [];
+
+        const firstAt = frAt;
+        const firstPdf = buildReportPdf(reportTitle, subtitle, reportPdfSections(sections));
+        const firstFile = await uploadDemoReport(firstPdf, fileName);
+
+        const finalOutcome =
+          status === ProjectStatus.VERIFIED
+            ? DocumentationOutcome.READY_FOR_DEMONSTRATION
+            : DocumentationOutcome.REVISION_REQUESTED;
+
+        if (showsCycle) {
+          versions.push({
+            versionNumber: 1,
+            fileName,
+            publicId: firstFile.publicId,
+            bytes: firstFile.bytes,
+            pageCount: firstFile.pageCount,
+            submittedAt: firstAt,
+            status: SubmissionStatus.SUPERSEDED,
+            review: seededReview(
+              rng,
+              lecturer.id,
+              DocumentationOutcome.REVISION_REQUESTED,
+              daysAfter(firstAt, rng.int(2, 6))
+            ),
+          });
+
+          const secondAt = daysAfter(firstAt, rng.int(8, 20));
+          const secondPdf = buildReportPdf(reportTitle, subtitle, reportPdfSections(sections));
+          const secondFile = await uploadDemoReport(secondPdf, fileName);
+
+          versions.push({
+            versionNumber: 2,
+            fileName,
+            publicId: secondFile.publicId,
+            bytes: secondFile.bytes,
+            pageCount: secondFile.pageCount,
+            submittedAt: secondAt,
+            studentNote:
+              'Rewrote the architecture section around the services I actually built, added the test results table, and replaced the placeholder screenshots with the running system.',
+            status: SubmissionStatus.READY_FOR_DEMONSTRATION,
+            review: seededReview(
+              rng,
+              lecturer.id,
+              DocumentationOutcome.READY_FOR_DEMONSTRATION,
+              daysAfter(secondAt, rng.int(2, 6))
+            ),
+          });
+        } else {
+          const awaitingRead =
+            status === ProjectStatus.UNDER_PEER_REVIEW ||
+            status === ProjectStatus.UNDER_LECTURER_REVIEW;
+
+          versions.push({
+            versionNumber: 1,
+            fileName,
+            publicId: firstFile.publicId,
+            bytes: firstFile.bytes,
+            pageCount: firstFile.pageCount,
+            submittedAt: firstAt,
+            status: awaitingRead
+              ? SubmissionStatus.SUBMITTED
+              : status === ProjectStatus.VERIFIED
+                ? SubmissionStatus.READY_FOR_DEMONSTRATION
+                : SubmissionStatus.REVISION_REQUESTED,
+            ...(awaitingRead
+              ? {}
+              : {
+                  review: seededReview(
+                    rng,
+                    lecturer.id,
+                    finalOutcome,
+                    daysAfter(firstAt, rng.int(2, 6))
+                  ),
+                }),
+          });
+        }
+
+        ledger.track('ProjectDocumentation', await createDoc(ProjectDocumentation, {
+          engagementId: engagement._id,
+          studentId: student.id,
+          versions,
+          createdAt: firstAt,
+          updatedAt: frAt,
+        }));
+      }
 
       if (!decision && !awaitingLecturer) continue;
 
@@ -588,17 +801,6 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         }));
 
         await ProjectEngagement.updateOne({ _id: engagement._id }, { $set: { lecturerReviewId: lecReview._id } });
-
-        // Verification audit log (immutable trail).
-        batcher.add(VerificationAuditLog, 'VerificationAuditLog', {
-          engagementId: engagement._id, studentId: student.id, lecturerId: lecturer.id, decision: passDecision,
-          documentHashes: { problemBreakdown: documents.problemBreakdown.hash, approachPlan: documents.approachPlan.hash, finalReflection: documents.finalReflection.hash },
-          // No githubSnapshot — see the note on the engagement above. The live
-          // route writes zeros here because nothing gathers commit evidence; the
-          // seeder must not claim more than the platform can.
-          reviewScores: sc,
-          recordedAt: at,
-        });
 
         // Lecturer effectiveness accumulation.
         const lid = String(lecturer.id);

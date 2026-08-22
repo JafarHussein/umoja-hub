@@ -1,15 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { ProjectTrack, ProjectStatus } from '@/types';
 
-const processDocumentSchema = new Schema(
-  {
-    content: { type: String },
-    hash: { type: String },
-    submittedAt: { type: Date },
-  },
-  { _id: false }
-);
-
 const blockerLogEntrySchema = new Schema(
   {
     stuckOn: { type: String, required: true },
@@ -74,12 +65,26 @@ const projectEngagementSchema = new Schema(
     githubRepoUrl: { type: String },
     githubRepoName: { type: String },
     issueUrl: { type: String },
+    /**
+     * The structured record of how the work went.
+     *
+     * Three prose documents stood here beside these two logs —
+     * `problemBreakdown`, `approachPlan` and `finalReflection` — and they were
+     * the whole of what a student submitted. A lecturer's verdict was issued on
+     * three pieces of prose, written at three different moments, which together
+     * never amounted to an account of a system and nowhere required that
+     * software had been written at all.
+     *
+     * They are replaced by one uploaded report. These two logs did not move,
+     * and should not: they are structured data the platform uses, they are
+     * captured while the work happens rather than reconstructed afterwards, and
+     * they are the raw material the student draws on when writing the report's
+     * challenges and AI-use sections. It is the *academic deliverable* that
+     * became single, not the platform's record of the work.
+     */
     documents: {
-      problemBreakdown: { type: processDocumentSchema },
-      approachPlan: { type: processDocumentSchema },
       blockerLog: [blockerLogEntrySchema],
       aiUsageLog: [aiUsageLogEntrySchema],
-      finalReflection: { type: processDocumentSchema },
     },
     githubSnapshot: { type: githubSnapshotSchema, default: () => ({}) },
     peerReviewId: { type: Schema.Types.ObjectId, ref: 'PeerReview' },
@@ -115,11 +120,8 @@ export interface ProjectEngagementDoc {
   githubRepoName?: string;
   issueUrl?: string;
   documents: {
-    problemBreakdown?: { content: string; hash: string; submittedAt: Date };
-    approachPlan?: { content: string; hash: string; submittedAt: Date };
     blockerLog: unknown[];
     aiUsageLog: unknown[];
-    finalReflection?: { content: string; hash: string; submittedAt: Date };
   };
   peerReviewId?: mongoose.Types.ObjectId;
   lecturerReviewId?: mongoose.Types.ObjectId;

@@ -33,6 +33,13 @@ jest.mock('@/lib/models/ProjectEngagement.model', () => ({
   },
 }));
 
+// A peer reads the report now, not three separate documents.
+const mockReportFindOne = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+jest.mock('@/lib/models/ProjectDocumentation.model', () => ({
+  __esModule: true,
+  default: { findOne: jest.fn((...a: unknown[]) => mockReportFindOne(...a)) },
+}));
+
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/options', () => ({ authOptions: {} }));
 

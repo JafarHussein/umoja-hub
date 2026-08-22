@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { createHash } from 'node:crypto';
+
 import { loadEnvConfig } from '@next/env';
 import { encode } from 'next-auth/jwt';
 import mongoose from 'mongoose';
@@ -18,6 +18,7 @@ import MediationRequestModel from '@/lib/models/MediationRequest.model';
 import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
 import ProjectEngagementModel from '@/lib/models/ProjectEngagement.model';
 import PeerReviewModel from '@/lib/models/PeerReview.model';
+import ProjectDocumentationModel from '@/lib/models/ProjectDocumentation.model';
 import VerifiedSupplierModel from '@/lib/models/VerifiedSupplier.model';
 import SimulatedPaymentModel from '@/lib/models/SimulatedPayment.model';
 import {
@@ -35,7 +36,7 @@ import {
   MediationRequestStatus,
   ProjectTrack,
   ProjectStatus,
-  StudentTier,
+  SubmissionStatus,
   PeerReviewStatus,
   SupplierInputCategory,
   SupplierVerificationStatus,
@@ -420,22 +421,17 @@ export default async function globalSetup(): Promise<void> {
     }
   }
 
-  // UI-08 student developer log workbench: an IN_PROGRESS engagement with all 3
-  // process documents present (each with its real SHA-256 hash).
+  // UI-08 student developer log workbench: an IN_PROGRESS engagement with its
+  // blocker and AI-usage logs. The prose documents that used to sit beside them
+  // are one uploaded report now, seeded below.
   const studentId = idsByKey.get('student');
   if (studentId) {
-    const buildDoc = (content: string) => ({
-      content,
-      hash: createHash('sha256').update(content).digest('hex'),
-      submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-    });
     await ProjectEngagementModel.findOneAndUpdate(
       { _id: FIXTURE_ENGAGEMENT_ID },
       {
         $set: {
           studentId,
           track: ProjectTrack.AI_BRIEF,
-          tier: StudentTier.BEGINNER,
           status: ProjectStatus.IN_PROGRESS,
           brief: {
             title: 'E2E Developer Log',
@@ -453,19 +449,7 @@ export default async function globalSetup(): Promise<void> {
             suggestedTechStack: ['Next.js', 'MongoDB'],
             estimatedComplexity: 'MEDIUM',
           },
-          documents: {
-            problemBreakdown: buildDoc(
-              'The client, a Nakuru agrovet, needs a simple stock tracker for seed and fertiliser inventory across two shops.'
-            ),
-            approachPlan: buildDoc(
-              "Build a Next.js app with a MongoDB inventory model, role-based access, and a daily low-stock SMS summary via Africa's Talking."
-            ),
-            finalReflection: buildDoc(
-              'I learned to scope tightly: shipping the stock CRUD first, then layering alerts, kept the build focused and testable.'
-            ),
-            blockerLog: [],
-            aiUsageLog: [],
-          },
+          documents: { blockerLog: [], aiUsageLog: [] },
         },
       },
       { upsert: true, setDefaultsOnInsert: true }
@@ -479,22 +463,37 @@ export default async function globalSetup(): Promise<void> {
         $set: {
           studentId: FIXTURE_PEER_AUTHOR_ID,
           track: ProjectTrack.AI_BRIEF,
-          tier: StudentTier.BEGINNER,
           status: ProjectStatus.UNDER_PEER_REVIEW,
           brief: { title: 'Peer Project — Market Stall Tracker' },
-          documents: {
-            problemBreakdown: buildDoc(
-              'Market stall vendors in Nairobi need a lightweight way to record daily sales and restock reminders.'
-            ),
-            approachPlan: buildDoc(
-              'A mobile-first PWA with offline-first storage syncing to a small API; daily totals and a restock list.'
-            ),
-            finalReflection: buildDoc(
-              'Offline sync was the hardest part; I would add conflict resolution and a clearer empty state next time.'
-            ),
-            blockerLog: [],
-            aiUsageLog: [],
-          },
+          documents: { blockerLog: [], aiUsageLog: [] },
+        },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+
+    // The report a peer actually reads: one submitted version.
+    //
+    // `publicId` names a file that was never stored, and deliberately so. The
+    // spec asserts that the reader is offered the document and never fetches
+    // it, and making the e2e harness upload to a real storage account to prove
+    // that would buy nothing and could fail for reasons that have nothing to do
+    // with the application.
+    await ProjectDocumentationModel.findOneAndUpdate(
+      { engagementId: FIXTURE_PEER_ENGAGEMENT_ID },
+      {
+        $set: {
+          studentId: FIXTURE_PEER_AUTHOR_ID,
+          versions: [
+            {
+              versionNumber: 1,
+              fileName: 'market-stall-tracker-report.pdf',
+              publicId: 'e2e-fixture/market-stall-tracker-report',
+              bytes: 184_320,
+              pageCount: 34,
+              submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+              status: SubmissionStatus.SUBMITTED,
+            },
+          ],
         },
       },
       { upsert: true, setDefaultsOnInsert: true }
@@ -522,30 +521,9 @@ export default async function globalSetup(): Promise<void> {
       $set: {
         studentId: FIXTURE_PEER_AUTHOR_ID,
         track: ProjectTrack.AI_BRIEF,
-        tier: StudentTier.INTERMEDIATE,
         status: ProjectStatus.UNDER_LECTURER_REVIEW,
         brief: { title: 'Lecturer Review Project' },
         documents: {
-          problemBreakdown: {
-            content:
-              'The cooperative needs a shared ledger so member deliveries reconcile against payouts each week.',
-            hash: createHash('sha256')
-              .update('lecturer-review-problem')
-              .digest('hex'),
-            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-          },
-          approachPlan: {
-            content:
-              'A Next.js dashboard backed by MongoDB with weekly reconciliation jobs and an export to CSV.',
-            hash: createHash('sha256').update('lecturer-review-approach').digest('hex'),
-            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-          },
-          finalReflection: {
-            content:
-              'Reconciliation edge cases around partial deliveries took the most time and taught me to model state explicitly.',
-            hash: createHash('sha256').update('lecturer-review-reflection').digest('hex'),
-            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-          },
           blockerLog: [
             {
               stuckOn: 'Weekly job double-counted re-submitted deliveries.',
@@ -565,6 +543,29 @@ export default async function globalSetup(): Promise<void> {
             },
           ],
         },
+      },
+    },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+
+  // The report the lecturer's queue is built from. Without a submitted version
+  // the queue is empty and there is nothing for UI-10 to open.
+  await ProjectDocumentationModel.findOneAndUpdate(
+    { engagementId: FIXTURE_LECTURER_ENGAGEMENT_ID },
+    {
+      $set: {
+        studentId: FIXTURE_PEER_AUTHOR_ID,
+        versions: [
+          {
+            versionNumber: 1,
+            fileName: 'lecturer-review-project-report.pdf',
+            publicId: 'e2e-fixture/lecturer-review-project-report',
+            bytes: 271_360,
+            pageCount: 41,
+            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+            status: SubmissionStatus.SUBMITTED,
+          },
+        ],
       },
     },
     { upsert: true, setDefaultsOnInsert: true }

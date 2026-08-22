@@ -52,10 +52,33 @@ export async function GET(
     const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
     const engagementId = (review as { engagementId: mongoose.Types.ObjectId }).engagementId;
     const engagement = await ProjectEngagement.findById(engagementId)
-      .select('brief tier track documents.problemBreakdown documents.approachPlan documents.finalReflection status')
+      .select('brief track status')
       .lean();
 
-    return NextResponse.json({ data: { ...review, engagement: engagement ?? null } });
+    // A peer reads the report, not three separate documents. The report is the
+    // one place the project is explained, so it is what there is to read — and
+    // a reader who has just written their own report knows what to look for in
+    // somebody else's.
+    //
+    // What comes back is the version list, not the document: the PDF itself is
+    // fetched from the file route, which decides for each read whether this
+    // peer is still entitled to it.
+    const { default: ProjectDocumentation } = await import(
+      '@/lib/models/ProjectDocumentation.model'
+    );
+    const documentation = await ProjectDocumentation.findOne({ engagementId } as object).lean();
+
+    const { toPeerDocumentationView } = await import('@/lib/education/reportAccess');
+
+    return NextResponse.json({
+      data: {
+        ...review,
+        engagement: engagement ?? null,
+        documentation: documentation
+          ? toPeerDocumentationView(documentation as unknown as never)
+          : null,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

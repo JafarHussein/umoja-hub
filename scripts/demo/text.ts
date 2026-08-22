@@ -462,3 +462,68 @@ export function assignedBrief(
         : ['Engineering judgement'],
   };
 }
+
+// ---------------------------------------------------------------------------
+// Demonstrations.
+//
+// A lecturer's demonstration comments and a student's readiness note. Both are
+// written as the people would write them: the lecturer naming something
+// specific about the system rather than grading an abstraction, and the student
+// saying plainly what they will show and what does not work.
+// ---------------------------------------------------------------------------
+
+const DEMONSTRATION_COMMENT: Record<string, [string, string]> = {
+  problemUnderstanding: [
+    'They could say who this is for and what those people do today without it, in concrete terms, and the problem statement in the report matched what they described out loud.',
+    'They described the problem in general terms and could not say who specifically would use this or what they do instead at the moment.',
+  ],
+  systemFunctionality: [
+    'Every flow they said they would show ran, including the offline capture and the reconnect. Nothing was staged and nothing was skipped.',
+    'The main flow ran but two of the paths they had listed could not be shown, and one of those had not been declared in advance.',
+  ],
+  technicalDepth: [
+    'Asked how the queue drains, they went to the code and walked through the ordering guarantee without hesitating. They know what their own system does below the surface.',
+    'They could describe what the code does at the level of the interface but could not explain the mechanism underneath when asked to open it.',
+  ],
+  designJustification: [
+    'They named the alternative they rejected and what it would have cost, which is the part most students cannot do. The database choice in particular was defended on the access pattern rather than on familiarity.',
+    'They could say what they chose but not why, and could not name an alternative they had considered and set aside.',
+  ],
+  responseToQuestioning: [
+    'Pushed on what happens when the same field is edited on two devices, they reasoned through it live and arrived at the limitation themselves rather than reaching for a rehearsed answer.',
+    'They handled the questions they had prepared for and struggled when asked about a case they had not anticipated.',
+  ],
+  engineeringPractice: [
+    'Tests exist where the risk is, the error handling is deliberate, and they were straight about the security gap rather than talking around it. That honesty is worth as much as the code.',
+    'The work is there but the testing is thin in exactly the area that carries the risk, and the limitations were understated until asked about directly.',
+  ],
+};
+
+export function demonstrationComment(rng: Rng, criterion: string, good: boolean): string {
+  const pair = DEMONSTRATION_COMMENT[criterion];
+  if (!pair) {
+    return good
+      ? 'Handled well, and they could explain the reasoning behind it when asked.'
+      : 'Needs more work before this would hold up outside the demonstration.';
+  }
+  return good ? pair[0] : pair[1];
+}
+
+export function questioningNotes(rng: Rng, good: boolean): string {
+  const asked = rng.pick([
+    'Why this database rather than the alternative. What happens when two devices edit the same field. How authorisation is enforced, and where. What breaks first under load.',
+    'How the sync queue guarantees ordering. Why the identifier is generated on the client. What the system does when the database is unavailable. What they would change with more time.',
+    'Where AI was used and what they verified. How they tested the reconciliation rule. What the schema is deliberately slow at, and why that was acceptable.',
+  ]);
+  return good
+    ? `Asked: ${asked} They answered all of it from the system rather than from the report, and where they did not know they said so and reasoned towards an answer.`
+    : `Asked: ${asked} The answers were thin on the mechanism — they know what the system does, not yet why it does it that way.`;
+}
+
+export function studentDemonstrationNotes(rng: Rng): string {
+  return rng.pick([
+    'I will show signing in, capturing a record with the network disabled, a full reload to prove it survived, and the reconnect draining the queue. Then two profiles editing the same record offline and reconnecting out of order. The summary export is not finished — the figures are right but the column order is wrong. The deployment cold-starts, so the first request may be slow.',
+    'Plan: the administrator reconciliation view showing an expected-but-missing record, then role separation by calling the API directly from a session that should not have access. Known gaps — there is no rate limiting on login, and the reconciliation view does not paginate so it slows down past a few hundred rows.',
+    'I will run the three main flows end to end on the deployed instance, then open the code for the ordering guarantee in the sync queue because that is the part I most want to talk about. What does not work: password reset is stubbed, and the mobile layout breaks below 320px. I have not fixed either and would rather say so now.',
+  ]);
+}
