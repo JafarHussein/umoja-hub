@@ -81,7 +81,7 @@ export const E2E_USERS: E2EUserFixture[] = [
     email: 'e2e+lecturer@umojahub.test',
     firstName: 'E2E Lecturer',
     isVerified: true,
-    landing: '/dashboard/lecturer/queue',
+    landing: '/dashboard/lecturer/reports',
   },
   {
     // UI-03: drives the lecturer verification lockout — isVerified false rides
@@ -91,7 +91,7 @@ export const E2E_USERS: E2EUserFixture[] = [
     email: 'e2e+lecturer-unverified@umojahub.test',
     firstName: 'E2E Unverified Lecturer',
     isVerified: false,
-    landing: '/dashboard/lecturer/queue',
+    landing: '/dashboard/lecturer/reports',
   },
   {
     key: 'admin',

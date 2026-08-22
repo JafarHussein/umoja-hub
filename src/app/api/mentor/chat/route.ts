@@ -7,7 +7,7 @@ import { mentorChatSchema } from '@/lib/validation/educationSchema';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { env } from '@/lib/env';
-import { Role, ProjectStatus, MENTOR_SESSION_TTL_DAYS } from '@/types';
+import { Role, MENTOR_SESSION_TTL_DAYS, ACTIVE_PROJECT_STATUSES } from '@/types';
 import { EDUCATION_PLATFORM_KNOWLEDGE } from '@/lib/ai/platformKnowledge';
 import type { ProjectEngagementDoc } from '@/lib/models/ProjectEngagement.model';
 
@@ -17,15 +17,6 @@ const MENTOR_RATE_LIMIT = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const MENTOR_FALLBACK =
   "I'm having trouble connecting right now. Please try again in a moment.";
-
-const ACTIVE_STATUSES: ProjectStatus[] = [
-  ProjectStatus.BRIEF_GENERATED,
-  ProjectStatus.IN_PROGRESS,
-  ProjectStatus.SUBMITTED,
-  ProjectStatus.UNDER_PEER_REVIEW,
-  ProjectStatus.UNDER_LECTURER_REVIEW,
-  ProjectStatus.REVISION_REQUIRED,
-];
 
 // ---------------------------------------------------------------------------
 // POST /api/mentor/chat — AI mentor backed by Groq, engagement-scoped
@@ -78,7 +69,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const raw = await ProjectEngagement.findOne({
       _id: engagementId,
       studentId,
-      status: { $in: ACTIVE_STATUSES },
+      status: { $in: ACTIVE_PROJECT_STATUSES },
     } as object).lean();
 
     if (!raw) {

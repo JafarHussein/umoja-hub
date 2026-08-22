@@ -2,7 +2,7 @@
  * The one map from a role to the page that role calls home.
  *
  * This existed in three places that had already drifted apart: the middleware
- * sent a lecturer to `/dashboard/lecturer/queue`, while the access-denied
+ * sent a lecturer to the review queue, while the access-denied
  * screen's "Go to my dashboard" button sent the same lecturer to
  * `/dashboard/lecturer/reviews/pending` — a route that does not exist, so
  * recovering from a permission error dropped them on a 404.
@@ -19,7 +19,7 @@ export const ROLE_HOME: Record<Role, string> = {
   // Buyers live in the marketplace — `/dashboard/buyer` has no index route.
   [Role.BUYER]: '/marketplace',
   [Role.STUDENT]: '/dashboard/student',
-  [Role.LECTURER]: '/dashboard/lecturer/queue',
+  [Role.LECTURER]: '/dashboard/lecturer/reports',
   [Role.ADMIN]: '/dashboard/admin/verification-queue',
   [Role.INSTITUTION]: '/dashboard/institution',
 };

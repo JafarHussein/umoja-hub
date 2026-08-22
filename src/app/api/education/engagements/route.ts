@@ -10,21 +10,12 @@ import { loadAcademicContext } from '@/lib/education/academicContext';
 import { assignmentToBrief, isEligible, takenCount } from '@/lib/education/assignment';
 import type { AssignmentRecord } from '@/lib/education/assignment';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
-import { Role, ProjectTrack, ProjectStatus, UserStatus } from '@/types';
+import { Role, ProjectTrack, ProjectStatus, UserStatus, ACTIVE_PROJECT_STATUSES } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Active statuses: student may not start a new engagement while in any of these.
 // Terminal statuses (VERIFIED, DENIED) allow a fresh start.
 // ---------------------------------------------------------------------------
-
-const ACTIVE_STATUSES: ProjectStatus[] = [
-  ProjectStatus.BRIEF_GENERATED,
-  ProjectStatus.IN_PROGRESS,
-  ProjectStatus.SUBMITTED,
-  ProjectStatus.UNDER_PEER_REVIEW,
-  ProjectStatus.UNDER_LECTURER_REVIEW,
-  ProjectStatus.REVISION_REQUIRED,
-];
 
 const GITHUB_REPO_PATTERN = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(\/.*)?$/;
 
@@ -125,7 +116,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // One-active-engagement guard
     const activeEngagement = await ProjectEngagement.findOne({
       studentId,
-      status: { $in: ACTIVE_STATUSES },
+      status: { $in: ACTIVE_PROJECT_STATUSES },
     } as object).lean();
 
     if (activeEngagement) {

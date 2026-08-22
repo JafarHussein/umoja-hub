@@ -355,6 +355,32 @@ export enum ProjectStatus {
   DENIED = 'DENIED',
 }
 
+/**
+ * The statuses in which a project is still the student's current work.
+ *
+ * Three routes ask this same question — which project is the student on, may
+ * they start another, and what is the mentor talking about — and each kept its
+ * own copy of the answer. When the demonstration stage added two statuses, all
+ * three lists were left behind, so a student whose report had just been
+ * accepted lost their project from their own workspace at exactly the moment
+ * the assessment moved to the part that matters.
+ *
+ * Terminal statuses are excluded: a verified or closed project is history, not
+ * current work. Anything that is neither finished nor abandoned belongs here,
+ * and a status added to the lifecycle without being considered here is a bug of
+ * the kind this constant now exists to make impossible.
+ */
+export const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = [
+  ProjectStatus.BRIEF_GENERATED,
+  ProjectStatus.IN_PROGRESS,
+  ProjectStatus.SUBMITTED,
+  ProjectStatus.UNDER_PEER_REVIEW,
+  ProjectStatus.UNDER_LECTURER_REVIEW,
+  ProjectStatus.READY_FOR_DEMONSTRATION,
+  ProjectStatus.DEMONSTRATION_SCHEDULED,
+  ProjectStatus.REVISION_REQUIRED,
+];
+
 export enum LecturerDecision {
   VERIFIED = 'VERIFIED',
   REVISION_REQUIRED = 'REVISION_REQUIRED',

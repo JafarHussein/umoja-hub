@@ -84,7 +84,7 @@ const SHOTS: Shot[] = [
   { file: 'student-peer-review', path: '/dashboard/student/peer-review', role: Role.STUDENT },
   { file: 'student-mentor', path: '/dashboard/student/mentor', role: Role.STUDENT },
   // Lecturer
-  { file: 'lecturer-queue', path: '/dashboard/lecturer/queue', role: Role.LECTURER },
+  { file: 'lecturer-reports', path: '/dashboard/lecturer/reports', role: Role.LECTURER },
   { file: 'lecturer-review', path: '/dashboard/lecturer/reviews/:engagementId', role: Role.LECTURER },
   // Institution
   { file: 'institution-dashboard', path: '/dashboard/institution', role: Role.INSTITUTION },

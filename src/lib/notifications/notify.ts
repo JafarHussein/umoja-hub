@@ -79,7 +79,7 @@ function dashboardPathFor(role: string | null, kind?: string): string {
     case Role.STUDENT:
       return '/dashboard/student';
     case Role.LECTURER:
-      return '/dashboard/lecturer/queue';
+      return '/dashboard/lecturer/reports';
     case Role.ADMIN:
       return '/dashboard/admin';
     default:

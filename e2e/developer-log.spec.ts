@@ -27,7 +27,9 @@ test('the workspace says where the project is and what happens next', async ({ p
 
   // One card, at the top, carrying the stage and the next step. A student
   // should not have to assemble their own status out of five pills.
-  await expect(page.getByText('Building')).toBeVisible();
+  // Exact: the progress stepper also carries 'Building and writing up', and a
+  // substring match resolves to both.
+  await expect(page.getByText('Building', { exact: true })).toBeVisible();
   await expect(page.getByText(/write your report against the standard/i)).toBeVisible();
 
   // The workflow's own stages, not the storage's.
@@ -42,7 +44,8 @@ test('the report tab shows the standard and asks for a PDF', async ({ page }) =>
     timeout: 30_000,
   });
 
-  await page.getByRole('button', { name: 'Project report' }).click();
+  // A tab, not a button — the workspace switcher is a real tablist.
+  await page.getByRole('tab', { name: 'Project report' }).click();
 
   // The report is written elsewhere and handed in here. The upload is the
   // submission — there is no draft state, because the draft lives in whatever
@@ -57,7 +60,8 @@ test('the report tab shows the standard and asks for a PDF', async ({ page }) =>
   // that stops a student writing a paragraph about what three-tier
   // architecture is instead of describing what they built.
   await expect(page.getByText('What your report must contain')).toBeVisible();
-  await expect(page.getByText('The engineering')).toBeVisible();
+  // The part heading, not the guidance line that happens to contain the phrase.
+  await expect(page.getByRole('heading', { name: 'The engineering' })).toBeVisible();
   await expect(page.getByText(/11\. System architecture/)).toBeVisible();
   await expect(page.getByText(/why this architecture/i)).toBeVisible();
 });

@@ -36,6 +36,7 @@ import {
   MediationRequestStatus,
   ProjectTrack,
   ProjectStatus,
+  ACTIVE_PROJECT_STATUSES,
   SubmissionStatus,
   PeerReviewStatus,
   SupplierInputCategory,
@@ -696,5 +697,58 @@ export default async function globalSetup(): Promise<void> {
     { upsert: true, setDefaultsOnInsert: true }
   );
 
+  // Every fixture is written by now, so the world can be checked as a whole.
+  await assertOneActiveEngagementPerStudent();
+
   await mongoose.disconnect();
 }
+
+/**
+ * One student, one live project.
+ *
+ * `/api/education/engagements/me` answers "which project is this student on?"
+ * with their most recent active one, and the whole student workspace resolves
+ * through it. A fixture that gives one student a second active engagement
+ * therefore does not fail where it was written — it silently moves another
+ * spec's workspace onto a different project, and that spec fails somewhere
+ * else, with a missing heading and no hint as to why.
+ *
+ * That is exactly what happened when the lecturer's report was first handed to
+ * the seeded student. Encoded here so the next such collision is reported by
+ * the setup that caused it, rather than diagnosed twice through a spec.
+ */
+async function assertOneActiveEngagementPerStudent(): Promise<void> {
+  const collisions = await ProjectEngagementModel.aggregate<{
+    _id: unknown;
+    count: number;
+    ids: unknown[];
+  }>([
+    { $match: { status: { $in: ACTIVE_PROJECT_STATUSES } } },
+    { $group: { _id: '$studentId', count: { $sum: 1 }, ids: { $push: '$_id' } } },
+    { $match: { count: { $gt: 1 } } },
+  ]);
+
+  if (collisions.length === 0) return;
+
+  const detail = collisions
+    .map((c) => `  student ${String(c._id)} owns ${c.count}: ${c.ids.map(String).join(', ')}`)
+    .join('\n');
+
+  throw new Error(
+    [
+      '',
+      'E2E fixtures give a student more than one active project.',
+      '',
+      detail,
+      '',
+      'The student workspace resolves through /api/education/engagements/me, which',
+      'returns the most recent active engagement. A second one silently redirects',
+      "that student's workspace onto a different project and breaks whichever spec",
+      'expected the first — somewhere else, with a confusing error.',
+      '',
+      'Give the new engagement its own student fixture instead.',
+      '',
+    ].join('\n')
+  );
+}
+

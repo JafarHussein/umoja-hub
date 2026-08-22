@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function LecturerDashboardPage(): null {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/dashboard/lecturer/queue');
+    router.replace('/dashboard/lecturer/reports');
   }, [router]);
   return null;
 }
