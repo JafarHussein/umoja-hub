@@ -46,6 +46,38 @@ type BriefContextItem = {
 // rather than handed a brief written from nothing.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// GET /api/education/engagements — every project this student has had.
+//
+// Newest first, and deliberately including the finished ones. `/engagements/me`
+// answers "what am I working on now" and goes quiet when a project is approved;
+// a student still needs to be able to find the project they completed, read the
+// outcome, and see what they built before this one.
+//
+// Auth: STUDENT, their own only.
+// ---------------------------------------------------------------------------
+
+export async function GET(_req: NextRequest): Promise<NextResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+    requireRole(session, Role.STUDENT);
+
+    await connectDB();
+
+    const { default: ProjectEngagement } = await import('@/lib/models/ProjectEngagement.model');
+    const engagements = await ProjectEngagement.find({
+      studentId: session!.user.id,
+    } as object)
+      .select('status track brief.title brief.academicAnchor revisionNumber createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json({ data: engagements });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);

@@ -72,6 +72,10 @@ const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: './e2e',
+  // The rehearsal drives real file storage, which CI does not have credentials
+  // for. It is run deliberately — `npm run test:e2e:rehearsal` — rather than
+  // failing every CI run for a reason that says nothing about the product.
+  testIgnore: ['**/rehearsal.spec.ts'],
   globalSetup: './e2e/support/global-setup.ts',
   globalTeardown: './e2e/support/global-teardown.ts',
   fullyParallel: true,

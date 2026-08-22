@@ -83,7 +83,7 @@ export async function purgeDemoReports(): Promise<number> {
     // loop ends when a call takes nothing rather than after a fixed number.
     for (let round = 0; round < 20; round += 1) {
       const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/resources/raw/upload?prefix=${encodeURIComponent(DEMO_REPORT_FOLDER)}`,
+        `https://api.cloudinary.com/v1_1/${cloudName}/resources/raw/private?prefix=${encodeURIComponent(DEMO_REPORT_FOLDER)}`,
         { method: 'DELETE', headers: { Authorization: `Basic ${auth}` } }
       );
       if (!res.ok) break;

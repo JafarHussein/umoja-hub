@@ -177,13 +177,24 @@ export default function ProjectWorkspacePage(): React.ReactElement {
 
   const fetchEngagement = useCallback(async (): Promise<void> => {
     try {
-      const res = await fetch('/api/education/engagements/me');
+      // By id, not "my current project".
+      //
+      // This screen used to resolve through /engagements/me, which returns only
+      // *active* work — so the moment a lecturer approved a project it stopped
+      // matching, and the student's finished work reported itself as not found.
+      // The outcome they had been waiting for was the one thing they could not
+      // open. Ownership is enforced by the route.
+      const res = await fetch(`/api/education/engagements/${params.id}`);
+      if (res.status === 404) {
+        setPageState('not_found');
+        return;
+      }
       if (!res.ok) {
         setPageState('error');
         return;
       }
       const body = (await res.json()) as { data: IRawEngagement | null };
-      if (!body.data || String(body.data._id) !== params.id) {
+      if (!body.data) {
         setPageState('not_found');
         return;
       }

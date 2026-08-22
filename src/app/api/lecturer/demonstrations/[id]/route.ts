@@ -229,6 +229,15 @@ export async function PATCH(
 
         const evaluation = parsed.data.evaluation;
         const approved = evaluation.outcome === DemonstrationOutcome.APPROVED;
+        // "Not ready" is not "needs revision", and the difference decides where
+        // the project goes. Revision means the work has to change, so the report
+        // reopens with it. Not ready means nothing was assessed — the system did
+        // not run, or the student was not able to show it — and nothing about
+        // the accepted report has changed. That project stays ready to
+        // demonstrate and the student books another time; sending them back to
+        // rewrite a report the lecturer had already accepted would be the
+        // platform inventing work.
+        const notReady = evaluation.outcome === DemonstrationOutcome.NOT_READY;
 
         const updated = await advance(DemonstrationStatus.COMPLETED, {
           status: DemonstrationStatus.EVALUATED,
@@ -242,7 +251,11 @@ export async function PATCH(
           { _id: engagementId, status: ProjectStatus.DEMONSTRATION_SCHEDULED } as object,
           {
             $set: {
-              status: approved ? ProjectStatus.VERIFIED : ProjectStatus.REVISION_REQUIRED,
+              status: approved
+                ? ProjectStatus.VERIFIED
+                : notReady
+                  ? ProjectStatus.READY_FOR_DEMONSTRATION
+                  : ProjectStatus.REVISION_REQUIRED,
               ...(approved ? { verifiedAt: new Date() } : {}),
             },
           }
@@ -251,7 +264,7 @@ export async function PATCH(
         // A project sent back needs a way to hand in a new report, or the
         // student is told to revise and then refused the means to: an accepted
         // version is one the upload rule refuses to replace.
-        if (!approved) {
+        if (!approved && !notReady) {
           const { default: ProjectDocumentation } = await import(
             '@/lib/models/ProjectDocumentation.model'
           );
