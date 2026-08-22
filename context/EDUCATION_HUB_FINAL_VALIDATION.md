@@ -335,18 +335,59 @@ future scope in §24.
 
 ## 16. Seed data findings
 
-**Defect (MEDIUM, fixed): the seeder produced states the application cannot.** `DENIED` and
-`UNDER_PEER_REVIEW` were written into seeded projects, and no route in the application writes
-either — `DENIED` belonged to a lecturer verdict the report-review cycle replaced, and
-`UNDER_PEER_REVIEW` to a submission step that no longer gates anything. A `LecturerDecision.DENIED`
-was seeded for the same reason. A demonstration seeded into a state the product cannot reach is a
-demonstration of something that does not exist, so the seeder gave way, not the application.
+The seeder was **run**, not read — five times, against a scratch database. It produced **five
+impossible states**, none of which any other gate would have caught. All five are fixed; the
+validator went 5 failures → 3 → 2 → 0.
+
+**S1 — states no route can produce.** `DENIED` and `UNDER_PEER_REVIEW` were written into seeded
+projects and nothing in the application writes either: `DENIED` belonged to a lecturer verdict the
+report-review cycle replaced, `UNDER_PEER_REVIEW` to a submission step that no longer gates
+anything. `LecturerDecision.DENIED` was seeded for the same reason. A demonstration seeded into a
+state the product cannot reach is a demonstration of something that does not exist, so the seeder
+gave way.
+
+**S2 — demonstrations evaluated before they took place.** Six of them. `verifiedAt` is computed
+forward from when a project started, so a recently-started project carried one that had not arrived
+yet, and the demonstration behind it inherited a future date while holding a completed evaluation.
+Both the source and the derived date are now clamped to the past.
+
+**S3 — projects ready to demonstrate with nothing submitted.** The phase promoted projects that were
+still being built — which have no report at all — into `READY_FOR_DEMONSTRATION`, and then tried to
+mark a submitted version accepted, matching nothing. It now promotes projects whose report is
+already with the lecturer, skipping the oldest so the review queue guarantee still holds.
+
+**S4 — the same project promoted twice.** Lecturers at one institution share a cohort, so two could
+promote the same engagement; the second moved the project on while the report, already accepted by
+the first, no longer matched the filter that accepts one. A run-level record of what has been
+promoted fixes it.
+
+**S5 — completed projects whose own report said "changes requested".** The sharpest of the five. A
+project sent back could be promoted to `VERIFIED` by a *second* review pass rolled after the report
+had already been written, leaving a finished project whose documentation still said it was being
+revised. The ending is now decided before the report is written, so such a project is seeded with
+the two versions it must really have — one sent back, one accepted.
+
+**S6 — the demonstration story was under-supplied, and my first diagnosis of it was wrong.** Two
+checks demanded that *every verified lecturer* have a demonstration request waiting and a session
+coming up. I judged those over-strict — a world in which no member of staff ever has a quiet week is
+not a university, and uniformity of that kind reads as fabricated — and rewrote them to assert the
+same thing **per institution**.
+
+Re-running showed institutions failing too, which proved the granularity was not the cause. The real
+one was supply: the queue guarantee produced exactly **one** project per institution sitting in
+front of a lecturer, and the demonstration phase needs two more on top of it to create a request and
+a booking. The target is now three per institution.
+
+Both halves stand, but only the second was the fix. Recording it that way because the first
+correction alone would have looked like a passing check and been a quieter world. The per-lecturer
+check that *is* achievable and does matter — every verified lecturer has bookable times on offer —
+was left alone and passes.
 
 Otherwise the seeded world holds up: every project past its brief has a report; every report is a
 real PDF generated from real prose and uploaded through the application's own storage path; version
-statuses and project statuses agree, checked by the validator using the application's own
-`documentationStage`; only the newest version is live; every report sent back names what has to
-change.
+statuses and project statuses agree, checked using the application's own `documentationStage`; only
+the newest version is live; every report sent back names what has to change; and no GitHub evidence
+is fabricated anywhere.
 
 ---
 
@@ -431,8 +472,33 @@ regression.
 | D4 | **HIGH** | Architecture | Three private copies of "is this project still current"; two new statuses missing from all three | `engagements/me`, `engagements`, `mentor/chat` | One question, three answers | One exported `ACTIVE_PROJECT_STATUSES` | No — fixed |
 | D5 | MEDIUM | Workflow | The demonstration outcome `NOT_READY` could not be recorded | `educationSchema.ts` | Defined in the types, omitted from the schema | Accepted, and routed so the project stays ready to demonstrate | No — fixed |
 | D6 | MEDIUM | Data | The seeder produced `DENIED` / `UNDER_PEER_REVIEW`, which no route can produce | `scripts/demo/phases/education.ts` | Statuses retired by the report-review rebuild | Seeder produces only reachable states | No — fixed |
+| D9 | MEDIUM | Data | Six demonstrations carried an evaluation for a meeting scheduled in the future | `scripts/demo/phases/demonstrations.ts` | `verifiedAt` computed forward from a recent start date could land in the future, and the demonstration date derived from it | Both clamped to the past | No — fixed |
+| D10 | MEDIUM | Data | Projects ready to demonstrate with no report submitted | `scripts/demo/phases/demonstrations.ts` | Promotion drew from projects still being built, which have no documentation | Promote from projects whose report is with the lecturer, skipping the oldest | No — fixed |
+| D11 | MEDIUM | Data | The same engagement promoted by two lecturers, leaving project and report disagreeing | `scripts/demo/phases/demonstrations.ts` | Lecturers at one institution share a cohort | Run-level record of what has been promoted | No — fixed |
+| D12 | MEDIUM | Data | Completed projects whose own report still said "changes requested" | `scripts/demo/phases/education.ts` | A second review pass could verify a project *after* its report had been written | Decide the ending before writing the report; seed both versions | No — fixed |
+| D13 | LOW | Testing gap | Two demo checks asserted an invariant that is not one — every lecturer always busy | `scripts/demo/validate.ts` | Guarantee written per lecturer rather than per institution | Asserted per institution; the achievable per-lecturer check kept | No — fixed |
 | D7 | LOW | UX | Uploading while a report is with the lecturer is refused by the engagement guard, whose message is vaguer than the report rule's | `POST …/report` | Two guards, the coarser one first | Not changed — both refuse correctly; recorded | No |
 | D8 | LOW | Testing gap | The rehearsal cannot run in CI | `.github/workflows/e2e.yml` | CI holds placeholder Cloudinary credentials | Run deliberately with `npm run test:e2e:rehearsal`; documented | No |
+
+---
+
+## 20a. Gates, as actually run
+
+Every one of these was executed at the end of the pass, on this machine, after the final fix.
+
+| Gate | Result |
+|---|---|
+| `npm run type-check` | clean |
+| `npm run lint` | 0 errors, 5 warnings (all pre-existing) |
+| `npm run test` | **1459 passed**, 121 suites |
+| `npm run test:e2e` | **121 passed**, 2 skipped — desktop, tablet, mobile |
+| `npm run test:e2e:rehearsal` | **3 passed** — the full lifecycle, then the screens, then cleanup |
+| `npm run demo` | **all 73 checks passed** |
+| `npm run build` | exit 0 |
+
+The demo world took six runs to get there: 5 failing checks → 3 → 2 → 2 → 0. Each round was a real
+diagnosis rather than a retry — the last one corrected an earlier wrong hypothesis of mine (see
+§16, the note on supply versus granularity).
 
 ---
 

@@ -19,7 +19,7 @@ import base from './playwright.config';
 // platform here. The same reasoning is recorded in `jest.integration.config.ts`.
 // ---------------------------------------------------------------------------
 
-export default {
+const rehearsalConfig = {
   ...base,
   testIgnore: [],
   testMatch: ['**/rehearsal.spec.ts'],
@@ -27,3 +27,5 @@ export default {
   // reads the world the API half just built.
   workers: 1,
 };
+
+export default rehearsalConfig;

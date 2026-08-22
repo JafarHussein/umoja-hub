@@ -486,7 +486,16 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   // Every institution's lecturers must open their queue and find work in it.
   // Left to chance, a whole university's queue comes up empty — which is what
   // the presenter would discover in front of the panel.
-  const institutionsWithQueuedWork = new Set<string>();
+  // How many projects each institution has sitting in front of a lecturer.
+  //
+  // Three, not one. One keeps the review queue non-empty, which is what this
+  // guarantee was originally written for; the demonstration phase then promotes
+  // two more into a request waiting and a session coming up. With a target of
+  // one, an institution had a queue and no demonstrations — the lecturer's
+  // demonstration screen was empty for the same reason the review queue used to
+  // be, and for a whole institution at a time.
+  const QUEUED_WORK_PER_INSTITUTION = 3;
+  const queuedWorkByInstitution = new Map<string, number>();
 
   // The guarantee used to live inside `if (reviewable)`, which is decided by
   // the same dice it exists to override: an institution whose students all came
@@ -572,7 +581,8 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       // empty in every demonstration.
       const institutionKey = String(student.institutionId);
       const mustQueue =
-        isGuarantor && faculty.length > 0 && !institutionsWithQueuedWork.has(institutionKey);
+        faculty.length > 0 &&
+        (queuedWorkByInstitution.get(institutionKey) ?? 0) < QUEUED_WORK_PER_INSTITUTION;
       const reviewable =
         faculty.length > 0 &&
         (mustQueue || (student.archetype !== 'new' && rng.bool(0.85)));
@@ -585,7 +595,29 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         // in the application writes that decision either.
         else decision = LecturerDecision.REVISION_REQUIRED;
       }
-      if (awaitingLecturer) institutionsWithQueuedWork.add(institutionKey);
+      if (awaitingLecturer) {
+        queuedWorkByInstitution.set(
+          institutionKey,
+          (queuedWorkByInstitution.get(institutionKey) ?? 0) + 1
+        );
+      }
+
+      // The second reading is decided here, not after the report has been
+      // written.
+      //
+      // It used to be rolled further down, and when it verified a project that
+      // had been sent back it moved the engagement to VERIFIED while the report
+      // stayed marked "changes requested" — a completed project whose own
+      // documentation said it was still being revised, which is a state the
+      // application cannot produce. Knowing the ending up front lets the report
+      // below be written as the two versions such a project must actually have.
+      const revises = decision === LecturerDecision.REVISION_REQUIRED && rng.bool(0.5);
+      const secondDecision = revises
+        ? rng.bool(0.75)
+          ? LecturerDecision.VERIFIED
+          : LecturerDecision.REVISION_REQUIRED
+        : null;
+      const finalDecision = secondDecision ?? decision;
 
       const pbAt = daysAfter(startedAt, rng.int(1, 4));
       const frAt = daysAfter(pbAt, rng.int(6, 20));
@@ -607,8 +639,8 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       // the product cannot reach is a demonstration of something that does not
       // exist — and it is the seeder, not the application, that has to give
       // way. A project a lecturer closed is now simply one sent back.
-      const status = decision
-        ? (decision === LecturerDecision.VERIFIED
+      const status = finalDecision
+        ? (finalDecision === LecturerDecision.VERIFIED
             ? ProjectStatus.VERIFIED
             : ProjectStatus.REVISION_REQUIRED)
         : awaitingLecturer
@@ -675,7 +707,11 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         // A project that was sent back and then accepted keeps both versions,
         // because that pair — the feedback and the answer to it — is the whole
         // point of the cycle and the demo should be able to show one.
-        const showsCycle = status === ProjectStatus.VERIFIED && rng.bool(0.4);
+        // Always for a project that was actually sent back and then accepted:
+        // that is what happened to it, and the two versions are the record.
+        const showsCycle =
+          status === ProjectStatus.VERIFIED &&
+          (secondDecision === LecturerDecision.VERIFIED || rng.bool(0.4));
         const lecturer = rng.pick(faculty);
         const versions: Record<string, unknown>[] = [];
 
@@ -850,7 +886,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       // is the loop the whole Hub exists for — feedback, revision, a second
       // reading — and until the revision transition existed the platform could
       // not represent it at all, so no demonstration could ever show it.
-      if (decision === LecturerDecision.REVISION_REQUIRED && rng.bool(0.5)) {
+      if (revises && secondDecision) {
         const resumedAt = daysAfter(lecAt, rng.int(1, 4));
         const rePeerAt = daysAfter(resumedAt, rng.int(4, 12));
         const reReviewer = rng.pick(peerPool);
@@ -863,7 +899,6 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         }));
 
         const reLecAt = daysAfter(rePeerAt, rng.int(1, 5));
-        const secondDecision = rng.bool(0.75) ? LecturerDecision.VERIFIED : LecturerDecision.REVISION_REQUIRED;
         await reviewPass(1, secondDecision, reLecAt);
 
         await ProjectEngagement.updateOne({ _id: engagement._id }, {

@@ -1,3 +1,5 @@
+/* eslint-disable no-console -- the rehearsal reports its progress on stdout: that narration
+   is the artefact, and it is what makes a failure legible without opening a trace. */
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 import { authFile } from './support/auth';
