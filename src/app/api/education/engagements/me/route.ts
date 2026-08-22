@@ -3,18 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import { handleApiError, requireRole } from '@/lib/utils';
-import { Role, ProjectStatus } from '@/types';
-
-// Statuses that represent work-in-progress — the engagement the student is actively working on.
-// Terminal statuses (VERIFIED, DENIED) are excluded: a verified project is history, not a current engagement.
-const ACTIVE_STATUSES: ProjectStatus[] = [
-  ProjectStatus.BRIEF_GENERATED,
-  ProjectStatus.IN_PROGRESS,
-  ProjectStatus.SUBMITTED,
-  ProjectStatus.UNDER_PEER_REVIEW,
-  ProjectStatus.UNDER_LECTURER_REVIEW,
-  ProjectStatus.REVISION_REQUIRED,
-];
+import { Role, ACTIVE_PROJECT_STATUSES } from '@/types';
 
 // ---------------------------------------------------------------------------
 // GET /api/education/engagements/me — Current active project engagement
@@ -33,7 +22,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 
     const engagement = await ProjectEngagement.findOne({
       studentId: session!.user.id,
-      status: { $in: ACTIVE_STATUSES },
+      status: { $in: ACTIVE_PROJECT_STATUSES },
     } as object)
       .sort({ createdAt: -1 })
       .lean();

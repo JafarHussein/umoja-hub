@@ -36,7 +36,6 @@ import {
   OnboardingStage,
   VerificationStatus,
   DocumentType,
-  StudentTier,
   InstitutionType,
   SupplierInputCategory,
   SupplierVerificationStatus,
@@ -317,10 +316,14 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
 
   // ---- Lecturers (verified so they can review) ----
   const LECTURER_ARCHETYPES = ['strict', 'balanced', 'detailed'];
-  for (let i = 0; i < 3; i++) {
+  // One verified lecturer per institution, not three spread at random. A
+  // lecturer may only review their own institution's students, so an
+  // institution with no lecturer is an institution whose students can never
+  // have their work read by anybody.
+  for (let i = 0; i < world.institutions.length; i++) {
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
-    const inst = world.institutions[i % world.institutions.length]!;
+    const inst = world.institutions[i]!;
     const archetype = LECTURER_ARCHETYPES[i % LECTURER_ARCHETYPES.length]!;
     const joinedAt = joinDate(rng, 9);
     const email = makeEmail(p.name, last);
@@ -351,7 +354,7 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         updatedAt: joinedAt,
       })
     );
-    world.lecturers.push(person(p, last, inst.county, archetype, user._id, joinedAt));
+    world.lecturers.push({ ...person(p, last, inst.county, archetype, user._id, joinedAt), institutionId: inst.id });
   }
 
   // ---- Students (assigned to institutions) ----
@@ -361,14 +364,14 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
   for (let i = 0; i < 12; i++) {
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
-    const inst = rng.pick(world.institutions);
+    // Dealt round-robin, not picked at random. Twelve independent picks over
+    // four universities leaves one of them with almost nobody often enough to
+    // matter, and a university with no cohort is a lecturer with nothing to
+    // read — discovered in front of the panel rather than here. Which
+    // archetype a student is stays random; where they study does not.
+    const inst = world.institutions[i % world.institutions.length]!;
     const archetype = rng.weighted(STUDENT_ARCHETYPES);
     const joinedAt = joinDate(rng, 9);
-    const tier = rng.weighted<string>([
-      [StudentTier.BEGINNER, 4],
-      [StudentTier.INTERMEDIATE, 3],
-      [StudentTier.ADVANCED, 2],
-    ]);
     const email = makeEmail(p.name, last);
     const domain = rng.pick(KENYAN_UNIVERSITIES.find((u) => u.name === inst.name)?.domains ?? ['students.uonbi.ac.ke']);
     const user = ledger.track(
@@ -388,7 +391,6 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         profilePhotoUrl: nextFace(p.gender),
         bio: `${rng.pick(STUDENT_INTERESTS)} student at ${inst.name}.`,
         studentData: {
-          currentTier: tier,
           techStackPreferences: rng.sample(TECH_STACKS, rng.int(2, 5)),
           universityAffiliation: inst.name,
           institutionId: inst.id,
@@ -403,7 +405,7 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
         updatedAt: joinedAt,
       })
     );
-    world.students.push(person(p, last, inst.county, archetype, user._id, joinedAt));
+    world.students.push({ ...person(p, last, inst.county, archetype, user._id, joinedAt), institutionId: inst.id });
   }
 
   // The admin steward (mediation / payout actor) is the canonical admin account

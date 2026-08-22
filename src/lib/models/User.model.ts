@@ -4,7 +4,6 @@ import {
   UserStatus,
   VerificationStatus,
   DocumentType,
-  StudentTier,
   OnboardingStage,
   OAuthProvider,
   InstitutionType,
@@ -40,11 +39,6 @@ const farmerDataSchema = new Schema(
 
 const studentDataSchema = new Schema(
   {
-    currentTier: {
-      type: String,
-      enum: Object.values(StudentTier),
-      default: StudentTier.BEGINNER,
-    },
     githubUsername: { type: String },
     primaryInterest: { type: String },
     techStackPreferences: [{ type: String }],

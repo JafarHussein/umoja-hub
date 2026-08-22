@@ -67,7 +67,7 @@ test.describe('lecturer queue lockout', () => {
     test.use({ storageState: authFile('lecturer-unverified') });
 
     test('is locked out of the review queue via the isVerified claim', async ({ page }) => {
-      await page.goto('/dashboard/lecturer/queue');
+      await page.goto('/dashboard/lecturer/reports');
 
       await expect(page.getByTestId(lockout)).toBeVisible({ timeout: 30_000 });
     });
@@ -77,9 +77,9 @@ test.describe('lecturer queue lockout', () => {
     test.use({ storageState: authFile('lecturer') });
 
     test('reaches the review queue', async ({ page }) => {
-      await page.goto('/dashboard/lecturer/queue');
+      await page.goto('/dashboard/lecturer/reports');
 
-      await expect(page.getByRole('heading', { name: 'Pending Reviews' })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Reports to review' })).toBeVisible({
         timeout: 30_000,
       });
       await expect(page.getByTestId(lockout)).toHaveCount(0);

@@ -21,6 +21,9 @@ import {
   OrderFulfillmentStatus,
   EscrowEventType,
   FarmerTrustTier,
+  ProjectTrack,
+  ProjectStatus,
+  PeerReviewStatus,
 } from '../../src/types';
 
 interface Check {
@@ -357,6 +360,605 @@ export async function validate(): Promise<boolean> {
     'every listing is priced in its trading unit, within the Kenyan market band',
     offPrice.length === 0,
     `${offPrice.length} out of band`
+  );
+
+  // ---- Education Hub ----
+  // The brief is a Mixed column, so Mongoose validates nothing about it. It is
+  // checked here against the one contract the app renders — the disagreement
+  // between seeder and app is what crashed the student workspace on every
+  // seeded project, silently, while every other check passed.
+  const { default: ProjectEngagement } = await import('../../src/lib/models/ProjectEngagement.model');
+  const { default: PeerReview } = await import('../../src/lib/models/PeerReview.model');
+  const { default: LecturerReview } = await import('../../src/lib/models/LecturerReview.model');
+  const { isValidBrief } = await import('../../src/lib/education/brief');
+
+  const engagementIds = idsOf('ProjectEngagement');
+  const engagements = await ProjectEngagement.find({ _id: { $in: engagementIds } })
+    .select('track status brief peerReviewId studentId')
+    .lean();
+  const badBriefs = engagements.filter((e) => !isValidBrief(e.track as ProjectTrack, e.brief));
+  ok(
+    'every engagement brief matches the brief contract',
+    badBriefs.length === 0,
+    `${engagements.length - badBriefs.length}/${engagements.length} valid`
+  );
+
+  // A queue with nothing in it cannot be demonstrated, and the lecturer review
+  // is the centrepiece of the Hub.
+  const queued = engagements.filter((e) => e.status === ProjectStatus.UNDER_LECTURER_REVIEW);
+  ok('the lecturer review queue has work in it', queued.length > 0, `${queued.length} awaiting review`);
+
+  const queuedIds = queued.map((e) => e._id);
+  const queuedWithPeer = queued.filter((e) => Boolean(e.peerReviewId)).length;
+  ok(
+    'every queued engagement has been through peer review',
+    queuedWithPeer === queued.length,
+    `${queuedWithPeer}/${queued.length}`
+  );
+  const submittedPeer = await PeerReview.countDocuments({
+    engagementId: { $in: queuedIds },
+    status: PeerReviewStatus.SUBMITTED,
+  });
+  ok(
+    'the peer review on a queued engagement is submitted, not just assigned',
+    submittedPeer === queued.length,
+    `${submittedPeer}/${queued.length} submitted`
+  );
+  const prematureReviews = await LecturerReview.countDocuments({ engagementId: { $in: queuedIds } });
+  ok(
+    'nothing awaiting review has already been judged',
+    prematureReviews === 0,
+    `${prematureReviews} contradictions`
+  );
+
+  // Who belongs to which institution — the fact both remaining checks turn on,
+  // now that a lecturer is scoped to their own students.
+  const institutionOf = new Map<string, string>();
+  for (const u of await User.find({ _id: { $in: userIds } })
+    .select('role studentData.institutionId lecturerData.institutionId')
+    .lean()) {
+    const institutionId =
+      u.role === Role.LECTURER ? u.lecturerData?.institutionId : u.studentData?.institutionId;
+    if (institutionId) institutionOf.set(String(u._id), String(institutionId));
+  }
+
+  // "The queue has work in it" is no longer one fact but one per lecturer: a
+  // verified lecturer whose own students have nothing pending opens an empty
+  // screen, which is what a presenter would discover in front of the panel.
+  const verifiedLecturers = await User.find({
+    _id: { $in: userIds },
+    role: Role.LECTURER,
+    'lecturerData.isVerified': true,
+  })
+    .select('email lecturerData.institutionId')
+    .lean();
+  const queuedInstitutions = new Set(
+    queued.map((e) => institutionOf.get(String(e.studentId))).filter(Boolean) as string[]
+  );
+  const lecturersWithEmptyQueue = verifiedLecturers.filter(
+    (l) =>
+      !l.lecturerData?.institutionId ||
+      !queuedInstitutions.has(String(l.lecturerData.institutionId))
+  );
+  ok(
+    'every verified lecturer has work waiting in their own queue',
+    lecturersWithEmptyQueue.length === 0,
+    lecturersWithEmptyQueue.length === 0
+      ? `${verifiedLecturers.length} lecturers`
+      : `empty for ${lecturersWithEmptyQueue.map((l) => l.email).join(', ')}`
+  );
+
+  // A lecturer may only review their own institution's students. Seeded data
+  // that crosses institutions would be work the application itself would never
+  // have put in front of that lecturer.
+  const lecturerReviews = await LecturerReview.find({ _id: { $in: idsOf('LecturerReview') } })
+    .select('engagementId lecturerId')
+    .lean();
+  const studentOfEngagement = new Map(
+    (
+      await ProjectEngagement.find({ _id: { $in: engagementIds } })
+        .select('studentId')
+        .lean()
+    ).map((e) => [String(e._id), String(e.studentId)])
+  );
+  const crossInstitution = lecturerReviews.filter((r) => {
+    const studentId = studentOfEngagement.get(String(r.engagementId));
+    const studentInstitution = studentId ? institutionOf.get(studentId) : undefined;
+    const lecturerInstitution = institutionOf.get(String(r.lecturerId));
+    return !studentInstitution || !lecturerInstitution || studentInstitution !== lecturerInstitution;
+  });
+  ok(
+    'every lecturer review was written by a lecturer at the student’s institution',
+    crossInstitution.length === 0,
+    `${lecturerReviews.length - crossInstitution.length}/${lecturerReviews.length} in institution`
+  );
+
+  // Nothing may display commit evidence: the platform has no GitHub API
+  // integration, so any commit count on screen would have been invented here.
+  const fabricatedCommits = await ProjectEngagement.countDocuments({
+    _id: { $in: engagementIds },
+    'githubSnapshot.commitCount': { $gt: 0 },
+  } as object);
+  ok(
+    'no engagement claims commit evidence the platform cannot gather',
+    fabricatedCommits === 0,
+    `${fabricatedCommits} fabricated snapshots`
+  );
+
+  // ---- Academic context ----
+  // The Hub's whole claim is that the work comes from what the student is
+  // studying, so a seeded student with no coursework on record is a student the
+  // product cannot serve — and would be discovered on the day, not before it.
+  const { default: StudentEnrolment } = await import('../../src/lib/models/StudentEnrolment.model');
+  const { default: AcademicProgramme } = await import('../../src/lib/models/AcademicProgramme.model');
+  const { default: CurriculumUnit } = await import('../../src/lib/models/CurriculumUnit.model');
+  const { toAcademicContext } = await import('../../src/lib/education/academicContext');
+  const { AcademicProvenance } = await import('../../src/types');
+
+  const seededStudentIds = (
+    await User.find({ _id: { $in: userIds }, role: Role.STUDENT }).select('_id').lean()
+  ).map((u) => u._id);
+  const enrolments = await StudentEnrolment.find({
+    studentId: { $in: seededStudentIds },
+  } as object).lean();
+
+  ok(
+    'every student has recorded what they are studying',
+    enrolments.length === seededStudentIds.length,
+    `${enrolments.length}/${seededStudentIds.length} enrolled`
+  );
+
+  // Reads the enrolment exactly as the application does — a record the domain
+  // layer refuses to interpret is a record no brief can be written from.
+  const unreadable = enrolments.filter((e) => toAcademicContext(e) === null);
+  ok(
+    'every enrolment resolves to knowledge areas the Hub can reason with',
+    unreadable.length === 0,
+    `${enrolments.length - unreadable.length}/${enrolments.length} readable`
+  );
+
+  // Both rungs of the ladder must be present. If the demo world only ever shows
+  // institution-published coursework, the path most Kenyan students will take
+  // is the one nobody looks at.
+  const declaredCount = enrolments.filter(
+    (e) => e.provenance === AcademicProvenance.SELF_DECLARED
+  ).length;
+  const publishedCount = enrolments.length - declaredCount;
+  ok(
+    'both self-declared and institution-published coursework exist',
+    declaredCount > 0 && publishedCount > 0,
+    `${publishedCount} published, ${declaredCount} self-declared`
+  );
+
+  // An institution-published enrolment must actually cite the institution's own
+  // units; otherwise the provenance label on screen is a claim, not a fact.
+  const publishedUnitIds = new Set(
+    (await CurriculumUnit.find({ _id: { $in: idsOf('CurriculumUnit') } }).select('_id').lean()).map(
+      (u) => String(u._id)
+    )
+  );
+  const unbacked = enrolments.filter(
+    (e) =>
+      e.provenance === AcademicProvenance.INSTITUTION_CURRICULUM &&
+      !e.currentUnits.every((u) => u.unitId && publishedUnitIds.has(String(u.unitId)))
+  );
+  ok(
+    'every institution-published enrolment cites real curriculum units',
+    unbacked.length === 0,
+    `${publishedCount - unbacked.length}/${publishedCount} backed`
+  );
+
+  // A brief with no coursework link is a brief the Hub cannot justify. The
+  // contract now requires the anchor, so an engagement that lost it would fail
+  // the brief-parse check above too — this names the reason directly.
+  const anchorless = (
+    await ProjectEngagement.find({ _id: { $in: engagementIds } })
+      .select('brief.academicAnchor')
+      .lean()
+  ).filter((e) => {
+    const anchor = (e.brief as { academicAnchor?: { units?: string[] } } | undefined)
+      ?.academicAnchor;
+    return !anchor?.units?.length;
+  });
+  ok(
+    'every project records the coursework it was set against',
+    anchorless.length === 0,
+    `${engagementIds.length - anchorless.length}/${engagementIds.length} anchored`
+  );
+
+  const programmeCount = await AcademicProgramme.countDocuments({
+    _id: { $in: idsOf('AcademicProgramme') },
+  } as object);
+  const unmappedUnits = await CurriculumUnit.countDocuments({
+    _id: { $in: idsOf('CurriculumUnit') },
+    knowledgeAreas: { $size: 0 },
+  } as object);
+  ok(
+    'the published curriculum maps every unit onto the taxonomy',
+    programmeCount > 0 && unmappedUnits === 0,
+    `${programmeCount} programmes, ${publishedUnitIds.size} units, ${unmappedUnits} unmapped`
+  );
+
+// ---- The project report ----
+  // The Hub's one academic deliverable. Three separate prose documents stood
+  // here before; a lecturer's verdict was issued on them and nothing in the
+  // system required that software had been written at all.
+  const { SlotStatus } = await import('../../src/types');
+  const { default: ProjectDocumentation } = await import(
+    '../../src/lib/models/ProjectDocumentation.model'
+  );
+  const { latestVersion, documentationStage } = await import('../../src/lib/education/report');
+  const {
+    SubmissionStatus,
+    DocumentationOutcome,
+    DemonstrationStatus,
+    DemonstrationOutcome,
+  } = await import('../../src/types');
+
+  const documentation = await ProjectDocumentation.find({
+    _id: { $in: idsOf('ProjectDocumentation') },
+  } as object).lean();
+
+  // A project that reached a lecturer with nothing handed in is a project the
+  // lecturer had nothing to read. A project still being built has no report on
+  // purpose — the report is written outside UmojaHub and arrives finished.
+  const handedIn = engagements.filter(
+    (e) =>
+      e.status !== ProjectStatus.BRIEF_GENERATED && e.status !== ProjectStatus.IN_PROGRESS
+  );
+  const docByEngagement = new Map(documentation.map((d) => [String(d.engagementId), d]));
+  const reportless = handedIn.filter((e) => {
+    const record = docByEngagement.get(String(e._id));
+    return !record || (record.versions ?? []).length === 0;
+  });
+  ok(
+    'every project that reached a lecturer has a report handed in',
+    reportless.length === 0,
+    `${handedIn.length - reportless.length}/${handedIn.length} with a submitted report`
+  );
+
+  // Every stored version must point at a real file with real bytes. A version
+  // whose file was never stored fails the moment a lecturer clicks it, and
+  // there is no other way to find out.
+  const allVersions = documentation.flatMap((d) => d.versions ?? []);
+  const fileless = allVersions.filter(
+    (v) => !v.publicId || v.bytes < 1 || !v.fileName.endsWith('.pdf')
+  );
+  ok(
+    'every submitted version points at a stored PDF',
+    allVersions.length > 0 && fileless.length === 0,
+    `${allVersions.length - fileless.length}/${allVersions.length} versions with a stored file`
+  );
+
+  // The report's standing and the project's must agree. A project awaiting a
+  // lecturer whose report was already accepted is a pair of records the
+  // application could never have produced together. Read through the
+  // application's own `documentationStage`, so the check cannot disagree with
+  // what the student's screen says.
+  const contradictory = handedIn.filter((e) => {
+    const record = docByEngagement.get(String(e._id));
+    if (!record) return false;
+    const stage = documentationStage(record.versions ?? []);
+    switch (e.status) {
+      case ProjectStatus.UNDER_LECTURER_REVIEW:
+      case ProjectStatus.UNDER_PEER_REVIEW:
+        return stage !== 'WITH_LECTURER';
+      case ProjectStatus.VERIFIED:
+      case ProjectStatus.READY_FOR_DEMONSTRATION:
+      case ProjectStatus.DEMONSTRATION_SCHEDULED:
+        return stage !== 'READY_FOR_DEMONSTRATION';
+      case ProjectStatus.REVISION_REQUIRED:
+        return stage !== 'CHANGES_REQUESTED';
+      default:
+        return false;
+    }
+  });
+  ok(
+    'every report’s standing agrees with its project’s',
+    contradictory.length === 0,
+    `${handedIn.length - contradictory.length}/${handedIn.length} consistent`
+  );
+
+  // A report sent back must say what has to change. A student told only that
+  // their work needs changes cannot tell where to start, and the route refuses
+  // a decision that names nothing.
+  const returned = allVersions.filter(
+    (v) => v.review?.outcome === DocumentationOutcome.REVISION_REQUESTED
+  );
+  const directionless = returned.filter(
+    (v) => !v.review?.requiredChanges && (v.review?.pageNotes ?? []).length === 0
+  );
+  ok(
+    'every report sent back says what has to change',
+    directionless.length === 0,
+    `${returned.length - directionless.length}/${returned.length} with direction`
+  );
+
+  // Only the newest version may be live. An older one still marked submitted
+  // would put the same report in the lecturer's queue twice.
+  const doubleLive = documentation.filter((d) => {
+    const versions = d.versions ?? [];
+    const newest = latestVersion(versions);
+    return versions.some(
+      (v) => v.versionNumber !== newest?.versionNumber && v.status !== SubmissionStatus.SUPERSEDED
+    );
+  });
+  ok(
+    'only a report’s newest version is live',
+    doubleLive.length === 0,
+    `${documentation.length - doubleLive.length}/${documentation.length} with one live version`
+  );
+
+  // ---- Demonstrations ----
+  const { default: Demonstration } = await import('../../src/lib/models/Demonstration.model');
+  const { default: DemonstrationSlot } = await import('../../src/lib/models/DemonstrationSlot.model');
+
+  const demonstrations = await Demonstration.find({
+    _id: { $in: idsOf('Demonstration') },
+  } as object).lean();
+  const slots = await DemonstrationSlot.find({
+    _id: { $in: idsOf('DemonstrationSlot') },
+  } as object).lean();
+
+  // The demonstration is the centre of assessment, and a project cannot be
+  // complete without one. A seeded world where it could would contradict the
+  // rule the whole workflow rests on.
+  const completedProjects = engagements.filter((e) => e.status === ProjectStatus.VERIFIED);
+  const demoByEngagement = new Map<string, (typeof demonstrations)[number][]>();
+  for (const d of demonstrations) {
+    const key = String(d.engagementId);
+    demoByEngagement.set(key, [...(demoByEngagement.get(key) ?? []), d]);
+  }
+  const undemonstrated = completedProjects.filter((e) => {
+    const held = demoByEngagement.get(String(e._id)) ?? [];
+    return !held.some(
+      (d) =>
+        d.status === DemonstrationStatus.EVALUATED &&
+        d.evaluation?.outcome === DemonstrationOutcome.APPROVED
+    );
+  });
+  ok(
+    'every completed project was demonstrated live and approved',
+    undemonstrated.length === 0,
+    `${completedProjects.length - undemonstrated.length}/${completedProjects.length} demonstrated`
+  );
+
+  // Nobody can book what nobody offered. Without open times the demonstration
+  // workflow is unreachable from the student's screen.
+  const lecturersWithoutSlots = verifiedLecturers.filter(
+    (l) =>
+      !slots.some(
+        (s) => String(s.lecturerId) === String(l._id) && s.status === SlotStatus.OPEN
+      )
+  );
+  ok(
+    'every verified lecturer has bookable times on offer',
+    lecturersWithoutSlots.length === 0,
+    lecturersWithoutSlots.length === 0
+      ? `${slots.length} slots across ${verifiedLecturers.length} lecturers`
+      : `none open for ${lecturersWithoutSlots.map((l) => l.email).join(', ')}`
+  );
+
+  // An open slot in the past can never be booked and sits on the student's
+  // screen looking like an option.
+  const staleOpen = slots.filter(
+    (s) => s.status === SlotStatus.OPEN && s.startsAt.getTime() <= Date.now()
+  );
+  ok(
+    'no bookable time has already passed',
+    staleOpen.length === 0,
+    `${staleOpen.length} in the past`
+  );
+
+  // Two demonstrations on one slot is the failure a scheduling system exists to
+  // prevent, so it is worth asserting rather than assuming.
+  const slotUse = new Map<string, number>();
+  for (const d of demonstrations) {
+    if (d.status === DemonstrationStatus.CANCELLED || d.status === DemonstrationStatus.DECLINED) {
+      continue;
+    }
+    const key = String(d.slotId);
+    slotUse.set(key, (slotUse.get(key) ?? 0) + 1);
+  }
+  const doubleBooked = [...slotUse.values()].filter((n) => n > 1).length;
+  ok('no time is booked twice', doubleBooked === 0, `${doubleBooked} double bookings`);
+
+  // Both halves of the lecturer's demonstration screen must have something in
+  // them, or the presenter opens it and explains an empty page away.
+  const lecturersWithoutRequests = verifiedLecturers.filter(
+    (l) =>
+      !demonstrations.some(
+        (d) =>
+          String(d.lecturerId) === String(l._id) && d.status === DemonstrationStatus.REQUESTED
+      )
+  );
+  ok(
+    'every verified lecturer has a demonstration request waiting',
+    lecturersWithoutRequests.length === 0,
+    lecturersWithoutRequests.length === 0
+      ? `${verifiedLecturers.length} lecturers`
+      : `none for ${lecturersWithoutRequests.map((l) => l.email).join(', ')}`
+  );
+
+  const lecturersWithoutUpcoming = verifiedLecturers.filter(
+    (l) =>
+      !demonstrations.some(
+        (d) =>
+          String(d.lecturerId) === String(l._id) && d.status === DemonstrationStatus.SCHEDULED
+      )
+  );
+  ok(
+    'every verified lecturer has a confirmed demonstration coming up',
+    lecturersWithoutUpcoming.length === 0,
+    lecturersWithoutUpcoming.length === 0
+      ? `${verifiedLecturers.length} lecturers`
+      : `none for ${lecturersWithoutUpcoming.map((l) => l.email).join(', ')}`
+  );
+
+  // An evaluation is the record of an event. One against a meeting that has not
+  // happened would make the record worthless.
+  const prematureEvaluations = demonstrations.filter(
+    (d) => d.evaluation && d.scheduledFor.getTime() > Date.now()
+  );
+  ok(
+    'nothing was evaluated before it took place',
+    prematureEvaluations.length === 0,
+    `${prematureEvaluations.length} contradictions`
+  );
+
+
+// ---- Work a lecturer set ----
+  // The Hub's second way in. A generated brief is the platform's guess at what
+  // a student should build; a lecturer's project is the judgement of the person
+  // who teaches them, and none of it was checked before.
+  const { default: ProjectAssignment } = await import('../../src/lib/models/ProjectAssignment.model');
+  const { isEligible } = await import('../../src/lib/education/assignment');
+  const { AssignmentAudience, AssignmentStatus } = await import('../../src/types');
+
+  const assignments = await ProjectAssignment.find({
+    _id: { $in: idsOf('ProjectAssignment') },
+  } as object).lean();
+
+  const lecturersWithNoProjects = verifiedLecturers.filter(
+    (l) => !assignments.some((a) => String(a.lecturerId) === String(l._id))
+  );
+  ok(
+    'every verified lecturer has projects of their own on file',
+    lecturersWithNoProjects.length === 0,
+    lecturersWithNoProjects.length === 0
+      ? `${assignments.length} projects across ${verifiedLecturers.length} lecturers`
+      : `none set by ${lecturersWithNoProjects.map((l) => l.email).join(', ')}`
+  );
+
+  // An offer aimed at a semester none of that lecturer's students are in is an
+  // offer nobody can accept — the shape the seeder had before, where a single
+  // project was dealt per lecturer and matched roughly one student in eight.
+  const takenUp = engagements.filter((e) => e.track === ProjectTrack.LECTURER_ASSIGNED);
+  ok(
+    'students have taken up work their lecturers set',
+    takenUp.length > 0,
+    `${takenUp.length} of ${engagements.length} projects were set by a lecturer`
+  );
+
+  // A lecturer's words reach the student unaltered. No model may rewrite them,
+  // so the brief on the engagement must still be the project as written.
+  const assignmentById = new Map(assignments.map((a) => [String(a._id), a]));
+  const rewritten = takenUp.filter((e) => {
+    const brief = e.brief as
+      | { assignmentId?: string; problemStatement?: string; coreRequirements?: string[] }
+      | undefined;
+    const source = brief?.assignmentId ? assignmentById.get(String(brief.assignmentId)) : undefined;
+    return (
+      !source ||
+      source.problemStatement !== brief?.problemStatement ||
+      source.coreRequirements.join('\u0000') !== (brief?.coreRequirements ?? []).join('\u0000')
+    );
+  });
+  ok(
+    'every lecturer-set brief still reads exactly as the lecturer wrote it',
+    rewritten.length === 0,
+    `${takenUp.length - rewritten.length}/${takenUp.length} unaltered`
+  );
+
+  // A project can only be offered where its author teaches.
+  const lecturerInstitution = new Map(
+    verifiedLecturers.map((l) => [String(l._id), String(l.lecturerData?.institutionId ?? '')])
+  );
+  const misfiled = assignments.filter(
+    (a) => lecturerInstitution.get(String(a.lecturerId)) !== String(a.institutionId)
+  );
+  ok(
+    'every project is offered at the institution of the lecturer who set it',
+    misfiled.length === 0,
+    `${assignments.length - misfiled.length}/${assignments.length} correctly filed`
+  );
+
+  // The strongest rule the feature makes: naming a student overrules every
+  // cohort filter, and a named project is invisible to everybody else. Checked
+  // by running the application's own eligibility rule over every seeded
+  // student, which is the only way to know the two halves both hold.
+  const named = assignments.filter((a) => a.audience === AssignmentAudience.NAMED);
+  const contextByStudent = new Map(
+    enrolments.map((e) => [String(e.studentId), toAcademicContext(e)])
+  );
+  const namedFaults = named.filter((a) => {
+    const record = a as unknown as Parameters<typeof isEligible>[0];
+    const invited = (a.assignedStudentIds ?? []).map(String);
+    return seededStudentIds.some((id) => {
+      const studentId = String(id);
+      const eligible = isEligible(record, {
+        studentId,
+        institutionId: institutionOf.get(studentId),
+        academic: contextByStudent.get(studentId) ?? null,
+      });
+      // Eligible exactly when named: no wider, no narrower.
+      return eligible !== invited.includes(studentId);
+    });
+  });
+  ok(
+    'a named project reaches its student and nobody else',
+    named.length > 0 && namedFaults.length === 0,
+    named.length === 0
+      ? 'no named project exists to prove the rule with'
+      : `${named.length - namedFaults.length}/${named.length} correctly scoped`
+  );
+
+  // An offer still open that nobody can see is dead weight on the student's
+  // screen; every open project must reach at least one student.
+  const unreachable = assignments
+    .filter((a) => a.status === AssignmentStatus.OPEN)
+    .filter((a) => {
+      const record = a as unknown as Parameters<typeof isEligible>[0];
+      return !seededStudentIds.some((id) =>
+        isEligible(record, {
+          studentId: String(id),
+          institutionId: institutionOf.get(String(id)),
+          academic: contextByStudent.get(String(id)) ?? null,
+        })
+      );
+    });
+  ok(
+    'every open project reaches at least one student it was written for',
+    unreachable.length === 0,
+    unreachable.length === 0
+      ? `${assignments.length} projects`
+      : `${unreachable.length} offered to nobody: ${unreachable.map((a) => a.title).join('; ')}`
+  );
+
+  // Take-up per project, not merely somewhere in the world. A guarantee that
+  // only said "some lecturer-set work has been taken up" was satisfied while
+  // every single take-up sat on generated lecturers and Dr Ndung'u — the
+  // account a presentation actually signs into — showed four projects with
+  // nobody on any of them. Named projects are excluded: they are left open and
+  // untaken on purpose, so a student can be shown accepting one live.
+  const takenByAssignment = new Map<string, number>();
+  for (const e of takenUp) {
+    const id = (e.brief as { assignmentId?: string } | undefined)?.assignmentId;
+    if (id) takenByAssignment.set(String(id), (takenByAssignment.get(String(id)) ?? 0) + 1);
+  }
+  const cohortOffers = assignments.filter((a) => a.audience === AssignmentAudience.COHORT);
+  const unaccepted = cohortOffers.filter((a) => !takenByAssignment.get(String(a._id)));
+  ok(
+    'every project a lecturer set for their cohort has a student working on it',
+    unaccepted.length === 0,
+    unaccepted.length === 0
+      ? `${cohortOffers.length} cohort offers, all accepted`
+      : `${unaccepted.length} with nobody on them: ${unaccepted.map((a) => a.title).join('; ')}`
+  );
+
+  // The same project offered twice at one university, by two different
+  // lecturers, is one project a student sees on their list twice.
+  const seen = new Set<string>();
+  const duplicated = cohortOffers.filter((a) => {
+    const key = `${String(a.institutionId)}::${a.title}`;
+    if (seen.has(key)) return true;
+    seen.add(key);
+    return false;
+  });
+  ok(
+    'no institution offers the same project twice',
+    duplicated.length === 0,
+    `${duplicated.length} duplicates`
   );
 
   // ---- No placeholder text ----

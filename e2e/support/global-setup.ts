@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { createHash } from 'node:crypto';
+
 import { loadEnvConfig } from '@next/env';
 import { encode } from 'next-auth/jwt';
 import mongoose from 'mongoose';
@@ -18,6 +18,7 @@ import MediationRequestModel from '@/lib/models/MediationRequest.model';
 import MarketplaceListingModel from '@/lib/models/MarketplaceListing.model';
 import ProjectEngagementModel from '@/lib/models/ProjectEngagement.model';
 import PeerReviewModel from '@/lib/models/PeerReview.model';
+import ProjectDocumentationModel from '@/lib/models/ProjectDocumentation.model';
 import VerifiedSupplierModel from '@/lib/models/VerifiedSupplier.model';
 import SimulatedPaymentModel from '@/lib/models/SimulatedPayment.model';
 import {
@@ -35,7 +36,8 @@ import {
   MediationRequestStatus,
   ProjectTrack,
   ProjectStatus,
-  StudentTier,
+  ACTIVE_PROJECT_STATUSES,
+  SubmissionStatus,
   PeerReviewStatus,
   SupplierInputCategory,
   SupplierVerificationStatus,
@@ -91,6 +93,18 @@ const FIXTURE_ENGAGEMENT_DOC_AT = new Date('2026-01-01T00:00:00.000Z');
 
 // UI-09 peer review: a de-identified reviewee engagement (dangling author) plus
 // a PeerReview ASSIGNED to the student fixture as reviewer.
+// The institution the lecturer and the student fixtures share. A bare id: the
+// Education Hub's scoping compares ids and never joins the collection, so no
+// Institution document is needed to prove the boundary works.
+const FIXTURE_INSTITUTION_ID = '000000000000000000000030';
+
+// The author of the report in the lecturer's queue. A real student in the
+// lecturer's institution, and deliberately not the `student` fixture — that
+// account's workspace resolves its project through
+// /api/education/engagements/me, which returns their most recent active
+// engagement, so a second one would quietly move their spec to another project.
+const FIXTURE_REPORT_AUTHOR_ID = '000000000000000000000031';
+
 const FIXTURE_PEER_ENGAGEMENT_ID = '000000000000000000000021';
 const FIXTURE_PEER_REVIEW_ID = '000000000000000000000022';
 const FIXTURE_PEER_AUTHOR_ID = '000000000000000000000023';
@@ -169,6 +183,10 @@ function roleData(fixture: E2EUserFixture): Record<string, unknown> {
           isVerified: fixture.isVerified,
           departmentAssignment: 'Computer Science',
           academicStaffId: 'STAFF-E2E-001',
+          // A lecturer belongs to their students. Without this the review queue
+          // is empty whatever is seeded into it — the route shows an
+          // unscopeable lecturer nothing rather than every institution's work.
+          institutionId: FIXTURE_INSTITUTION_ID,
         },
       };
     case Role.STUDENT:
@@ -181,6 +199,9 @@ function roleData(fixture: E2EUserFixture): Record<string, unknown> {
           institutionalEmail: 'student@uni.e2e.test',
           institutionalEmailVerified: true,
           academicRegistrationNumber: 'REG-E2E-001',
+          // The same institution as the lecturer fixture, so their work reaches
+          // the review queue.
+          institutionId: FIXTURE_INSTITUTION_ID,
         },
       };
     default:
@@ -420,22 +441,17 @@ export default async function globalSetup(): Promise<void> {
     }
   }
 
-  // UI-08 student developer log workbench: an IN_PROGRESS engagement with all 3
-  // process documents present (each with its real SHA-256 hash).
+  // UI-08 student developer log workbench: an IN_PROGRESS engagement with its
+  // blocker and AI-usage logs. The prose documents that used to sit beside them
+  // are one uploaded report now, seeded below.
   const studentId = idsByKey.get('student');
   if (studentId) {
-    const buildDoc = (content: string) => ({
-      content,
-      hash: createHash('sha256').update(content).digest('hex'),
-      submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-    });
     await ProjectEngagementModel.findOneAndUpdate(
       { _id: FIXTURE_ENGAGEMENT_ID },
       {
         $set: {
           studentId,
           track: ProjectTrack.AI_BRIEF,
-          tier: StudentTier.BEGINNER,
           status: ProjectStatus.IN_PROGRESS,
           brief: {
             title: 'E2E Developer Log',
@@ -453,19 +469,7 @@ export default async function globalSetup(): Promise<void> {
             suggestedTechStack: ['Next.js', 'MongoDB'],
             estimatedComplexity: 'MEDIUM',
           },
-          documents: {
-            problemBreakdown: buildDoc(
-              'The client, a Nakuru agrovet, needs a simple stock tracker for seed and fertiliser inventory across two shops.'
-            ),
-            approachPlan: buildDoc(
-              "Build a Next.js app with a MongoDB inventory model, role-based access, and a daily low-stock SMS summary via Africa's Talking."
-            ),
-            finalReflection: buildDoc(
-              'I learned to scope tightly: shipping the stock CRUD first, then layering alerts, kept the build focused and testable.'
-            ),
-            blockerLog: [],
-            aiUsageLog: [],
-          },
+          documents: { blockerLog: [], aiUsageLog: [] },
         },
       },
       { upsert: true, setDefaultsOnInsert: true }
@@ -479,22 +483,37 @@ export default async function globalSetup(): Promise<void> {
         $set: {
           studentId: FIXTURE_PEER_AUTHOR_ID,
           track: ProjectTrack.AI_BRIEF,
-          tier: StudentTier.BEGINNER,
           status: ProjectStatus.UNDER_PEER_REVIEW,
           brief: { title: 'Peer Project — Market Stall Tracker' },
-          documents: {
-            problemBreakdown: buildDoc(
-              'Market stall vendors in Nairobi need a lightweight way to record daily sales and restock reminders.'
-            ),
-            approachPlan: buildDoc(
-              'A mobile-first PWA with offline-first storage syncing to a small API; daily totals and a restock list.'
-            ),
-            finalReflection: buildDoc(
-              'Offline sync was the hardest part; I would add conflict resolution and a clearer empty state next time.'
-            ),
-            blockerLog: [],
-            aiUsageLog: [],
-          },
+          documents: { blockerLog: [], aiUsageLog: [] },
+        },
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+
+    // The report a peer actually reads: one submitted version.
+    //
+    // `publicId` names a file that was never stored, and deliberately so. The
+    // spec asserts that the reader is offered the document and never fetches
+    // it, and making the e2e harness upload to a real storage account to prove
+    // that would buy nothing and could fail for reasons that have nothing to do
+    // with the application.
+    await ProjectDocumentationModel.findOneAndUpdate(
+      { engagementId: FIXTURE_PEER_ENGAGEMENT_ID },
+      {
+        $set: {
+          studentId: FIXTURE_PEER_AUTHOR_ID,
+          versions: [
+            {
+              versionNumber: 1,
+              fileName: 'market-stall-tracker-report.pdf',
+              publicId: 'e2e-fixture/market-stall-tracker-report',
+              bytes: 184_320,
+              pageCount: 34,
+              submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+              status: SubmissionStatus.SUBMITTED,
+            },
+          ],
         },
       },
       { upsert: true, setDefaultsOnInsert: true }
@@ -515,37 +534,45 @@ export default async function globalSetup(): Promise<void> {
     );
   }
 
-  // UI-10 lecturer review engagement (dangling author, UNDER_LECTURER_REVIEW).
+  // UI-10 lecturer review engagement, UNDER_LECTURER_REVIEW.
+  //
+  // Owned by the seeded student rather than by the dangling author used for the
+  // peer-review anonymity assertions. The review queue is scoped by
+  // institution, so a report whose author is not a real user in the lecturer's
+  // cohort can never appear in it however it is seeded.
+  await UserModel.findOneAndUpdate(
+    { _id: FIXTURE_REPORT_AUTHOR_ID },
+    {
+      $set: {
+        email: 'report-author@uni.e2e.test',
+        firstName: 'Wanjiru',
+        lastName: 'Kariuki',
+        role: Role.STUDENT,
+        onboardingStage: OnboardingStage.COMPLETED,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        studentData: {
+          institutionalEmail: 'report-author@uni.e2e.test',
+          institutionalEmailVerified: true,
+          academicRegistrationNumber: 'REG-E2E-002',
+          institutionId: FIXTURE_INSTITUTION_ID,
+        },
+      },
+    },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+
+  const lecturerReviewStudentId = FIXTURE_REPORT_AUTHOR_ID;
+
   await ProjectEngagementModel.findOneAndUpdate(
     { _id: FIXTURE_LECTURER_ENGAGEMENT_ID },
     {
       $set: {
-        studentId: FIXTURE_PEER_AUTHOR_ID,
+        studentId: lecturerReviewStudentId,
         track: ProjectTrack.AI_BRIEF,
-        tier: StudentTier.INTERMEDIATE,
         status: ProjectStatus.UNDER_LECTURER_REVIEW,
         brief: { title: 'Lecturer Review Project' },
         documents: {
-          problemBreakdown: {
-            content:
-              'The cooperative needs a shared ledger so member deliveries reconcile against payouts each week.',
-            hash: createHash('sha256')
-              .update('lecturer-review-problem')
-              .digest('hex'),
-            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-          },
-          approachPlan: {
-            content:
-              'A Next.js dashboard backed by MongoDB with weekly reconciliation jobs and an export to CSV.',
-            hash: createHash('sha256').update('lecturer-review-approach').digest('hex'),
-            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-          },
-          finalReflection: {
-            content:
-              'Reconciliation edge cases around partial deliveries took the most time and taught me to model state explicitly.',
-            hash: createHash('sha256').update('lecturer-review-reflection').digest('hex'),
-            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
-          },
           blockerLog: [
             {
               stuckOn: 'Weekly job double-counted re-submitted deliveries.',
@@ -565,6 +592,32 @@ export default async function globalSetup(): Promise<void> {
             },
           ],
         },
+      },
+    },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+
+  // The report the lecturer's queue is built from. Without a submitted version
+  // the queue is empty and there is nothing for UI-10 to open.
+  await ProjectDocumentationModel.findOneAndUpdate(
+    { engagementId: FIXTURE_LECTURER_ENGAGEMENT_ID },
+    {
+      $set: {
+        // A real student at the lecturer's institution. The dangling author
+        // used elsewhere is never created as a user, so it can never appear in
+        // a cohort and its report could never reach the queue.
+        studentId: lecturerReviewStudentId,
+        versions: [
+          {
+            versionNumber: 1,
+            fileName: 'lecturer-review-project-report.pdf',
+            publicId: 'e2e-fixture/lecturer-review-project-report',
+            bytes: 271_360,
+            pageCount: 41,
+            submittedAt: FIXTURE_ENGAGEMENT_DOC_AT,
+            status: SubmissionStatus.SUBMITTED,
+          },
+        ],
       },
     },
     { upsert: true, setDefaultsOnInsert: true }
@@ -644,5 +697,58 @@ export default async function globalSetup(): Promise<void> {
     { upsert: true, setDefaultsOnInsert: true }
   );
 
+  // Every fixture is written by now, so the world can be checked as a whole.
+  await assertOneActiveEngagementPerStudent();
+
   await mongoose.disconnect();
 }
+
+/**
+ * One student, one live project.
+ *
+ * `/api/education/engagements/me` answers "which project is this student on?"
+ * with their most recent active one, and the whole student workspace resolves
+ * through it. A fixture that gives one student a second active engagement
+ * therefore does not fail where it was written — it silently moves another
+ * spec's workspace onto a different project, and that spec fails somewhere
+ * else, with a missing heading and no hint as to why.
+ *
+ * That is exactly what happened when the lecturer's report was first handed to
+ * the seeded student. Encoded here so the next such collision is reported by
+ * the setup that caused it, rather than diagnosed twice through a spec.
+ */
+async function assertOneActiveEngagementPerStudent(): Promise<void> {
+  const collisions = await ProjectEngagementModel.aggregate<{
+    _id: unknown;
+    count: number;
+    ids: unknown[];
+  }>([
+    { $match: { status: { $in: ACTIVE_PROJECT_STATUSES } } },
+    { $group: { _id: '$studentId', count: { $sum: 1 }, ids: { $push: '$_id' } } },
+    { $match: { count: { $gt: 1 } } },
+  ]);
+
+  if (collisions.length === 0) return;
+
+  const detail = collisions
+    .map((c) => `  student ${String(c._id)} owns ${c.count}: ${c.ids.map(String).join(', ')}`)
+    .join('\n');
+
+  throw new Error(
+    [
+      '',
+      'E2E fixtures give a student more than one active project.',
+      '',
+      detail,
+      '',
+      'The student workspace resolves through /api/education/engagements/me, which',
+      'returns the most recent active engagement. A second one silently redirects',
+      "that student's workspace onto a different project and breaks whichever spec",
+      'expected the first — somewhere else, with a confusing error.',
+      '',
+      'Give the new engagement its own student fixture instead.',
+      '',
+    ].join('\n')
+  );
+}
+

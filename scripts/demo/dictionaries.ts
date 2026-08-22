@@ -470,6 +470,21 @@ export const PROJECT_TITLES: string[] = [
   'School fees payment and statement portal',
 ];
 
+// Repositories a Kenyan CS student could realistically contribute to — every
+// one of them real, public and active. The open-source track records a URL the
+// student supplies and never verifies it, so seeding invented repositories put
+// unreachable links on screen. These resolve.
+export const OSS_REPOSITORIES: { name: string; url: string }[] = [
+  { name: 'ushahidi/platform', url: 'https://github.com/ushahidi/platform' },
+  { name: 'openmrs/openmrs-core', url: 'https://github.com/openmrs/openmrs-core' },
+  { name: 'dhis2/dhis2-core', url: 'https://github.com/dhis2/dhis2-core' },
+  { name: 'apache/fineract', url: 'https://github.com/apache/fineract' },
+  { name: 'dimagi/commcare-hq', url: 'https://github.com/dimagi/commcare-hq' },
+  { name: 'openstreetmap/iD', url: 'https://github.com/openstreetmap/iD' },
+  { name: 'frappe/erpnext', url: 'https://github.com/frappe/erpnext' },
+  { name: 'fastapi/fastapi', url: 'https://github.com/fastapi/fastapi' },
+];
+
 export const STUDENT_INTERESTS: string[] = [
   'Full-stack web development', 'Mobile app development', 'Data engineering',
   'FinTech', 'AgriTech', 'DevOps', 'AI/ML', 'Backend systems',
@@ -483,4 +498,99 @@ export const DEPARTMENTS: string[] = [
 export const BUYER_ORGS: string[] = [
   'Mama Ngina Greengrocers', 'Savannah Hotel Group', 'FreshMart Supermarkets',
   'Nairobi Java Kitchens', 'Coast Catering Services', 'Highlands Produce Distributors',
+];
+
+// Projects a lecturer would plausibly set for their own cohort. Written as a
+// lecturer writes them — a real Kenyan situation, a short list of what has to
+// be built, and the subjects it is meant to exercise — rather than as a
+// generated brief, because the point of the feature is that the two are
+// different in kind.
+export const LECTURER_PROJECTS: Array<{
+  title: string;
+  problemStatement: string;
+  coreRequirements: string[];
+  deliverables: string[];
+  technicalConstraints: string[];
+  knowledgeAreas: string[];
+  targetYear: number;
+  targetSemester: number;
+}> = [
+  {
+    title: 'Offline-first attendance register for a rural TVET',
+    problemStatement:
+      'The institute records attendance on paper and copies it into a spreadsheet at the end of each week, by which point nobody can tell which sheets are missing. The campus loses its connection for hours at a time, so a system that only works online will not be used.',
+    coreRequirements: [
+      'Record attendance on a device that is currently offline',
+      'Reconcile two devices that recorded the same session while apart',
+      'Show a lecturer which sessions have not yet synced',
+      'Produce the weekly summary the registry currently compiles by hand',
+      'Keep a record of who changed an entry and when',
+    ],
+    deliverables: [
+      'A deployed system with a seeded demonstration dataset',
+      'A short write-up of the conflict-resolution rule and why you chose it',
+    ],
+    technicalConstraints: [
+      'Must remain usable for a full day with no connection',
+      'Must run on a low-end Android device',
+    ],
+    knowledgeAreas: ['DATABASE_SYSTEMS', 'MOBILE_DEVELOPMENT', 'DISTRIBUTED_SYSTEMS'],
+    targetYear: 2,
+    targetSemester: 1,
+  },
+  {
+    title: 'Clinic queue and referral tracker for a county health facility',
+    problemStatement:
+      'Patients are referred between three departments on paper slips that regularly go missing, and nobody can say how long a patient has been waiting or where their file is. The clinic has one shared workstation and staff who change shift twice a day.',
+    coreRequirements: [
+      'Register a patient and move them through a referral chain',
+      'Separate what a receptionist, a nurse and a clinician may each see',
+      'Report waiting times per department for a given day',
+      'Survive a shift change without losing in-progress work',
+      'Make it impossible to lose a referral silently',
+    ],
+    deliverables: ['A deployed system', 'A data model diagram with the invariants marked'],
+    technicalConstraints: ['One shared workstation — sessions must be short-lived and explicit'],
+    knowledgeAreas: ['DATABASE_SYSTEMS', 'INFORMATION_SECURITY', 'SYSTEMS_ANALYSIS_DESIGN'],
+    targetYear: 3,
+    targetSemester: 1,
+  },
+  {
+    title: 'Matatu sacco fare reconciliation service',
+    problemStatement:
+      'A sacco with forty vehicles reconciles daily M-Pesa takings against conductor returns by hand, and disputes take days to settle. Payments arrive as callbacks that can be delayed, duplicated, or lost entirely.',
+    coreRequirements: [
+      'Ingest payment notifications that may arrive twice or out of order',
+      'Reconcile a day of takings against expected returns per vehicle',
+      'Raise a dispute record when the two do not agree',
+      'Make every reconciliation run repeatable without doubling the data',
+      'Expose the daily position through an API the sacco can consume',
+    ],
+    deliverables: [
+      'A deployed service with a replayable day of test data',
+      'A note on how you made ingestion idempotent',
+    ],
+    technicalConstraints: ['Assume callbacks are unreliable and unordered'],
+    knowledgeAreas: ['DATA_ENGINEERING', 'DISTRIBUTED_SYSTEMS', 'SOFTWARE_ENGINEERING'],
+    targetYear: 3,
+    targetSemester: 2,
+  },
+  {
+    title: 'Cold-chain monitor for a dairy collection route',
+    problemStatement:
+      'Milk is collected from twelve points along a route and rejected at the plant when it arrives warm, but nobody can say where on the route the temperature rose. The collection vehicle has intermittent coverage for most of the route.',
+    coreRequirements: [
+      'Record temperature readings along a route with gaps in coverage',
+      'Store and forward readings taken while offline, in order',
+      'Flag the segment where a threshold was first crossed',
+      'Show a route history a plant manager can act on',
+    ],
+    deliverables: ['A deployed system', 'A short analysis of your storage and retention choices'],
+    technicalConstraints: [
+      'Readings arrive in bursts after a coverage gap and must not be reordered',
+    ],
+    knowledgeAreas: ['NETWORKING', 'DATA_ENGINEERING', 'OPERATING_SYSTEMS'],
+    targetYear: 4,
+    targetSemester: 1,
+  },
 ];

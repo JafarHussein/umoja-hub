@@ -2,45 +2,75 @@ import { test, expect } from '@playwright/test';
 import { authFile } from './support/auth';
 
 // ---------------------------------------------------------------------------
-// UI-10 — Lecturer Review Workspace (corrected: mask requirement void; peer
-// scores withheld server-side until decision per FIX-08).
+// The lecturer reading a submitted project report.
 //
-// Pixel baselines deferred (see farmer-orders.spec.ts). Non-mutating,
-// platform-stable assertions against the seeded UNDER_LECTURER_REVIEW
-// engagement: student work on the left, and the rubric on the right — 4 score
-// dimensions, 4 comment fields with live ≥50-word counters, and the
-// DENIED-reveals-required-reason logic. The spec toggles the Denied radio
-// (client state only) but never submits.
+// Replaces the old three-document review workspace. Non-mutating: the spec
+// asserts the queue reaches the report, that both instruments are on the screen
+// — the checklist drawn from the standard and the four scored dimensions — and,
+// the rule worth protecting most, that a lecturer cannot send a report back
+// without naming something, because a student told only "needs work" cannot
+// tell where to start. It never submits a decision.
+//
+// It does not assert on the document's contents: the report is a PDF the
+// platform does not read, which is the whole point of the workflow.
 // ---------------------------------------------------------------------------
 
-const ENGAGEMENT_ID = '000000000000000000000024';
+const SUMMARY =
+  'The report holds together and the architecture section does the work it needs to do, particularly where you set out the alternative you rejected and what it would have cost. The testing section is thinner than the rest and the results would carry more weight with the actual output beside them. Bring the synchronisation flow to your demonstration and be ready to explain what happens when two devices disagree about the same record.';
 
 test.use({ storageState: authFile('lecturer') });
 
-test('rubric: 4 dimensions, live word counters, DENIED reveals reason', async ({ page }) => {
-  await page.goto(`/dashboard/lecturer/reviews/${ENGAGEMENT_ID}`);
+test('a submitted report is readable, and sending it back needs something named', async ({
+  page,
+}) => {
+  await page.goto('/dashboard/lecturer/reports');
+
+  await expect(page.getByRole('heading', { name: 'Reports to review', level: 1 })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  const row = page.getByText('Lecturer Review Project').first();
+  await expect(row).toBeVisible();
+  await row.click();
 
   await expect(
     page.getByRole('heading', { name: 'Lecturer Review Project', level: 1 })
   ).toBeVisible({ timeout: 30_000 });
 
-  // Left pane shows the submitted work.
-  await expect(page.getByText(/shared ledger so member deliveries reconcile/i)).toBeVisible();
+  // The document is offered, by the name the student gave it.
+  await expect(page.getByText(/lecturer-review-project-report\.pdf/i).first()).toBeVisible();
 
-  // Right pane rubric: the 4 scored dimensions (labels appear for score + comment).
+  // The checklist: the structural question the platform used to answer for
+  // itself, and cannot answer about a document it does not read.
+  await expect(page.getByText('Against the standard')).toBeVisible();
+  await expect(page.getByText('Problem clearly defined')).toBeVisible();
+  await expect(page.getByText('Testing documented')).toBeVisible();
+
+  // The four scored dimensions — the Hub's existing rubric, preserved.
   await expect(page.getByText('Problem understanding').first()).toBeVisible();
-  await expect(page.getByText('AI usage').first()).toBeVisible();
+  await expect(page.getByText('Solution quality').first()).toBeVisible();
+  await expect(page.getByText('Process quality').first()).toBeVisible();
+  await expect(page.getByText('AI use').first()).toBeVisible();
 
-  // Live ≥50-word counters on the comment fields (all start at 0/50).
-  await expect(page.getByText('0/50').first()).toBeVisible();
-  await expect(page.getByText('0/50')).toHaveCount(4);
+  // Both decisions are gated until the summary is long enough to act on.
+  const accept = page.getByRole('button', { name: /Accept — open their demonstration/i });
+  const sendBack = page.getByRole('button', { name: /Send back for changes/i });
+  await expect(accept).toBeDisabled();
+  await expect(sendBack).toBeDisabled();
 
-  // Submit is gated until scores + comments + decision are complete.
-  const submit = page.getByRole('button', { name: 'Submit review' });
-  await expect(submit).toBeDisabled();
+  // A summary alone unlocks acceptance but not a rejection: sending a student
+  // away requires naming something, and the screen says so.
+  await page.getByLabel('What the student should take away').fill(SUMMARY);
 
-  // DENIED reveals a required rejection-reason field (client-only).
-  await expect(page.getByText('Rejection reason')).toHaveCount(0);
-  await page.getByText('Denied', { exact: true }).click();
-  await expect(page.getByText('Rejection reason')).toBeVisible();
+  await expect(accept).toBeEnabled();
+  await expect(sendBack).toBeDisabled();
+  await expect(page.getByText(/say what has to change or leave a note on a page/i)).toBeVisible();
+
+  // Naming what has to change is what unlocks it. Client state only — the spec
+  // never presses either button.
+  await page
+    .getByLabel('What has to change')
+    .fill('Rewrite the architecture section around the components you actually built.');
+
+  await expect(sendBack).toBeEnabled();
 });

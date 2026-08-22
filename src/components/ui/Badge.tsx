@@ -1,5 +1,5 @@
 import React from 'react';
-import { VerificationStatus, FarmerTrustTier, StudentTier, ProjectStatus } from '@/types';
+import { VerificationStatus, FarmerTrustTier, ProjectStatus } from '@/types';
 
 export type BadgeVariant =
   | 'status'
@@ -28,10 +28,10 @@ function getStatusColor(label: string): string {
   const upper = label.toUpperCase();
 
   // Verification statuses
-  if (upper === VerificationStatus.APPROVED || upper === 'VERIFIED' || upper === FarmerTrustTier.PREMIUM || upper === FarmerTrustTier.TRUSTED || upper === StudentTier.ADVANCED || upper === ProjectStatus.VERIFIED) {
+  if (upper === VerificationStatus.APPROVED || upper === 'VERIFIED' || upper === FarmerTrustTier.PREMIUM || upper === FarmerTrustTier.TRUSTED || upper === ProjectStatus.VERIFIED) {
     return SUCCESS;
   }
-  if (upper === VerificationStatus.PENDING || upper === 'UNDER_PEER_REVIEW' || upper === 'UNDER_LECTURER_REVIEW' || upper === FarmerTrustTier.ESTABLISHED || upper === StudentTier.INTERMEDIATE || upper === ProjectStatus.UNDER_PEER_REVIEW || upper === ProjectStatus.UNDER_LECTURER_REVIEW) {
+  if (upper === VerificationStatus.PENDING || upper === 'UNDER_PEER_REVIEW' || upper === 'UNDER_LECTURER_REVIEW' || upper === FarmerTrustTier.ESTABLISHED || upper === ProjectStatus.UNDER_PEER_REVIEW || upper === ProjectStatus.UNDER_LECTURER_REVIEW) {
     return WARNING;
   }
   if (upper === VerificationStatus.REJECTED || upper === 'DENIED' || upper === ProjectStatus.DENIED) {
@@ -40,7 +40,7 @@ function getStatusColor(label: string): string {
   if (upper === 'REVISION_REQUIRED' || upper === ProjectStatus.REVISION_REQUIRED) {
     return WARNING;
   }
-  if (upper === FarmerTrustTier.NEW || upper === StudentTier.BEGINNER || upper === VerificationStatus.UNSUBMITTED) {
+  if (upper === FarmerTrustTier.NEW || upper === VerificationStatus.UNSUBMITTED) {
     return NEUTRAL;
   }
 

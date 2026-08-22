@@ -23,6 +23,12 @@ export interface PersonRef {
   gender: 'm' | 'f';
   joinedAt: Date;
   archetype: string;
+  /**
+   * Students and lecturers — the institution they belong to. A lecturer may
+   * only review their own institution's students, so the seeder has to know
+   * who belongs where or it writes reviews the application would refuse.
+   */
+  institutionId?: mongoose.Types.ObjectId;
   /** Farmers only — what they specialise in. Drives bio, county and listings. */
   farmProfile?: FarmProfileId;
   /**

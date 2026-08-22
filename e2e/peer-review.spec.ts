@@ -23,9 +23,11 @@ test('split-pane: anonymized content left, structured criteria rubric right', as
     page.getByRole('heading', { name: 'Peer Project — Market Stall Tracker', level: 1 })
   ).toBeVisible({ timeout: 30_000 });
 
-  // Left pane is anonymized and shows the submission content.
+  // Left pane is anonymized and offers their project report — one document
+  // they wrote and uploaded, rather than three sets of prose the platform held.
   await expect(page.getByText(/Anonymous submission/i)).toBeVisible();
-  await expect(page.getByText(/Market stall vendors in Nairobi/i)).toBeVisible();
+  await expect(page.getByText('Their report')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Open in a new tab/i })).toBeVisible();
 
   // Right pane: structured rubric — both dimensions with 1–5 inputs.
   await expect(page.getByText('Code quality', { exact: true })).toBeVisible();

@@ -11,7 +11,6 @@
 import {
   Role,
   VerificationStatus,
-  StudentTier,
   DocumentType,
   OnboardingStage,
   UserStatus,
@@ -227,7 +226,6 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     purpose: 'Primary student. Carries the brief → review → verified project walkthrough.',
     extra: {
       studentData: {
-        currentTier: StudentTier.BEGINNER,
         githubUsername: 'brianotieno-dev',
         institutionalEmail: 'brian.otieno@students.uonbi.ac.ke',
         institutionalEmailVerified: true,
@@ -249,7 +247,6 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     purpose: 'Intermediate student with several projects already signed off.',
     extra: {
       studentData: {
-        currentTier: StudentTier.INTERMEDIATE,
         githubUsername: 'aminawaweru',
         institutionalEmail: 'amina.waweru@strathmore.edu',
         institutionalEmailVerified: true,
@@ -271,7 +268,6 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     purpose: 'Third student — supplies a peer reviewer who is not the demo student.',
     extra: {
       studentData: {
-        currentTier: StudentTier.BEGINNER,
         githubUsername: 'dkariuki-jkuat',
         institutionalEmail: 'dennis.kariuki@jkuat.ac.ke',
         institutionalEmailVerified: true,

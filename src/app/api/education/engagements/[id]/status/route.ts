@@ -12,10 +12,26 @@ const statusTransitionSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// PATCH /api/education/engagements/[id]/status — Begin project (BRIEF_GENERATED → IN_PROGRESS)
+// PATCH /api/education/engagements/[id]/status — Move the project into work
 // Auth: STUDENT (owns engagement)
 // Body: { status: 'IN_PROGRESS' }
+//
+// Two starting points, one destination:
+//   BRIEF_GENERATED   → IN_PROGRESS   the student begins
+//   REVISION_REQUIRED → IN_PROGRESS   the student takes the lecturer's feedback
+//                                     back into the workspace, and the
+//                                     engagement's revision number advances
+//
+// The second transition did not exist. A lecturer asking for revisions ended
+// the project instead of continuing it: documents, blockers and AI-usage all
+// require IN_PROGRESS, and REVISION_REQUIRED counts as an active engagement, so
+// the student could neither fix the work nor start anything else.
 // ---------------------------------------------------------------------------
+
+const RESUMABLE_STATUSES: string[] = [
+  ProjectStatus.BRIEF_GENERATED,
+  ProjectStatus.REVISION_REQUIRED,
+];
 
 export async function PATCH(
   req: NextRequest,
@@ -61,23 +77,47 @@ export async function PATCH(
 
     const currentStatus = (engagement as { status: string }).status;
 
-    if (currentStatus !== ProjectStatus.BRIEF_GENERATED) {
+    if (!RESUMABLE_STATUSES.includes(currentStatus)) {
       throw new AppError(
-        'Engagement can only be started from BRIEF_GENERATED status.',
+        'A project can only be started from its brief or resumed after a revision request.',
         409,
         'ORDER_INVALID_STATUS_TRANSITION'
       );
     }
 
-    await ProjectEngagement.findByIdAndUpdate(id, { status: ProjectStatus.IN_PROGRESS });
+    const isRevision = currentStatus === ProjectStatus.REVISION_REQUIRED;
 
-    logger.info('education/engagements', 'Engagement started — BRIEF_GENERATED → IN_PROGRESS', {
-      requestId,
-      engagementId: id,
-      studentId,
+    // Filtered on the status we read, so two clicks cannot advance the revision
+    // counter twice.
+    const updated = await ProjectEngagement.findOneAndUpdate(
+      { _id: id, studentId, status: currentStatus } as object,
+      {
+        $set: { status: ProjectStatus.IN_PROGRESS },
+        ...(isRevision ? { $inc: { revisionNumber: 1 } } : {}),
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      throw new AppError(
+        'Engagement status changed concurrently. Please retry.',
+        409,
+        'ORDER_INVALID_STATUS_TRANSITION'
+      );
+    }
+
+
+    logger.info(
+      'education/engagements',
+      isRevision
+        ? 'Revision resumed — REVISION_REQUIRED → IN_PROGRESS'
+        : 'Engagement started — BRIEF_GENERATED → IN_PROGRESS',
+      { requestId, engagementId: id, studentId, revisionNumber: updated.revisionNumber }
+    );
+
+    return NextResponse.json({
+      data: { status: ProjectStatus.IN_PROGRESS, revisionNumber: updated.revisionNumber },
     });
-
-    return NextResponse.json({ data: { status: ProjectStatus.IN_PROGRESS } });
   } catch (error) {
     return handleApiError(error);
   }

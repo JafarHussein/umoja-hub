@@ -6,7 +6,10 @@
 
 import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
-import { StudentTier } from '@/types';
+import { aiBriefSchema, openSourceBriefSchema } from '@/lib/education/brief';
+import type { AIBrief, OpenSourceBrief } from '@/lib/education/brief';
+import { academicContextPrompt } from '@/lib/education/academicContext';
+import type { AcademicContext } from '@/lib/education/academicContext';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = 'gpt-4o-mini';
@@ -29,28 +32,11 @@ interface OpenAIResponse {
 // Public brief types — stored as ProjectEngagement.brief (Mixed field)
 // ---------------------------------------------------------------------------
 
-export interface GeneratedAIBrief {
-  title: string;
-  clientPersona: {
-    businessType: string;
-    county: string;
-    context: string;
-  };
-  problemStatement: string;
-  coreRequirements: string[];
-  technicalConstraints: string[];
-  kenyanContextConstraints: string[];
-  deliverables: string[];
-  suggestedTechStack: string[];
-  estimatedComplexity: 'LOW' | 'MEDIUM' | 'HIGH';
-}
-
-export interface GeneratedOpenSourceBrief {
-  repoUrl: string;
-  repoName: string;
-  contributionGoal: string;
-  proposedApproach: string;
-}
+// The canonical brief contract lives in `@/lib/education/brief` and is shared
+// by this service, the demo seeder and the workspace that renders it. These
+// aliases keep existing importers working.
+export type GeneratedAIBrief = AIBrief;
+export type GeneratedOpenSourceBrief = OpenSourceBrief;
 
 // ---------------------------------------------------------------------------
 // BriefContextItem — mirrors BriefContextLibrary subdocument shape
@@ -115,40 +101,56 @@ async function callOpenAI(messages: OpenAIMessage[]): Promise<string> {
 // AI_BRIEF track — full project brief generation
 // ---------------------------------------------------------------------------
 
-const TIER_COMPLEXITY_MAP: Record<StudentTier, string> = {
-  [StudentTier.BEGINNER]: 'simple CRUD application with basic authentication (max 3 core features)',
-  [StudentTier.INTERMEDIATE]:
-    'multi-feature application with a third-party API integration (4–6 core features)',
-  [StudentTier.ADVANCED]:
-    'production-grade system with real-time features, ML components, or distributed concerns',
-};
+export interface AIBriefRequest {
+  /** What the student is studying now. The project exists to exercise it. */
+  academic: AcademicContext;
+  /**
+   * The student's engineering interest. A filter, never the driver: the units
+   * decide what must be exercised, the interest decides which of several valid
+   * projects they get. Letting interest drive would recreate the self-selection
+   * of easy work that retiring the difficulty tier was meant to end.
+   */
+  interest?: string | undefined;
+  industry?: BriefContextInput | undefined;
+}
 
-export async function generateAIBrief(
-  tier: StudentTier,
-  context?: BriefContextInput
-): Promise<GeneratedAIBrief> {
-  const complexityDesc = TIER_COMPLEXITY_MAP[tier];
+export async function generateAIBrief(request: AIBriefRequest): Promise<GeneratedAIBrief> {
+  const { academic, interest, industry } = request;
 
-  const industryBlock = context
-    ? `Industry: ${context.industryName}.
-Problem domains: ${context.problemDomains.join(', ')}.
-Kenyan constraints to embed: ${context.kenyanConstraints.join(', ')}.
-Example client types: ${context.clientPersonaTemplate.businessTypes.slice(0, 3).join(', ')}.
-Example counties: ${context.clientPersonaTemplate.counties.slice(0, 3).join(', ')}.`
-    : 'Choose any East African small-business or public-sector industry.';
+  const industryBlock = industry
+    ? `Industry: ${industry.industryName}.
+Problem domains: ${industry.problemDomains.join(', ')}.
+Kenyan constraints to embed: ${industry.kenyanConstraints.join(', ')}.
+Example client types: ${industry.clientPersonaTemplate.businessTypes.slice(0, 3).join(', ')}.
+Example counties: ${industry.clientPersonaTemplate.counties.slice(0, 3).join(', ')}.`
+    : 'Choose any Kenyan small-business or public-sector industry.';
 
-  const systemPrompt = `You are a project brief generator for Kenyan computer science students at ${tier} level.
-You write realistic, specific briefs grounded in the East African context:
-mobile-first, M-Pesa payments common, intermittent connectivity, Swahili and English bilingual.
+  const interestBlock = interest
+    ? `The student's engineering interest is ${interest}. Use it to choose BETWEEN valid projects
+and to shape the parts that are free — never to replace what the units require. A student who
+loves AI and is studying Operating Systems gets an OS-heavy project with a learning workload on
+top, not a machine-learning project with a nod to processes.`
+    : 'No engineering interest is on record. Choose the most representative valid project.';
+
+  const systemPrompt = `You write project briefs for Kenyan computer science and IT undergraduates.
+A brief describes ONE piece of real software the student builds and a lecturer reviews as an
+engineer would. It must force the student to practise what they are being taught this semester —
+if the project could be completed without exercising the knowledge areas below, it is the wrong
+brief. Ground everything in the Kenyan context: mobile-first, M-Pesa common, intermittent
+connectivity, bilingual Swahili and English, real counties and real kinds of business.
 Always respond with a single valid JSON object — no markdown, no extra text.`;
 
-  const userPrompt = `Generate a software project brief.
-Complexity level: ${tier} — ${complexityDesc}
+  const userPrompt = `${academicContextPrompt(academic)}
+
+${interestBlock}
+
 ${industryBlock}
 
 Respond with exactly this JSON schema:
 {
   "title": "string — concise project name",
+  "learningOutcomes": ["string — 3 to 5 statements of what building this must make the student able to do, each tied to one of the knowledge areas above and phrased as a capability, not a feature"],
+  "architecturalChallenge": "string — 2-3 sentences naming the pressure that makes those knowledge areas load-bearing here, and what breaks if the student ignores it",
   "clientPersona": {
     "businessType": "string",
     "county": "string — must be a real Kenyan county",
@@ -161,28 +163,55 @@ Respond with exactly this JSON schema:
   "deliverables": ["string — 3 to 5 concrete deliverable items"],
   "suggestedTechStack": ["string — 3 to 5 technologies"],
   "estimatedComplexity": "LOW" | "MEDIUM" | "HIGH"
-}`;
+}
+
+"estimatedComplexity" is your assessment of the work you have described. It is not a dial and
+nobody chose it — the year of study and the units decide how demanding the project is.`;
 
   const content = await callOpenAI([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]);
 
-  let brief: GeneratedAIBrief;
+  let raw: unknown;
   try {
-    brief = JSON.parse(content) as GeneratedAIBrief;
+    raw = JSON.parse(content);
   } catch {
     logger.error('openaiService', 'Failed to parse AI brief JSON', { content });
     throw new AppError('Brief generation returned malformed data.', 503, 'AI_SERVICE_ERROR');
   }
 
-  if (!brief.title || !brief.problemStatement || !Array.isArray(brief.coreRequirements)) {
-    logger.error('openaiService', 'AI brief missing required fields', { brief });
+  // The anchor is recorded from the enrolment, not asked of the model: what the
+  // student is studying is a fact the platform holds, and a language model
+  // repeating it back is a chance for it to be repeated back wrong.
+  const anchored = {
+    ...(raw as Record<string, unknown>),
+    academicAnchor: {
+      programmeName: academic.programmeName,
+      year: academic.currentYear,
+      semester: academic.currentSemester,
+      units: academic.currentUnits.map((u) => (u.code ? `${u.code} ${u.title}` : u.title)),
+      knowledgeAreas: academic.knowledgeAreas,
+      provenance: academic.provenanceLabel,
+    },
+  };
+
+  // Validated against the same schema the seeder writes and the workspace
+  // renders. A model response that does not conform is rejected here rather
+  // than persisted into a Mixed column for the UI to fall over later.
+  const parsed = aiBriefSchema.safeParse(anchored);
+  if (!parsed.success) {
+    logger.error('openaiService', 'AI brief did not match the brief contract', {
+      issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
+    });
     throw new AppError('Brief generation returned incomplete data.', 503, 'AI_SERVICE_ERROR');
   }
 
-  logger.info('openaiService', 'AI brief generated', { tier, industry: context?.industryName });
-  return brief;
+  logger.info('openaiService', 'AI brief generated', {
+    knowledgeAreas: academic.knowledgeAreas.slice(0, 3),
+    industry: industry?.industryName,
+  });
+  return parsed.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,40 +221,65 @@ Respond with exactly this JSON schema:
 
 export async function generateOpenSourceBrief(
   repoUrl: string,
-  repoName: string
+  repoName: string,
+  academic: AcademicContext
 ): Promise<GeneratedOpenSourceBrief> {
-  const systemPrompt = `You are a software contribution advisor for computer science students.
-You write concise, actionable open-source contribution plans.
+  const systemPrompt = `You are a software contribution advisor for Kenyan computer science and IT
+undergraduates. You write concise, actionable open-source contribution plans that make the student
+practise what they are being taught this semester — a contribution that exercises none of their
+coursework is the wrong contribution to point them at.
 Always respond with a single valid JSON object — no markdown, no extra text.`;
 
   const userPrompt = `A student wants to contribute to: ${repoUrl} (${repoName}).
-Write a realistic contribution plan. Respond with exactly this JSON schema:
+
+${academicContextPrompt(academic, 2)}
+
+Write a realistic contribution plan that lands in the part of that repository where the knowledge
+areas above are load-bearing. Respond with exactly this JSON schema:
 {
-  "repoUrl": "${repoUrl}",
-  "repoName": "${repoName}",
-  "contributionGoal": "string — 1-2 sentences on what kind of contribution to make",
+  "title": "string — a short name for the contribution",
+  "contributionGoal": "string — 1-2 sentences on what kind of contribution to make, naming which of the knowledge areas above it exercises",
   "proposedApproach": "string — 2-3 sentences on finding an issue and making the contribution"
 }`;
 
-  try {
-    const content = await callOpenAI([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]);
+  const content = await callOpenAI([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
 
-    const brief = JSON.parse(content) as GeneratedOpenSourceBrief;
-    return { ...brief, repoUrl, repoName };
-  } catch (error) {
-    logger.warn('openaiService', 'OpenSourceBrief generation failed — using fallback', {
-      repoName,
-      error,
-    });
-    return {
-      repoUrl,
-      repoName,
-      contributionGoal: `Contribute a meaningful improvement to ${repoName} by fixing a bug or implementing a small feature.`,
-      proposedApproach:
-        'Browse open issues labelled "good first issue" or "help wanted". Fork the repo, implement the fix on a feature branch, and open a pull request with a clear description of the changes.',
-    };
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    logger.error('openaiService', 'Failed to parse open-source brief JSON', { repoName });
+    throw new AppError('Brief generation returned malformed data.', 503, 'AI_SERVICE_ERROR');
   }
+
+  // There used to be a fallback here that returned a generic paragraph about
+  // looking for "good first issue" labels. It was indistinguishable from a real
+  // plan, so a student could be handed boilerplate believing it had been
+  // written for their repository. Failing honestly is better than that: the
+  // route surfaces a 503 and the student can try again.
+  const parsed = openSourceBriefSchema.safeParse({
+    ...(raw as Record<string, unknown>),
+    repoUrl,
+    repoName,
+    academicAnchor: {
+      programmeName: academic.programmeName,
+      year: academic.currentYear,
+      semester: academic.currentSemester,
+      units: academic.currentUnits.map((u) => (u.code ? `${u.code} ${u.title}` : u.title)),
+      knowledgeAreas: academic.knowledgeAreas,
+      provenance: academic.provenanceLabel,
+    },
+  });
+  if (!parsed.success) {
+    logger.error('openaiService', 'Open-source brief did not match the brief contract', {
+      repoName,
+      issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
+    });
+    throw new AppError('Brief generation returned incomplete data.', 503, 'AI_SERVICE_ERROR');
+  }
+
+  return parsed.data;
 }

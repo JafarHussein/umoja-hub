@@ -1,5 +1,23 @@
 import { z } from 'zod';
-import { ProjectTrack, StudentTier, LecturerDecision, REVIEW_MIN_WORD_COUNT, MAX_ASSISTANT_MESSAGE_CHARS } from '@/types';
+import {
+  ProjectTrack,
+  LecturerDecision,
+  KnowledgeArea,
+  AssignmentAudience,
+  AssignmentStatus,
+  MAX_PROGRAMME_YEARS,
+  MAX_SEMESTERS_PER_YEAR,
+  REVIEW_MIN_WORD_COUNT,
+  MAX_ASSISTANT_MESSAGE_CHARS,
+  DOCUMENTATION_CHECKLIST,
+  DocumentationOutcome,
+  DemonstrationFormat,
+  DemonstrationOutcome,
+  DEMONSTRATION_CRITERIA,
+  DEMONSTRATION_MIN_MINUTES,
+  DEMONSTRATION_MAX_MINUTES,
+  DEMONSTRATION_COMMENT_MIN_WORDS,
+} from '@/types';
 
 const countWords = (text: string): number =>
   text
@@ -7,22 +25,261 @@ const countWords = (text: string): number =>
     .split(/\s+/)
     .filter((w) => w.length > 0).length;
 
+const objectId = z
+  .string()
+  .trim()
+  .regex(/^[a-f\d]{24}$/i, 'Not a valid identifier');
+
 export const briefRequestSchema = z.object({
-  track: z.enum([ProjectTrack.OPEN_SOURCE, ProjectTrack.AI_BRIEF]),
-  tier: z.enum([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]),
+  track: z.enum([
+    ProjectTrack.OPEN_SOURCE,
+    ProjectTrack.AI_BRIEF,
+    ProjectTrack.LECTURER_ASSIGNED,
+  ]),
+  // The student's engineering interest — a filter over valid projects, not a
+  // difficulty dial. The difficulty tier this replaced was the one project
+  // origin the Hub's premise forbids.
+  interest: z.string().trim().min(2).max(60).optional(),
   githubRepoUrl: z.string().url('Must be a valid GitHub URL').optional(),
+  /** Required for LECTURER_ASSIGNED — which of their projects was chosen. */
+  assignmentId: objectId.optional(),
 });
 
-export const documentSubmissionSchema = z.object({
-  documentType: z.enum([
-    'problemBreakdown',
-    'approachPlan',
-    'finalReflection',
-  ]),
-  content: z
+// ---------------------------------------------------------------------------
+// A lecturer writing their own project.
+//
+// The floors are deliberately low. A lecturer with sixty students and four
+// hours a week will not fill in a long form, and a form they abandon is a
+// feature that does not exist — so this asks for the problem, what has to be
+// built, and what it exercises, and treats everything else as optional.
+// ---------------------------------------------------------------------------
+
+const trimmedList = (max: number, message: string) =>
+  z.array(z.string().trim().min(3, message).max(300)).max(max);
+
+// The rules, written once. Both schemas below are built from these, and the
+// defaults are added only where they belong — see the note on editing.
+const assignmentFields = {
+  title: z.string().trim().min(5, 'Give the project a name').max(140),
+  problemStatement: z
     .string()
     .trim()
-    .min(50, 'Document content must be at least 50 characters'),
+    .min(40, 'Describe the problem in a couple of sentences')
+    .max(2000),
+  coreRequirements: trimmedList(12, 'Each requirement needs a few words')
+    .min(1, 'Say what has to be built'),
+  deliverables: trimmedList(10, 'Each deliverable needs a few words'),
+  technicalConstraints: trimmedList(10, 'Each constraint needs a few words'),
+  knowledgeAreas: z
+    .array(z.enum(Object.values(KnowledgeArea) as [KnowledgeArea, ...KnowledgeArea[]]))
+    .min(1, 'Say which subjects this project exercises')
+    .max(6, 'Six subjects is more than one project can carry'),
+  targetYear: z.number().int().min(1).max(MAX_PROGRAMME_YEARS),
+  targetSemester: z.number().int().min(1).max(MAX_SEMESTERS_PER_YEAR),
+  audience: z.enum([AssignmentAudience.COHORT, AssignmentAudience.NAMED]),
+  assignedStudentIds: z.array(objectId).max(60),
+  capacity: z.number().int().min(1).max(200).optional(),
+  status: z.enum([AssignmentStatus.DRAFT, AssignmentStatus.OPEN, AssignmentStatus.CLOSED]),
+};
+
+export const projectAssignmentSchema = z.object({
+  ...assignmentFields,
+  // A project written without deliverables has none, and a cohort offer names
+  // nobody. On the way in, absent genuinely does mean empty.
+  deliverables: assignmentFields.deliverables.default([]),
+  technicalConstraints: assignmentFields.technicalConstraints.default([]),
+  assignedStudentIds: assignmentFields.assignedStudentIds.default([]),
+});
+
+/**
+ * Editing an existing project — every field optional, same rules, and
+ * deliberately *not* `projectAssignmentSchema.partial()`.
+ *
+ * `.partial()` makes a field optional but leaves its default in place, so a
+ * request carrying nothing but `{ status: 'CLOSED' }` parsed into four keys:
+ * the status the lecturer sent, plus empty deliverables, empty constraints and
+ * an empty student list they never mentioned. Two things followed. Closing an
+ * offer counted as rewriting the brief, so a lecturer could not withdraw a
+ * project once anybody had started it — the one escape hatch the refusal
+ * itself points them to. And any small edit to an untaken project silently
+ * cleared its deliverables and constraints, and un-named every student on a
+ * named project, which is what makes such a project visible at all.
+ *
+ * On the way in an absent list means an empty one; on the way through an edit
+ * it means "leave this alone", and the two must not share a schema.
+ */
+export const projectAssignmentUpdateSchema = z.object(assignmentFields).partial();
+
+export type ProjectAssignmentInput = z.infer<typeof projectAssignmentSchema>;
+
+// ---------------------------------------------------------------------------
+// The project report.
+//
+// The student writes their report in whatever they normally use and uploads the
+// finished PDF. Nothing here validates its prose, because nothing here can read
+// it: UmojaHub holds the standard, receives the document and gives the lecturer
+// somewhere to read it. What the platform used to check for itself — that every
+// required section is present — is now the first thing the lecturer is asked,
+// as a checklist, which is the honest place for a question only a reader can
+// answer.
+// ---------------------------------------------------------------------------
+
+/**
+ * What the student says about the version they are uploading.
+ *
+ * Optional on a first submission and worth insisting on afterwards, but the
+ * insisting belongs to the route, which knows whether a previous version was
+ * sent back. A schema that demanded it always would block the first upload for
+ * a change nobody had asked for yet.
+ */
+export const documentationSubmissionSchema = z.object({
+  studentNote: z
+    .string()
+    .trim()
+    .max(2000, 'Keep this short — the detail belongs in the report itself')
+    .optional(),
+});
+
+/**
+ * A lecturer's decision on one submitted version.
+ *
+ * Two instruments, and they ask different questions. The **checklist** asks
+ * whether the report contains what the standard asks for — the structural
+ * question the platform answered for itself while the report lived in a
+ * database, and which only a reader can answer now that it arrives as a PDF.
+ * The **scores** are the Hub's existing four-dimension rubric and ask how good
+ * what is there is. Neither substitutes for the other.
+ *
+ * Page notes rather than section comments, because a lecturer reading a PDF can
+ * point at a page and cannot point at a field.
+ */
+export const documentationReviewSchema = z
+  .object({
+    outcome: z.enum([
+      DocumentationOutcome.READY_FOR_DEMONSTRATION,
+      DocumentationOutcome.REVISION_REQUESTED,
+    ]),
+    scores: z.object({
+      problemUnderstanding: z.number().int().min(1).max(5),
+      solutionQuality: z.number().int().min(1).max(5),
+      processQuality: z.number().int().min(1).max(5),
+      aiUsage: z.number().int().min(1).max(5),
+    }),
+    summary: z
+      .string()
+      .trim()
+      .refine(
+        (val) => countWords(val) >= REVIEW_MIN_WORD_COUNT,
+        `Your summary must be at least ${REVIEW_MIN_WORD_COUNT} words — a student cannot act on one line`
+      )
+      .refine((val) => val.length <= 4000, 'That summary is too long'),
+    strengths: z.string().trim().max(2000).optional(),
+    concerns: z.string().trim().max(2000).optional(),
+    requiredChanges: z.string().trim().max(4000).optional(),
+    questionsForDemonstration: z.string().trim().max(2000).optional(),
+    pageNotes: z
+      .array(
+        z.object({
+          page: z.number().int().min(1, 'Page numbers start at 1'),
+          comment: z.string().trim().min(5, 'Say what is on that page').max(2000),
+        })
+      )
+      .max(50)
+      .default([]),
+    checklist: z
+      .array(
+        z.object({
+          item: z.enum(DOCUMENTATION_CHECKLIST),
+          met: z.boolean(),
+          note: z.string().trim().max(500).optional(),
+        })
+      )
+      .max(DOCUMENTATION_CHECKLIST.length)
+      .default([]),
+  })
+  .refine(
+    (data) =>
+      data.outcome === DocumentationOutcome.READY_FOR_DEMONSTRATION ||
+      (data.requiredChanges ?? '').length > 0 ||
+      data.pageNotes.length > 0,
+    {
+      // The rule the old section feedback protected, carried over intact: a
+      // student sent back with nothing named cannot tell where to start.
+      message:
+        'Say what has to change, or leave a note on the page it is on. A student sent back with nothing named cannot tell where to start.',
+      path: ['requiredChanges'],
+    }
+  );
+
+// ---------------------------------------------------------------------------
+// Demonstrations.
+// ---------------------------------------------------------------------------
+
+export const demonstrationSlotSchema = z.object({
+  startsAt: z.coerce.date(),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(DEMONSTRATION_MIN_MINUTES)
+    .max(DEMONSTRATION_MAX_MINUTES),
+  format: z.enum([DemonstrationFormat.VIDEO_CALL, DemonstrationFormat.IN_PERSON]),
+  location: z.string().trim().max(300).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const demonstrationRequestSchema = z.object({
+  engagementId: objectId,
+  slotId: objectId,
+  // What they will show, and what they know is incomplete. The floor is low on
+  // purpose — a student who writes three honest sentences here has done what
+  // the field is for.
+  studentNotes: z
+    .string()
+    .trim()
+    .min(20, 'Say what you will show, and what you already know is incomplete')
+    .max(2000),
+});
+
+export const demonstrationDeclineSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'Tell the student why, so they can act on it')
+    .max(1000),
+});
+
+export const demonstrationCancelSchema = z.object({
+  reason: z.string().trim().min(5, 'Give a reason').max(1000),
+});
+
+const demonstrationScoreShape = DEMONSTRATION_CRITERIA.reduce(
+  (acc, criterion) => {
+    acc[criterion] = z.number().int().min(1).max(5);
+    return acc;
+  },
+  {} as Record<string, z.ZodNumber>
+);
+
+const demonstrationCommentShape = DEMONSTRATION_CRITERIA.reduce(
+  (acc, criterion) => {
+    acc[criterion] = z
+      .string()
+      .trim()
+      .refine(
+        (val) => countWords(val) >= DEMONSTRATION_COMMENT_MIN_WORDS,
+        `Each comment must be at least ${DEMONSTRATION_COMMENT_MIN_WORDS} words — a score with no reasoning behind it tells the student nothing`
+      );
+    return acc;
+  },
+  {} as Record<string, z.ZodType<string>>
+);
+
+export const demonstrationEvaluationSchema = z.object({
+  scores: z.object(demonstrationScoreShape),
+  comments: z.object(demonstrationCommentShape),
+  outcome: z.enum([DemonstrationOutcome.APPROVED, DemonstrationOutcome.REVISION_REQUIRED]),
+  questioningNotes: z.string().trim().max(4000).optional(),
+  failureDuringDemonstration: z.string().trim().max(2000).optional(),
 });
 
 export const blockerLogEntrySchema = z.object({
@@ -121,9 +378,6 @@ const briefContextEntrySchema = z.object({
   problemDomains: z.array(z.string().min(1)),
   kenyanConstraints: z.array(z.string().min(1)),
   exampleProjects: z.array(z.string().min(1)),
-  targetTiers: z
-    .array(z.enum([StudentTier.BEGINNER, StudentTier.INTERMEDIATE, StudentTier.ADVANCED]))
-    .min(1, 'At least one target tier is required'),
 });
 
 export const briefContextLibraryUpdateSchema = z.object({
@@ -140,7 +394,11 @@ export const mentorChatSchema = z.object({
 });
 
 export type BriefRequestInput = z.infer<typeof briefRequestSchema>;
-export type DocumentSubmissionInput = z.infer<typeof documentSubmissionSchema>;
+export type DocumentationSubmissionInput = z.infer<typeof documentationSubmissionSchema>;
+export type DocumentationReviewInput = z.infer<typeof documentationReviewSchema>;
+export type DemonstrationSlotInput = z.infer<typeof demonstrationSlotSchema>;
+export type DemonstrationRequestInput = z.infer<typeof demonstrationRequestSchema>;
+export type DemonstrationEvaluationInput = z.infer<typeof demonstrationEvaluationSchema>;
 export type BlockerLogEntryInput = z.infer<typeof blockerLogEntrySchema>;
 export type AIUsageLogEntryInput = z.infer<typeof aiUsageLogEntrySchema>;
 export type PeerReviewInput = z.infer<typeof peerReviewSchema>;

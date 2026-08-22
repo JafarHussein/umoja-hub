@@ -4,6 +4,7 @@
 
 import { Rng } from './rng';
 import type { SeedCrop } from './dictionaries';
+import { KNOWLEDGE_AREAS, isKnowledgeArea } from '../../src/lib/education/knowledgeAreas';
 
 // ---------------------------------------------------------------------------
 // Listing descriptions
@@ -103,27 +104,148 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function aiBrief(rng: Rng, title: string, tier: string): Record<string, unknown> {
+// Briefs are written to the ONE canonical contract in src/lib/education/brief.ts
+// — the same schema the OpenAI service must satisfy and the student workspace
+// renders. They disagreed before, and the cost was a workspace that crashed on
+// every seeded project: the seeder wrote `clientPersona` as a string and no
+// `estimatedComplexity` at all, while the page read `clientPersona.businessType`
+// and called `.toLowerCase()` on the complexity. Anything added here must keep
+// `aiBriefSchema.safeParse` passing; `npm run demo:validate` now checks it.
+const CLIENT_PERSONAS: { businessType: string; county: string; context: string }[] = [
+  {
+    businessType: 'Agribusiness cooperative',
+    county: 'Nakuru',
+    context:
+      'Coordinates deliveries from about 300 smallholder members and reconciles their payments by hand every week.',
+  },
+  {
+    businessType: 'County health office',
+    county: 'Machakos',
+    context:
+      'Runs eleven clinics whose stock and patient visit records are kept in paper registers at each site.',
+  },
+  {
+    businessType: 'SACCO',
+    county: 'Nairobi',
+    context:
+      'Serves boda-boda riders with daily loan repayments that are currently tracked in a spreadsheet.',
+  },
+  {
+    businessType: 'Secondary school',
+    county: 'Kisumu',
+    context:
+      'Manages fee statements, results and parent communication across 1,200 students with no central system.',
+  },
+  {
+    businessType: 'Matatu sacco',
+    county: 'Kiambu',
+    context:
+      'Operates 40 vehicles and cannot tell which routes are profitable without collating handwritten daily returns.',
+  },
+  {
+    businessType: 'Agrodealer',
+    county: 'Eldoret',
+    context: 'Two branches whose seed and fertiliser stock is counted manually at the end of each week.',
+  },
+];
+
+// What a seeded brief was written from. Mirrors the academicAnchor the live
+// route records off the student's enrolment, so a seeded project and a
+// generated one are the same shape and the same claim.
+export interface SeedAcademicAnchor {
+  programmeName: string;
+  year: number;
+  semester: number;
+  units: string[];
+  knowledgeAreas: string[];
+  provenance: string;
+}
+
+// Complexity follows from where the student is in the degree. It used to follow
+// from a difficulty they picked for themselves, which is the one project origin
+// the Hub's premise rules out.
+function complexityForYear(year: number): 'LOW' | 'MEDIUM' | 'HIGH' {
+  if (year <= 1) return 'LOW';
+  if (year >= 4) return 'HIGH';
+  return 'MEDIUM';
+}
+
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export function aiBrief(
+  rng: Rng,
+  title: string,
+  anchor: SeedAcademicAnchor,
+  stack: string[] = [],
+  interest?: string
+): Record<string, unknown> {
+  const persona = rng.pick(CLIENT_PERSONAS);
+
+  // The outcomes are read out of the knowledge-area profiles rather than
+  // written generically, so a seeded brief genuinely says what the student's
+  // own units require of it — which is the whole claim the Hub makes.
+  const leading = anchor.knowledgeAreas.filter(isKnowledgeArea).slice(0, 3);
+  const learningOutcomes =
+    leading.length > 0
+      ? leading.map((area) => {
+          const profile = KNOWLEDGE_AREAS[area];
+          const capability = profile.capabilities[0] ?? 'apply the unit in a working system';
+          return `${sentenceCase(capability)} — the part of ${profile.label} this project rests on.`;
+        })
+      : ['Build, deploy and defend one working system end to end.'];
+
+  const primary = leading[0];
+  const architecturalChallenge = primary
+    ? `${sentenceCase(KNOWLEDGE_AREAS[primary].architecturalPressures[0] ?? 'a constraint the naive design cannot meet')} is what makes ${KNOWLEDGE_AREAS[primary].label} load-bearing here rather than decorative. Design around it early: ${KNOWLEDGE_AREAS[primary].antiPatterns[0] ?? 'a system that avoids the pressure'} will not pass review, however finished it looks.`
+    : `The system has to keep working when the connection drops mid-operation, and that constraint has to shape the design rather than be patched on at the end.`;
+
   return {
     title,
-    tier,
-    clientPersona: rng.pick([
-      'A Nairobi-based agribusiness coordinating smallholder supply',
-      'A county health office digitising clinic operations',
-      'A SACCO serving boda-boda riders',
-      'A rural agrodealer struggling with paper stock records',
-    ]),
-    problemStatement: `Design and build a working solution for: ${title}. The client needs something usable on low-end Android phones and patchy connectivity.`,
-    constraints: [
-      'Must work on intermittent 3G connectivity',
-      'M-Pesa is the only viable payment rail',
-      'Users have low digital literacy',
+    academicAnchor: anchor,
+    learningOutcomes,
+    architecturalChallenge,
+    clientPersona: persona,
+    problemStatement: `${persona.context} They need a working system for: ${title}. It has to be usable on low-end Android phones over an intermittent connection.`,
+    coreRequirements: [
+      'Record the core entities the client works with, with validation',
+      'Authenticate users and separate what each role may see',
+      'Produce the weekly summary the client currently compiles by hand',
+      'Work correctly when the connection drops mid-operation',
+      'Expose the data through an API the client can integrate with later',
+    ],
+    technicalConstraints: [
+      'Must run acceptably on a low-end Android device over 3G',
+      'No paid third-party service may be required to operate it',
+      ...(interest ? [`Leave room for ${interest} in the part of the design that is free`] : []),
+    ],
+    kenyanContextConstraints: [
+      'M-Pesa is the only payment rail the client and their users have',
+      'Users have low digital literacy — the flow must survive being got wrong',
     ],
     deliverables: [
-      'A deployed, working prototype',
-      'A short architecture write-up',
-      'A reflection on trade-offs made',
+      'A deployed, working system',
+      'A short architecture write-up covering the data model and the API',
+      'A reflection on the trade-offs made',
     ],
+    suggestedTechStack: stack.length > 0 ? stack : ['Node.js', 'MongoDB', 'React'],
+    estimatedComplexity: complexityForYear(anchor.year),
+  };
+}
+
+export function openSourceBrief(
+  repoUrl: string,
+  repoName: string,
+  anchor: SeedAcademicAnchor
+): Record<string, unknown> {
+  return {
+    title: `Contribute to ${repoName}`,
+    academicAnchor: anchor,
+    repoUrl,
+    repoName,
+    contributionGoal: `Land a reviewed change in ${repoName} — a bug fix or a small feature that the maintainers accept.`,
+    proposedApproach: `Read the contributing guide and reproduce an open issue locally before changing anything. Work on a branch, keep the change small enough to review, and open a pull request that explains the problem and the reasoning behind the fix.`,
   };
 }
 
@@ -302,4 +424,106 @@ export function peerComment(rng: Rng, positive: boolean): string {
         'The idea is good but the setup steps were unclear and I hit an error following the README.',
         'Functional, but the code could use more comments and the structure is a bit hard to navigate.',
       ]);
+}
+
+/**
+ * The brief stored on an engagement that started from a lecturer's own project.
+ *
+ * Mirrors `assignmentToBrief` in the app, deliberately: a seeded lecturer
+ * project and a real one must be the same record, or the demonstration is of
+ * something that does not exist.
+ */
+export function assignedBrief(
+  assignment: {
+    _id: unknown;
+    title: string;
+    problemStatement: string;
+    coreRequirements: string[];
+    deliverables?: string[];
+    technicalConstraints?: string[];
+    knowledgeAreas: string[];
+  },
+  anchor: SeedAcademicAnchor,
+  setBy: string
+): Record<string, unknown> {
+  const areas = assignment.knowledgeAreas.filter(isKnowledgeArea);
+  return {
+    title: assignment.title,
+    academicAnchor: anchor,
+    assignmentId: String(assignment._id),
+    setBy,
+    problemStatement: assignment.problemStatement,
+    coreRequirements: assignment.coreRequirements,
+    technicalConstraints: assignment.technicalConstraints ?? [],
+    deliverables: assignment.deliverables ?? [],
+    exercises:
+      areas.length > 0
+        ? areas.map((a) => KNOWLEDGE_AREAS[a].label)
+        : ['Engineering judgement'],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Demonstrations.
+//
+// A lecturer's demonstration comments and a student's readiness note. Both are
+// written as the people would write them: the lecturer naming something
+// specific about the system rather than grading an abstraction, and the student
+// saying plainly what they will show and what does not work.
+// ---------------------------------------------------------------------------
+
+const DEMONSTRATION_COMMENT: Record<string, [string, string]> = {
+  problemUnderstanding: [
+    'They could say who this is for and what those people do today without it, in concrete terms, and the problem statement in the report matched what they described out loud.',
+    'They described the problem in general terms and could not say who specifically would use this or what they do instead at the moment.',
+  ],
+  systemFunctionality: [
+    'Every flow they said they would show ran, including the offline capture and the reconnect. Nothing was staged and nothing was skipped.',
+    'The main flow ran but two of the paths they had listed could not be shown, and one of those had not been declared in advance.',
+  ],
+  technicalDepth: [
+    'Asked how the queue drains, they went to the code and walked through the ordering guarantee without hesitating. They know what their own system does below the surface.',
+    'They could describe what the code does at the level of the interface but could not explain the mechanism underneath when asked to open it.',
+  ],
+  designJustification: [
+    'They named the alternative they rejected and what it would have cost, which is the part most students cannot do. The database choice in particular was defended on the access pattern rather than on familiarity.',
+    'They could say what they chose but not why, and could not name an alternative they had considered and set aside.',
+  ],
+  responseToQuestioning: [
+    'Pushed on what happens when the same field is edited on two devices, they reasoned through it live and arrived at the limitation themselves rather than reaching for a rehearsed answer.',
+    'They handled the questions they had prepared for and struggled when asked about a case they had not anticipated.',
+  ],
+  engineeringPractice: [
+    'Tests exist where the risk is, the error handling is deliberate, and they were straight about the security gap rather than talking around it. That honesty is worth as much as the code.',
+    'The work is there but the testing is thin in exactly the area that carries the risk, and the limitations were understated until asked about directly.',
+  ],
+};
+
+export function demonstrationComment(rng: Rng, criterion: string, good: boolean): string {
+  const pair = DEMONSTRATION_COMMENT[criterion];
+  if (!pair) {
+    return good
+      ? 'Handled well, and they could explain the reasoning behind it when asked.'
+      : 'Needs more work before this would hold up outside the demonstration.';
+  }
+  return good ? pair[0] : pair[1];
+}
+
+export function questioningNotes(rng: Rng, good: boolean): string {
+  const asked = rng.pick([
+    'Why this database rather than the alternative. What happens when two devices edit the same field. How authorisation is enforced, and where. What breaks first under load.',
+    'How the sync queue guarantees ordering. Why the identifier is generated on the client. What the system does when the database is unavailable. What they would change with more time.',
+    'Where AI was used and what they verified. How they tested the reconciliation rule. What the schema is deliberately slow at, and why that was acceptable.',
+  ]);
+  return good
+    ? `Asked: ${asked} They answered all of it from the system rather than from the report, and where they did not know they said so and reasoned towards an answer.`
+    : `Asked: ${asked} The answers were thin on the mechanism — they know what the system does, not yet why it does it that way.`;
+}
+
+export function studentDemonstrationNotes(rng: Rng): string {
+  return rng.pick([
+    'I will show signing in, capturing a record with the network disabled, a full reload to prove it survived, and the reconnect draining the queue. Then two profiles editing the same record offline and reconnecting out of order. The summary export is not finished — the figures are right but the column order is wrong. The deployment cold-starts, so the first request may be slow.',
+    'Plan: the administrator reconciliation view showing an expected-but-missing record, then role separation by calling the API directly from a session that should not have access. Known gaps — there is no rate limiting on login, and the reconciliation view does not paginate so it slows down past a few hundred rows.',
+    'I will run the three main flows end to end on the deployed instance, then open the code for the ordering guarantee in the sync queue because that is the part I most want to talk about. What does not work: password reset is stubbed, and the mobile layout breaks below 320px. I have not fixed either and would rather say so now.',
+  ]);
 }

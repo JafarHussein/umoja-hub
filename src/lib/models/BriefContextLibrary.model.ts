@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-import { StudentTier } from '@/types';
 
 export interface BriefContextLibraryDoc {
   version: number;
@@ -16,7 +15,6 @@ export interface BriefContextLibraryDoc {
     problemDomains: string[];
     kenyanConstraints: string[];
     exampleProjects: string[];
-    targetTiers: string[];
   }>;
   createdAt: Date;
   updatedAt: Date;
@@ -40,7 +38,6 @@ const briefContextItemSchema = new Schema(
     problemDomains: [{ type: String }],
     kenyanConstraints: [{ type: String }],
     exampleProjects: [{ type: String }],
-    targetTiers: [{ type: String, enum: Object.values(StudentTier) }],
   },
   { _id: false }
 );

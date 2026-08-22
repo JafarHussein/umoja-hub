@@ -1,4 +1,4 @@
-import { Role, VerificationStatus, StudentTier } from '@/types';
+import { Role, VerificationStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
 // buildRoleDefaults — initialise the correct role sub-document when a role is
@@ -27,7 +27,6 @@ export function buildRoleDefaults(role: string): Record<string, unknown> {
     case Role.STUDENT:
       return {
         studentData: {
-          currentTier: StudentTier.BEGINNER,
           techStackPreferences: [],
           completedProjectCount: 0,
           institutionalEmailVerified: false,

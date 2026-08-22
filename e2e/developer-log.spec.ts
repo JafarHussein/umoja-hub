@@ -2,54 +2,66 @@ import { test, expect } from '@playwright/test';
 import { authFile } from './support/auth';
 
 // ---------------------------------------------------------------------------
-// UI-08 — Student Developer Log Workbench (corrected VIEW-DET-01).
+// The student's project workspace.
 //
-// Pixel baselines deferred (see farmer-orders.spec.ts). Non-mutating,
-// platform-stable assertions against the seeded IN_PROGRESS engagement (all 3
-// docs present): the 3/3 checklist, the per-document hash strings, and the
-// two-step Finalize & Hash → Submit flow. Finalize is client-only; the spec
-// never types or submits, so the engagement stays deterministic.
+// Replaces the old three-document checklist and hash panel. What matters now is
+// that the student can tell, without hunting, where they are and what happens
+// next — and that the report tab shows them the standard they are writing
+// against before they upload anything.
+//
+// Non-mutating: the spec reads and navigates but never uploads a file.
 // ---------------------------------------------------------------------------
 
+// FIXTURE_ENGAGEMENT_ID from e2e/support/auth.ts. Not 0023 — that is the
+// dangling peer author's *user* id, which addresses no engagement at all.
 const ENGAGEMENT_ID = '000000000000000000000020';
 
 test.use({ storageState: authFile('student') });
 
-test('workbench shows the 3/3 checklist and finalize → hashes → submit', async ({ page }) => {
+test('the workspace says where the project is and what happens next', async ({ page }) => {
   await page.goto(`/dashboard/student/projects/${ENGAGEMENT_ID}`);
 
   await expect(page.getByRole('heading', { name: 'E2E Developer Log', level: 1 })).toBeVisible({
     timeout: 30_000,
   });
 
-  // Inline 3/3 completion checklist.
-  await expect(page.getByText('Submission checklist')).toBeVisible();
-  await expect(page.getByText('3 of 3 documents')).toBeVisible();
+  // One card, at the top, carrying the stage and the next step. A student
+  // should not have to assemble their own status out of five pills.
+  // Exact: the progress stepper also carries 'Building and writing up', and a
+  // substring match resolves to both.
+  await expect(page.getByText('Building', { exact: true })).toBeVisible();
+  await expect(page.getByText(/write your report against the standard/i)).toBeVisible();
 
-  // Finalize is gated on the 3 docs (here all present) → reveals the hashes.
-  const finalize = page.getByRole('button', { name: /Finalize & Hash for Review/i });
-  await expect(finalize).toBeEnabled();
-  await finalize.click();
-
-  await expect(page.getByText('Document hashes')).toBeVisible();
-  // A real SHA-256 hex string is rendered (64 hex chars), and submit is offered.
-  await expect(page.getByText(/^[a-f0-9]{64}$/).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Submit for Review' })).toBeVisible();
+  // The workflow's own stages, not the storage's.
+  await expect(page.getByText('Report with your lecturer')).toBeVisible();
+  await expect(page.getByText('Ready to demonstrate')).toBeVisible();
+  await expect(page.getByText('Complete')).toBeVisible();
 });
 
-test('documents tab shows the three editors with per-document hashes', async ({ page }) => {
+test('the report tab shows the standard and asks for a PDF', async ({ page }) => {
   await page.goto(`/dashboard/student/projects/${ENGAGEMENT_ID}`);
   await expect(page.getByRole('heading', { name: 'E2E Developer Log', level: 1 })).toBeVisible({
     timeout: 30_000,
   });
 
-  await page.getByRole('button', { name: 'Documents' }).click();
+  // A tab, not a button — the workspace switcher is a real tablist.
+  await page.getByRole('tab', { name: 'Project report' }).click();
 
-  // The three document editors (textareas) carry their label as aria-label.
-  await expect(page.getByLabel('Problem Breakdown')).toBeVisible();
-  await expect(page.getByLabel('Approach Plan')).toBeVisible();
-  await expect(page.getByLabel('Final Reflection')).toBeVisible();
-  // Each saved document displays its SHA-256 hash.
-  await expect(page.getByText('SHA-256').first()).toBeVisible();
-  await expect(page.getByText('SHA-256')).toHaveCount(3);
+  // The report is written elsewhere and handed in here. The upload is the
+  // submission — there is no draft state, because the draft lives in whatever
+  // the student writes in.
+  await expect(page.getByText(/export it to PDF, and upload it here/i)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit your report' })).toBeVisible();
+
+  // Nothing can be submitted until a file is chosen.
+  await expect(page.getByRole('button', { name: 'Submit your report' })).toBeDisabled();
+
+  // The standard itself, grouped as the standard groups it, with the guidance
+  // that stops a student writing a paragraph about what three-tier
+  // architecture is instead of describing what they built.
+  await expect(page.getByText('What your report must contain')).toBeVisible();
+  // The part heading, not the guidance line that happens to contain the phrase.
+  await expect(page.getByRole('heading', { name: 'The engineering' })).toBeVisible();
+  await expect(page.getByText(/11\. System architecture/)).toBeVisible();
+  await expect(page.getByText(/why this architecture/i)).toBeVisible();
 });

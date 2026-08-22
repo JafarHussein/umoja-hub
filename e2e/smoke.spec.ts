@@ -16,8 +16,13 @@ for (const fixture of E2E_USERS) {
     test.use({ storageState: authFile(fixture.key) });
 
     test(`reaches ${fixture.landing} without an auth or onboarding redirect`, async ({ page }) => {
-      await page.goto(fixture.landing);
+      const response = await page.goto(fixture.landing);
       await page.waitForLoadState('networkidle');
+
+      // A landing that 404s is not a landing. Without this the suite passed
+      // happily while every lecturer's post-login destination was a dead route
+      // — "no redirect" is true of a 404 page too.
+      expect(response?.ok()).toBe(true);
 
       // The minted JWT must satisfy the middleware: no bounce to login, no
       // bounce into the onboarding funnel, no admin hard-404.

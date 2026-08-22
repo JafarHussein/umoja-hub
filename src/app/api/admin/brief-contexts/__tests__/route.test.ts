@@ -7,7 +7,6 @@
  */
 
 import { NextRequest } from 'next/server';
-import { StudentTier } from '@/types';
 
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
@@ -42,7 +41,6 @@ const SAMPLE_CONTEXT = {
   problemDomains: ['traceability from farm to market'],
   kenyanConstraints: ['unreliable mobile data connectivity in rural areas'],
   exampleProjects: ['Farmer produce listing and order management system'],
-  targetTiers: [StudentTier.BEGINNER, StudentTier.INTERMEDIATE],
 };
 
 const EXISTING_LIBRARY = {

@@ -13,6 +13,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --passWithNoTests",
     "test:e2e": "playwright test",
+    "test:e2e:fast": "playwright test --project=desktop",
+    "test:e2e:education": "playwright test e2e/developer-log.spec.ts e2e/lecturer-review.spec.ts e2e/peer-review.spec.ts e2e/verification-lockout.spec.ts e2e/identity-records.spec.ts",
     "test:e2e:update": "playwright test --update-snapshots",
     "test:e2e:report": "playwright show-report",
     "test:integration": "jest --config jest.integration.config.ts",
