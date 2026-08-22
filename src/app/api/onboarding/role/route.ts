@@ -53,10 +53,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Provider↔role enforcement (Decision 01-B): GitHub is a STUDENT-only
     // identity; every other role must come from Google.
+    //
+    // An account with no provider registered with an email and a password, so
+    // there is no provider rule to apply and all four self-selectable roles stay
+    // open. The previous expression had no branch for that case: an absent
+    // provider fell through to the Google rule and silently barred STUDENT —
+    // unreachable while every account came from OAuth, and wrong the moment one
+    // did not. The GitHub and Google rules below are unchanged.
     const providerAllows =
       user.oauthProvider === OAuthProvider.GITHUB
         ? role === Role.STUDENT
-        : role !== Role.STUDENT;
+        : user.oauthProvider === OAuthProvider.GOOGLE
+          ? role !== Role.STUDENT
+          : true;
     if (!providerAllows) {
       throw new AppError(
         'This role is not available for your sign-in method.',

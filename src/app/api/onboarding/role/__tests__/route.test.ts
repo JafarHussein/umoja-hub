@@ -95,4 +95,37 @@ describe('POST /api/onboarding/role', () => {
     const updateArg = mockUserFindByIdAndUpdate.mock.calls[0][1].$set;
     expect(updateArg.studentData.githubUsername).toBe('octocat');
   });
+
+  // A credentials account has no oauthProvider, so no provider rule applies to
+  // it. Before registration existed, the absent case fell through to the Google
+  // branch and silently barred STUDENT.
+  it.each(['FARMER', 'BUYER', 'STUDENT', 'LECTURER'])(
+    'lets an email/password account (no provider) choose %s',
+    async (role) => {
+      (getServerSession as jest.Mock).mockResolvedValue(SESSION);
+      userLean({ onboardingStage: 'ROLE_SELECTION' });
+      const res = await POST(postReq({ role }));
+      expect(res.status).toBe(200);
+      expect(mockUserFindByIdAndUpdate).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({ $set: expect.objectContaining({ role }) })
+      );
+    }
+  );
+
+  it('still refuses ADMIN for an email/password account', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(SESSION);
+    userLean({ onboardingStage: 'ROLE_SELECTION' });
+    const res = await POST(postReq({ role: 'ADMIN' }));
+    expect(res.status).toBe(400);
+    expect(mockUserFindByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('still refuses INSTITUTION for an email/password account', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(SESSION);
+    userLean({ onboardingStage: 'ROLE_SELECTION' });
+    const res = await POST(postReq({ role: 'INSTITUTION' }));
+    expect(res.status).toBe(400);
+    expect(mockUserFindByIdAndUpdate).not.toHaveBeenCalled();
+  });
 });

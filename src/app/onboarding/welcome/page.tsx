@@ -92,6 +92,16 @@ export default function WelcomePage(): React.ReactElement {
               Students sign up with GitHub. Farmers, buyers and lecturers use Google.
             </p>
 
+            {/* Not everyone has, or wants to use, one of these two accounts.
+                Offering the email path here keeps this screen from being a
+                cul-de-sac for them. */}
+            <p className="app-body mt-6 text-app-muted">
+              Prefer an email and password?{' '}
+              <Link href="/auth/register" className="text-app-brand hover:underline">
+                Create an account that way
+              </Link>
+            </p>
+
             <p className="app-body mt-8 border-t border-app-hairline pt-6 text-app-muted">
               Already have an account?{' '}
               <Link href="/auth/login" className="text-app-brand hover:underline">

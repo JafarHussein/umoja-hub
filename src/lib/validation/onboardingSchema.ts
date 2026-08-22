@@ -72,7 +72,10 @@ export const usernameSchema = z
   .regex(/^[a-z0-9_]+$/, 'Use only lowercase letters, numbers, and underscores');
 
 export const passwordSchema = z
-  .string()
+  // The message covers the field arriving absent as well as blank. Without it an
+  // empty submit reported 'Invalid input: expected string, received undefined'
+  // next to the field — a TypeScript expectation, shown to a person signing up.
+  .string({ message: 'Enter a password' })
   .min(8, 'Password must be at least 8 characters')
   .max(72, 'Password must be at most 72 characters') // bcrypt input limit
   .regex(/[a-z]/, 'Password must contain a lowercase letter')
@@ -89,6 +92,57 @@ export const passwordSetupSchema = z
     username: usernameSchema,
     password: passwordSchema,
     confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Both passwords must match',
+    path: ['confirmPassword'],
+  });
+
+// ---------------------------------------------------------------------------
+// Registration (email + password). The second entry point into the same funnel
+// OAuth uses — see context/REGISTRATION_ARCHITECTURE_ASSESSMENT.md.
+//
+// There is deliberately NO `role` field here. Role is chosen at the existing
+// step 2 and validated against `roleSelectionSchema`, which has no ADMIN and no
+// INSTITUTION member. A request body cannot influence privilege because there is
+// no privilege-bearing field in it to tamper with (security invariant #1).
+// ---------------------------------------------------------------------------
+
+// One name field, split into firstName/lastName by the same helper the OAuth
+// path uses, so both entry points store a name the same way. Asking for the
+// parts separately would be more precise and less honest: a single line is how
+// people write their own name, and the identity step confirms the family name
+// later anyway — for a Google account exactly as for a registered one.
+export const fullNameSchema = z
+  .string({ message: 'Enter your full name' })
+  .trim()
+  .min(2, 'Enter your full name')
+  .max(80, 'That name is too long')
+  // Letters (any script), marks, spaces, apostrophes, hyphens and full stops —
+  // enough for “Dr. Grace Ndung’u” and for names outside the Latin alphabet,
+  // while still rejecting a pasted email address or markup.
+  .regex(/^\p{L}[\p{L}\p{M}’'\-. ]*$/u, 'Use letters, spaces, hyphens and apostrophes only');
+
+export const accountEmailSchema = z
+  .string({ message: 'Enter your email address' })
+  .trim()
+  .toLowerCase()
+  // Ordered deliberately: a blank field is told it is blank, and only a field
+  // with something in it is told that something is not an email address.
+  // Without this, submitting the empty form answered "Enter a valid email
+  // address" — technically true, and unhelpful when nothing has been typed.
+  .min(1, 'Enter your email address')
+  .max(254, 'That email address is too long')
+  .email('Enter a valid email address');
+
+export const registrationSchema = z
+  .object({
+    fullName: fullNameSchema,
+    email: accountEmailSchema,
+    // The same rules the OAuth funnel sets a password under, and the same rules
+    // the reset flow enforces. One definition, three entry points.
+    password: passwordSchema,
+    confirmPassword: z.string({ message: 'Confirm your password' }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Both passwords must match',
@@ -319,6 +373,7 @@ export const institutionalEmailVerifySchema = z.object({
 
 export type RoleSelectionInput = z.infer<typeof roleSelectionSchema>;
 export type PasswordSetupInput = z.infer<typeof passwordSetupSchema>;
+export type RegistrationInput = z.infer<typeof registrationSchema>;
 export type CredentialsLoginInput = z.infer<typeof credentialsLoginSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetConfirmInput = z.infer<typeof passwordResetConfirmSchema>;

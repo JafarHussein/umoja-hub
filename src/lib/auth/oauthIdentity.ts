@@ -49,7 +49,12 @@ export function sanitizeUsername(raw: string): string {
 
 // Split a single display name into first/last. Providers that give us the parts
 // separately are handled before this is reached.
-function splitName(full: string | undefined): { firstName: string; lastName: string } {
+//
+// Exported because email/password registration collects one name field and must
+// store it exactly the way the OAuth path does — two implementations of "which
+// part of this is the surname" would drift, and the identity step reads the
+// result back as fact.
+export function splitName(full: string | undefined): { firstName: string; lastName: string } {
   const tokens = (full ?? '').trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return { firstName: '', lastName: '' };
   const [first, ...rest] = tokens;
