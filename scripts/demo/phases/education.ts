@@ -581,7 +581,9 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       if (reviewable) {
         if (mustQueue || rng.bool(0.22)) awaitingLecturer = true;
         else if (rng.bool(activity.verifyRate)) decision = LecturerDecision.VERIFIED;
-        else decision = rng.bool(0.8) ? LecturerDecision.REVISION_REQUIRED : LecturerDecision.DENIED;
+        // Never DENIED: the report review is accept-or-send-back, so no route
+        // in the application writes that decision either.
+        else decision = LecturerDecision.REVISION_REQUIRED;
       }
       if (awaitingLecturer) institutionsWithQueuedWork.add(institutionKey);
 
@@ -596,12 +598,22 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         aiUsageLog: Array.from({ length: rng.int(1, 3) }, () => ({ ...aiUsageEntry(rng), loggedAt: daysAfter(pbAt, rng.int(1, 5)) })),
       };
 
+      // Only states the application can actually produce.
+      //
+      // `DENIED` and `UNDER_PEER_REVIEW` were seeded here and no route in the
+      // application writes either: DENIED belonged to a lecturer verdict that
+      // the report-review cycle replaced, and UNDER_PEER_REVIEW to a submission
+      // step that no longer gates anything. A demonstration seeded into a state
+      // the product cannot reach is a demonstration of something that does not
+      // exist — and it is the seeder, not the application, that has to give
+      // way. A project a lecturer closed is now simply one sent back.
       const status = decision
-        ? (decision === LecturerDecision.VERIFIED ? ProjectStatus.VERIFIED
-          : decision === LecturerDecision.DENIED ? ProjectStatus.DENIED : ProjectStatus.REVISION_REQUIRED)
+        ? (decision === LecturerDecision.VERIFIED
+            ? ProjectStatus.VERIFIED
+            : ProjectStatus.REVISION_REQUIRED)
         : awaitingLecturer
           ? ProjectStatus.UNDER_LECTURER_REVIEW
-          : rng.pick([ProjectStatus.IN_PROGRESS, ProjectStatus.BRIEF_GENERATED, ProjectStatus.UNDER_PEER_REVIEW]);
+          : rng.pick([ProjectStatus.IN_PROGRESS, ProjectStatus.BRIEF_GENERATED]);
 
       const engagement = ledger.track('ProjectEngagement', await createDoc(ProjectEngagement, {
         studentId: student.id, track, interest: academic.interest,
@@ -621,7 +633,16 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
         // demonstration would have shown a panel commit history that was
         // invented here. A repository link is recorded; nothing is claimed
         // about what is inside it.
-        verifiedAt: decision === LecturerDecision.VERIFIED ? daysAfter(frAt, rng.int(2, 6)) : undefined,
+        // Clamped to the past: a project cannot have been signed off on a date
+        // that has not arrived, and every date here is computed forward from
+        // when the project started.
+        verifiedAt:
+          decision === LecturerDecision.VERIFIED
+            ? (() => {
+                const at = daysAfter(frAt, rng.int(2, 6));
+                return at.getTime() < Date.now() ? at : daysAgo(rng.int(3, 12));
+              })()
+            : undefined,
         createdAt: startedAt,
         updatedAt: decision ? daysAfter(frAt, rng.int(2, 6)) : awaitingLecturer ? peerAt : frAt,
       }));
@@ -706,9 +727,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
             ),
           });
         } else {
-          const awaitingRead =
-            status === ProjectStatus.UNDER_PEER_REVIEW ||
-            status === ProjectStatus.UNDER_LECTURER_REVIEW;
+          const awaitingRead = status === ProjectStatus.UNDER_LECTURER_REVIEW;
 
           versions.push({
             versionNumber: 1,

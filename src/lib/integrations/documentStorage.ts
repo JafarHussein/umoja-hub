@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { env } from '@/lib/env';
 import { AppError, logger } from '@/lib/utils';
 import { DOCUMENT_MIME_TYPE, MAX_DOCUMENT_BYTES, formatBytes } from '@/lib/uploads';
@@ -77,12 +78,26 @@ export function looksLikePdf(buffer: Buffer): boolean {
   return buffer.subarray(0, 5).toString('latin1') === '%PDF-';
 }
 
-function credentials(): { cloudName: string; auth: string } {
+/**
+ * Reports are stored as `private` assets. Cloudinary gives those no delivery
+ * URL, so the only way to read one is a signature generated here.
+ */
+const PRIVATE_TYPE = 'private';
+
+/** How long a generated download URL stays valid. Long enough for one read. */
+const SIGNED_URL_TTL_SECONDS = 120;
+
+function credentials(): {
+  cloudName: string;
+  auth: string;
+  apiKey: string;
+  apiSecret: string;
+} {
   const cloudName = env('CLOUDINARY_CLOUD_NAME');
-  const auth = Buffer.from(
-    `${env('CLOUDINARY_API_KEY')}:${env('CLOUDINARY_API_SECRET')}`
-  ).toString('base64');
-  return { cloudName, auth };
+  const apiKey = env('CLOUDINARY_API_KEY');
+  const apiSecret = env('CLOUDINARY_API_SECRET');
+  const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+  return { cloudName, auth, apiKey, apiSecret };
 }
 
 /** Store a submitted report. Validates the bytes before spending the upload. */
@@ -122,6 +137,11 @@ export async function storeDocument(file: File, folder: string): Promise<StoredD
   const form = new FormData();
   form.append('file', new Blob([new Uint8Array(buffer)], { type: DOCUMENT_MIME_TYPE }), file.name);
   form.append('folder', folder);
+  // Stored private, which means the asset has no delivery URL at all — not an
+  // obscure one, none. It can only be read through a signature this server
+  // generates, which is what makes "every read is a decision the application
+  // makes" a property of the storage rather than a promise about our own code.
+  form.append('type', PRIVATE_TYPE);
 
   try {
     const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
@@ -169,15 +189,35 @@ export async function storeDocument(file: File, folder: string): Promise<StoredD
  * Fetch a stored report's bytes, for streaming back through an authorised
  * route.
  *
- * The signed URL built here lives for two minutes and never leaves the server.
- * It exists so Cloudinary will serve a private asset to us, not so anybody
- * else can reach it.
+ * The URL built here is signed, expires in two minutes, and never leaves the
+ * server. It exists so Cloudinary will hand a private asset to us, not so
+ * anybody else can reach one.
+ *
+ * This is the download API rather than the delivery host, and that is not a
+ * detail. A private asset has no delivery URL, so `res.cloudinary.com` answers
+ * `401 deny or ACL failure` for it however the request is authenticated —
+ * which is what an earlier version of this function did, sending Basic
+ * credentials to an endpoint that does not read them. Every submitted report
+ * uploaded cleanly and then could not be opened by the lecturer it was
+ * submitted to.
  */
 export async function fetchDocument(publicId: string): Promise<Buffer> {
-  const { cloudName, auth } = credentials();
-  const url = `https://res.cloudinary.com/${cloudName}/raw/upload/${publicId}`;
+  const { cloudName, apiKey, apiSecret } = credentials();
 
-  const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` } });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const expiresAt = timestamp + SIGNED_URL_TTL_SECONDS;
+
+  // Cloudinary signs the parameters in alphabetical order, with the secret
+  // appended and nothing between them.
+  const signed = `attachment=false&expires_at=${expiresAt}&public_id=${publicId}&timestamp=${timestamp}`;
+  const signature = createHash('sha1').update(`${signed}${apiSecret}`).digest('hex');
+
+  const url =
+    `https://api.cloudinary.com/v1_1/${cloudName}/raw/download` +
+    `?api_key=${apiKey}&attachment=false&expires_at=${expiresAt}` +
+    `&public_id=${encodeURIComponent(publicId)}&timestamp=${timestamp}&signature=${signature}`;
+
+  const res = await fetch(url);
   if (!res.ok) {
     logger.error('documentStorage', 'Could not read stored document', {
       publicId,

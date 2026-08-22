@@ -54,7 +54,15 @@ export async function generateDemonstrations(ctx: SimContext, world: World): Pro
     '../../../src/lib/models/DemonstrationSlot.model'
   );
 
+  const mongooseLib = (await import('mongoose')).default;
   const now = new Date();
+
+  // Lecturers at one institution share a cohort, so without this the same
+  // engagement is promoted twice. The second promotion moves the project to a
+  // demonstration state while its report — already accepted by the first — no
+  // longer matches the filter that accepts one, leaving a project whose
+  // standing disagrees with its own report.
+  const alreadyPromoted = new Set<string>();
 
   for (const lecturer of world.lecturers) {
     if (!lecturer.institutionId) continue;
@@ -112,7 +120,13 @@ export async function generateDemonstrations(ctx: SimContext, world: World): Pro
 
     for (const engagement of completed) {
       const verifiedAt = (engagement as { verifiedAt?: Date }).verifiedAt ?? daysAgo(rng.int(5, 40));
-      const heldAt = daysAfter(verifiedAt, -rng.int(1, 3));
+      // Never in the future. `verifiedAt` is computed forward from when the
+      // project started, so a recently-started project could carry one that has
+      // not arrived yet — and a demonstration carrying an evaluation for a
+      // meeting that has not happened is a record of nothing.
+      const heldCandidate = daysAfter(verifiedAt, -rng.int(1, 3));
+      const heldAt =
+        heldCandidate.getTime() < Date.now() ? heldCandidate : daysAgo(rng.int(2, 9));
       const pastSlot = await slot(heldAt, SlotStatus.BOOKED);
 
       const approved = {
@@ -160,14 +174,24 @@ export async function generateDemonstrations(ctx: SimContext, world: World): Pro
 
     // ---- 2 and 3. A request waiting, and a session coming up ----
     //
-    // Promoted from projects that are still being built rather than taken from
-    // the lecturer's report queue: the queue guarantee exists for a reason and
-    // emptying it to fill this one would trade one empty screen for another.
+    // Promoted from projects whose report is already with the lecturer, because
+    // a demonstration is only bookable once a report has been accepted — and a
+    // project still being built has no report at all. Promoting those produced
+    // exactly what the workflow forbids: a project ready to demonstrate with
+    // nothing submitted behind it, and a version the acceptance below could
+    // never find.
+    //
+    // `skip(1)` leaves the oldest submission where it is. The queue guarantee
+    // exists for a reason, and emptying it to fill this one would trade one
+    // empty screen for another.
     const promotable = await ProjectEngagement.find({
       studentId: { $in: cohort.map((s) => s.id) },
-      status: { $in: [ProjectStatus.IN_PROGRESS, ProjectStatus.BRIEF_GENERATED] },
+      status: ProjectStatus.UNDER_LECTURER_REVIEW,
+      _id: { $nin: [...alreadyPromoted].map((id) => new mongooseLib.Types.ObjectId(id)) },
     } as object)
       .select('_id studentId revisionNumber brief.title')
+      .sort({ createdAt: 1 })
+      .skip(1)
       .limit(2)
       .lean();
 
@@ -176,6 +200,7 @@ export async function generateDemonstrations(ctx: SimContext, world: World): Pro
     for (let i = 0; i < promotable.length && i < promotions.length; i++) {
       const engagement = promotable[i]!;
       const outcome = promotions[i]!;
+      alreadyPromoted.add(String(engagement._id));
       const acceptedAt = daysAgo(rng.int(2, 9));
 
       // Their report was read and accepted — a demonstration is only bookable

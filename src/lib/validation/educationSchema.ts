@@ -277,7 +277,15 @@ const demonstrationCommentShape = DEMONSTRATION_CRITERIA.reduce(
 export const demonstrationEvaluationSchema = z.object({
   scores: z.object(demonstrationScoreShape),
   comments: z.object(demonstrationCommentShape),
-  outcome: z.enum([DemonstrationOutcome.APPROVED, DemonstrationOutcome.REVISION_REQUIRED]),
+  // All three. `NOT_READY` was defined with a considered reason and then left
+  // out of here, so the one outcome a lecturer most needs on a bad day — the
+  // system did not run, there is nothing to assess — could not be recorded at
+  // all. They had to call it a revision, which says something different.
+  outcome: z.enum([
+    DemonstrationOutcome.APPROVED,
+    DemonstrationOutcome.REVISION_REQUIRED,
+    DemonstrationOutcome.NOT_READY,
+  ]),
   questioningNotes: z.string().trim().max(4000).optional(),
   failureDuringDemonstration: z.string().trim().max(2000).optional(),
 });

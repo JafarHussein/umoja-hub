@@ -253,10 +253,17 @@ export async function POST(
 
     await assignPeerReader(id, studentId, institutionId);
 
-    return NextResponse.json(
-      { data: toDocumentationView(updated as unknown as never) },
-      { status: 201 }
-    );
+    // Re-read rather than returning `updated`.
+    //
+    // `findOneAndUpdate` captured the record as it was when the new version was
+    // pushed — which is before the supersede above ran. Returning it told the
+    // student their previous version was still "changes requested" while the
+    // database already said superseded, and the two only agreed once they
+    // reloaded. A response that contradicts the record it just wrote is the
+    // kind of misleading state this workflow cannot afford.
+    const settled = await loadOrCreateDocumentation(id, studentId);
+
+    return NextResponse.json({ data: toDocumentationView(settled) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }
