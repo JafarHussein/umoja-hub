@@ -352,15 +352,12 @@ export default function LecturerReportReviewPage(): React.ReactElement {
           </Card>
 
           <Card>
-            <label htmlFor="summary" className="app-body-strong block text-app-ink">
-              What the student should take away
-            </label>
             <Textarea
               id="summary"
+              label="What the student should take away"
               rows={5}
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              className="mt-1.5"
             />
             <p
               className={cn(
@@ -372,54 +369,38 @@ export default function LecturerReportReviewPage(): React.ReactElement {
             </p>
 
             <div className="mt-4 space-y-3">
-              <div>
-                <label htmlFor="strengths" className="app-body-sm block text-app-muted">
-                  What worked (optional)
-                </label>
-                <Textarea
-                  id="strengths"
-                  rows={2}
-                  value={strengths}
-                  onChange={(e) => setStrengths(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label htmlFor="concerns" className="app-body-sm block text-app-muted">
-                  Concerns (optional)
-                </label>
-                <Textarea
-                  id="concerns"
-                  rows={2}
-                  value={concerns}
-                  onChange={(e) => setConcerns(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label htmlFor="required" className="app-body-sm block text-app-muted">
-                  What has to change — required if you send it back
-                </label>
-                <Textarea
-                  id="required"
-                  rows={3}
-                  value={requiredChanges}
-                  onChange={(e) => setRequiredChanges(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label htmlFor="questions" className="app-body-sm block text-app-muted">
-                  What you will ask at the demonstration (optional)
-                </label>
-                <Textarea
-                  id="questions"
-                  rows={2}
-                  value={questions}
-                  onChange={(e) => setQuestions(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+              <Textarea
+                id="strengths"
+                label="What worked"
+                optional
+                rows={2}
+                value={strengths}
+                onChange={(e) => setStrengths(e.target.value)}
+              />
+              <Textarea
+                id="concerns"
+                label="Concerns"
+                optional
+                rows={2}
+                value={concerns}
+                onChange={(e) => setConcerns(e.target.value)}
+              />
+              <Textarea
+                id="required"
+                label="What has to change"
+                hint="Required if you send it back."
+                rows={3}
+                value={requiredChanges}
+                onChange={(e) => setRequiredChanges(e.target.value)}
+              />
+              <Textarea
+                id="questions"
+                label="What you will ask at the demonstration"
+                optional
+                rows={2}
+                value={questions}
+                onChange={(e) => setQuestions(e.target.value)}
+              />
             </div>
           </Card>
 

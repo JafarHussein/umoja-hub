@@ -92,6 +92,11 @@ const FIXTURE_ENGAGEMENT_DOC_AT = new Date('2026-01-01T00:00:00.000Z');
 
 // UI-09 peer review: a de-identified reviewee engagement (dangling author) plus
 // a PeerReview ASSIGNED to the student fixture as reviewer.
+// The institution the lecturer and the student fixtures share. A bare id: the
+// Education Hub's scoping compares ids and never joins the collection, so no
+// Institution document is needed to prove the boundary works.
+const FIXTURE_INSTITUTION_ID = '000000000000000000000030';
+
 const FIXTURE_PEER_ENGAGEMENT_ID = '000000000000000000000021';
 const FIXTURE_PEER_REVIEW_ID = '000000000000000000000022';
 const FIXTURE_PEER_AUTHOR_ID = '000000000000000000000023';
@@ -170,6 +175,10 @@ function roleData(fixture: E2EUserFixture): Record<string, unknown> {
           isVerified: fixture.isVerified,
           departmentAssignment: 'Computer Science',
           academicStaffId: 'STAFF-E2E-001',
+          // A lecturer belongs to their students. Without this the review queue
+          // is empty whatever is seeded into it — the route shows an
+          // unscopeable lecturer nothing rather than every institution's work.
+          institutionId: FIXTURE_INSTITUTION_ID,
         },
       };
     case Role.STUDENT:
@@ -182,6 +191,9 @@ function roleData(fixture: E2EUserFixture): Record<string, unknown> {
           institutionalEmail: 'student@uni.e2e.test',
           institutionalEmailVerified: true,
           academicRegistrationNumber: 'REG-E2E-001',
+          // The same institution as the lecturer fixture, so their work reaches
+          // the review queue.
+          institutionId: FIXTURE_INSTITUTION_ID,
         },
       };
     default:
@@ -514,12 +526,19 @@ export default async function globalSetup(): Promise<void> {
     );
   }
 
-  // UI-10 lecturer review engagement (dangling author, UNDER_LECTURER_REVIEW).
+  // UI-10 lecturer review engagement, UNDER_LECTURER_REVIEW.
+  //
+  // Owned by the seeded student rather than by the dangling author used for the
+  // peer-review anonymity assertions. The review queue is scoped by
+  // institution, so a report whose author is not a real user in the lecturer's
+  // cohort can never appear in it however it is seeded.
+  const lecturerReviewStudentId = studentId ?? FIXTURE_PEER_AUTHOR_ID;
+
   await ProjectEngagementModel.findOneAndUpdate(
     { _id: FIXTURE_LECTURER_ENGAGEMENT_ID },
     {
       $set: {
-        studentId: FIXTURE_PEER_AUTHOR_ID,
+        studentId: lecturerReviewStudentId,
         track: ProjectTrack.AI_BRIEF,
         status: ProjectStatus.UNDER_LECTURER_REVIEW,
         brief: { title: 'Lecturer Review Project' },
@@ -554,7 +573,10 @@ export default async function globalSetup(): Promise<void> {
     { engagementId: FIXTURE_LECTURER_ENGAGEMENT_ID },
     {
       $set: {
-        studentId: FIXTURE_PEER_AUTHOR_ID,
+        // A real student at the lecturer's institution. The dangling author
+        // used elsewhere is never created as a user, so it can never appear in
+        // a cohort and its report could never reach the queue.
+        studentId: lecturerReviewStudentId,
         versions: [
           {
             versionNumber: 1,

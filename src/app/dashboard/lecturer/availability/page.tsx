@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, EmptyState, Input, Page, PageHeader, Select } from '@/components/app';
+import { VerificationLockout } from '@/components/shared/VerificationLockout';
 import { Role, DemonstrationFormat } from '@/types';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 import { formatSlotTime } from '@/components/education/DemonstrationPanel';
@@ -144,10 +145,12 @@ export default function LecturerAvailabilityPage(): React.ReactElement {
     return (
       <Page width="focus">
         <PageHeader title="Demonstration availability" />
-        <Alert tone="warning">
-          Your lecturer credentials have not been verified yet. Once an administrator confirms
-          them, you can offer demonstration times here.
-        </Alert>
+        <VerificationLockout
+          tone="pending"
+          title="Your account is not verified yet"
+          message="An administrator verifies your faculty role before you can offer demonstration times. If you have not sent your credential letter, you can do that now."
+          cta={{ label: 'Go to verification', href: '/dashboard/verify' }}
+        />
       </Page>
     );
   }

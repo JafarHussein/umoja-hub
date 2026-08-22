@@ -69,7 +69,7 @@ test('a submitted report is readable, and sending it back needs something named'
   // Naming what has to change is what unlocks it. Client state only — the spec
   // never presses either button.
   await page
-    .getByLabel('What has to change — required if you send it back')
+    .getByLabel('What has to change')
     .fill('Rewrite the architecture section around the components you actually built.');
 
   await expect(sendBack).toBeEnabled();

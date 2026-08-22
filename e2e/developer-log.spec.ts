@@ -12,7 +12,9 @@ import { authFile } from './support/auth';
 // Non-mutating: the spec reads and navigates but never uploads a file.
 // ---------------------------------------------------------------------------
 
-const ENGAGEMENT_ID = '000000000000000000000023';
+// FIXTURE_ENGAGEMENT_ID from e2e/support/auth.ts. Not 0023 — that is the
+// dangling peer author's *user* id, which addresses no engagement at all.
+const ENGAGEMENT_ID = '000000000000000000000020';
 
 test.use({ storageState: authFile('student') });
 

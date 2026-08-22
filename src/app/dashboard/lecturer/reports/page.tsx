@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Alert, Card, EmptyState, Page, PageHeader } from '@/components/app';
+import { VerificationLockout } from '@/components/shared/VerificationLockout';
 import { Role } from '@/types';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 
@@ -90,10 +91,12 @@ export default function LecturerReportsPage(): React.ReactElement {
     return (
       <Page width="focus">
         <PageHeader title="Reports to review" />
-        <Alert tone="warning">
-          Your lecturer credentials have not been verified yet. Once an administrator confirms
-          them, your students&rsquo; reports will appear here.
-        </Alert>
+        <VerificationLockout
+          tone="pending"
+          title="Your account is not verified yet"
+          message="An administrator verifies your faculty role before you can read student work. If you have not sent your credential letter, you can do that now."
+          cta={{ label: 'Go to verification', href: '/dashboard/verify' }}
+        />
       </Page>
     );
   }
