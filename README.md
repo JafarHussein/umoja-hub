@@ -503,22 +503,47 @@ NextAuth v4 with a JWT session strategy, configured in `src/lib/auth/options.ts`
 
 ```mermaid
 flowchart LR
-  subgraph Entry
+  subgraph Create an account
+    R["/auth/register<br/>email + password"]
     G[Google OAuth]
     GH[GitHub OAuth]
-    C[Username + password]
   end
-  G & GH & C --> NA[NextAuth v4 JWT]
-  PRE[Pre-auth onboarding<br/>draft] -. reconciles on .-> NA
-  NA --> JWT[JWT claims:<br/>id · role · onboardingStage ·<br/>isOnboarded · isVerified]
+  R --> ACC[User row<br/>role = null]
+  G & GH --> ACC
+  ACC --> F1["1 · Password<br/>(OAuth only)"]
+  F1 --> F2[2 · Role]
+  F2 --> F3[3 · Details]
+  F3 --> DASH[Role dashboard]
+  ACC -.-> NA[NextAuth v4 JWT]
+  NA --> JWT["JWT claims:<br/>id · role · onboardingStage ·<br/>isOnboarded · isVerified"]
   JWT --> MW[middleware RBAC]
-  MW --> DASH[Role dashboard]
+  MW --> DASH
 ```
 
-- **Three providers** — Google, GitHub (natural for students), and credentials (username + password).
-- **Progressive, pre-auth onboarding** — users pick a role and provide details *before* authenticating; the draft reconciles onto the account on first OAuth sign-in.
-- **Security** — password reset with tokenised links, and brute-force throttling/lockout on credential login.
-- **RBAC everywhere** — middleware guards `/dashboard/*` and `/api/admin/*`; routes re-check with `requireRole`. Role and verification state ride in the JWT so guards are cheap.
+**Two ways in, one funnel.** Both entry points create the same `User` row and hand it to the
+same onboarding steps; there is no second authentication system.
+
+| Entry | Route | Notes |
+|---|---|---|
+| Email + password | `/auth/register` | Account is created with the password already set, so it starts the funnel at **role selection**. |
+| Google | `/onboarding/welcome` or `/auth/register` | Farmers, buyers, lecturers. |
+| GitHub | `/onboarding/welcome` or `/auth/register` | Students — a developer identity for a developer track. |
+
+- **Sign-in** — `/auth/login` accepts a username *or* an email plus password, or either provider.
+- **Roles are never self-granted.** The registration endpoint accepts **no `role` field at all**.
+  Role is assigned server-side at step 2 against an enum containing only `FARMER`, `BUYER`,
+  `STUDENT`, `LECTURER`. `ADMIN` is provisioned solely by the `ADMIN_EMAIL_ALLOWLIST`
+  bootstrap; `INSTITUTION` is created out of band. Neither is reachable from any public route.
+- **Passwords** — bcrypt at cost 12 (`hashSecret`), stored in a `select: false` field so the
+  hash never leaves the database unless a query names it. Registration is throttled per source
+  address; sign-in is throttled per identifier and locks the account after 5 failures for 15
+  minutes. Password reset issues single-use tokenised links.
+- **Setup and trust are separate axes.** Finishing the funnel opens the product; a *verified*
+  identity is a second, later step enforced at the restricted action — so a farmer without their
+  ID to hand can still browse, see prices and set up their profile.
+- **RBAC everywhere** — middleware guards `/dashboard/*` and `/api/admin/*`; routes re-check with
+  `requireRole`. Role and verification state ride in the JWT so guards are cheap. Admin routes
+  return a hard **404** to authenticated non-admins, so the surface does not appear to exist.
 
 ---
 
