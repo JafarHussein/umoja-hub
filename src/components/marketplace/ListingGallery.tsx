@@ -28,10 +28,20 @@ export function ListingGallery({
 }): React.ReactElement {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState(false);
+  // Sources that answered with an error. A listing whose photo has been deleted
+  // from storage, or whose URL was mistyped, used to render the browser's
+  // broken-image glyph on the one surface a buyer judges the produce from. A
+  // failed source is now treated exactly like an absent one: the produce
+  // placeholder, and no zoom affordance for an image there is nothing to zoom.
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
   const zoomTriggerRef = useRef<HTMLButtonElement>(null);
   const zoomCloseRef = useRef<HTMLButtonElement>(null);
 
-  const current = images[active] ?? null;
+  const markFailed = (src: string): void =>
+    setFailed((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
+
+  const selected = images[active] ?? null;
+  const current = selected && !failed.has(selected) ? selected : null;
 
   const closeZoom = (): void => {
     setZoom(false);
@@ -67,6 +77,7 @@ export function ListingGallery({
               priority
               className="object-cover transition-transform duration-250 group-hover:scale-[1.02]"
               sizes="(max-width: 768px) 100vw, 60vw"
+              onError={() => markFailed(current)}
             />
             <span className="app-label absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-app-pill bg-app-card/90 px-2 py-0.5 text-app-body backdrop-blur-sm">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -96,7 +107,18 @@ export function ListingGallery({
                 i === active ? 'border-app-brand' : 'border-app-hairline hover:border-app-border-strong'
               )}
             >
-              <Image src={src} alt="" fill className="object-cover" sizes="64px" />
+              {failed.has(src) ? (
+                <Placeholder />
+              ) : (
+                <Image
+                  src={src}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                  onError={() => markFailed(src)}
+                />
+              )}
             </button>
           ))}
         </div>

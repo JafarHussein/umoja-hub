@@ -157,7 +157,11 @@ describe('POST /api/ratings', () => {
     expect(res.status).toBe(409);
   });
 
-  it('returns 409 DB_DUPLICATE when order already has a rating (Mongoose duplicate key)', async () => {
+  // The buyer's order screen renders `body.error` word for word, so this
+  // assertion is about the sentence and not only the status: the generic
+  // duplicate-key response reads "Duplicate entry", which told a buyer who had
+  // simply already rated the order that something had gone wrong.
+  it('tells the buyer they have already rated, rather than reporting a duplicate key', async () => {
     mockGetServerSession.mockResolvedValue(buyerSession);
     mockOrderFindById.mockResolvedValue(completedOrder);
 
@@ -168,8 +172,12 @@ describe('POST /api/ratings', () => {
 
     const req = makeRequest({ orderId: 'order-abc', rating: 5 });
     const res = await POST(req);
+    const body = (await res.json()) as { error: string; code: string };
 
     expect(res.status).toBe(409);
+    expect(body.code).toBe('RATING_ALREADY_SUBMITTED');
+    expect(body.error).toContain('already rated this order');
+    expect(body.error).not.toContain('Duplicate');
   });
 
   it('returns 400 VALIDATION_FAILED when rating is out of range', async () => {

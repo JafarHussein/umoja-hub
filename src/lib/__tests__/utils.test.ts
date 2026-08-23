@@ -10,6 +10,7 @@ import {
   slugify,
   countWords,
   hashContent,
+  handleApiError,
 } from '../utils';
 
 // ---------------------------------------------------------------------------
@@ -209,5 +210,62 @@ describe('hashContent', () => {
 
   it('produces different hashes for different content', () => {
     expect(hashContent('content A')).not.toBe(hashContent('content B'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleApiError — log level
+//
+// Every AppError used to be logged at ERROR with a full stack, including the
+// ones the application deliberately returns. An hour of ordinary use produced
+// dozens of them, which is a log nobody can find a real failure in.
+// ---------------------------------------------------------------------------
+
+describe('handleApiError log level', () => {
+  let errorSpy: jest.SpyInstance;
+  let warnSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('records an expected refusal as a warning, not an error', () => {
+    const res = handleApiError(new AppError('Forbidden', 403, 'AUTH_FORBIDDEN'));
+
+    expect(res.status).toBe(403);
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('AUTH_FORBIDDEN');
+  });
+
+  it('records a 404 as a warning', () => {
+    handleApiError(new AppError('This order does not exist.', 404, 'ORDER_NOT_FOUND'));
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('still records a 5xx AppError as an error', () => {
+    const res = handleApiError(
+      new AppError('Brief generation is temporarily unavailable.', 503, 'AI_SERVICE_ERROR')
+    );
+
+    expect(res.status).toBe(503);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('still records anything that is not an AppError as an error', () => {
+    const res = handleApiError(new Error('something genuinely broke'));
+
+    expect(res.status).toBe(500);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });
