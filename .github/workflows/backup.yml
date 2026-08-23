@@ -101,12 +101,73 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout backup repository
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ secrets.BACKUP_REPO_NAME }}
-          token: ${{ secrets.BACKUP_REPO_TOKEN }}
-          path: backup-repo
+      # -------------------------------------------------------------------
+      # Check out the backup store, and create it if this is the first time.
+      #
+      # `actions/checkout` cannot clone a repository that has no commits: a
+      # brand-new backup repo has no branch, so it fails with
+      # `fatal: couldn't find remote ref refs/heads/main`. That is exactly what
+      # happened on the first real run of this workflow, after eight weeks of
+      # failing earlier for a different reason.
+      #
+      # Requiring a human to hand-craft an initial commit before the first
+      # backup can be taken is another undocumented precondition, and this
+      # workflow has already been broken by one of those. It bootstraps its own
+      # store instead. The token appears in the remote URL; GitHub masks
+      # registered secrets in logs, and the remote is rewritten before the
+      # working tree is ever listed.
+      # -------------------------------------------------------------------
+      - name: Check out the backup store (creating it if empty)
+        env:
+          BACKUP_REPO_NAME: ${{ secrets.BACKUP_REPO_NAME }}
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone \
+            "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${BACKUP_REPO_NAME}.git" \
+            backup-repo
+          cd backup-repo
+          git config user.email "backup-bot@umojahub.com"
+          git config user.name "UmojaHub Backup Bot"
+
+          if git rev-parse --verify HEAD >/dev/null 2>&1; then
+            echo "Backup store already has history."
+          else
+            echo "Backup store is empty — initialising it."
+            # `git clone` of an empty repository leaves an unborn HEAD on
+            # whatever init.defaultBranch happens to be. Name it explicitly so
+            # the push target is never a surprise.
+            git checkout -b main
+            {
+              echo "# UmojaHub — database backups"
+              echo
+              echo "Encrypted \`mongodump\` archives, written every Sunday at 02:00 UTC by"
+              echo "\`.github/workflows/backup.yml\` in the application repository."
+              echo
+              echo "**Keep this repository private.** The workflow refuses to run against a"
+              echo "public destination, because these archives are made from personal data:"
+              echo "names, emails, phone numbers, national ID document numbers, password"
+              echo "hashes and the URLs of uploaded verification documents."
+              echo
+              echo "## Restoring"
+              echo
+              echo "You need \`BACKUP_PASSPHRASE\`. It is a secret on the application repo and is"
+              echo "**not recoverable from here** — without it these files are unreadable."
+              echo
+              echo '```bash'
+              echo 'gpg --batch --decrypt --passphrase "$BACKUP_PASSPHRASE" \'
+              echo '    --output backup.gz backup-YYYYMMDD-HHMMSS.gz.gpg'
+              echo 'mongorestore --uri="<SCRATCH_MONGODB_URI>" --gzip --archive=backup.gz'
+              echo 'shred -u backup.gz'
+              echo '```'
+              echo
+              echo "Restore to a scratch database and check document counts before switching"
+              echo "traffic. Full procedure: \`context/RUNBOOK.md\` section 1b."
+            } > README.md
+            git add README.md
+            git commit -m "chore: initialise the backup store"
+            git push -u origin main
+          fi
 
       - name: Install MongoDB Database Tools
         run: |
