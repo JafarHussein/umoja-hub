@@ -79,7 +79,8 @@ why this workflow is the whole of the disaster-recovery story.
 
 **Known limitation of using git as the store.** Pruning deletes the working file, but every archive
 stays in git history forever, so the backup repository grows by roughly one archive per week
-regardless of the prune step. At ~2MB/week that is ~100MB a year — survivable, but it is not a
+regardless of the prune step. Measured on the first real run, an encrypted archive is about
+**180KB**, so that is roughly 10MB a year — comfortable, but it is still not a
 retention policy. If it becomes a problem, move the archives to release assets, which are not git
 objects.
 
