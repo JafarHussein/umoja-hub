@@ -7,29 +7,85 @@
 
 ## 1. Restore from weekly backup
 
-Backups are stored in the private `umojahub-backups` GitHub repository as `.gz` archives, created every Sunday at 02:00 UTC by `.github/workflows/backup.yml`.
+> **⚠ Read this before assuming a backup exists.**
+>
+> The weekly workflow **never once succeeded** between at least 2026-07-05 and 2026-08-23. Every
+> Sunday it failed on its first step with `Input required and not supplied: token`, because
+> `BACKUP_REPO_TOKEN` had never been set — so **no archive was ever written**. Confirm the current
+> position yourself before relying on anything here:
+>
+> ```bash
+> gh run list --workflow=backup.yml --limit 5
+> ```
+>
+> Investigating the fix turned up something worse: `JafarHussein/umojahub-backups` was **public**.
+> Had the token been supplied at any point, this workflow would have pushed a complete dump —
+> names, emails, phone numbers, national ID document numbers, bcrypt password hashes and the URL
+> of every uploaded verification document — into a public repository. The missing secret was
+> accidentally preventing a data breach. The repository is now private, and the workflow refuses
+> to run against a public one.
 
-**Steps:**
+### 1a. Prerequisites — the workflow fails loudly without all of them
+
+| | What | Why |
+|---|---|---|
+| Repo | `umojahub-backups` must be **private** | Checked against the API before `mongodump` is installed |
+| Secret | `BACKUP_REPO_NAME` | `owner/repo` of the backup repository |
+| Secret | `BACKUP_REPO_TOKEN` | Fine-grained PAT, that repo only, **Contents: read+write** |
+| Secret | `BACKUP_PASSPHRASE` | AES-256 passphrase. **Store it where you can reach it without GitHub — losing it loses every backup it has ever made** |
+| Secret | `MONGODB_URI` | The Atlas connection string to dump |
+| Atlas | Network Access allows `0.0.0.0/0` | GitHub runners have no stable egress IP. This is the usual reason a dump comes back empty; the workflow rejects any archive under 64KB rather than committing one |
+
+### 1b. Restoring
+
+Archives are **encrypted** `.gz.gpg` files in the private `umojahub-backups` repository, written
+every Sunday at 02:00 UTC by `.github/workflows/backup.yml`.
 
 1. Clone the backup repository:
    ```bash
-   git clone https://github.com/<your-org>/umojahub-backups
+   git clone https://github.com/JafarHussein/umojahub-backups
    cd umojahub-backups
    ```
 
 2. Identify the most recent archive:
    ```bash
-   ls -lt backup-*.gz | head -5
+   ls -lt backup-*.gz.gpg | head -5
    ```
 
-3. Restore to a target MongoDB URI:
+3. Decrypt it:
    ```bash
-   mongorestore --uri="<TARGET_MONGODB_URI>" --gzip --archive=backup-YYYYMMDD-HHMMSS.gz
+   gpg --batch --decrypt --passphrase "$BACKUP_PASSPHRASE" \
+       --output backup.gz backup-YYYYMMDD-HHMMSS.gz.gpg
    ```
 
-4. Verify document counts in MongoDB Atlas Data Explorer before switching traffic.
+4. Restore **to a scratch target first**, and count before you trust it:
+   ```bash
+   mongorestore --uri="<SCRATCH_MONGODB_URI>" --gzip --archive=backup.gz
+   ```
 
-**Important**: Restoring overwrites the target database. Use a new Atlas cluster or empty database first. The backup covers everything at the point-in-time of the last Sunday 02:00 UTC run. Data created after that point is lost.
+5. Verify document counts in the Atlas Data Explorer — `users`, `orders`, `projectengagements`
+   and `projectdocumentations` are the four that matter — before switching any traffic.
+
+6. Shred the plaintext when you are done:
+   ```bash
+   shred -u backup.gz
+   ```
+
+**Important.** Restoring overwrites the target. Use a new cluster or an empty database. The archive
+covers the state at the last Sunday 02:00 UTC run, so a weekly cadence means **up to seven days of
+orders, escrow movements and submitted reports are unrecoverable**. If that window is too wide, the
+fix is not a better script — it is a paid Atlas tier with snapshot backups. M0 has none, which is
+why this workflow is the whole of the disaster-recovery story.
+
+**Known limitation of using git as the store.** Pruning deletes the working file, but every archive
+stays in git history forever, so the backup repository grows by roughly one archive per week
+regardless of the prune step. At ~2MB/week that is ~100MB a year — survivable, but it is not a
+retention policy. If it becomes a problem, move the archives to release assets, which are not git
+objects.
+
+**A backup nobody has restored is a hypothesis.** The workflow proves each archive *parses*
+(`mongorestore --dryRun`) before committing it, which is not the same as having seen the data come
+back. Do step 4 against a scratch database at least once.
 
 ---
 
