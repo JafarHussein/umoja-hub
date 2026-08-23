@@ -1,29 +1,66 @@
 /**
- * OpenAI service for Education Hub brief generation.
- * Uses plain fetch — consistent with darajaService.ts pattern.
- * Only called during ProjectEngagement creation (POST /api/education/engagements).
+ * Brief generation for the Education Hub.
+ *
+ * Only called during ProjectEngagement creation
+ * (POST /api/education/engagements). Plain fetch, consistent with
+ * darajaService.ts.
+ *
+ * ---------------------------------------------------------------------------
+ * The provider, and why it is configurable
+ * ---------------------------------------------------------------------------
+ * This called OpenAI's `gpt-4o-mini` directly, hard-coded. The account's credit
+ * balance ran out and the API began answering
+ * `429 credit_balance_exhausted`, so every AI_BRIEF and OPEN_SOURCE request
+ * returned 503 — **the entry point to the whole Education Hub**. Only the
+ * LECTURER_ASSIGNED track, which needs no model, still worked. The seeded demo
+ * world hid it completely, because every student in it already had a project.
+ *
+ * The transport is the OpenAI chat-completions shape, which several providers
+ * speak verbatim — including Groq, whose key on this deployment works. So the
+ * endpoint, the model and the credential are configuration rather than code:
+ *
+ *   BRIEF_API_URL · BRIEF_MODEL · BRIEF_API_KEY_VAR
+ *
+ * None are required. The defaults are the provider this deployment can actually
+ * reach, verified against the account rather than assumed, and a provider
+ * outage or a retired model is now an environment change instead of a deploy.
+ *
+ * What deliberately did NOT change: when generation fails, this throws. There
+ * used to be a fallback that returned a generic paragraph, and it was removed
+ * because a brief that claims an academic link it does not have is worse than
+ * no brief. That decision stands — see the note further down.
  */
 
-import { env } from '@/lib/env';
+import { env, type RequiredEnvVar } from '@/lib/env';
+import { GROQ_API_URL, GROQ_MODEL } from '@/lib/ai/groq';
 import { AppError, logger } from '@/lib/utils';
 import { aiBriefSchema, openSourceBriefSchema } from '@/lib/education/brief';
 import type { AIBrief, OpenSourceBrief } from '@/lib/education/brief';
 import { academicContextPrompt } from '@/lib/education/academicContext';
 import type { AcademicContext } from '@/lib/education/academicContext';
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-const OPENAI_MODEL = 'gpt-4o-mini';
+const BRIEF_API_URL = process.env['BRIEF_API_URL']?.trim() || GROQ_API_URL;
+const BRIEF_MODEL = process.env['BRIEF_MODEL']?.trim() || GROQ_MODEL;
+/**
+ * Which required env var holds the credential for `BRIEF_API_URL`.
+ *
+ * Named rather than inlined so the key itself never becomes a second place to
+ * put a secret: it still comes from `env()`, which throws at startup if the
+ * variable is missing, and only the *choice* of variable is configurable.
+ */
+const BRIEF_API_KEY_VAR = (process.env['BRIEF_API_KEY_VAR']?.trim() ||
+  'GROQ_API_KEY') as RequiredEnvVar;
 
 // ---------------------------------------------------------------------------
 // Internal types
 // ---------------------------------------------------------------------------
 
-interface OpenAIMessage {
+interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
-interface OpenAIResponse {
+interface ChatResponse {
   choices?: Array<{ message?: { content?: string } }>;
   error?: { message: string };
 }
@@ -57,32 +94,47 @@ export interface BriefContextInput {
 // Core fetch wrapper
 // ---------------------------------------------------------------------------
 
-async function callOpenAI(messages: OpenAIMessage[]): Promise<string> {
+async function callBriefProvider(messages: ChatMessage[]): Promise<string> {
   let res: Response;
   try {
-    res = await fetch(OPENAI_API_URL, {
+    res = await fetch(BRIEF_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${env('OPENAI_API_KEY')}`,
+        Authorization: `Bearer ${env(BRIEF_API_KEY_VAR)}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: BRIEF_MODEL,
         messages,
         temperature: 0.7,
-        max_tokens: 1000,
+        // 1000 stood here and it was too small for the brief this prompt asks
+        // for: eleven fields, four of them arrays of five to seven sentences.
+        // Worse on a reasoning model, whose internal trace is charged against
+        // the same budget — at 1000 the response came back with no content at
+        // all, and the schema check then reported "incomplete data" about a
+        // model that had simply been cut off mid-thought. Measured against the
+        // real prompt: a complete brief lands around 1,800 characters, so 3,000
+        // tokens leaves genuine headroom. Budget is a ceiling, not a charge;
+        // only what is actually generated costs anything.
+        max_tokens: 3000,
         response_format: { type: 'json_object' },
       }),
     });
   } catch (fetchError) {
-    logger.error('openaiService', 'Network error reaching OpenAI', { error: fetchError });
+    logger.error('briefService', 'Network error reaching the brief provider', {
+      url: BRIEF_API_URL,
+      model: BRIEF_MODEL,
+      error: fetchError,
+    });
     throw new AppError('Brief generation is temporarily unavailable.', 503, 'AI_SERVICE_ERROR');
   }
 
-  const data = (await res.json()) as OpenAIResponse;
+  const data = (await res.json()) as ChatResponse;
 
   if (!res.ok || data.error) {
-    logger.error('openaiService', 'OpenAI API error', {
+    logger.error('briefService', 'The brief provider returned an error', {
+      url: BRIEF_API_URL,
+      model: BRIEF_MODEL,
       status: res.status,
       error: data.error,
     });
@@ -168,7 +220,7 @@ Respond with exactly this JSON schema:
 "estimatedComplexity" is your assessment of the work you have described. It is not a dial and
 nobody chose it — the year of study and the units decide how demanding the project is.`;
 
-  const content = await callOpenAI([
+  const content = await callBriefProvider([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]);
@@ -177,7 +229,7 @@ nobody chose it — the year of study and the units decide how demanding the pro
   try {
     raw = JSON.parse(content);
   } catch {
-    logger.error('openaiService', 'Failed to parse AI brief JSON', { content });
+    logger.error('briefService', 'Failed to parse AI brief JSON', { content });
     throw new AppError('Brief generation returned malformed data.', 503, 'AI_SERVICE_ERROR');
   }
 
@@ -201,13 +253,13 @@ nobody chose it — the year of study and the units decide how demanding the pro
   // than persisted into a Mixed column for the UI to fall over later.
   const parsed = aiBriefSchema.safeParse(anchored);
   if (!parsed.success) {
-    logger.error('openaiService', 'AI brief did not match the brief contract', {
+    logger.error('briefService', 'AI brief did not match the brief contract', {
       issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
     });
     throw new AppError('Brief generation returned incomplete data.', 503, 'AI_SERVICE_ERROR');
   }
 
-  logger.info('openaiService', 'AI brief generated', {
+  logger.info('briefService', 'AI brief generated', {
     knowledgeAreas: academic.knowledgeAreas.slice(0, 3),
     industry: industry?.industryName,
   });
@@ -215,8 +267,12 @@ nobody chose it — the year of study and the units decide how demanding the pro
 }
 
 // ---------------------------------------------------------------------------
-// OPEN_SOURCE track — contribution plan generation
-// Non-throwing fallback: if OpenAI fails, return a minimal but valid brief.
+// OPEN_SOURCE track — contribution plan generation.
+//
+// The line here used to promise a "non-throwing fallback: if OpenAI fails,
+// return a minimal but valid brief". There is no such fallback — it was removed
+// deliberately (see the note below the parse) and the comment outlived it,
+// describing a safety net a reader would have stopped looking for.
 // ---------------------------------------------------------------------------
 
 export async function generateOpenSourceBrief(
@@ -242,7 +298,7 @@ areas above are load-bearing. Respond with exactly this JSON schema:
   "proposedApproach": "string — 2-3 sentences on finding an issue and making the contribution"
 }`;
 
-  const content = await callOpenAI([
+  const content = await callBriefProvider([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]);
@@ -251,7 +307,7 @@ areas above are load-bearing. Respond with exactly this JSON schema:
   try {
     raw = JSON.parse(content);
   } catch {
-    logger.error('openaiService', 'Failed to parse open-source brief JSON', { repoName });
+    logger.error('briefService', 'Failed to parse open-source brief JSON', { repoName });
     throw new AppError('Brief generation returned malformed data.', 503, 'AI_SERVICE_ERROR');
   }
 
@@ -274,7 +330,7 @@ areas above are load-bearing. Respond with exactly this JSON schema:
     },
   });
   if (!parsed.success) {
-    logger.error('openaiService', 'Open-source brief did not match the brief contract', {
+    logger.error('briefService', 'Open-source brief did not match the brief contract', {
       repoName,
       issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
     });

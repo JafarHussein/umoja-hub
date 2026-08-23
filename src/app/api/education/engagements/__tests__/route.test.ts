@@ -51,7 +51,7 @@ jest.mock('@/lib/education/academicContext', () => ({
 
 const mockGenerateAIBrief = jest.fn();
 const mockGenerateOpenSourceBrief = jest.fn();
-jest.mock('@/lib/integrations/openaiService', () => ({
+jest.mock('@/lib/integrations/briefService', () => ({
   generateAIBrief: jest.fn((...a: unknown[]) => mockGenerateAIBrief(...a)),
   generateOpenSourceBrief: jest.fn((...a: unknown[]) => mockGenerateOpenSourceBrief(...a)),
 }));

@@ -7,11 +7,18 @@ import { Role } from '@/types';
 import { Button, Alert, Page, PageHeader } from '@/components/app';
 import { loginUrlWithIntent } from '@/lib/auth/intent';
 
+// Mirrors the `BriefContextLibrary` subdocument. `targetTiers` used to stand
+// here, and it was the last reference to it left anywhere in the codebase: the
+// field went with `StudentTier` when difficulty stopped being something a
+// student picked for themselves, but this screen still read it. Every load
+// threw `Cannot read properties of undefined (reading 'map')`, so the one
+// administrative surface governing what briefs are grounded in rendered
+// nothing at all — and the publish instructions below still told an
+// administrator to include a field the route would ignore.
 interface IContextEntry {
   id: string;
   industryName: string;
   description: string;
-  targetTiers: string[];
   problemDomains: string[];
 }
 
@@ -47,7 +54,6 @@ const PLACEHOLDER_JSON = JSON.stringify(
       problemDomains: ['Market access', 'Crop monitoring', 'Input verification'],
       kenyanConstraints: ['Low bandwidth', 'Feature phone users', 'Swahili localisation'],
       exampleProjects: ['Produce price tracker', 'Fertiliser authenticity scanner'],
-      targetTiers: ['BEGINNER', 'INTERMEDIATE'],
     },
   ],
   null,
@@ -201,13 +207,19 @@ export default function BriefContextsPage(): React.ReactElement {
       {showPublishForm && (
         <div className="space-y-3 rounded-app-card border border-app-hairline bg-app-card p-6">
           <p className="app-label text-app-muted">New library version</p>
+          {/* These are the fields `briefContextEntrySchema` actually requires,
+              all of them. The list used to name `targetTiers`, which the route
+              would have rejected, and omit three that it demands — so an
+              administrator following it to the letter got a validation error. */}
           <p className="app-body text-app-muted">
             Paste a JSON array of context objects. Each object must include{' '}
             <span className="app-data-m text-app-ink">id</span>,{' '}
             <span className="app-data-m text-app-ink">industryName</span>,{' '}
             <span className="app-data-m text-app-ink">description</span>,{' '}
-            <span className="app-data-m text-app-ink">targetTiers</span>, and{' '}
-            <span className="app-data-m text-app-ink">clientPersonaTemplate</span>.
+            <span className="app-data-m text-app-ink">clientPersonaTemplate</span>,{' '}
+            <span className="app-data-m text-app-ink">problemDomains</span>,{' '}
+            <span className="app-data-m text-app-ink">kenyanConstraints</span> and{' '}
+            <span className="app-data-m text-app-ink">exampleProjects</span>.
           </p>
           <textarea
             value={jsonInput}
@@ -243,21 +255,14 @@ export default function BriefContextsPage(): React.ReactElement {
           </div>
           {library.contexts.map((ctx, i) => (
             <div key={ctx.id ?? i} className="space-y-1.5 border-b border-app-hairline px-4 py-3 last:border-0">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 space-y-0.5">
-                  <p className="app-body-strong text-app-ink">{ctx.industryName}</p>
-                  <p className="app-meta line-clamp-2 text-app-muted">{ctx.description}</p>
-                </div>
-                <div className="flex flex-shrink-0 gap-1.5">
-                  {ctx.targetTiers.map((tier) => (
-                    <span
-                      key={tier}
-                      className="app-label inline-flex items-center rounded-app-pill bg-app-sunken px-2 py-0.5 text-app-muted"
-                    >
-                      {tier}
-                    </span>
-                  ))}
-                </div>
+              {/* A row of difficulty pills stood at the right of this line and
+                  is gone with the field behind it. Nothing replaces it: a
+                  context is no longer aimed at a level of student, because the
+                  units a student is taking decide what the work must exercise.
+                  The problem domains below are what a context actually offers. */}
+              <div className="min-w-0 space-y-0.5">
+                <p className="app-body-strong text-app-ink">{ctx.industryName}</p>
+                <p className="app-meta line-clamp-2 text-app-muted">{ctx.description}</p>
               </div>
               {ctx.problemDomains.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
