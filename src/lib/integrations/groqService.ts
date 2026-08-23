@@ -1,6 +1,13 @@
 /**
  * Groq AI service for the Farm Assistant.
- * Uses Llama 3.3 70B (llama-3.3-70b-versatile) via the Groq OpenAI-compatible API.
+ *
+ * The model is not named here. This header used to read "Uses Llama 3.3 70B
+ * (llama-3.3-70b-versatile)", and it went on saying so after Groq retired that
+ * model and the code moved to a configurable one — a comment describing code
+ * that was no longer there, which is the exact defect the 2026-08-23 audit kept
+ * finding. `GROQ_MODEL` in `@/lib/ai/groq` is the single source of truth, and
+ * naming it in prose here would only be something else to forget to update.
+ *
  * Uses plain fetch — consistent with darajaService.ts pattern.
  * Gracefully degrades on any failure.
  */
