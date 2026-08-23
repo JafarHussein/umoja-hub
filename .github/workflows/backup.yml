@@ -43,6 +43,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # A throwaway MongoDB the archive is restored into before it is kept. It
+    # holds nothing, nobody connects to it but this job, and it dies with the
+    # runner — see the verify step for why it is here rather than a --dryRun.
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
     steps:
       # -------------------------------------------------------------------
       # Everything that can be checked before any data is touched, is.
@@ -202,20 +211,47 @@ jobs:
           fi
 
       # -------------------------------------------------------------------
-      # Prove it restores. --dryRun parses the whole archive and reports what it
-      # would insert, without writing anything to the cluster. It is the
-      # difference between "a file was produced" and "a file we could recover
-      # from", and it costs about a second.
+      # Prove it restores, by restoring it.
+      #
+      # This step first tried `mongorestore --dryRun`, on the belief that it
+      # would parse the archive without touching a server. It does not:
+      # `--dryRun` means "do not write", not "do not connect". It dialled the
+      # default `mongodb://localhost`, found nothing listening on the runner,
+      # and failed after a 30-second server-selection timeout — reporting an
+      # unusable backup when the archive was perfectly good.
+      #
+      # Pointing it at Atlas instead would have worked, and would have meant
+      # aiming a restore command at the production cluster every Sunday to
+      # prove a backup was readable. Restoring into a throwaway mongod is both
+      # safer and a stronger claim: the data actually comes back, and the
+      # document count proves how much of it.
       # -------------------------------------------------------------------
-      - name: Verify the archive actually restores
+      - name: Verify the archive by restoring it into a throwaway database
         run: |
           set -euo pipefail
-          mongorestore --gzip --archive="$ARCHIVE" --dryRun --verbose 2>&1 | tee restore-check.log
-          if ! grep -q "document(s) restored successfully\|would be restored\|preparing collections to restore" restore-check.log; then
-            echo "::error::mongorestore could not read the archive. It is not a usable backup."
+          mongorestore --uri="mongodb://localhost:27017" \
+                       --gzip --archive="$ARCHIVE" 2>&1 | tee restore-check.log
+
+          # mongorestore reports its own tally, e.g.
+          #   2054 document(s) restored successfully. 0 document(s) failed to restore.
+          restored=$(grep -oE '[0-9]+ document\(s\) restored successfully' restore-check.log | grep -oE '^[0-9]+' | tail -1)
+          failed=$(grep -oE '[0-9]+ document\(s\) failed to restore' restore-check.log | grep -oE '^[0-9]+' | tail -1)
+          restored=${restored:-0}
+          failed=${failed:-0}
+          echo "restored=$restored failed=$failed"
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::$failed document(s) failed to restore. This archive is not trustworthy."
             exit 1
           fi
-          echo "Archive parsed cleanly by mongorestore."
+          # The demo world alone is ~2,000 documents; a real one is larger. A
+          # restore that yields a handful of documents parsed but did not carry
+          # the database, which is the failure this whole step exists to catch.
+          if [ "$restored" -lt 100 ]; then
+            echo "::error::Only $restored document(s) came back. The archive is not a usable backup."
+            exit 1
+          fi
+          echo "Archive verified: $restored documents restored, 0 failures."
 
       # -------------------------------------------------------------------
       # Encrypt before it leaves the runner.
