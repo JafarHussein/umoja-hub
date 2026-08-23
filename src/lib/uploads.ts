@@ -53,6 +53,34 @@ export const DOCUMENT_MIME_TYPE = 'application/pdf';
 /** Ready for a file input's `accept` attribute. */
 export const UPLOAD_ACCEPT_ATTRIBUTE = ALLOWED_UPLOAD_MIME_TYPES.join(',');
 
+/**
+ * The photograph subset — everything above except PDF.
+ *
+ * A verification document may legitimately be a scanned PDF. A photograph of
+ * produce may not: the marketplace renders it as an image, and a PDF would
+ * upload successfully and then render as nothing on the card a buyer is meant
+ * to look at.
+ */
+export const ALLOWED_PHOTO_MIME_TYPES = ALLOWED_UPLOAD_MIME_TYPES.filter(
+  (type) => type !== DOCUMENT_MIME_TYPE
+);
+
+/** Ready for a photograph input's `accept` attribute. */
+export const PHOTO_ACCEPT_ATTRIBUTE = ALLOWED_PHOTO_MIME_TYPES.join(',');
+
+/**
+ * Why this photograph cannot be uploaded, or null if it can.
+ *
+ * The size rule is the shared one; only the format rule is narrower, so this
+ * defers to `describeUploadProblem` for everything it does not itself decide.
+ */
+export function describePhotoProblem(file: File): string | null {
+  if (!(ALLOWED_PHOTO_MIME_TYPES as readonly string[]).includes(file.type)) {
+    return 'That file is not a photograph. Upload a JPG, PNG or WebP.';
+  }
+  return describeUploadProblem(file);
+}
+
 /** A human-readable byte count: 4194304 → "4MB", 1258291 → "1.2MB". */
 export function formatBytes(bytes: number): string {
   const mb = bytes / (1024 * 1024);
