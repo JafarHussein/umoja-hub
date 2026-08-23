@@ -1,5 +1,35 @@
 name: Weekly Database Backup
 
+# ---------------------------------------------------------------------------
+# Atlas M0 has no built-in backup — snapshots start at the paid tiers — so this
+# scripted dump is the whole of UmojaHub's disaster recovery.
+#
+# It had never run. From at least 2026-07-05 it failed every Sunday on its first
+# step with `Input required and not supplied: token`, because BACKUP_REPO_TOKEN
+# was never set. Eight consecutive failures, no archive ever written, and a
+# platform holding escrow state and academic records with no restore point.
+#
+# The 2026-08-23 audit found something worse while working out how to fix it:
+# the destination repository, `umojahub-backups`, is **public**. Had the token
+# been supplied at any point, this workflow would have pushed a complete dump —
+# emails, phone numbers, national ID document numbers, bcrypt password hashes
+# and the URLs of every uploaded verification document — into a public
+# repository. The missing secret was accidentally preventing a data breach.
+#
+# So this workflow now refuses to be the thing that leaks the database. Three
+# guards stand between a dump and the internet, in this order:
+#
+#   1. It will not push to a public repository. Checked against the GitHub API
+#      before mongodump is even installed.
+#   2. The archive is encrypted on the runner with AES-256 and never exists in
+#      plaintext anywhere but the runner's own disk.
+#   3. The archive is proved restorable before it is committed. A backup nobody
+#      has restored is a hypothesis, and this project has been bitten twice by
+#      trusting a green check over a driven one.
+#
+# Restore procedure — including decryption — is in context/RUNBOOK.md §1.
+# ---------------------------------------------------------------------------
+
 on:
   schedule:
     # Every Sunday at 02:00 UTC (05:00 EAT)
@@ -11,11 +41,68 @@ jobs:
   backup:
     name: MongoDB Atlas backup
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
+      # -------------------------------------------------------------------
+      # Everything that can be checked before any data is touched, is.
+      #
+      # A missing secret used to surface as `Input required and not supplied:
+      # token` from actions/checkout — accurate, and it tells you nothing about
+      # which of three secrets is missing or what the workflow needed it for.
+      # -------------------------------------------------------------------
+      - name: Preflight — required secrets
+        env:
+          BACKUP_REPO_NAME: ${{ secrets.BACKUP_REPO_NAME }}
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          missing=""
+          [ -n "$BACKUP_REPO_NAME" ]  || missing="$missing BACKUP_REPO_NAME"
+          [ -n "$BACKUP_REPO_TOKEN" ] || missing="$missing BACKUP_REPO_TOKEN"
+          [ -n "$BACKUP_PASSPHRASE" ] || missing="$missing BACKUP_PASSPHRASE"
+          [ -n "$MONGODB_URI" ]       || missing="$missing MONGODB_URI"
+          if [ -n "$missing" ]; then
+            echo "::error::Backup cannot run. Missing repository secrets:$missing"
+            echo ""
+            echo "  BACKUP_REPO_NAME   owner/repo of the PRIVATE backup repository"
+            echo "  BACKUP_REPO_TOKEN  a fine-grained PAT with Contents: read+write on that repo only"
+            echo "  BACKUP_PASSPHRASE  the AES-256 passphrase the archive is encrypted with."
+            echo "                     Store it somewhere you can reach WITHOUT this repository —"
+            echo "                     losing it loses every backup it has ever made."
+            echo "  MONGODB_URI        the Atlas connection string to dump"
+            exit 1
+          fi
+          echo "All four secrets are present."
+
+      # -------------------------------------------------------------------
+      # The guard that matters most. A dump of this database in a public repo
+      # is a notifiable breach under Kenya's Data Protection Act 2019, and the
+      # destination repository is public as of 2026-08-23.
+      # -------------------------------------------------------------------
+      - name: Preflight — the destination must be private
+        env:
+          GH_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_REPO_NAME: ${{ secrets.BACKUP_REPO_NAME }}
+        run: |
+          visibility=$(gh api "repos/$BACKUP_REPO_NAME" --jq '.private')
+          echo "$BACKUP_REPO_NAME private=$visibility"
+          if [ "$visibility" != "true" ]; then
+            echo "::error::REFUSING TO BACK UP. $BACKUP_REPO_NAME is PUBLIC."
+            echo ""
+            echo "This dump contains personal data: names, emails, phone numbers,"
+            echo "national ID document numbers, password hashes and the URLs of"
+            echo "uploaded verification documents. Pushing it to a public"
+            echo "repository would disclose all of it."
+            echo ""
+            echo "Make the repository private, then re-run:"
+            echo "  gh repo edit $BACKUP_REPO_NAME --visibility private --accept-visibility-change-consequences"
+            exit 1
+          fi
+
       - name: Checkout backup repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ secrets.BACKUP_REPO_NAME }}
           token: ${{ secrets.BACKUP_REPO_TOKEN }}
@@ -23,8 +110,11 @@ jobs:
 
       - name: Install MongoDB Database Tools
         run: |
-          wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" \
+          # `apt-key` is deprecated and removed on newer runners; the key now
+          # goes to a keyring the source list points at explicitly.
+          wget -qO- https://www.mongodb.org/static/pgp/server-7.0.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-7.0.gpg
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" \
             | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
           sudo apt-get update -qq
           sudo apt-get install -y mongodb-database-tools
@@ -33,25 +123,81 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: |
-          ARCHIVE_NAME="backup-$(date +%Y%m%d-%H%M%S).gz"
-          mongodump --uri="$MONGODB_URI" --gzip --archive="backup-repo/$ARCHIVE_NAME"
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
+          set -euo pipefail
+          ARCHIVE="backup-$(date +%Y%m%d-%H%M%S).gz"
+          mongodump --uri="$MONGODB_URI" --gzip --archive="$ARCHIVE"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+          # A dump that fails to reach Atlas can still exit 0 and leave a
+          # near-empty archive. The database is ~9MB, so anything under 64KB is
+          # not a backup of it, whatever the exit code said.
+          bytes=$(stat -c%s "$ARCHIVE")
+          echo "archive is $bytes bytes"
+          if [ "$bytes" -lt 65536 ]; then
+            echo "::error::Archive is only $bytes bytes — mongodump produced nothing usable."
+            echo "Check Atlas Network Access: GitHub-hosted runners have no stable"
+            echo "egress IP, so the cluster must allow 0.0.0.0/0 for this to connect."
+            exit 1
+          fi
+
+      # -------------------------------------------------------------------
+      # Prove it restores. --dryRun parses the whole archive and reports what it
+      # would insert, without writing anything to the cluster. It is the
+      # difference between "a file was produced" and "a file we could recover
+      # from", and it costs about a second.
+      # -------------------------------------------------------------------
+      - name: Verify the archive actually restores
+        run: |
+          set -euo pipefail
+          mongorestore --gzip --archive="$ARCHIVE" --dryRun --verbose 2>&1 | tee restore-check.log
+          if ! grep -q "document(s) restored successfully\|would be restored\|preparing collections to restore" restore-check.log; then
+            echo "::error::mongorestore could not read the archive. It is not a usable backup."
+            exit 1
+          fi
+          echo "Archive parsed cleanly by mongorestore."
+
+      # -------------------------------------------------------------------
+      # Encrypt before it leaves the runner.
+      #
+      # The private-repo guard above is the primary control; this is the one
+      # that still holds if the repository is ever made public by accident, if
+      # the PAT leaks, or if someone clones it to a laptop. Symmetric AES-256,
+      # because a passphrase is one thing to keep safe and a keypair is two.
+      # -------------------------------------------------------------------
+      - name: Encrypt the archive
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+              --passphrase "$BACKUP_PASSPHRASE" \
+              --output "backup-repo/$ARCHIVE.gpg" \
+              "$ARCHIVE"
+          # The plaintext never reaches the backup repository's working tree.
+          shred -u "$ARCHIVE" 2>/dev/null || rm -f "$ARCHIVE"
+          ls -l "backup-repo/$ARCHIVE.gpg"
 
       - name: Prune old backups (keep last 4)
         working-directory: backup-repo
         run: |
-          # List backup files sorted newest-first, delete beyond 4
-          ls -t backup-*.gz 2>/dev/null | tail -n +5 | xargs -r rm -v
+          # Deleting the file does not reclaim the space: every archive stays in
+          # git history forever, so this repository grows by roughly its weekly
+          # archive size for as long as it runs. At ~2MB/week that is ~100MB a
+          # year, which is survivable but is not a retention policy. Recorded in
+          # context/RUNBOOK.md as a known limitation of using git as the store.
+          ls -t backup-*.gz.gpg 2>/dev/null | tail -n +5 | xargs -r rm -v
 
       - name: Commit and push backup
         working-directory: backup-repo
         run: |
+          set -euo pipefail
           git config user.email "backup-bot@umojahub.com"
           git config user.name "UmojaHub Backup Bot"
           git add .
           if git diff --cached --quiet; then
-            echo "No changes to commit (backup file may be identical)"
-          else
-            git commit -m "backup: $ARCHIVE_NAME"
-            git push
+            echo "::error::Nothing staged — the encrypted archive did not reach the working tree."
+            exit 1
           fi
+          git commit -m "backup: $ARCHIVE.gpg"
+          git push
+          echo "Pushed $ARCHIVE.gpg"
