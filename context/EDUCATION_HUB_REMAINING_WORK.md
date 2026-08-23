@@ -132,17 +132,17 @@ path's user-facing message. Add the provider to the live smoke script (S-P2-2 in
 no seeded data involved. If generation is unavailable, the screen says so and offers a route
 forward.
 
-- [ ] Establish which of the three routes the owner wants
-- [ ] Make the brief provider and model configurable
-- [ ] Verify the chosen provider live before committing
-- [ ] Confirm generated briefs still pass `aiBriefSchema` and carry `academicAnchor`
-- [ ] Confirm the load-bearing quality of a generated brief by reading one
-- [ ] Make the failure screen honest and actionable
-- [ ] Do **not** reinstate a generic fallback brief
-- [ ] Test as a real student, end to end, from an empty project list
-- [ ] Run the regression gate
+- [x] Establish which of the three routes the owner wants
+- [x] Make the brief provider and model configurable
+- [x] Verify the chosen provider live before committing
+- [x] Confirm generated briefs still pass `aiBriefSchema` and carry `academicAnchor`
+- [x] Confirm the load-bearing quality of a generated brief by reading one
+- [x] Make the failure screen honest and actionable
+- [x] Do **not** reinstate a generic fallback brief
+- [x] Test as a real student, end to end, from an empty project list
+- [x] Run the regression gate
 
-**Status:** ☐ not started · route decision pending
+**Status:** ☑ **done and verified live** — a student with an empty project list started an `AI_BRIEF` project and received a complete brief anchored to their real units, set in a Kisumu community-health NGO, with an offline-sync consistency problem that makes Distributed Systems load-bearing. `OPEN_SOURCE` generates again too. Route 1 was taken (provider made configurable, defaulting to one that works); no fallback brief was reinstated. See the execution record above for the second cause — the token budget.
 
 ---
 
@@ -181,13 +181,13 @@ neither loses it.
 **Acceptance criteria.** A student asks the mentor an architecture question about their own
 project and receives a substantive answer that references the project. The rate limit still holds.
 
-- [ ] Single source of truth for the Groq model, configurable
-- [ ] Confirm the engagement context still reaches the prompt on the new model
-- [ ] Confirm the rate limit and session persistence are unaffected
-- [ ] Ask a real question through `/dashboard/student/mentor` and read the answer
-- [ ] Run the regression gate
+- [x] Single source of truth for the Groq model, configurable
+- [x] Confirm the engagement context still reaches the prompt on the new model
+- [x] Confirm the rate limit and session persistence are unaffected
+- [x] Ask a real question through `/dashboard/student/mentor` and read the answer
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done and verified live** — the mentor answered an architecture question about the student’s own project. Model constant now lives once, in `src/lib/ai/groq.ts`.
 
 ---
 
@@ -235,14 +235,14 @@ Consider adding it to the E2E smoke landing set so an admin screen that throws f
 listed with zero console and zero page errors, and the publish form's instructions match the
 schema the route will actually accept.
 
-- [ ] Remove `targetTiers` from the interface, the render and the placeholder
-- [ ] Correct the publishing instructions to the real required fields
-- [ ] Verify the page loads clean at 1280×900 and 390×844
-- [ ] Verify publishing a valid library still works
+- [x] Remove `targetTiers` from the interface, the render and the placeholder
+- [x] Correct the publishing instructions to the real required fields
+- [x] Verify the page loads clean at 1280×900 and 390×844
+- [x] Verify publishing a valid library still works
 - [ ] Add the page to the E2E smoke set so this class of defect fails a run
-- [ ] Run the regression gate
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done** — the page renders all eight domains with zero console and zero page errors at both viewports, and the publish instructions now name the fields the route actually requires. One follow-up left open above: the page is still not in the E2E smoke set, so an admin screen that throws would not fail a run.
 
 ---
 
@@ -311,7 +311,7 @@ and an actor from another institution is refused.
 - [ ] Test cross-institution refusal
 - [ ] Run the regression gate including `test:e2e:education`
 
-**Status:** ☐ blocked on an owner decision
+**Status:** ☐ **open — deliberately not built.** A curriculum-publishing surface is a new Education Hub screen, and Foundation V2 §19 requires IA → Lo-fi → Mid-fi → Hi-fi → Prototype → Design System → Implementation Plan → Code, stopping at every gate. Building it inside a defect-fix pass would have skipped all of them. The constitution already answers the actor question (§8.3: *"Institution admin … a department publishes its programme structure once"*), so what is outstanding is the **gates**, not the decision. Stays P1: until it exists, every real institution is stuck at self-declared T0.
 
 ---
 
@@ -349,7 +349,7 @@ every exhaustive map compiles; `demo:validate` still passes 73/73.
 - [ ] Let the compiler find every exhaustive map
 - [ ] Run the regression gate including `demo:validate`
 
-**Status:** ☐ not started
+**Status:** ☐ open — a migration, not an edit. P2.
 
 ---
 
@@ -390,7 +390,7 @@ calls present as the accommodation, and the lecturer's demonstrations screen rea
 - [ ] Add a validation check that both formats appear
 - [ ] `npm run demo` and confirm 73/73
 
-**Status:** ☐ blocked on a one-line owner confirmation
+**Status:** ☐ open — needs a one-line confirmation of the intended emphasis.
 
 ---
 

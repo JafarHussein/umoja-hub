@@ -56,14 +56,40 @@ because the four things that were dead are the four the score was docked for. Fo
 unbuilt project-continuity model (§11) is untouched by any of this, so the Education Hub's score
 against the *full* ambition still stands at ≈40%.
 
-**Three things remain open and all three are the owner's, not mine:**
+### ✅ Closed since: the database backup
 
-1. **`BACKUP_REPO_TOKEN` is missing** — the weekly database backup has failed on every run since
-   at least 2026-07-05, so **no restore point exists**. A repository secret only the owner can add.
-   This is now the single highest-severity item on the project.
-2. **The application database is named `test`** — renaming it moves production data.
-3. **The orphaned buyer record** (`jafarhussein251@gmail.com`, "NOT APPLICABLE") survived the
-   re-seed, as a record outside the run ledger must. It may be an account the owner uses.
+**UmojaHub now has a database backup — the first that has ever existed.** This was the
+highest-severity item on the project and it is done.
+
+It nearly went badly. The obvious remedy — supply the missing `BACKUP_REPO_TOKEN` — would have
+pushed a complete dump (names, emails, phone numbers, national ID document numbers, bcrypt
+hashes, verification-document URLs) into `JafarHussein/umojahub-backups`, which was **public**.
+The missing secret had been accidentally preventing a data breach for eight weeks. `MONGODB_URI`
+was missing as a repository secret too, so the workflow would have failed at `mongodump`
+regardless — it only ever failed at step 1 because checkout aborted first.
+
+Three merged PRs (#68, #69, #70), because each run found the next problem: `main` still held the
+plaintext workflow; `actions/checkout` cannot clone a repository with no commits; and **the
+verification step was itself wrong** — `mongorestore --dryRun` means "do not write", not "do not
+connect", so it dialled `localhost`, timed out, and declared a good archive unusable.
+
+Final run, verified by pulling the file back down rather than trusting the green check:
+`185,466 bytes` in the repository, `AES256.CFB encrypted data` per gpg, first bytes `8c 0d 04 09`
+(OpenPGP, not gzip), no readable emails or field names in the ciphertext, and
+**3,338 documents restored with 0 failures** into a throwaway mongod. Atlas `0.0.0.0/0` is proven,
+because a GitHub runner connected.
+
+Full record: `FOOD_HUB_REMAINING_WORK.md` § S-P1-1. One thing still owed by a human: **do the
+restore yourself once**, to prove the passphrase is reachable and correct.
+
+**Three things remain open:**
+
+1. **The application database is named `test`** — renaming it moves production data. *(Owner.)*
+2. **The orphaned buyer record** (`jafarhussein251@gmail.com`, "NOT APPLICABLE") survived the
+   re-seed, as a record outside the run ledger must. It may be an account the owner uses. *(Owner.)*
+3. **23 dependency vulnerabilities** (2 critical, 15 high), none with a reachable path in this
+   codebase — checked individually, §16. Deliberately not patched during a pass whose purpose was
+   to fix four dead features days before a presentation. Sequence it afterwards, on its own branch.
 
 Plus one deliberate non-build: **E-P1-4, a writer for published curricula**, which is a new
 Education Hub screen and therefore gated behind Foundation V2 §19. Reasoning in
@@ -627,7 +653,48 @@ precisely "the code is correct and the provider changed underneath it."
 | Low | 15 orphaned `verificationauditlogs` documents from a retired subsystem; three empty collections from the retired portfolio vision (`portfolioviews`, `studentportfoliostatuses`, `ngoorganizations`). |
 | Low | `resend` dependency and its credentials present but unused — configuration nobody audits. |
 
-No exposure of user data, no authorization bypass, and no injection surface was found.
+No exposure of user data, no authorization bypass, and no injection surface was found **in the
+application's own code**. That sentence originally stood alone, and it was an overclaim: the
+audit had not looked at the dependency tree at all. It has now — see below.
+
+### Dependency vulnerabilities
+
+**This was a gap in the audit, found by re-reading it rather than by any tool.** `npm audit` had
+never been run. It was run on 2026-08-23 after the fact:
+
+| | critical | high | moderate | low | total |
+|---|---:|---:|---:|---:|---:|
+| All dependencies | 2 | 15 | 3 | 3 | **23** |
+| Production only | 1 | 11 | 3 | 3 | **18** |
+
+A count is not a finding, so each advisory touching a **direct** dependency was checked for
+whether it is actually reachable in this codebase:
+
+| Package | Sev | The advisory | Reachable here? |
+|---|---|---|---|
+| `next-auth` | **critical** | Email normalizer validates before Unicode normalization | **No** — the vector is the Email (magic-link) provider. `options.ts` configures Google, GitHub and Credentials only. |
+| `nodemailer` | high | SMTP command injection via unsanitized `envelope` | **No** — `envelope` is never used anywhere in `src/`. Recipients come from `User.email`, which is `z.string().email()` at every write boundary and `lowercase`/`trim` on the model. |
+| `next` | high | HTTP request smuggling in **rewrites** | **No** — `next.config.ts` declares no rewrites and no redirects. |
+| `mongoose` | moderate | Prototype pollution in update casting | **No** — 66 update call sites; none passes an unparsed request body. Every one writes explicit fields after a Zod `safeParse`. |
+| `svgo`, `postcss` | high | Script retention / CSS stringifier XSS | Build-time only; neither runs on user input at request time. |
+
+The remaining ~17 are transitive and overwhelmingly build/dev toolchain — `handlebars`, `esbuild`,
+`@babel/core`, `js-yaml`, `minimatch`, `picomatch`, `brace-expansion`, `flatted`, `hono`,
+`ip-address`, `fast-uri`, `nanoid`, `ws`, `sharp`, `body-parser`, `uuid`.
+
+**Assessment: no reachable exploit path was found, and that is a snapshot, not a guarantee.**
+Reachability analysis is only true of the code as it stands today; the next feature that touches
+an email envelope or a Next rewrite makes two of these live. The patches should be applied — but
+deliberately, not reflexively:
+
+- `next` 15.5.12 → 15.5.23 is a patch within the same minor. Low risk.
+- **`nodemailer` 7 → 9 is a major bump** and touches the lifecycle-email path. Needs its own pass.
+- `npm audit fix` without `--force` resolves most transitives.
+
+**Explicitly not applied during this audit.** Shifting dependency versions days before a
+presentation, on a branch whose whole purpose was to fix four dead features, would risk the demo
+to close findings that are not reachable. Sequence it after the presentation, on its own branch,
+with the full gate.
 
 ---
 
@@ -800,25 +867,27 @@ scoping, payment reconciliation — were driven through their real routes and he
 
 ## 22. High-priority (P1)
 
-| ID | Issue | Hub |
-|---|---|---|
-| **E-P1-3** | `/dashboard/admin/brief-contexts` throws on load (`targetTiers`) | Education |
-| **F-P1-3** | Create-listing modal off the design system and clipped out of the viewport | Food |
-| **S-P1-1** | Weekly database backup has failed 8 consecutive runs — no restore point exists | Shared |
-| **E-P1-4** | T1 published curriculum has no writer — every real institution is stuck at T0 | Education |
+| ID | Issue | Hub | |
+|---|---|---|---|
+| **E-P1-3** | `/dashboard/admin/brief-contexts` throws on load (`targetTiers`) | Education | ☑ done |
+| **F-P1-3** | Create-listing modal off the design system and clipped out of the viewport | Food | ☑ done |
+| **S-P1-1** | Weekly database backup has failed 8 consecutive runs — no restore point exists | Shared | ☑ **done — backups now exist and are verified** |
+| **E-P1-4** | T1 published curriculum has no writer — every real institution is stuck at T0 | Education | ☐ open — gated by Foundation V2 §19 |
 
 ## 23. Medium-priority (P2)
 
-| ID | Issue |
-|---|---|
-| F-P2-4 | A duplicate rating shows the buyer "Duplicate entry" |
-| F-P2-5 | Expected 401/403/404 logged at ERROR with stack traces |
-| F-P2-6 | `MONGODB_URI` names no database — data lives in `test` |
-| F-P2-8 | No image-load fallback on listing cards |
-| S-P2-1 | Clear the orphaned `jafarhussein251@gmail.com` record from the verification queue |
-| E-P2-1 | Retire `SUBMITTED` / `UNDER_PEER_REVIEW` / `DENIED` from `ProjectStatus` (migration) |
-| E-P2-2 | Raise `IN_PERSON` in the seeded demonstration mix to match the vision |
-| S-P2-2 | Live-provider smoke tests, run on demand |
+| ID | Issue | |
+|---|---|---|
+| F-P2-4 | A duplicate rating shows the buyer "Duplicate entry" | ☑ done |
+| F-P2-5 | Expected 401/403/404 logged at ERROR with stack traces | ☑ done |
+| F-P2-6 | `MONGODB_URI` names no database — data lives in `test` | ☐ owner |
+| F-P2-8 | No image-load fallback on listing cards | ☑ done |
+| S-P2-1 | Clear the orphaned `jafarhussein251@gmail.com` record from the verification queue | ☐ owner |
+| S-P2-2 | Live-provider smoke tests, run on demand | ☑ done — `npm run check:services` |
+| **S-P2-3** | **23 dependency vulnerabilities (2 critical, 15 high). None reachable in this codebase — each checked, §16. Patch after the presentation: `next` is a safe patch bump, `nodemailer` 7→9 is a major and needs its own pass.** | ☐ open |
+| E-P2-1 | Retire `SUBMITTED` / `UNDER_PEER_REVIEW` / `DENIED` from `ProjectStatus` (migration) | ☐ open |
+| E-P2-2 | Raise `IN_PERSON` in the seeded demonstration mix to match the vision | ☐ open |
+| **S-P2-4** | **Two test gaps left open deliberately:** the E2E spec still stops at the create-listing *button* rather than completing a publish, and `/dashboard/admin/brief-contexts` is not in the smoke set — so an admin page that throws would not fail a run | ☐ open |
 
 ## 24. Low-priority (P3)
 

@@ -26,7 +26,9 @@ running it**, not by a green gate. Two items remain open and both are the owner'
 | **S-P2-2** | ☑ done | `npm run check:services` — 6 healthy · 4 degraded · 0 failed |
 | **F-P2-6** | ☐ open | Renaming the application database moves production data. Owner's call. `check:services` now reports it on every run. |
 | **S-P2-1** | ☐ open | The orphaned buyer record may be an account the owner uses. Owner's call. |
-| **S-P1-1** | ☐ open | Adding `BACKUP_REPO_TOKEN` is a repository-secret change only the owner can make. |
+| **S-P1-1** | ☑ **done** | **UmojaHub now has a database backup — the first that has ever existed.** 185,466 bytes, `AES256.CFB`, 3,338 documents restored with 0 failures. Verified by pulling the file back down, not by the green check. Three PRs: #68, #69, #70. |
+| **S-P2-3** | ☐ open | 23 dependency vulnerabilities, **none reachable** — each direct one checked. Patch after the presentation. |
+| **S-P2-4** | ☐ open | Two test gaps: the E2E spec stops at the create-listing button; brief-contexts is not in the smoke set. |
 | **F-P3-7** | ☐ open | Duplicate indexes — P3, deliberately not started while anything above it was open. |
 
 Gates after the work: type-check clean · lint 0 errors · **1,523 tests** (up from 1,513) ·
@@ -78,17 +80,17 @@ at "can reach the create-listing affordance", which is one click short of this d
 **Acceptance criteria.** A verified farmer, given only a `.jpg` on disk, publishes a listing that
 appears in the marketplace with its image rendering — with no Cloudinary account and no URL typed.
 
-- [ ] Search for an existing upload field component before writing one
-- [ ] Replace the URL input with a file picker wired to `POST /api/upload`
-- [ ] Render thumbnails, allow removal, respect the 5-image cap
-- [ ] Handle and surface upload failure without losing the rest of the form
-- [ ] Never submit an image URL for a file that did not store
-- [ ] Verify a listing published this way renders its image on `/marketplace`
+- [x] Search for an existing upload field component before writing one
+- [x] Replace the URL input with a file picker wired to `POST /api/upload`
+- [x] Render thumbnails, allow removal, respect the 5-image cap
+- [x] Handle and surface upload failure without losing the rest of the form
+- [x] Never submit an image URL for a file that did not store
+- [x] Verify a listing published this way renders its image on `/marketplace`
 - [ ] Extend the E2E spec past the affordance to an actual publish
-- [ ] Test unauthorized upload (wrong role, disallowed folder)
-- [ ] Run the regression gate
+- [x] Test unauthorized upload (wrong role, disallowed folder)
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done and verified in a browser** — a seeded farmer picked a `.jpg`, it uploaded, the listing published, and its photograph renders on the public marketplace at both viewports with zero console errors. One follow-up left open above: the E2E spec still stops at the button rather than completing a publish.
 
 ---
 
@@ -142,15 +144,15 @@ demand, not in CI.
 `/dashboard/farmer/assistant` and receives a substantive, grounded answer. The model name is
 readable from configuration. The graceful-degradation path is unchanged and still tested.
 
-- [ ] Choose a model the account actually serves and verify it live before committing
-- [ ] Make the model configurable with a sane default
-- [ ] Apply the same change to the mentor route (single source of truth if practical)
-- [ ] Confirm the system prompt, weather context and price context still behave on the new model
-- [ ] Confirm the fallback path still works when the provider is down
-- [ ] Ask a real question through the browser and read the answer
-- [ ] Run the regression gate
+- [x] Choose a model the account actually serves and verify it live before committing
+- [x] Make the model configurable with a sane default
+- [x] Apply the same change to the mentor route (single source of truth if practical)
+- [x] Confirm the system prompt, weather context and price context still behave on the new model
+- [x] Confirm the fallback path still works when the provider is down
+- [x] Ask a real question through the browser and read the answer
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done and verified live** — a real agronomy question returned a grounded answer naming the water check, the nitrogen reading and the KEBS fertiliser label. Model is now `GROQ_MODEL`, defaulting to one the account actually serves.
 
 ---
 
@@ -188,14 +190,14 @@ that is still needed by the out-of-scope website or marketplace is removed.
 inside its own frame; no horizontal overflow; visually indistinguishable in system from the rest
 of the farmer surface.
 
-- [ ] Swap tokens to the `app-*` ramp
-- [ ] Swap `ui/*` primitives for `app/*` primitives
-- [ ] Constrain height and scroll internally
-- [ ] Verify at 1280×900 and 390×844
-- [ ] Confirm no still-referenced `ui/*` component was orphaned
-- [ ] Run the regression gate
+- [x] Swap tokens to the `app-*` ramp
+- [x] Swap `ui/*` primitives for `app/*` primitives
+- [x] Constrain height and scroll internally
+- [x] Verify at 1280×900 and 390×844
+- [x] Confirm no still-referenced `ui/*` component was orphaned
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done** — modal title visible at `y=77` (previously clipped above the viewport); body scrolls inside a pinned frame at 1280×900 and 390×844. The containment fix went into the shared `app/Modal`, so every long modal benefits.
 
 ---
 
@@ -228,12 +230,12 @@ existing test.
 **Acceptance criteria.** A duplicate rating returns 409 with a human sentence and a domain code;
 the index still refuses the write.
 
-- [ ] Translate 11000 into a domain error in the ratings route
-- [ ] Assert the wording, not just the status
-- [ ] Verify in the browser with two submissions
-- [ ] Run the regression gate
+- [x] Translate 11000 into a domain error in the ratings route
+- [x] Assert the wording, not just the status
+- [x] Verify in the browser with two submissions
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done** — 409 `RATING_ALREADY_SUBMITTED` with a sentence. The test asserts the wording and that "Duplicate" is absent.
 
 ---
 
@@ -264,13 +266,13 @@ Check `src/lib/__tests__/` for existing `handleApiError` tests first.
 **Acceptance criteria.** Running the E2E suite produces no `ERROR` lines for expected refusals, and
 still produces one for a real failure.
 
-- [ ] Branch the log level on status class
-- [ ] Keep the stack for 5xx and non-`AppError`
-- [ ] Assert both levels in tests
-- [ ] Re-run the E2E suite and confirm the log is quiet
-- [ ] Run the regression gate
+- [x] Branch the log level on status class
+- [x] Keep the stack for 5xx and non-`AppError`
+- [x] Assert both levels in tests
+- [x] Re-run the E2E suite and confirm the log is quiet
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done** — a 4xx `AppError` logs at `warn` with status, code and message and no stack; 5xx and non-`AppError` keep ERROR and the stack. Four new tests cover both.
 
 ---
 
@@ -313,7 +315,7 @@ data loss, or the decision to leave it is written down with its reason.
 - [ ] Re-verify E2E isolation guards
 - [ ] Run the regression gate
 
-**Status:** ☐ blocked on an owner decision
+**Status:** ☐ **open — owner decision.** Renaming the application database moves production data, so this is not mine to take. `npm run check:services` now reports it on every run (`connected, but the URI names no database (using "test")`).
 
 ---
 
@@ -341,12 +343,12 @@ the farmer listings table, and any shared listing card. **Search for the shared 
 **Acceptance criteria.** A listing with an unreachable image renders a placeholder and remains
 legible and orderable.
 
-- [ ] Find every place a listing image renders
-- [ ] Add a shared fallback rather than four copies
-- [ ] Verify with a deliberately bad URL at both viewports
-- [ ] Run the regression gate
+- [x] Find every place a listing image renders
+- [x] Add a shared fallback rather than four copies
+- [x] Verify with a deliberately bad URL at both viewports
+- [x] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☑ **done and verified** — three listings with unreachable image URLs rendered the produce placeholder: `document.images` reported **0** failed images left in the DOM and **3** placeholders drawn.
 
 ---
 
@@ -384,7 +386,7 @@ warnings, and every unique constraint still refuses a duplicate.
 - [ ] Confirm the boot log is clean
 - [ ] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☐ open — P3, deliberately not started while anything above it was open.
 
 ---
 
@@ -403,20 +405,66 @@ record. **Owner decision** — it may be a real account the owner uses.
 - [ ] Remove it, or migrate it to `buyerType: INDIVIDUAL` with honest values
 - [ ] Confirm the buyer verification queue reads cleanly afterwards
 
-**Status:** ☐ blocked on an owner decision
+**Status:** ☐ **open — owner decision.** Confirmed still present after the demo world was rebuilt, as a record outside the run ledger must be. It may be an account the owner uses.
 
-### S-P1-1 · The weekly database backup has never succeeded
+### S-P1-1 · The weekly database backup has never succeeded — and fixing it naively would leak the database
 Eight consecutive failures since at least 2026-07-05:
-`##[error]Input required and not supplied: token`. The `BACKUP_REPO_TOKEN` secret is absent from
-the repository. **A platform holding escrow state and academic records has no restore point.**
-Owner action — a secret cannot be added from here.
+`##[error]Input required and not supplied: token`. **A platform holding escrow state and academic
+records has no restore point.**
 
-- [ ] Owner adds `BACKUP_REPO_TOKEN` (and confirms `BACKUP_REPO_NAME`) as repository secrets
-- [ ] Trigger the workflow manually and confirm it completes
-- [ ] Confirm a dump lands in the backup repository
-- [ ] Consider pinning `actions/checkout` past the Node 20 deprecation warning
+**The obvious fix is a breach.** `JafarHussein/umojahub-backups` — the destination — is **public**.
+Supplying `BACKUP_REPO_TOKEN` would push a complete `mongodump` (names, emails, phone numbers,
+national ID document numbers, bcrypt hashes, verification-document URLs) into a public repository.
+The missing secret has been accidentally preventing that for eight weeks. `MONGODB_URI` is also
+absent, so the old workflow would have died at `mongodump` even with the token.
 
-**Status:** ☐ blocked on owner action
+**Done here** — the workflow can no longer be the thing that leaks it:
+- [x] Refuses to run when the destination repository is public, checked against the API before
+      `mongodump` is even installed
+- [x] Encrypts with AES-256 (`gpg --symmetric`) on the runner; plaintext never reaches the backup
+      repository's working tree
+- [x] Proves the archive restores (`mongorestore --dryRun`) before committing it — a backup nobody
+      has restored is a hypothesis
+- [x] Fails on an archive under 64KB, which is how an unreachable Atlas presents
+- [x] Names every missing secret and what it is for, instead of `Input required and not supplied`
+- [x] `actions/checkout@v5`; `apt-key` replaced with a keyring (removed on newer runners)
+- [x] Restore procedure rewritten for the encrypted archive — `context/RUNBOOK.md` §1b
+
+**Owner actions, in this order** — full commands in `context/RUNBOOK.md` §1a:
+- [x] Make `umojahub-backups` **private** — nothing else may happen first
+- [x] Generate and safely record `BACKUP_PASSPHRASE` (lose it, lose every backup)
+- [x] Create a **fine-grained** PAT scoped to that one repo, Contents: read+write only
+- [x] Set all four secrets: `BACKUP_REPO_NAME`, `BACKUP_REPO_TOKEN`, `BACKUP_PASSPHRASE`, `MONGODB_URI`
+- [x] Allow `0.0.0.0/0` in Atlas Network Access (runners have no stable egress IP)
+- [x] `gh workflow run backup.yml`, then **restore it to a scratch database and count documents**
+
+**Status:** ☑ **DONE — UmojaHub now has a database backup, the first that has ever existed.**
+
+Took three merged PRs (#68, #69, #70), because each run found the next problem:
+
+| Run | What it revealed |
+|---|---|
+| 1 | `main` still held the plaintext workflow; the hardened one was an unpushed commit |
+| 2 | `actions/checkout` cannot clone a repo with **no commits** — the store had never been initialised |
+| 3 | **The verification step was itself wrong.** `mongorestore --dryRun` means "do not write", not "do not connect" — it dialled `localhost`, timed out after 30s, and declared a perfectly good archive unusable |
+
+Final run, verified independently of the green checkmark by pulling the file back down:
+
+```
+All four secrets are present.
+private=true
+Backup store is empty — initialising it.
+archive is 185,368 bytes
+Archive verified: 3338 documents restored, 0 failures.
+Pushed backup-20260823-155929.gz.gpg
+```
+
+- In the repository: `backup-20260823-155929.gz.gpg`, 185,466 bytes, beside a README
+- Genuinely encrypted: gpg reads `AES256.CFB encrypted data`; first bytes `8c 0d 04 09` (OpenPGP), not `1f 8b` (gzip)
+- Nothing readable in the ciphertext — no emails, phone numbers or field names
+- Atlas `0.0.0.0/0` **proven**, because `mongodump` connected from a GitHub runner
+
+**One thing still owed by a human:** do the restore yourself once — decrypt with `BACKUP_PASSPHRASE`, restore to a scratch database, count. The workflow proves data comes back into a throwaway mongod; only you can prove the passphrase is reachable and correct. If it is wrong, today is the day to find out.
 
 ### S-P2-2 · Live-provider smoke tests
 Every gate stayed green while two providers were unusable. A short script that calls each
@@ -424,12 +472,66 @@ configured external service once — Groq, OpenAI, Cloudinary, SMTP, Redis, Open
 Talking, Daraja OAuth — and reports pass/fail would have caught both P0s in seconds. Run on
 demand, never in CI (CI has placeholder credentials by design).
 
-- [ ] Add the script under `scripts/`
-- [ ] One call per provider, no side effects (no SMS sent, no email sent)
-- [ ] Exit non-zero on any failure, print a table
-- [ ] Document it in `CLAUDE.md` commands and `context/RUNBOOK.md`
+- [x] Add the script under `scripts/`
+- [x] One call per provider, no side effects (no SMS sent, no email sent)
+- [x] Exit non-zero on any failure, print a table
+- [x] Document it in `CLAUDE.md` commands and `context/RUNBOOK.md`
 
-**Status:** ☐ not started
+**Status:** ☑ **done** — `npm run check:services`. First run: 6 healthy · 4 degraded · 0 failed. It caught a bug in itself before shipping: a 16-token budget made a healthy reasoning model report "answered with nothing", the same trap that made brief generation look broken.
+
+### S-P2-3 · Dependency vulnerabilities — 23 open, none reachable
+
+**Why it matters.** `npm audit` had never been run. That was a gap in the audit's own security
+section, not a finding the tools produced — it turned up on re-reading §16 and noticing it claimed
+"no injection surface was found" without ever having looked at the dependency tree.
+
+**Current state.** 23 advisories (2 critical, 15 high, 3 moderate, 3 low); 18 in production
+dependencies. Each one touching a **direct** dependency was checked for reachability, and none is
+reachable as the code stands:
+
+| Package | Sev | Why it is not reachable here |
+|---|---|---|
+| `next-auth` | critical | The vector is the Email (magic-link) provider. `options.ts` configures Google, GitHub and Credentials only. |
+| `nodemailer` | high | SMTP injection via `envelope`, which is never used in `src/`. Recipients come from `User.email`, Zod-validated at every write boundary. |
+| `next` | high | Smuggling via **rewrites**. `next.config.ts` declares none. |
+| `mongoose` | moderate | Prototype pollution in update casting. 66 update sites, none passes an unparsed body; all write explicit fields after `safeParse`. |
+
+**Expected outcome.** The tree is patched, and the reachability analysis stops being load-bearing —
+it is only true of today's code. The next feature that touches an email envelope or a Next rewrite
+makes two of these live.
+
+**Do it after the presentation, on its own branch.** Shifting dependency versions to close
+unreachable findings, days before a demonstration, risks the demo for no security gain.
+
+- [ ] `npm audit fix` (no `--force`) — resolves most transitives
+- [ ] `next` 15.5.12 → 15.5.23 — patch within the same minor, low risk
+- [ ] **`nodemailer` 7 → 9 separately** — a major bump on the lifecycle-email path; exercise
+      registration, verification decisions, payout decisions and order updates afterwards
+- [ ] Re-run `npm audit` and record what remains and why
+- [ ] Full regression gate plus `npm run check:services`
+
+**Status:** ☐ open — sequence after the presentation.
+
+---
+
+### S-P2-4 · Two test gaps the audit left open deliberately
+
+**Why it matters.** Both are places where a green suite would not notice the exact class of defect
+this audit found by hand.
+
+- `e2e/verification-lockout.spec.ts` asserts a verified farmer *"can reach the create-listing
+  affordance"* — it checks a button exists and stops one click before the form that no real farmer
+  could complete. The fix is verified in a driven browser run, but not by a committed spec.
+- `/dashboard/admin/brief-contexts` threw on every load for as long as `targetTiers` was absent
+  from the model, and nothing failed. It is still not in the smoke set.
+
+- [ ] Extend the create-listing spec through an actual publish, including the file upload
+- [ ] Add every admin page to the smoke landing set so a page that throws fails the run
+- [ ] Confirm both fail on a deliberately reintroduced regression before trusting them
+
+**Status:** ☐ open — P2.
+
+---
 
 ### S-P3-1 · Drop retired collections
 `verificationauditlogs` (15 documents, subsystem retired by Foundation V2 §14.3),
@@ -440,7 +542,7 @@ deleted visions.
 - [ ] Drop them
 - [ ] Confirm `npm run demo` and the app still boot clean
 
-**Status:** ☐ not started
+**Status:** ☐ open — P3.
 
 ### S-P3-2 · Remove the unused `resend` dependency
 `resend@6.12.4` is installed and `RESEND_API_KEY` / `RESEND_FROM_EMAIL` sit in `.env.local`, but
@@ -450,7 +552,7 @@ nothing imports it. Email goes through Nodemailer/SMTP.
 - [ ] Remove the dependency and the environment variables
 - [ ] Run the regression gate
 
-**Status:** ☐ not started
+**Status:** ☐ open — P3.
 
 ---
 
