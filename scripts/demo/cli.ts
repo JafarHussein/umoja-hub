@@ -17,7 +17,14 @@
 import { bootstrap, shutdown, log } from './db';
 import { runSimulation } from './orchestrate';
 import { runAnalytics } from './analytics';
-import { resetRun, resetAllRuns, clearRetiredSeedData, clearOrphanedRecords } from './reset';
+import {
+  resetRun,
+  resetAllRuns,
+  clearRetiredSeedData,
+  clearOrphanedRecords,
+  clearAuthThrottles,
+  clearRehearsalAccounts,
+} from './reset';
 import { validate } from './validate';
 import { DEMO_ACCOUNTS, DEMO_PASSWORDS } from './content/accounts';
 
@@ -38,6 +45,12 @@ async function demo(): Promise<boolean> {
   // demonstration created through the app is now ownerless, and this is the one
   // moment it can be told apart from data that belongs to somebody.
   await clearOrphanedRecords();
+  // The signup and sign-in throttles are not in Mongo and outlive the world.
+  // A rehearsed registration must not leave the form rate-limited for the demo.
+  await clearAuthThrottles();
+  // The account the presenter registers live is not part of the world and would
+  // otherwise survive into the next build, blocking its own demonstration.
+  await clearRehearsalAccounts();
   await runSimulation();
   await runAnalytics();
   const healthy = await validate();
@@ -71,6 +84,8 @@ async function main(): Promise<void> {
           await resetAllRuns();
           await clearRetiredSeedData();
           await clearOrphanedRecords();
+          await clearAuthThrottles();
+          await clearRehearsalAccounts();
         }
         break;
       case 'validate':

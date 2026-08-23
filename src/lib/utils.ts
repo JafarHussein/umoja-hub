@@ -32,14 +32,39 @@ export class AppError extends Error {
 // ---------------------------------------------------------------------------
 
 export function handleApiError(error: unknown): NextResponse {
-  logger.error('API', 'Unhandled error in API route', { error });
-
+  // ---------------------------------------------------------------------
+  // An expected refusal is not an error.
+  //
+  // Every `AppError` used to be logged at ERROR with a full stack trace,
+  // including the ones the application *decided* to return: a signed-out
+  // visitor (401), a farmer who is not yet verified (403), an order that does
+  // not exist for this buyer (404), a receipt asked for before payment (409).
+  // Driving the app for an hour produced dozens of them, all describing correct
+  // behaviour, each with a ten-frame stack. A log in which routine refusals are
+  // indistinguishable from failures is a log nobody can find a failure in.
+  //
+  // A 4xx `AppError` is therefore recorded at `warn`, by code, without a stack —
+  // enough to spot a spike in refusals, not enough to drown the thing that
+  // actually broke. Anything 5xx, and anything that is not an `AppError` at
+  // all, keeps ERROR and its stack: those are the ones nobody chose.
+  // ---------------------------------------------------------------------
   if (error instanceof AppError) {
+    if (error.statusCode >= 500) {
+      logger.error('API', 'Unhandled error in API route', { error });
+    } else {
+      logger.warn('API', 'Request refused', {
+        status: error.statusCode,
+        code: error.code,
+        message: error.message,
+      });
+    }
     return NextResponse.json(
       { error: error.message, code: error.code },
       { status: error.statusCode }
     );
   }
+
+  logger.error('API', 'Unhandled error in API route', { error });
 
   if (error instanceof mongoose.Error.ValidationError) {
     return NextResponse.json(

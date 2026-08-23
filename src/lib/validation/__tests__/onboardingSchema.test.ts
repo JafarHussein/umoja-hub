@@ -3,6 +3,7 @@ import {
   usernameSchema,
   passwordSchema,
   passwordSetupSchema,
+  registrationSchema,
   credentialsLoginSchema,
   passwordResetRequestSchema,
   passwordResetConfirmSchema,
@@ -508,6 +509,7 @@ describe('required-field messages are written for the person reading them', () =
     ['farmer verification', farmerOnboardingVerificationSchema],
     ['buyer verification', buyerOnboardingVerificationSchema],
     ['lecturer verification', lecturerOnboardingVerificationSchema],
+    ['registration', registrationSchema],
   ];
 
   it.each(SCHEMAS)('%s never leaks Zod internals on an empty submit', (_name, schema) => {
@@ -531,5 +533,100 @@ describe('required-field messages are written for the person reading them', () =
     });
     expect(parsed.success).toBe(false);
     expect(parsed.error!.flatten().fieldErrors['county']).toEqual(['Select your county']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// registrationSchema — the contract the /auth/register form and the
+// /api/auth/register route both hold. It is the single source of truth for what
+// a valid signup is, so the cases below are the definition of that, not a
+// restatement of the implementation.
+// ---------------------------------------------------------------------------
+
+describe('registrationSchema', () => {
+  const VALID = {
+    fullName: 'Mercy Wairimu',
+    email: 'mercy.wairimu@gmail.com',
+    password: 'Shamba2026!',
+    confirmPassword: 'Shamba2026!',
+  };
+
+  it('accepts a complete, valid registration', () => {
+    expect(registrationSchema.safeParse(VALID).success).toBe(true);
+  });
+
+  it('normalises the email — trimmed and lowercased', () => {
+    const parsed = registrationSchema.safeParse({ ...VALID, email: '  Mercy.Wairimu@GMAIL.com ' });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data!.email).toBe('mercy.wairimu@gmail.com');
+  });
+
+  it('trims the name', () => {
+    const parsed = registrationSchema.safeParse({ ...VALID, fullName: '  Mercy Wairimu  ' });
+    expect(parsed.data!.fullName).toBe('Mercy Wairimu');
+  });
+
+  it('carries no role field, so a submitted role is discarded', () => {
+    const parsed = registrationSchema.safeParse({ ...VALID, role: 'ADMIN' });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data as Record<string, unknown>).not.toHaveProperty('role');
+  });
+
+  it.each([
+    ['a blank name', { fullName: '' }],
+    ['a one-character name', { fullName: 'M' }],
+    ['an email pasted into the name field', { fullName: 'mercy@example.com' }],
+    ['markup in the name field', { fullName: '<script>x</script>' }],
+    ['an invalid email', { email: 'mercy.wairimu' }],
+    ['an email with no domain', { email: 'mercy@' }],
+  ])('rejects %s', (_label, override) => {
+    expect(registrationSchema.safeParse({ ...VALID, ...override }).success).toBe(false);
+  });
+
+  it('accepts names with apostrophes, hyphens and titles', () => {
+    for (const fullName of ["Dr. Grace Ndung’u", "Mary-Anne O'Brien", 'Achieng Odhiambo']) {
+      expect(registrationSchema.safeParse({ ...VALID, fullName }).success).toBe(true);
+    }
+  });
+
+  it('enforces the same password rules as the OAuth funnel and the reset flow', () => {
+    for (const password of ['short1A', 'alllowercase1', 'ALLUPPERCASE1', 'NoDigitsHere']) {
+      const parsed = registrationSchema.safeParse({ ...VALID, password, confirmPassword: password });
+      expect(parsed.success).toBe(false);
+    }
+  });
+
+  it('rejects a password beyond bcrypt’s 72-byte input limit', () => {
+    const password = `${'A1a'.repeat(30)}!`;
+    expect(registrationSchema.safeParse({ ...VALID, password, confirmPassword: password }).success).toBe(
+      false
+    );
+  });
+
+  it('reports a password mismatch on the confirm field, where the user can fix it', () => {
+    const parsed = registrationSchema.safeParse({ ...VALID, confirmPassword: 'Shamba2027!' });
+    expect(parsed.success).toBe(false);
+    expect(parsed.error!.flatten().fieldErrors['confirmPassword']).toEqual([
+      'Both passwords must match',
+    ]);
+  });
+});
+
+describe('registrationSchema — blank vs wrong', () => {
+  const VALID = {
+    fullName: 'Mercy Wairimu',
+    email: 'mercy.wairimu@gmail.com',
+    password: 'Shamba2026!',
+    confirmPassword: 'Shamba2026!',
+  };
+
+  it('tells a blank email it is blank, not that it is invalid', () => {
+    const parsed = registrationSchema.safeParse({ ...VALID, email: '' });
+    expect(parsed.error!.flatten().fieldErrors['email']).toContain('Enter your email address');
+  });
+
+  it('tells a wrong email it is wrong', () => {
+    const parsed = registrationSchema.safeParse({ ...VALID, email: 'mercy.wairimu' });
+    expect(parsed.error!.flatten().fieldErrors['email']).toContain('Enter a valid email address');
   });
 });

@@ -102,6 +102,8 @@ const PUBLIC_PAGE_ENDPOINTS: { page: string; endpoints: string[] }[] = [
 const PUBLIC_API_ROUTES: Record<string, string> = {
   'auth/[...nextauth]': "NextAuth's own sign-in and callback endpoints",
   'auth/password-reset/confirm': 'pre-auth by definition; gated on a single-use token',
+  'auth/register':
+    'account creation; pre-auth by definition. Accepts no role field, so nothing in the body can grant privilege, and it is throttled per source address.',
   'auth/password-reset/request': 'pre-auth by definition; throttled',
   health: 'liveness probe',
   'marketplace/[listingId]/fairness': 'buyer price fairness on a public listing page (D14)',

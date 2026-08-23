@@ -13,11 +13,10 @@ import ChatSession from '@/lib/models/ChatSession.model';
 import { buildAssistantSystemPrompt } from '@/lib/foodhub/assistantPrompt';
 import { getCountyForecast } from '@/lib/integrations/weatherService';
 import { buildPriceContextForMessage } from '@/lib/intelligence/assistantPriceContext';
+import { GROQ_API_URL, GROQ_MODEL } from '@/lib/ai/groq';
 import { CHAT_SESSION_TTL_DAYS, Role } from '@/types';
 import type { WeatherContext, PriceContextLine } from '@/lib/foodhub/assistantPrompt';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const FALLBACK_RESPONSE =
   "I'm having trouble connecting right now. Please try again in a moment. In the meantime, you can visit Wakulima Market or contact your local KEBS office for guidance.";
 

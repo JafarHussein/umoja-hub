@@ -354,3 +354,29 @@ export const ACCOUNT_DEFAULTS = {
   onboardingStage: OnboardingStage.COMPLETED,
   isEmailVerified: true,
 };
+
+// ---------------------------------------------------------------------------
+// Addresses reserved for the account created LIVE during the demonstration.
+//
+// The registration walkthrough creates a real user through the real form. That
+// account is not part of the generated world — nothing in a run's ledger points
+// at it — so nothing in `resetAllRuns` can remove it, and it would survive into
+// the next `npm run demo`. The second rehearsal would then meet "an account with
+// this email already exists" at precisely the moment the presenter is
+// demonstrating that registration works.
+//
+// Listing the address here makes it the demo's property, cleared on every
+// build, exactly as `DEMO_ACCOUNTS` are. The list is explicit and short on
+// purpose: this is the one mechanism in the reset that removes a user who was
+// created through the application, so it must never be able to match anyone the
+// runbook has not named.
+//
+// Anything added here MUST also be documented in the presentation script, or a
+// presenter will improvise an address that is never cleaned up.
+export const REHEARSAL_ACCOUNTS: Array<{ email: string; persona: string }> = [
+  {
+    email: 'mercy.wairimu@gmail.com',
+    persona:
+      'Mercy Wairimu — the new farmer registered live during the demonstration (Nyeri, French beans).',
+  },
+];

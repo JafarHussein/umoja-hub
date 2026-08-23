@@ -43,7 +43,7 @@ const darajaEnvVars = [
   'MPESA_CALLBACK_URL',
 ] as const;
 
-type RequiredEnvVar = (typeof baseRequiredEnvVars)[number] | (typeof darajaEnvVars)[number];
+export type RequiredEnvVar = (typeof baseRequiredEnvVars)[number] | (typeof darajaEnvVars)[number];
 
 /** True when PAYMENT_PROVIDER selects a real Daraja provider. */
 function darajaCredentialsRequired(): boolean {

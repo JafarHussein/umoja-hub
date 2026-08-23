@@ -1,7 +1,19 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ListingCategory } from '@/types';
+import { ListingPhoto } from './ListingPhoto';
+
+/** Drawn when a listing has no photograph, and when the one it has fails. */
+function CardPlaceholder(): React.ReactElement {
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <path d="M8 32L20 14L32 32H8Z" fill="currentColor" className="text-app-faint/50" />
+        <circle cx="27" cy="12" r="4" fill="currentColor" className="text-app-faint/50" />
+      </svg>
+    </div>
+  );
+}
 
 // Marketplace feed card (Marketplace Rebuild, Stage 6 primitive, introduced in
 // Stage 3). Built on the `.theme-app` token group. Consumes the GET
@@ -77,21 +89,16 @@ export function ListingCard({
         {/* Photo */}
         <div className="relative aspect-[4/3] overflow-hidden bg-app-sunken">
           {listing.imageUrl ? (
-            <Image
+            <ListingPhoto
               src={listing.imageUrl}
               alt={`${listing.cropName} from ${listing.pickupCounty}`}
-              fill
               priority={priority}
               className="object-cover transition-transform duration-250 group-hover:scale-[1.03]"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              fallback={<CardPlaceholder />}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                <path d="M8 32L20 14L32 32H8Z" fill="currentColor" className="text-app-faint/50" />
-                <circle cx="27" cy="12" r="4" fill="currentColor" className="text-app-faint/50" />
-              </svg>
-            </div>
+            <CardPlaceholder />
           )}
 
           {/* One overlay, and only when it says something nothing else does.

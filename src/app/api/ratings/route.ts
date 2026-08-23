@@ -71,7 +71,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create rating — orderId unique index prevents duplicate ratings
+    // Create rating — the unique index on orderId is what actually prevents a
+    // second one. It is caught below and translated, because the generic
+    // duplicate-key response says "Duplicate entry" and the buyer's screen
+    // renders whatever the route sends back word for word.
     const newRating = await Rating.create({
       orderId,
       farmerId: order.farmerId,
@@ -114,6 +117,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 201 }
     );
   } catch (error) {
+    // "Duplicate entry" is a database's word, not a sentence anyone can act on.
+    // The same translation the payout route already does for the same class of
+    // error, for the same reason: the person reading it needs to know they have
+    // already done this, not that a key collided.
+    if ((error as { code?: number }).code === 11000) {
+      return NextResponse.json(
+        {
+          error: 'You have already rated this order. A rating cannot be changed once left.',
+          code: 'RATING_ALREADY_SUBMITTED',
+        },
+        { status: 409 }
+      );
+    }
     return handleApiError(error);
   }
 }

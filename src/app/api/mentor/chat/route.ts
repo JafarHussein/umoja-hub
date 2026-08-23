@@ -9,10 +9,13 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { env } from '@/lib/env';
 import { Role, MENTOR_SESSION_TTL_DAYS, ACTIVE_PROJECT_STATUSES } from '@/types';
 import { EDUCATION_PLATFORM_KNOWLEDGE } from '@/lib/ai/platformKnowledge';
+import { GROQ_API_URL, GROQ_MODEL } from '@/lib/ai/groq';
 import type { ProjectEngagementDoc } from '@/lib/models/ProjectEngagement.model';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+// The endpoint and the model are the Farm Assistant's, imported rather than
+// repeated. They were two copies of the same two strings, and when Groq retired
+// the model both features went silent at once with nothing to update but two
+// separate files. One definition now; see the note beside it in `groqService`.
 const MENTOR_RATE_LIMIT = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const MENTOR_FALLBACK =

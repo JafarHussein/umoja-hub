@@ -10,7 +10,8 @@ import { homeForRole, ROLE_LABEL } from '@/lib/auth/dashboards';
 import { Role } from '@/types';
 
 // Sign-in for existing accounts (AUTH_ONBOARDING_FLOW_V2). New users create an
-// account through /onboarding/welcome; OAuth here reconciles an existing account.
+// account at /auth/register — with an email and a password, or with a provider;
+// OAuth here reconciles an existing account.
 // The callback lands on an /onboarding route so the middleware bounces an
 // already-onboarded user on to their dashboard. An OAuth sign-in without an
 // account (no draft) is redirected back into onboarding by the signIn callback.
@@ -275,7 +276,7 @@ function LoginContent(): React.ReactElement {
 
             <p className="app-body mt-8 border-t border-app-hairline pt-6 text-app-muted">
               New to UmojaHub?{' '}
-              <Link href="/onboarding/welcome" className="text-app-brand hover:underline">
+              <Link href="/auth/register" className="text-app-brand hover:underline">
                 Create your account
               </Link>
             </p>

@@ -52,15 +52,19 @@ export function Modal({
         onClick={onClose}
         aria-hidden="true"
       />
+      {/* The panel is a column capped at the viewport so a long form scrolls
+          *inside* it. Without the cap a tall modal grew past the top of the
+          screen and its title was clipped away — the create-listing form opened
+          mid-sentence. The title and footer stay put; only the body scrolls. */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-md rounded-app-card border border-app-hairline',
-          'bg-app-card p-5 shadow-app-float',
+          'relative z-10 flex max-h-full w-full max-w-md flex-col rounded-app-card',
+          'border border-app-hairline bg-app-card p-5 shadow-app-float',
           className
         )}
       >
         {title && (
-          <div className="mb-2 flex items-start justify-between gap-4">
+          <div className="mb-2 flex shrink-0 items-start justify-between gap-4">
             <h2 className="app-h2 text-app-ink">{title}</h2>
             <button
               type="button"
@@ -72,8 +76,13 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="app-body text-app-body">{children}</div>
-        {footer && <div className="mt-5 flex items-center justify-end gap-2">{footer}</div>}
+        {/* `-mx-1 px-1` keeps focus rings from being clipped by the scroll box. */}
+        <div className="app-body -mx-1 min-h-0 flex-1 overflow-y-auto px-1 text-app-body">
+          {children}
+        </div>
+        {footer && (
+          <div className="mt-5 flex shrink-0 items-center justify-end gap-2">{footer}</div>
+        )}
       </div>
     </div>
   );
