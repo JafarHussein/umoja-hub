@@ -5,25 +5,56 @@
 
 ---
 
+## 0. First: ask the outside world whether it still works
+
+```bash
+npm run check:services
+```
+
+One call per external service — MongoDB, Cloudinary, the Groq model behind the Farm Assistant and
+the AI Mentor, the brief generator, OpenAI moderation, SMTP, Redis, OpenWeatherMap, Africa's
+Talking and Daraja. It sends no SMS, no email and no payment; the two model checks spend a few
+tokens asking for the word "ok".
+
+**Run it before every demonstration, after every deploy, and first in any incident.** On
+2026-08-23 an audit found three dead features that every other gate had missed: Groq had stopped
+serving the model both AI features named, and the brief generator's account had run out of credit.
+Type-check, lint, 1,513 unit tests, 55 E2E tests, 73 demo checks and a green production build all
+passed throughout — they mock the providers, so they were testing our code, and our code was right.
+This script tests the world.
+
+`WARN` is a real answer, not a near-failure: the payment simulator, the SMS sandbox and the
+unnamed database are all deliberate postures, and the script exits 0 for them. Only `FAIL` exits 1.
+
+---
+
 ## 1. Restore from weekly backup
 
-> **⚠ Read this before assuming a backup exists.**
->
-> The weekly workflow **never once succeeded** between at least 2026-07-05 and 2026-08-23. Every
-> Sunday it failed on its first step with `Input required and not supplied: token`, because
-> `BACKUP_REPO_TOKEN` had never been set — so **no archive was ever written**. Confirm the current
-> position yourself before relying on anything here:
+> **✅ Backups exist and are verified, as of 2026-08-23.** Confirm the current position yourself
+> before relying on it:
 >
 > ```bash
 > gh run list --workflow=backup.yml --limit 5
 > ```
 >
+> **History, because it explains why this procedure is shaped the way it is.** The workflow never
+> once succeeded between at least 2026-07-05 and 2026-08-23 — every Sunday it failed on its first
+> step with `Input required and not supplied: token`, because `BACKUP_REPO_TOKEN` had never been
+> set, so no archive was ever written.
+>
 > Investigating the fix turned up something worse: `JafarHussein/umojahub-backups` was **public**.
 > Had the token been supplied at any point, this workflow would have pushed a complete dump —
 > names, emails, phone numbers, national ID document numbers, bcrypt password hashes and the URL
-> of every uploaded verification document — into a public repository. The missing secret was
-> accidentally preventing a data breach. The repository is now private, and the workflow refuses
-> to run against a public one.
+> of every uploaded verification document — into a public repository. **The missing secret was
+> accidentally preventing a data breach.**
+>
+> The repository is now private, the workflow refuses to run against a public one, and the first
+> real archive was written on 2026-08-23: 185,466 bytes, `AES256.CFB`, **3,338 documents restored
+> with 0 failures** into a throwaway database. Atlas `0.0.0.0/0` is proven, because a GitHub runner
+> connected.
+>
+> **Still owed by a human:** do §1b yourself once, to prove `BACKUP_PASSPHRASE` is reachable and
+> correct. The workflow proves data comes back; only you can prove you can decrypt it.
 
 ### 1a. Prerequisites — the workflow fails loudly without all of them
 
