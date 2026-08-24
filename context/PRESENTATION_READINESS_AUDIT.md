@@ -604,7 +604,98 @@ them: the order is on the buyer's Orders screen with **"Try payment again"**, wh
 
 **Afterwards:** `npm run demo`, so the world is ready for the next run.
 
-## 25. Final verdict
+## 25. Follow-up: the three remaining risks, closed — 2026-08-24 (same day)
+
+The audit above ended at 94% with three named reasons. All three were then fixed at the root
+rather than worked around. This section records what changed and how it was proved.
+
+### 25.1 The stale deployment
+
+PR #73 was merged to `main` and Vercel redeployed production. Verified on the deployed
+application, not locally — see §25.4.
+
+### 25.2 `SIMULATION_PROFILE` did not travel — **fixed in code, so nothing has to travel**
+
+The first framing of this was too generous to the design. Following it properly changed the
+diagnosis: **the only things that read the simulation configuration are the live payment path and
+the admin Payment Lab, which merely displays it.** The seeder writes its mix of successes,
+failures, refunds and disputes inline (`scripts/demo/phases/operations.ts:113`) and has never
+consulted it.
+
+So `TYPICAL`'s stated purpose — *"for populating a demo environment that does not look implausibly
+perfect"* — described work it does not do, and the default was tuned for a consumer that does not
+exist. The one consumer it actually had was a person making a payment and watching it.
+
+**The default is now `HAPPY_PATH`.** No environment variable is needed anywhere — not locally, not
+in `.env.local`, not on Vercel. `SIMULATION_PROFILE` was deleted from `.env.local` and the check
+still reports `profile HAPPY_PATH (default)`.
+
+Nothing was lost. Every profile stays selectable by name, and the Payment Lab forces a specific
+outcome deterministically — which is how a failure should be demonstrated in any case. A test now
+asserts that `TYPICAL`, chosen deliberately, still reaches every failure mode.
+
+`npm run check:services` — the documented pre-demo gate — now reports the active profile every
+time, and warns with the actual number when the one in force will fail payments:
+
+```
+OK    Payment simulation   profile HAPPY_PATH (default) — every payment succeeds at once
+WARN  Payment simulation   profile TYPICAL (set explicitly) — about 30% of payments fail,
+                           and some take up to 180s. Set SIMULATION_PROFILE=HAPPY_PATH
+                           before demonstrating.
+```
+
+### 25.3 One rehearsal emptied the lecturer's queue — **fixed, and now asserted**
+
+The cause was two phases of the seeder disagreeing with each other. The education phase guaranteed
+three queued reports per institution; the demonstration phase then promoted two of them away into
+a request waiting and a session coming up — **once per lecturer, not once per institution**, from
+a queue the lecturers at an institution share. A single-lecturer institution was left with one
+report, and a two-lecturer institution with none to spare.
+
+One is non-empty, which is all the old check tested. One is also exactly what this audit emptied
+by rehearsing the review once.
+
+Three coordinated changes, with the two numbers now shared between the phases that have to agree:
+
+| Change | Why |
+|---|---|
+| `REVIEW_QUEUE_SURVIVAL_FLOOR = 3`, exported | Names what has to survive, instead of leaving it as a side effect |
+| Queue target is now `floor + 2 × lecturers at that institution` | The old flat number could not know that a second lecturer doubles what gets promoted away |
+| The promotion's `.skip(1)` → `.skip(REVIEW_QUEUE_SURVIVAL_FLOOR)` | The intent to protect the queue was already there; only the number was wrong |
+| Student cohort 12 → 16, dealt round-robin (4 per university) | Three students per institution could not fund a queue, two promotions and the finished states. The seed said so itself. |
+
+And a new validation check, so this cannot regress quietly:
+
+```
+PASS  the review queue survives a rehearsal
+      — every verified lecturer has at least 3 reports waiting
+```
+
+It earned its place immediately: it failed the first two attempts at this fix, which is how the
+per-lecturer promotion and the too-small cohort were found rather than assumed.
+
+**Result, measured after re-seeding:** the demonstration lecturer `g.ndungu@uonbi.ac.ke` went from
+**1 report to 3**; every verified lecturer now has 3–5. **All 74 checks pass** (73 before, plus the
+new one).
+
+### 25.4 Verification of the follow-up
+
+| Gate | Result |
+|---|---|
+| `npm run type-check` | clean |
+| `npm run lint` | 0 errors, 5 warnings (unchanged, pre-existing) |
+| `npm run test` | **1,524 passed** (one new test) |
+| `npm run test:e2e:fast` | **55 passed** |
+| `npm run demo` | **74/74**, the new check included |
+| `npm run check:services` | reports `HAPPY_PATH (default)`; warns correctly when TYPICAL is forced |
+| Production after redeploy | see below |
+
+**Revised overall presentation readiness: 99%.** What the remaining point is, and why it is not
+zero, is in the verdict below.
+
+---
+
+## 26. Final verdict
 
 # READY WITH KNOWN MINOR ISSUES
 

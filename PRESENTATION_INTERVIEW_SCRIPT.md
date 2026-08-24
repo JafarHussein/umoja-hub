@@ -1330,12 +1330,25 @@ the integration is real up to the callback, and found four defects only a live r
 including an IP allow-list that would have rejected every genuine payment.
 
 Say this part out loud if the payment succeeds first time in front of them, because it will:
-the simulator is running the `HAPPY_PATH` profile, which is one of five named fixtures and means
-every payment succeeds instantly. That is a chosen test fixture, not a claim that payments never
-fail — the marketplace they are looking at contains refunded and disputed orders seeded from the
-other profiles, and `PAYMENT_FAILURE` will show them a failure on demand. Choosing the fixture is
-how Stripe's and Safaricom's own sandboxes work; pretending a random generator is the real network
-would be the dishonest option.
+the simulator runs the `HAPPY_PATH` profile, one of five named fixtures, and it means every payment
+succeeds instantly. That is a chosen test fixture, not a claim that payments never fail — the
+marketplace they are looking at contains refunded, disputed and failed orders, and
+`PAYMENT_FAILURE` will show them a failure on demand. Choosing the fixture is how Stripe's and
+Safaricom's own sandboxes work; pretending a random generator is the real network would be the
+dishonest option.
+
+**[IF ASKED]** "Why is that the default? Isn't that hiding the failures?"
+
+> It was not the default until a readiness audit went looking. The default was a mixed profile that
+> failed about three payments in ten, and I found it the way you would — two live payments failed
+> in a row. What made it wrong was not the failure rate but the audience: the only thing reading
+> that setting is a live payment somebody is waiting on. The seeded world's failures are written by
+> the seeder, which never reads it. So the default was tuned for a consumer that does not exist,
+> and the one it actually had was the worst possible one to surprise.
+>
+> The failure modes did not go anywhere. They are named, selectable, and the admin Payment Lab
+> forces a specific outcome deterministically — which is how you should demonstrate a failure
+> anyway, rather than waiting to get unlucky.
 
 **9. Verification doesn't scale.**
 A human reviews every identity document. That's a deliberate product decision and a real
