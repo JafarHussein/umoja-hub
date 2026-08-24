@@ -68,8 +68,19 @@ export default function UnauthorizedPage(): React.ReactElement {
           </p>
         )}
 
+        {/*
+          Nothing is offered until the session is known.
+
+          The paragraph above already waited for `isLoading`, but this block did
+          not: while the session was resolving, `user` was undefined and the page
+          offered **Sign in** — to somebody who was signed in, and had arrived
+          here precisely because their signed-in role was checked. On a slow
+          connection that flash is the whole message a viewer takes away ("it
+          lost my session"), and it contradicts the sentence that lands a moment
+          later. A moment of nothing is honest; a wrong button is not.
+        */}
         <div className="flex flex-col gap-3">
-          {user ? (
+          {isLoading ? null : user ? (
             <Button
               variant="primary"
               size="lg"
