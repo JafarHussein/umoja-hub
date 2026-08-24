@@ -25,6 +25,8 @@
 // ---------------------------------------------------------------------------
 
 import { loadEnvConfig } from '@next/env';
+import { getSimulationConfig, SIMULATION_PROFILES } from '../src/lib/payments/simulationConfig';
+import { SimulatedOutcome } from '../src/types';
 
 loadEnvConfig(process.cwd());
 
@@ -248,6 +250,51 @@ async function checkDaraja(): Promise<void> {
   }
 }
 
+/**
+ * Not a service — the setting that decides whether a live payment works.
+ *
+ * This is reported here because this script is the documented thing to run
+ * before a demonstration, and because the alternative is what actually
+ * happened: the profile governing every interactive payment was undocumented,
+ * defaulted to a ~30% failure rate, and was found only after two payments
+ * failed in a row during a readiness audit. A setting that can embarrass you
+ * in front of an audience should be visible in the check you already run.
+ */
+function checkSimulationProfile(): void {
+  const provider = (process.env['PAYMENT_PROVIDER'] ?? 'simulation').toLowerCase();
+  if (provider !== 'simulation') {
+    return record('Payment simulation', 'ok', `not in use — PAYMENT_PROVIDER is ${provider}`);
+  }
+
+  const config = getSimulationConfig();
+  const raw = process.env['SIMULATION_PROFILE']?.trim();
+  const source = raw && raw in SIMULATION_PROFILES ? 'set explicitly' : 'default';
+  const succeedsAlways = config.outcomeWeights[SimulatedOutcome.SUCCESS] > 0 &&
+    Object.entries(config.outcomeWeights)
+      .filter(([outcome]) => outcome !== SimulatedOutcome.SUCCESS)
+      .every(([, weight]) => weight === 0);
+  const instant = config.delayBuckets.every((b) => b.seconds === 0);
+
+  if (succeedsAlways && instant) {
+    return record('Payment simulation', 'ok', `profile ${config.profile} (${source}) — every payment succeeds at once`);
+  }
+
+  const failureWeight = Object.entries(config.outcomeWeights)
+    .filter(([outcome]) => outcome !== SimulatedOutcome.SUCCESS)
+    .reduce((sum, [, weight]) => sum + weight, 0);
+  const total = failureWeight + config.outcomeWeights[SimulatedOutcome.SUCCESS];
+  const failPct = total > 0 ? Math.round((failureWeight / total) * 100) : 0;
+  const slowest = Math.max(...config.delayBuckets.map((b) => b.seconds));
+
+  record(
+    'Payment simulation',
+    'degraded',
+    `profile ${config.profile} (${source}) — about ${failPct}% of payments fail` +
+      (slowest > 0 ? `, and some take up to ${slowest}s` : '') +
+      '. Set SIMULATION_PROFILE=HAPPY_PATH before demonstrating.'
+  );
+}
+
 async function main(): Promise<void> {
   const groqKey = process.env['GROQ_API_KEY'];
   const groqModel = process.env['GROQ_MODEL']?.trim() || 'openai/gpt-oss-120b';
@@ -268,6 +315,8 @@ async function main(): Promise<void> {
     checkSms(),
     checkDaraja(),
   ]);
+
+  checkSimulationProfile();
 
   const glyph: Record<Verdict, string> = { ok: 'OK  ', degraded: 'WARN', failed: 'FAIL' };
   const width = Math.max(...results.map((r) => r.service.length));
