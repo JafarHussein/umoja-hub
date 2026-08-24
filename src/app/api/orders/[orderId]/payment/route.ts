@@ -8,6 +8,7 @@ import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { paymentActionSchema } from '@/lib/validation/paymentActionSchema';
 import { getPaymentProvider, getActiveProviderName, isSimulationActive } from '@/lib/payments';
 import { providerAmountFor } from '@/lib/payments/demoMode';
+import { revalidateMarketplace } from '@/lib/foodhub/marketplaceCache';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AppError, handleApiError, logger } from '@/lib/utils';
 import {
@@ -176,6 +177,10 @@ export async function POST(
         buyerId: session.user.id,
       });
 
+      // The produce is back on sale — say so on the public feed now, not in a
+      // minute.
+      revalidateMarketplace(String(order.listingId));
+
       return NextResponse.json({
         data: { orderId, paymentStatus: OrderPaymentStatus.FAILED, cancelled: true },
       });
@@ -223,7 +228,13 @@ export async function POST(
           },
         },
       ],
-      { new: true }
+      // Same requirement as the first-payment reservation in
+      // `POST /api/orders`: Mongoose 9 refuses an aggregation-pipeline update
+      // unless `updatePipeline` says that is what the array is. Without it this
+      // call threw `MongooseError: Cannot pass an array to query updates`, so
+      // every retry of a failed payment answered "Internal server error" — the
+      // one recovery a buyer whose payment failed actually has.
+      { new: true, updatePipeline: true }
     );
 
     if (!reserved) {
@@ -306,6 +317,9 @@ export async function POST(
       buyerId: session.user.id,
       checkoutRequestId,
     });
+
+    // The retry took the stock back off the shelf.
+    revalidateMarketplace(String(order.listingId));
 
     return NextResponse.json({
       data: {
