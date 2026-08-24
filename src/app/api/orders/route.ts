@@ -8,6 +8,7 @@ import { createOrderSchema } from '@/lib/validation/orderSchema';
 import { generateOrderReferenceId } from '@/lib/foodhub/orderUtils';
 import { getPaymentProvider, getActiveProviderName } from '@/lib/payments';
 import { providerAmountFor } from '@/lib/payments/demoMode';
+import { revalidateMarketplace } from '@/lib/foodhub/marketplaceCache';
 import { AppError, handleApiError, requireRole, logger } from '@/lib/utils';
 import { checkRateLimit, peekRateLimit, recordRateLimitUse } from '@/lib/rateLimit';
 
@@ -511,6 +512,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       farmerId: String(listing.farmerId),
       totalAmountKES,
     });
+
+    // Stock has moved. The listing page must stop advertising quantity this
+    // order has already reserved — including the case where it took the last of
+    // it and the listing is now SOLD_OUT.
+    revalidateMarketplace(listingId);
 
     return NextResponse.json(
       {

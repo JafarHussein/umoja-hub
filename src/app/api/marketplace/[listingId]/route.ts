@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import { connectDB } from '@/lib/db';
 import MarketplaceListing from '@/lib/models/MarketplaceListing.model';
 import { listingUpdateSchema } from '@/lib/validation/farmerSchema';
+import { revalidateMarketplace } from '@/lib/foodhub/marketplaceCache';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
 import { Role, ListingStatus } from '@/types';
 
@@ -205,6 +206,9 @@ export async function PATCH(
     const updated = await MarketplaceListing.findByIdAndUpdate(listingId, parsed.data, {
       new: true,
     });
+
+    // Pausing, reactivating or repricing changes what a buyer should be shown.
+    revalidateMarketplace(listingId);
 
     return NextResponse.json({ data: updated });
   } catch (error) {
