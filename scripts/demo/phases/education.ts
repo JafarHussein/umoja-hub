@@ -28,6 +28,29 @@ import {
   DOCUMENTATION_CHECKLIST,
 } from '../../../src/types';
 
+/**
+ * How many reports must still be sitting in a lecturer's review queue when the
+ * seed finishes, after the demonstration phase has taken its share.
+ *
+ * Three, because one is what the readiness audit of 2026-08-24 emptied by
+ * rehearsing the review once — leaving the Education Hub's centrepiece screen
+ * reading "Nothing waiting on you" for the presentation itself. Rehearsing is
+ * the correct thing for a presenter to do, so the world has to survive it.
+ *
+ * Asserted after every seed by `the review queue survives a rehearsal`.
+ */
+export const REVIEW_QUEUE_SURVIVAL_FLOOR = 3;
+
+/**
+ * How many queued reports the demonstration phase promotes away per lecturer —
+ * one into a request waiting, one into a session coming up.
+ *
+ * It lives here because the education phase has to queue enough work to feed it
+ * and still leave the floor above. The two phases disagreeing is precisely how
+ * the queue came to hold a single report.
+ */
+export const DEMONSTRATIONS_PROMOTED_PER_LECTURER = 2;
+
 // The Kenyan settings a seeded report is written against. Kept beside the rest
 // of the seeder's vocabulary rather than in the content module.
 const REPORT_SETTINGS = [
@@ -488,13 +511,33 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
   // the presenter would discover in front of the panel.
   // How many projects each institution has sitting in front of a lecturer.
   //
-  // Three, not one. One keeps the review queue non-empty, which is what this
-  // guarantee was originally written for; the demonstration phase then promotes
-  // two more into a request waiting and a session coming up. With a target of
-  // one, an institution had a queue and no demonstrations — the lecturer's
-  // demonstration screen was empty for the same reason the review queue used to
-  // be, and for a whole institution at a time.
-  const QUEUED_WORK_PER_INSTITUTION = 3;
+  // How much work each institution must have in front of its lecturers, and why
+  // it is not a flat number.
+  //
+  // The demonstration phase reads this same queue and promotes engagements out
+  // of it into a request waiting and a session coming up — and it does that
+  // once per lecturer, not once per institution, because a demonstrations
+  // screen belongs to a lecturer. An institution with two lecturers therefore
+  // loses twice as many as one with a single lecturer, from a queue they share.
+  //
+  // A flat three was the old value, and it left exactly one report per lecturer
+  // at a single-lecturer institution and none to spare at a two-lecturer one.
+  // One is non-empty, and one is what the readiness audit of 2026-08-24 emptied
+  // by doing the obvious thing: rehearsing the review once. A presenter who
+  // practises the centrepiece of the Education Hub the night before then walks
+  // into the room with "Nothing waiting on you" on screen.
+  //
+  // So the target is what the demonstration phase will take, plus what has to
+  // survive it. Both halves are asserted after every seed — by
+  // `every institution has a demonstration request waiting` and by
+  // `the review queue survives a rehearsal` — so the next person to change
+  // either number finds out from the seed rather than from an audience.
+  const queuedWorkTargetFor = (institutionKey: string): number => {
+    const lecturersHere = world.lecturers.filter(
+      (l) => l.institutionId && String(l.institutionId) === institutionKey
+    ).length;
+    return REVIEW_QUEUE_SURVIVAL_FLOOR + DEMONSTRATIONS_PROMOTED_PER_LECTURER * lecturersHere;
+  };
   const queuedWorkByInstitution = new Map<string, number>();
 
   // The guarantee used to live inside `if (reviewable)`, which is decided by
@@ -582,7 +625,7 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
       const institutionKey = String(student.institutionId);
       const mustQueue =
         faculty.length > 0 &&
-        (queuedWorkByInstitution.get(institutionKey) ?? 0) < QUEUED_WORK_PER_INSTITUTION;
+        (queuedWorkByInstitution.get(institutionKey) ?? 0) < queuedWorkTargetFor(institutionKey);
       const reviewable =
         faculty.length > 0 &&
         (mustQueue || (student.archetype !== 'new' && rng.bool(0.85)));

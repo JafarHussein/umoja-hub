@@ -32,6 +32,10 @@ import {
   NotificationType,
 } from '../../../src/types';
 import { demonstrationComment, studentDemonstrationNotes, questioningNotes } from '../text';
+import {
+  REVIEW_QUEUE_SURVIVAL_FLOOR,
+  DEMONSTRATIONS_PROMOTED_PER_LECTURER,
+} from './education';
 
 /** A slot at a whole or half hour, which is how anybody actually books time. */
 function onTheHour(base: Date, hour: number): Date {
@@ -181,9 +185,14 @@ export async function generateDemonstrations(ctx: SimContext, world: World): Pro
     // nothing submitted behind it, and a version the acceptance below could
     // never find.
     //
-    // `skip(1)` leaves the oldest submission where it is. The queue guarantee
-    // exists for a reason, and emptying it to fill this one would trade one
-    // empty screen for another.
+    // The skip protects the review queue from this loop.
+    //
+    // It used to be `skip(1)`, on the correct instinct that emptying one screen
+    // to fill another is no gain — but one survivor is not a queue, it is a
+    // queue that a single rehearsal empties, which is exactly what happened
+    // during the readiness audit of 2026-08-24. The number now names what it is
+    // protecting, and the education phase queues enough work to feed this loop
+    // and still leave that much behind. Both halves are asserted by validate.
     const promotable = await ProjectEngagement.find({
       studentId: { $in: cohort.map((s) => s.id) },
       status: ProjectStatus.UNDER_LECTURER_REVIEW,
@@ -191,8 +200,8 @@ export async function generateDemonstrations(ctx: SimContext, world: World): Pro
     } as object)
       .select('_id studentId revisionNumber brief.title')
       .sort({ createdAt: 1 })
-      .skip(1)
-      .limit(2)
+      .skip(REVIEW_QUEUE_SURVIVAL_FLOOR)
+      .limit(DEMONSTRATIONS_PROMOTED_PER_LECTURER)
       .lean();
 
     const promotions: Array<'REQUESTED' | 'SCHEDULED'> = ['REQUESTED', 'SCHEDULED'];
