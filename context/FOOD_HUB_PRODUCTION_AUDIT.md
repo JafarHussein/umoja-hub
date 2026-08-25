@@ -246,8 +246,8 @@ shown. Still not application code, but no longer only hygiene.
 
 **CLOSED 2026-08-17.** The owner directed the first option, and it was taken: the harness now
 requires its own database (`MONGODB_E2E_URI`), refuses to run without one, and drops it on every
-run. Full record — architecture, guards, and the isolation and contamination test results — is in
-`context/FOOD_HUB_PRESENTATION_CLEANUP.md`. The historical residue was removed once at the source's
+run. How that harness works today — architecture, guards, and how to run it — is in
+`context/EDUCATION_HUB_E2E_SETUP.md`. The historical residue was removed once at the source's
 retirement, and the presentation database now scans clean with zero orphaned records.
 
 ### O4 · Deployment · The Daraja query path has never met the live API

@@ -23,7 +23,7 @@ import User from '@/lib/models/User.model';
 // ---------------------------------------------------------------------------
 // PATCH /api/orders/[orderId]/status — Update fulfillment status
 // Auth: FARMER (→ IN_FULFILLMENT) | BUYER (→ RECEIVED)
-// Side effects on RECEIVED: trigger chain per BUSINESS_LOGIC.md §10
+// Side effects on RECEIVED: trigger chain
 // ---------------------------------------------------------------------------
 
 export async function PATCH(

@@ -15,7 +15,7 @@ import { Role, MIN_GROUP_ORDER_MEMBERS, SupplierVerificationStatus } from '@/typ
 // ---------------------------------------------------------------------------
 // POST /api/groups/[groupId]/orders — Propose a group input purchase order
 // Auth: FARMER (must be member of the group)
-// Minimum 5 members required per BUSINESS_LOGIC.md
+// Minimum 5 members required
 // ---------------------------------------------------------------------------
 
 export async function POST(

@@ -35,7 +35,8 @@ docs/
 ## Deeper reference docs
 
 Beyond this folder, the repository carries design and architecture references in
-[`context/`](../context) (escrow architecture, Food/Education ecosystem maps, user
-journeys, runbook, production roadmap) and the gated app-redesign research in
-[`webapp-reset/`](../webapp-reset) (foundation, IA, UX research, multi-theme architecture,
-accessibility, motion, illustration).
+[`context/`](../context) (current-state audit, remaining-work plans for each hub, escrow
+architecture, the Food Hub ecosystem map, the operational runbook, the payment and
+price-intelligence research) and the approved app-design authorities in
+[`webapp-reset/`](../webapp-reset) (web-app foundation, information architecture, design
+system, Education Hub Foundation V2, and the per-surface design directions).

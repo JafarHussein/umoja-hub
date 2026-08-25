@@ -35,7 +35,7 @@
 
 ### BUYER — market (signal-rich browse, then few decisions)
 - **Home** — active orders + their status.
-- **Browse** (`/marketplace`) — verified listings; trust signals above the fold (deliverable 05).
+- **Browse** (`/marketplace`) — verified listings; trust signals above the fold.
 - **Listing detail** (`/marketplace/[id]`) — evaluate the farmer (Trust Score + verification), then buy. Recourse visible *before* purchase.
 - **Orders** (`/buyer/orders`, `/buyer/orders/[id]`) — history + payment/fulfillment status.
 - **Suppliers** (`/buyer/suppliers`).
@@ -84,13 +84,13 @@
 ## 6. Information hierarchy principles (per surface type)
 
 - **Producer surfaces** (farmer/buyer home, listing) — *the decision/status first*, minimal choices, large targets, low density (Foundation §11).
-- **Expert surfaces** (lecturer queue, admin queues, ledgers) — scannable **data-table** patterns, dense done well, fast triage (Foundation §9/§11; deliverable 18).
+- **Expert surfaces** (lecturer queue, admin queues, ledgers) — scannable **data-table** patterns, dense done well, fast triage (Foundation §9/§11).
 - **Trust surfaces** — layered: glanceable signal + on-demand honest breakdown (Foundation §5/§10).
 - **Workspaces** (student project, review) — evidence-first, task-focused.
 
 ## 7. Trust vocabulary placement
 
-The shared trust components (TrustScore, VerificationBadge, StatusPill, TierIndicator, DecisionAttribution) appear consistently: on listings & buyer evaluation, in the shell (own status), in verification queues, in review outcomes, and in any record an auditor/employer would inspect. Defined once, placed predictably (deliverable 07/17).
+The shared trust components (TrustScore, VerificationBadge, StatusPill, TierIndicator, DecisionAttribution) appear consistently: on listings & buyer evaluation, in the shell (own status), in verification queues, in review outcomes, and in any record an auditor would inspect. Defined once, placed predictably.
 
 ## 8. Open questions (IA-level — validate, don't assume)
 

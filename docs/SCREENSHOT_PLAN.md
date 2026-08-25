@@ -29,7 +29,7 @@ BASE_URL=http://localhost:3000 tsx scripts/capture-screenshots.ts
 ```
 
 Output lands in `docs/screenshots/`. Dynamic routes (`:listingId`, `:articleSlug`,
-`:portfolioSlug`, `:engagementId`) are resolved automatically from seeded data; if any are
+`:engagementId`) are resolved automatically from seeded data; if any are
 skipped, run `npm run demo` again so the collections are populated, then re-run.
 
 ## Demo accounts
@@ -41,7 +41,7 @@ skipped, run `npm run demo` again so the collections are populated, then re-run.
 | Student | `brian.otieno@students.uonbi.ac.ke` | `npm run demo` |
 | Lecturer | `g.ndungu@uonbi.ac.ke` | `npm run demo` |
 | Admin | `umojahub16@gmail.com` | `npm run demo` |
-| NGO / Employer / Institution | first user of each role | `npm run demo` (generated emails) |
+| Institution | first user of the role | `npm run demo` (generated email) |
 
 ## Checklist — exact filenames
 
@@ -50,12 +50,11 @@ skipped, run `npm run demo` again so the collections are populated, then re-run.
 - [ ] `auth-login.png` — credentials + OAuth sign-in (`/auth/login`)
 - [ ] `onboarding-role-selection.png` — role picker (`/onboarding/role-selection`)
 - [ ] `onboarding-identity.png` — identity capture (`/onboarding/identity-input`)
-- [ ] `onboarding-verification-upload.png` — document upload (`/onboarding/verification-upload`)
+- [ ] `verification-submission.png` — document submission (`/dashboard/verify`, farmer session)
 - [ ] `marketplace-feed.png` — produce marketplace (`/marketplace`)
 - [ ] `marketplace-listing-detail.png` — listing + farmer trust (`/marketplace/:listingId`)
 - [ ] `knowledge-hub.png` — knowledge library (`/knowledge`)
 - [ ] `knowledge-article.png` — sourced article (`/knowledge/:articleSlug`)
-- [ ] `portfolio-public.png` — public verified credential (`/portfolio/:portfolioSlug`)
 - [ ] `mobile-marketplace.png` — marketplace at 390px
 
 ### Farmer
@@ -73,19 +72,15 @@ skipped, run `npm run demo` again so the collections are populated, then re-run.
 
 ### Student
 - [ ] `student-dashboard.png` — workspace home (`/dashboard/student`)
-- [ ] `student-portfolio.png` — verified projects + skills (`/dashboard/student/portfolio`)
 - [ ] `student-project-new.png` — brief generation (`/dashboard/student/projects/new`)
 - [ ] `student-peer-review.png` — peer review queue (`/dashboard/student/peer-review`)
 - [ ] `student-mentor.png` — AI mentor (`/dashboard/student/mentor`)
 
 ### Lecturer
-- [ ] `lecturer-queue.png` — review queue (`/dashboard/lecturer/queue`)
+- [ ] `lecturer-reports.png` — report review queue (`/dashboard/lecturer/reports`)
 - [ ] `lecturer-review.png` — 4-dimension rubric (`/dashboard/lecturer/reviews/:engagementId`)
 
-### Employer / NGO / Institution
-- [ ] `employer-overview.png` — talent overview (`/dashboard/employer`)
-- [ ] `employer-talent-search.png` — verified-skill search (`/dashboard/employer/talent`)
-- [ ] `ngo-dashboard.png` — sponsored cooperatives (`/dashboard/ngo`)
+### Institution
 - [ ] `institution-dashboard.png` — members + outcomes (`/dashboard/institution`)
 
 ### Admin

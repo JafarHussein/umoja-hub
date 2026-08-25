@@ -1,8 +1,8 @@
 # UMOJAHUB WEB APP FOUNDATION — V1
 
-**The constitution of the UmojaHub web application.** Status: **DRAFT — awaiting approval.** Until approved, no design work (IA, wireframes, visuals, components) begins.
+**The constitution of the UmojaHub web application.** Status: **APPROVED 2026-06-16**, amended by A1 (2026-08-04) below.
 
-**Authority.** When approved, this is the single source of truth for the web-app presentation layer. It is built from the research corpus in `webapp-reset/` (deliverables 1–18) and is **amended through the gated process, never silently superseded.**
+**Authority.** This is the single source of truth for the web-app presentation layer. It was built from the reset research corpus (gates 1–4), whose conclusions are carried in the sections below — the corpus itself has been retired now that it is spent. This document is **amended through the gated process, never silently superseded.**
 
 **Scope.** The **web app** — dashboards, auth, onboarding (the operational surface). The public **website (Documentation Stream) is out of scope** and remains live. **Platform logic is untouchable** — this governs presentation only.
 
@@ -84,7 +84,7 @@ The feeling is produced by **clarity, honesty, reliability, and restraint** — 
 - **Named human accountability** is surfaced, not hidden behind "an algorithm." Decisions show their human and their basis.
 - **Process is shown, because the process is the value** — especially in education (anonymous peer → credentialed lecturer → written justification). A bare badge convinces no skeptic.
 
-## 6. How each role thinks (summary — full detail in deliverable 04)
+## 6. How each role thinks
 
 - **Farmer** — "Will I get paid, and will a stranger believe I'm real?" Low tech-comfort, weak device, payment-anxious. Needs radical simplicity + unambiguous payment status + a reputation they understand.
 - **Buyer** — "Can I trust this seller enough to pay first?" The Trust Score is their decision instrument; recourse must be visible before they commit.

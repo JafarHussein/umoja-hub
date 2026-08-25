@@ -127,7 +127,7 @@ Both rest on the same spine: **a verified identity, real recorded activity, and 
 |---|---|---|
 | ![Role](docs/screenshots/onboarding-role-selection.png) `onboarding-role-selection.png` | Progressive, pre-auth onboarding: pick a role first. | No registration wall — the wizard captures intent before credentials. |
 | ![Identity](docs/screenshots/onboarding-identity.png) `onboarding-identity.png` | Identity capture step. | Identity is the root of every downstream trust signal. |
-| ![Verify](docs/screenshots/onboarding-verification-upload.png) `onboarding-verification-upload.png` | Document upload for verification. | Verification is a gate, not a checkbox. |
+| ![Verify](docs/screenshots/verification-submission.png) `verification-submission.png` | Document submission for verification (`/dashboard/verify`). | Verification is a gate, not a checkbox. |
 
 ### Act III — The farmer's world
 
@@ -161,7 +161,7 @@ Both rest on the same spine: **a verified identity, real recorded activity, and 
 
 | Screen | What you're seeing | Why it matters |
 |---|---|---|
-| ![Queue](docs/screenshots/lecturer-queue.png) `lecturer-queue.png` | The lecturer's review queue. | Scarce, credentialed engineering mentors. |
+| ![Queue](docs/screenshots/lecturer-reports.png) `lecturer-reports.png` | The lecturer's report review queue. | Scarce, credentialed engineering mentors. |
 | ![Review](docs/screenshots/lecturer-review.png) `lecturer-review.png` | The 4-dimension rubric with enforced comment depth. | Verification has a defensible standard. |
 
 ### Act VII — Administration & analytics
@@ -658,7 +658,7 @@ npm run dev                        # http://localhost:3000
 
 ### Environment variables
 
-Every required variable is validated at startup by `src/lib/env.ts` (the app **throws** if any is missing). Set: `MONGODB_URI`, `NEXTAUTH_SECRET`/`NEXTAUTH_URL`, `GROQ_API_KEY`, `OPENAI_API_KEY`, GitHub App keys, the `MPESA_*` set (sandbox shortcode `174379`), the `SMTP_*` set (`SMTP_FROM` optional, falls back to `SMTP_USER`), `AFRICASTALKING_*`, `OPEN_WEATHER_MAP_API_KEY`, `CLOUDINARY_*`, and `CRON_SECRET`. Never commit `.env.local`.
+Every required variable is validated at startup by `src/lib/env.ts` (the app **throws** if any is missing). Set: `MONGODB_URI`, `NEXTAUTH_SECRET`/`NEXTAUTH_URL`, the Google and GitHub **OAuth app** credentials (`GOOGLE_CLIENT_ID`/`SECRET`, `GITHUB_CLIENT_ID`/`SECRET` — these are OAuth apps, not GitHub Apps), `GROQ_API_KEY`, `OPENAI_API_KEY`, the `SMTP_*` set (`SMTP_FROM` optional, falls back to `SMTP_USER`), `AFRICASTALKING_*`, `OPEN_WEATHER_MAP_API_KEY`, `CLOUDINARY_*` plus the two `NEXT_PUBLIC_CLOUDINARY_*` browser-upload values, `ADMIN_PHONE_NUMBER` and `CRON_SECRET`. `PUBLIC_SITE_URL` is optional but **required locally** — it is the address email links use, so that a link opened on a phone does not point at `localhost`. The `MPESA_*` set (sandbox shortcode `174379`) is required only when `PAYMENT_PROVIDER=daraja-sandbox|daraja-production`; the default `simulation` needs none of them. Never commit `.env.local`.
 
 ### Data commands
 

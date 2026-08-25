@@ -19,7 +19,7 @@ function escapeRegex(text: string): string {
 // POST /api/cron/price-alert-check — the daily scheduled job.
 // Auth: Bearer CRON_SECRET. Batch size: 50 alerts per run.
 //
-// Runs three jobs: price-alert checks (BUSINESS_LOGIC.md §10.1), the simulated
+// Runs three jobs: price-alert checks, the simulated
 // callback delivery sweep, and stuck-payment reconciliation. They share one
 // route because Vercel Hobby allows only two cron jobs per project; the two
 // payment jobs are backstops whose timely triggers live on the request path

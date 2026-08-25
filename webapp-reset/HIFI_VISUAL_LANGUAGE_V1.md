@@ -1,6 +1,6 @@
 # UMOJAHUB HI-FI VISUAL LANGUAGE — V1 (PROPOSAL)
 
-**Status: PROPOSAL for owner reaction (Phase 4 hi-fi).** This is the visual language applied to render hi-fidelity screens. It is **not** the final Design System — at the **Phase 5 DS gate** it gets ratified and tokenized into Figma variables + multi-theme + a component library. Until then it is applied via Figma text styles + a JS palette constant, exactly as the mid-fi provisional palette was. Governed by `UMOJAHUB_WEBAPP_FOUNDATION_V1.md`; every decision below traces to a foundation law (cited inline).
+**Status: RATIFIED.** This is the visual language behind the app surface — the rationale and the Foundation-law citations for every visual decision. It was ratified and tokenized at the Phase 5 gate into [DESIGN_SYSTEM_V1.md](DESIGN_SYSTEM_V1.md), which holds the canonical token inventory; this document holds the *why* behind those tokens. Governed by `UMOJAHUB_WEBAPP_FOUNDATION_V1.md`; every decision below traces to a foundation law (cited inline).
 
 ---
 

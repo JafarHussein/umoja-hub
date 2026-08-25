@@ -21,8 +21,8 @@ import { Role, OrderFulfillmentStatus, ProjectStatus } from '@/types';
 // Runs four sub-tasks sequentially:
 //   1. cleanup-sessions       — belt-and-suspenders for MongoDB TTL indexes
 //   2. prune-pending-accounts — reclaim abandoned onboarding accounts (V3 §8)
-//   3. market-insight         — aggregate weekly price data per BUSINESS_LOGIC.md §10.2
-//   4. impact-summary         — compute platform metrics per BUSINESS_LOGIC.md §10.3
+//   3. market-insight         — aggregate weekly price data
+//   4. impact-summary         — compute platform metrics
 // Individual route files remain at /api/cron/* for manual invocation and testing.
 // ---------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ async function runPrunePendingAccounts(requestId: string): Promise<{ deleted: nu
 
 // ---------------------------------------------------------------------------
 // Sub-task 3: Aggregate weekly market insights from PriceHistory
-// Batch size: 50 crop+county combinations per run (per BUSINESS_LOGIC.md §10.2)
+// Batch size: 50 crop+county combinations per run
 // ---------------------------------------------------------------------------
 async function runMarketInsight(requestId: string): Promise<{ updated: number; weekOf: string }> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -156,7 +156,7 @@ async function runMarketInsight(requestId: string): Promise<{ updated: number; w
 
 // ---------------------------------------------------------------------------
 // Sub-task 4: Compute platform-wide impact summary (singleton upsert)
-// Per BUSINESS_LOGIC.md §10.3 — READ ONLY aggregations, single upsert at end
+// READ ONLY aggregations, single upsert at end
 // ---------------------------------------------------------------------------
 async function runImpactSummary(requestId: string): Promise<{ computedAt: Date }> {
   const [

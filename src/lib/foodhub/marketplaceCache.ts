@@ -5,8 +5,8 @@ import { logger } from '@/lib/utils';
 // Invalidating the public marketplace after a write.
 //
 // `/marketplace` and `/marketplace/[listingId]` are deliberately cached —
-// `revalidate = 60` on both pages, recorded as an architectural decision in
-// `context/WEBSITE_WEBAPP_BOUNDARY.md`. That decision is not in question here;
+// `revalidate = 60` on both pages, a recorded architectural decision. It is not
+// in question here;
 // anonymous browsing of a listing grid is exactly the read that should be
 // served from cache.
 //

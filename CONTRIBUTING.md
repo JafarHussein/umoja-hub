@@ -7,12 +7,15 @@ This document governs all contributions to the UmojaHub codebase. Read it comple
 ## Branch Strategy
 
 ```
-main        → Production. Protected. Requires PR + passing CI.
-develop     → Staging. All feature branches target this.
-feature/*   → New features. Branch from develop.
-fix/*       → Bug fixes. Branch from develop. If critical, may target main.
+main        → The only long-lived branch. Protected. Requires PR + passing CI.
+feature/*   → New features. Branch from main, PR into main.
+feat/*      → Same as feature/*.
+fix/*       → Bug fixes. Branch from main, PR into main.
 chore/*     → Non-functional changes (deps, config, docs).
+docs/*      → Documentation only.
 test/*      → Test additions only.
+
+There is no `develop` branch. Every branch targets `main` directly.
 ```
 
 **Branch naming:**
@@ -26,7 +29,7 @@ fix/trust-score-calculation
 chore/update-dependencies
 ```
 
-Never commit directly to `main` or `develop`.
+Never commit directly to `main`.
 
 ---
 
@@ -90,11 +93,10 @@ docs(api): add OpenAPI spec for farmer registration endpoint
 
 ## Pull Request Rules
 
-1. Every PR targets `develop` (not `main`).
+1. Every PR targets `main`.
 2. PR title follows the same format as commit messages.
 3. PR description must include:
    - What this PR does
-   - Which section of `EXECUTION_PLAN.md` it implements
    - How to test it
 4. CI must pass before merge: type-check, lint, tests, build.
 5. No PR merges with TypeScript errors.
@@ -106,10 +108,10 @@ docs(api): add OpenAPI spec for farmer registration endpoint
 
 ## Code Standards
 
-All code standards are defined in `INSTRUCTIONS.md` and `EXECUTION_PLAN.md`. This section is a summary only.
+The architecture and code-style rules live in `README.md` (Architecture) and the project instructions. This section is the summary that every PR is checked against.
 
 - TypeScript strict mode. Zero `any` types.
-- All API routes follow the pattern in `INSTRUCTIONS.md` §4.2.
+- All API routes follow the same order: `connectDB()` → `getServerSession(authOptions)` → `requireRole()` → Zod `safeParse` → DB operation, with `AppError` + `handleApiError` for every failure.
 - All components use design system tokens. No hardcoded hex values.
 - All new Mongoose models have indexes defined in the schema.
 - All external API calls have try/catch with graceful degradation.
@@ -120,7 +122,7 @@ All code standards are defined in `INSTRUCTIONS.md` and `EXECUTION_PLAN.md`. Thi
 
 ## File Creation Rules
 
-Before creating any file, verify it exists in the canonical folder structure in `EXECUTION_PLAN.md` §1.3. If the file is not in the plan, justify its existence in the PR description before creating it.
+Search the codebase before creating any new file, function or model — it very likely already exists. Prefer editing an existing file over adding one. If a genuinely new file is needed, justify it in the PR description.
 
 ---
 

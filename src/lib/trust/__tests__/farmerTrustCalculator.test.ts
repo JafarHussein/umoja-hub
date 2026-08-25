@@ -2,8 +2,8 @@
  * @jest-environment node
  *
  * Unit tests for farmerTrustCalculator.ts
- * Target: ≥90% coverage per PHASE_IMPLEMENTATION_MASTER.md §3.D
- * Tests all formulas from BUSINESS_LOGIC.md §1 exactly.
+ * Target: ≥90% coverage (enforced by the jest coverage threshold for src/lib/trust/)
+ * Tests every trust-score formula exactly.
  */
 
 // Must mock all Mongoose model imports BEFORE importing the module under test.
