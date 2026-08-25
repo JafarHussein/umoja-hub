@@ -401,7 +401,7 @@ export async function generateCommerce(ctx: SimContext, world: World): Promise<v
         const resolved = status !== WithdrawalRequestStatus.REQUESTED;
         ledger.track('WithdrawalRequest', await createDoc(WithdrawalRequest, {
           farmerId: farmer.id, amountKES: amount, status,
-          note: status === WithdrawalRequestStatus.PAID ? `Paid via M-Pesa ${`QК${rng.int(100000, 999999)}`}` : status === WithdrawalRequestStatus.REJECTED ? 'Insufficient released balance at review time.' : undefined,
+          note: status === WithdrawalRequestStatus.PAID ? `Paid via M-Pesa ${`QK${rng.int(100000, 999999)}`}` : status === WithdrawalRequestStatus.REJECTED ? 'Insufficient released balance at review time.' : undefined,
           resolvedBy: resolved ? admin?.id : undefined,
           resolvedAt: resolved ? clampPast(daysAfter(reqAt, rng.int(1, 4))) : undefined,
           createdAt: reqAt, updatedAt: resolved ? clampPast(daysAfter(reqAt, rng.int(1, 4))) : reqAt,

@@ -1308,11 +1308,16 @@ Registration takes one "Full name" field and splits it, then the details step as
 name again. That's consistent, since a Google user gets asked the same question despite Google
 supplying it, but it's redundant. The fix is to pre-fill it from the account.
 
-**6. Expected errors are logged at ERROR level.**
-A duplicate email produces a full stack trace in the logs. That's the shared error handler's
-behaviour for every route in the application rather than anything specific to registration, but it
-makes real errors harder to find in the noise. It's pre-existing, and I left it alone rather than
-change error handling across 103 routes as a side effect of this feature.
+**6. Password reset tokens are the only thing standing between an email account and this one.**
+There is no second factor anywhere. Somebody who reads a user's inbox can take their UmojaHub
+account, and for a farmer that account is attached to money in escrow. The tokens are single-use
+and time-limited, which is the right shape, but it is one factor.
+
+> This slot used to say "expected errors are logged at ERROR level". That was true when it was
+> written and is no longer: `handleApiError` now records a 4xx `AppError` at `warn`, by code,
+> without a stack, and keeps ERROR and the stack for 5xx and for anything that is not an
+> `AppError`. The reasoning is in the comment above the function. Say the limit above instead —
+> it is real, and the old one is not.
 
 **7. Session role claims can go stale.**
 Covered in section 19. Bounded by the 24-hour token lifetime, and every API route re-reads the
@@ -1323,6 +1328,27 @@ database, so a stale claim can win a page render but never an operation.
 failure modes, and switching to Daraja is an environment variable. Live sandbox testing confirmed
 the integration is real up to the callback, and found four defects only a live run could find,
 including an IP allow-list that would have rejected every genuine payment.
+
+Say this part out loud if the payment succeeds first time in front of them, because it will:
+the simulator runs the `HAPPY_PATH` profile, one of five named fixtures, and it means every payment
+succeeds instantly. That is a chosen test fixture, not a claim that payments never fail — the
+marketplace they are looking at contains refunded, disputed and failed orders, and
+`PAYMENT_FAILURE` will show them a failure on demand. Choosing the fixture is how Stripe's and
+Safaricom's own sandboxes work; pretending a random generator is the real network would be the
+dishonest option.
+
+**[IF ASKED]** "Why is that the default? Isn't that hiding the failures?"
+
+> It was not the default until a readiness audit went looking. The default was a mixed profile that
+> failed about three payments in ten, and I found it the way you would — two live payments failed
+> in a row. What made it wrong was not the failure rate but the audience: the only thing reading
+> that setting is a live payment somebody is waiting on. The seeded world's failures are written by
+> the seeder, which never reads it. So the default was tuned for a consumer that does not exist,
+> and the one it actually had was the worst possible one to surprise.
+>
+> The failure modes did not go anywhere. They are named, selectable, and the admin Payment Lab
+> forces a specific outcome deterministically — which is how you should demonstrate a failure
+> anyway, rather than waiting to get unlucky.
 
 **9. Verification doesn't scale.**
 A human reviews every identity document. That's a deliberate product decision and a real

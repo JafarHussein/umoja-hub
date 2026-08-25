@@ -361,11 +361,23 @@ export async function generatePeople(ctx: SimContext, world: World): Promise<voi
   const STUDENT_ARCHETYPES: Array<[string, number]> = [
     ['high', 3], ['average', 4], ['prolific', 2], ['revision', 2], ['new', 2],
   ];
-  for (let i = 0; i < 12; i++) {
+  // Sixteen, so the deal below is exactly four per university.
+  //
+  // It was twelve, and twelve was one short. Each institution has to fund a
+  // review queue that survives a rehearsal, two demonstrations promoted out of
+  // that queue per lecturer, and enough finished projects for the completed
+  // states to exist — and a cohort of three, one of whom may be the 'new'
+  // archetype with no projects at all, cannot always do it. The seed said so
+  // itself: `every institution has a confirmed demonstration coming up` failed
+  // for one university while every other check passed.
+  //
+  // The cost of a larger cohort is a few seconds of seeding. The cost of a
+  // short one is a lecturer's screen that is empty in front of a panel.
+  for (let i = 0; i < 16; i++) {
     const p = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
-    // Dealt round-robin, not picked at random. Twelve independent picks over
-    // four universities leaves one of them with almost nobody often enough to
+    // Dealt round-robin, not picked at random. Independent picks over four
+    // universities leave one of them with almost nobody often enough to
     // matter, and a university with no cohort is a lecturer with nothing to
     // read — discovered in front of the panel rather than here. Which
     // archetype a student is stays random; where they study does not.

@@ -55,7 +55,7 @@ const INSTANT_DELAYS = [{ seconds: 0, weight: 100 }];
 export const SIMULATION_PROFILES: Record<SimulationProfile, ProfileDefinition> = {
   [SimulationProfile.HAPPY_PATH]: {
     purpose:
-      'Every payment succeeds immediately. For walking the order → escrow → confirmation → release path end to end without interruption.',
+      'Every payment succeeds immediately. For walking the order → escrow → confirmation → release path end to end without interruption. This is the default: the only caller is a live payment somebody is waiting on, and a random failure there teaches nothing that choosing PAYMENT_FAILURE would not teach on purpose.',
     outcomeWeights: { ...noOutcomes(), [SimulatedOutcome.SUCCESS]: 100 },
     delayBuckets: INSTANT_DELAYS,
     duplicateRate: 0,
@@ -63,7 +63,7 @@ export const SIMULATION_PROFILES: Record<SimulationProfile, ProfileDefinition> =
 
   [SimulationProfile.TYPICAL]: {
     purpose:
-      'A mixed run in which every failure mode appears at least sometimes. For populating a demo environment that does not look implausibly perfect. The weights are chosen for coverage, not to assert how often M-Pesa fails.',
+      'A mixed run in which every failure mode appears at least sometimes, for exercising the whole surface without choosing what to hit. The weights are chosen for coverage, not to assert how often M-Pesa fails. It does NOT populate the demo world — the seeder writes that mix itself and never reads this file — so do not select it expecting seeded variety, and do not leave it selected while somebody is watching a payment.',
     outcomeWeights: {
       ...noOutcomes(),
       [SimulatedOutcome.SUCCESS]: 70,
@@ -132,11 +132,34 @@ function num(key: string, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
-/** The active profile. Unknown or unset falls back to TYPICAL rather than failing. */
+/**
+ * The active profile. Unknown or unset falls back to HAPPY_PATH rather than
+ * failing.
+ *
+ * The default used to be TYPICAL, on the stated grounds that it populates a
+ * demo environment which does not look implausibly perfect. It does not do
+ * that, and it never did: the only things that read this configuration are the
+ * live payment path (`simulationProvider`) and the admin Payment Lab, which
+ * merely displays it. The demo world's mix of successes, failures, refunds and
+ * disputes is written by the seeder, which sets its outcomes inline and has
+ * never consulted this function.
+ *
+ * So the default governed exactly one audience — a person making a payment,
+ * right now, and watching — and for that audience it failed roughly three
+ * attempts in ten and delayed some of the rest by up to 180 seconds. During the
+ * 2026-08-24 readiness audit two consecutive live payments failed before anyone
+ * thought to look for a variable that appeared in no documentation.
+ *
+ * Nothing about the failure modes is lost. Every profile remains selectable by
+ * name, and the Payment Lab forces a specific outcome deterministically, which
+ * is how a failure path should be demonstrated or tested anyway — the same way
+ * Stripe and Safaricom hand you instruments that force an outcome instead of a
+ * random generator claiming to be the network.
+ */
 export function getActiveProfile(): SimulationProfile {
   const raw = process.env['SIMULATION_PROFILE'];
   if (raw && raw in SIMULATION_PROFILES) return raw as SimulationProfile;
-  return SimulationProfile.TYPICAL;
+  return SimulationProfile.HAPPY_PATH;
 }
 
 export function getSimulationConfig(): SimulationConfig {

@@ -11,6 +11,7 @@
 import mongoose from 'mongoose';
 import './registry';
 import { log } from './db';
+import { REVIEW_QUEUE_SURVIVAL_FLOOR } from './phases/education';
 import { CROPS_BY_ID, type SeedCropId } from './dictionaries';
 import { cropImageUrls } from './images';
 import { resolveCrop } from '../../src/lib/taxonomy/crops';
@@ -446,6 +447,39 @@ export async function validate(): Promise<boolean> {
     lecturersWithEmptyQueue.length === 0
       ? `${verifiedLecturers.length} lecturers`
       : `empty for ${lecturersWithEmptyQueue.map((l) => l.email).join(', ')}`
+  );
+
+  // Non-empty is not the same as survivable.
+  //
+  // The queue used to hold exactly one report per lecturer: the education phase
+  // guaranteed three and the demonstration phase promoted two of them away. One
+  // is enough for the check above and not enough for a human being, because the
+  // first thing a presenter does with the review flow is rehearse it — and
+  // reviewing the only item leaves "Nothing waiting on you" on the screen the
+  // Education Hub is demonstrated from. The audit of 2026-08-24 emptied it
+  // exactly this way.
+  //
+  // So the floor is stated in terms of what it is for: enough left to rehearse
+  // and still present. If either QUEUED_WORK_PER_INSTITUTION or the
+  // `.skip(1).limit(2)` promotion changes, this fails at seed time.
+  const REHEARSAL_SURVIVAL_FLOOR = REVIEW_QUEUE_SURVIVAL_FLOOR;
+  const queuedPerInstitution = new Map<string, number>();
+  for (const e of queued) {
+    const inst = institutionOf.get(String(e.studentId));
+    if (inst) queuedPerInstitution.set(inst, (queuedPerInstitution.get(inst) ?? 0) + 1);
+  }
+  const thinQueues = verifiedLecturers
+    .map((l) => ({
+      email: l.email,
+      depth: queuedPerInstitution.get(String(l.lecturerData?.institutionId ?? '')) ?? 0,
+    }))
+    .filter((l) => l.depth < REHEARSAL_SURVIVAL_FLOOR);
+  ok(
+    'the review queue survives a rehearsal',
+    thinQueues.length === 0,
+    thinQueues.length === 0
+      ? `every verified lecturer has at least ${REHEARSAL_SURVIVAL_FLOOR} reports waiting`
+      : `too thin to rehearse: ${thinQueues.map((l) => `${l.email} (${l.depth})`).join(', ')}`
   );
 
   // A lecturer may only review their own institution's students. Seeded data

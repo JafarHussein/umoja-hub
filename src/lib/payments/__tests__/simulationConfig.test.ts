@@ -36,12 +36,39 @@ describe('getSimulationConfig', () => {
     process.env = { ...saved };
   });
 
-  it('defaults to the TYPICAL profile, which represents every failure mode', () => {
+  it('defaults to HAPPY_PATH, so an unconfigured live payment succeeds', () => {
     delete process.env['SIMULATION_PROFILE'];
     const config = getSimulationConfig();
+    expect(config.profile).toBe(SimulationProfile.HAPPY_PATH);
+
+    // The point of the default. The only caller of this configuration is a live
+    // payment somebody is waiting on; the seeded demo world's failure mix is
+    // written by the seeder, which never reads this file. An unconfigured
+    // environment must therefore not fail a payment at random — it did, for
+    // roughly three attempts in ten, and no documentation named the variable
+    // that controlled it.
+    expect(config.outcomeWeights[SimulatedOutcome.SUCCESS]).toBeGreaterThan(0);
+    for (const outcome of [
+      SimulatedOutcome.INSUFFICIENT_FUNDS,
+      SimulatedOutcome.USER_CANCELLED,
+      SimulatedOutcome.TIMEOUT,
+      SimulatedOutcome.NETWORK_FAILURE,
+      SimulatedOutcome.LOST,
+    ]) {
+      expect(config.outcomeWeights[outcome]).toBe(0);
+    }
+    // And it settles at once — a payment that succeeds in three minutes is its
+    // own kind of failure in front of an audience.
+    expect(config.delayBuckets).toEqual([{ seconds: 0, weight: 100 }]);
+    expect(config.duplicateRate).toBe(0);
+  });
+
+  it('still reaches every failure mode when TYPICAL is chosen deliberately', () => {
+    process.env['SIMULATION_PROFILE'] = SimulationProfile.TYPICAL;
+    const config = getSimulationConfig();
     expect(config.profile).toBe(SimulationProfile.TYPICAL);
-    // Coverage is the point of this profile: a demo environment that shows only
-    // successes is not believable, so each failure mode must be reachable.
+    // Coverage is the point of this profile, and changing the default must not
+    // quietly cost it.
     for (const outcome of [
       SimulatedOutcome.SUCCESS,
       SimulatedOutcome.INSUFFICIENT_FUNDS,
@@ -62,10 +89,10 @@ describe('getSimulationConfig', () => {
     expect(config.outcomeWeights[SimulatedOutcome.LOST]).toBe(0);
   });
 
-  it('falls back to TYPICAL rather than failing on an unknown profile', () => {
+  it('falls back to the default rather than failing on an unknown profile', () => {
     // A mistyped profile must not take the payment path down.
     process.env['SIMULATION_PROFILE'] = 'CHAOS_MONKEY';
-    expect(getSimulationConfig().profile).toBe(SimulationProfile.TYPICAL);
+    expect(getSimulationConfig().profile).toBe(SimulationProfile.HAPPY_PATH);
   });
 
   it('drives the reconciliation drill entirely through lost callbacks', () => {
@@ -98,7 +125,7 @@ describe('getSimulationConfig', () => {
   });
 
   it('ignores invalid override values, keeping the profile value', () => {
-    delete process.env['SIMULATION_PROFILE'];
+    process.env['SIMULATION_PROFILE'] = SimulationProfile.TYPICAL;
     process.env['SIMULATION_RATE_SUCCESS'] = 'not-a-number';
     const typical = SIMULATION_PROFILES[SimulationProfile.TYPICAL];
     expect(getSimulationConfig().outcomeWeights[SimulatedOutcome.SUCCESS]).toBe(

@@ -155,7 +155,20 @@ describe('POST /api/orders/[orderId]/payment', () => {
     expect(res.status).toBe(200);
     expect(body.data.paymentStatus).toBe('PENDING_PAYMENT');
     expect(body.data.checkoutRequestId).toBe('ws_CO_sim_retry');
-    expect(mockListingFindOneAndUpdate).toHaveBeenCalled();
+    // `updatePipeline: true` is load-bearing here for the same reason it is in
+    // `POST /api/orders`: Mongoose 9 refuses an array update without it, so the
+    // retry threw `Internal server error` for every buyer whose payment failed.
+    // `toHaveBeenCalled()` alone could not see that — it asserted the call
+    // happened, not that the driver would accept it.
+    expect(mockListingFindOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _id: LISTING_ID,
+        listingStatus: 'AVAILABLE',
+        quantityAvailable: { $gte: 20 },
+      }),
+      expect.any(Array), // pipeline update
+      { new: true, updatePipeline: true }
+    );
     // The retry rejoins the same order's trail.
     expect(mockPaymentLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'INITIATED', orderId: ORDER_ID })

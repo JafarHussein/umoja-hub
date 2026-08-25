@@ -9,6 +9,7 @@ import User from '@/lib/models/User.model';
 import PriceHistory from '@/lib/models/PriceHistory.model';
 import { cropListingSchema } from '@/lib/validation/farmerSchema';
 import { notify } from '@/lib/notifications/notify';
+import { revalidateMarketplace } from '@/lib/foodhub/marketplaceCache';
 import { AppError, handleApiError, requireRole } from '@/lib/utils';
 import {
   Role,
@@ -307,6 +308,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         relatedEntity: { kind: 'MarketplaceListing', id: String(listing._id) },
       });
     }
+
+    // The farmer has just been told their produce is visible to buyers. Make
+    // that true now rather than within the minute the feed is cached for.
+    revalidateMarketplace(String(listing._id));
 
     return NextResponse.json(
       {
