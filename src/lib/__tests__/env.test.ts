@@ -1,4 +1,4 @@
-import { validateEnv, siteUrl } from '../env';
+import { validateEnv, siteUrl, isLoopbackUrl } from '../env';
 
 // Every always-required var, set to a placeholder. The M-Pesa vars are
 // deliberately omitted so we can assert the conditional requirement.
@@ -59,7 +59,10 @@ describe('validateEnv — conditional M-Pesa requirement', () => {
   });
 
   it('requires M-Pesa credentials when a Daraja provider is selected', () => {
-    process.env = { ...baseEnv(), PAYMENT_PROVIDER: 'daraja-sandbox' } as unknown as NodeJS.ProcessEnv;
+    process.env = {
+      ...baseEnv(),
+      PAYMENT_PROVIDER: 'daraja-sandbox',
+    } as unknown as NodeJS.ProcessEnv;
     expect(() => validateEnv()).toThrow(/MPESA_SHORTCODE/);
   });
 
@@ -71,11 +74,17 @@ describe('validateEnv — conditional M-Pesa requirement', () => {
   });
 });
 
-describe('siteUrl — NEXTAUTH_URL resolution', () => {
+describe('siteUrl — canonical public URL resolution', () => {
   const saved = process.env;
 
   beforeEach(() => {
     process.env = { ...saved };
+    // next/jest loads .env.local, where PUBLIC_SITE_URL is deliberately set to
+    // the deployed address so a local rehearsal cannot email localhost links.
+    // These cases are about the NEXTAUTH_URL rung of the ladder, so the rungs
+    // above and below it are cleared first.
+    delete process.env['PUBLIC_SITE_URL'];
+    delete process.env['VERCEL_PROJECT_PRODUCTION_URL'];
   });
 
   afterEach(() => {
@@ -131,5 +140,64 @@ describe('siteUrl — NEXTAUTH_URL resolution', () => {
     for (const value of ['umojahub.co.ke', '', 'ftp://x', 'localhost:3000', '://']) {
       expect(() => new URL(withUrl(value))).not.toThrow();
     }
+  });
+});
+
+describe('siteUrl — precedence between the three sources', () => {
+  const saved = process.env;
+
+  beforeEach(() => {
+    process.env = { ...saved };
+    delete process.env['PUBLIC_SITE_URL'];
+    delete process.env['VERCEL_PROJECT_PRODUCTION_URL'];
+  });
+
+  afterEach(() => {
+    process.env = saved;
+  });
+
+  // The defect this ordering exists to prevent: NEXTAUTH_URL is the origin the
+  // server answers on and must stay localhost during development, so it cannot
+  // also be the address printed in an email that leaves the machine.
+  it('lets PUBLIC_SITE_URL override a loopback NEXTAUTH_URL', () => {
+    process.env['NEXTAUTH_URL'] = 'http://localhost:3000';
+    process.env['PUBLIC_SITE_URL'] = 'https://umoja-hub.vercel.app';
+    expect(siteUrl()).toBe('https://umoja-hub.vercel.app');
+  });
+
+  it('falls back to NEXTAUTH_URL when PUBLIC_SITE_URL is blank', () => {
+    process.env['NEXTAUTH_URL'] = 'https://umoja-hub.vercel.app';
+    process.env['PUBLIC_SITE_URL'] = '   ';
+    expect(siteUrl()).toBe('https://umoja-hub.vercel.app');
+  });
+
+  // Vercel supplies this one without a scheme, which is the schemeless branch.
+  it("uses Vercel's production alias when neither variable is set", () => {
+    delete process.env['NEXTAUTH_URL'];
+    process.env['VERCEL_PROJECT_PRODUCTION_URL'] = 'umoja-hub.vercel.app';
+    expect(siteUrl()).toBe('https://umoja-hub.vercel.app');
+  });
+
+  it('skips a malformed candidate instead of settling on localhost', () => {
+    process.env['PUBLIC_SITE_URL'] = 'ftp://wrong';
+    process.env['NEXTAUTH_URL'] = 'https://umoja-hub.vercel.app';
+    expect(siteUrl()).toBe('https://umoja-hub.vercel.app');
+  });
+});
+
+describe('isLoopbackUrl', () => {
+  it('recognises every address that only resolves on the sending machine', () => {
+    expect(isLoopbackUrl('http://localhost:3000/dashboard/farmer')).toBe(true);
+    expect(isLoopbackUrl('http://127.0.0.1:3000/auth/reset-password')).toBe(true);
+    expect(isLoopbackUrl('http://[::1]:3000/')).toBe(true);
+    expect(isLoopbackUrl('http://0.0.0.0:3000/')).toBe(true);
+  });
+
+  it('accepts a real public address', () => {
+    expect(isLoopbackUrl('https://umoja-hub.vercel.app/dashboard/farmer')).toBe(false);
+  });
+
+  it('does not throw on a value that is not a URL', () => {
+    expect(isLoopbackUrl('not a url')).toBe(false);
   });
 });

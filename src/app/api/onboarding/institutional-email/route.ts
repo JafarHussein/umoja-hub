@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { randomInt } from 'crypto';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
@@ -82,8 +82,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     });
 
-    sendInstitutionalEmailPin(institutionalEmail, pin).catch(() => {
-      // Already logged inside emailService
+    // Deferred, not fire-and-forget: an un-awaited promise is suspended with
+    // the invocation that created it, so the pin could leave minutes late or
+    // not at all. `after` keeps the invocation alive until the send settles
+    // without holding up the response the student is waiting on.
+    after(async () => {
+      await sendInstitutionalEmailPin(institutionalEmail, pin);
     });
 
     logger.info('onboarding', 'Institutional email pin issued', { userId: session.user.id });
