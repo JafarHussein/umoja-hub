@@ -271,19 +271,93 @@ client-side URL assembly, visible label and `href` in agreement.
 | `npm run test` | **1531 passed, 123 suites, 0 failed** |
 | `npm run build` | pass (exit 0) |
 
+## 11b. Verification after the fix was deployed
+
+Merged as PR #75 (`e8d452a`), deployed as `dpl_9jQ6RzzR7founBwU4yjjB15ZLy3d`,
+aliased to `umoja-hub.vercel.app`. All five PR checks passed: Type Check · Lint ·
+Test · Build, Integration (MongoDB), Playwright (build · visual), and the Vercel
+preview build.
+
+### The exact anchors the emails now carry
+
+Rendered through the real template with the real environment:
+
+```
+welcome email anchor href : https://umoja-hub.vercel.app/dashboard/farmer
+reset  email anchor href  : https://umoja-hub.vercel.app/auth/reset-password?token=<64-hex>
+```
+
+Absolute, `https`, public host, single query parameter, no encoding hazard.
+
+### Real email sent from the local machine — the path that was broken
+
+The failure was a *local* one, so the fix was proved there first: a full
+registration through the local dev server, which sent genuine Gmail to a real
+inbox.
+
+```
+emailService · Lifecycle email sent   · to: umojahub16+phonetest@gmail.com
+                                        subject: "UmojaHub — Welcome to UmojaHub"
+auth         · Password reset link issued
+emailService · Password reset email sent · to: umojahub16+phonetest@gmail.com
+```
+
+No `EMAIL_LINK_UNREACHABLE` in the log — the new guard inspected both links and
+found neither of them loopback. Under the previous code this identical path
+produced `http://localhost:3000/dashboard/farmer`.
+
+### Full end-to-end against the deployed production build
+
+| Step | Result |
+| --- | --- |
+| `POST /api/auth/register` | `201` |
+| credentials sign-in | `200`, session cookie |
+| `POST /api/onboarding/role` | `200` → welcome email |
+| `POST /api/auth/password-reset/request` | `200` → reset email |
+| `GET /auth/reset-password?token=…` | `200` — public, no auth redirect, query intact |
+| `GET /auth/reset-password` | `200` |
+| `GET /dashboard/farmer` *(no session)* | `307` → `/auth/login?callbackUrl=%2Fdashboard%2Ffarmer` — destination preserved and encoded |
+| `POST …/confirm` with an unknown 64-hex token | `400` "This reset link is invalid or has expired." |
+| `POST …/confirm` with a malformed token | `400`, same message — no leak of which failed |
+
+### The delayed-email defect, measured before and after
+
+| Build | Reset requested | Email sent | Gap | Invocation |
+| --- | --- | --- | --- | --- |
+| before (`dpl_DyK2…`) | 08:22:40 | 08:23:43 | **+63 s** | a *different, unrelated* request |
+| after (`dpl_9jQ6…`) | 08:53:30 | 08:53:32 | **+2 s** | its own |
+
+Both production emails now leave inside the invocation that created them.
+
 ## 12. Desktop test result
 
-*Pending — see §17.* The two production emails already delivered in §11 carry
-`https://umoja-hub.vercel.app/…` links and can be opened from a desktop browser
-now.
+**Pass.** Both emailed destinations were opened in a real browser against the
+live production deployment and their rendered content read, not merely their
+status codes:
+
+- `/auth/reset-password?token=…` → **"Choose a new password"**, with New password
+  and Confirm password fields and the Reset password button. The token was
+  carried from the query string into the page.
+- `/auth/reset-password` with no token → **"Invalid reset link — This link is
+  missing its reset token. Request a new one to continue."** plus a "Request a
+  new link" action.
+- `/dashboard/farmer` with no session → **"Sign in to UmojaHub"**, at
+  `/auth/login?callbackUrl=%2Fdashboard%2Ffarmer`.
+
+Rendered at a 390 × 844 viewport — phone dimensions — so the mobile layout is
+confirmed as well as the routing.
 
 ## 13. Android test result
 
-*Pending — requires a phone. See §17.*
+**Not done — this is the one step that cannot be performed from here.** It needs
+a person holding a phone. Two real emails are waiting in `umojahub16@gmail.com`
+to make it a one-minute check; the procedure is in §17.1.
 
 ## 14. iPhone test result
 
-*Not available — no iPhone in this environment.*
+*Not available — no iPhone in this environment.* The link is a plain HTTPS anchor
+with no platform-specific behaviour, so nothing distinguishes iOS from Android
+here.
 
 ## 15. Other email links checked
 
@@ -308,10 +382,25 @@ the deployed application itself (§7), not inferred from configuration.
 ## 17. Remaining limitations
 
 1. **The phone test is not done.** It cannot be done from this environment — it
-   needs a person holding a phone. Everything up to it is verified: the link is
-   absolute, `https`, points at the live production domain, is not loopback, and
-   the route it targets is served by that deployment. The final step is §12/§13,
-   above.
+   needs a person holding a phone. Everything up to it is verified: the links are
+   absolute, `https`, point at the live production domain, are not loopback, and
+   both target routes are served by that deployment and render correctly at phone
+   dimensions.
+
+   **To finish it — open `umojahub16@gmail.com` on an Android phone.** Four
+   emails are waiting, two sent from the local machine and two from production:
+
+   | Subject | Sent from | Tap | Expect |
+   | --- | --- | --- | --- |
+   | UmojaHub — Welcome to UmojaHub | local dev server | **Open UmojaHub** | "Sign in to UmojaHub" at `umoja-hub.vercel.app/auth/login?callbackUrl=%2Fdashboard%2Ffarmer` |
+   | Reset your UmojaHub password | local dev server | **Choose a new password** | "Choose a new password" form at `umoja-hub.vercel.app` |
+
+   The two from the local dev server are the decisive ones: that is the exact
+   path that produced "This site can't be reached". Check the address bar reads
+   `umoja-hub.vercel.app`, never `localhost`. The reset emails expire 30 minutes
+   after they were sent (08:52 and 08:53 UTC on 2026-08-25); if they have lapsed,
+   request a fresh one from `/auth/forgot-password` — the welcome emails do not
+   expire.
 2. **The fix for the reported symptom is partly configuration.**
    `PUBLIC_SITE_URL` now lives in `.env.local`, which is gitignored — it cannot
    be committed. Anyone cloning this repo onto another machine must set it, or
@@ -332,6 +421,9 @@ the deployed application itself (§7), not inferred from configuration.
    middleware exemption (§9); the absence of a plain-text alternative part on
    outbound email; and the duplicate-Mongoose-index warnings visible in the
    production logs.
-7. **Test accounts created during this work** and left in the shared database:
-   `umojahub16+linktest1@gmail.com` (FARMER, stage `IDENTITY_INPUT`). The next
-   `npm run demo` reset clears it.
+7. **Test accounts created during this work** and left in the shared database,
+   all FARMER at stage `IDENTITY_INPUT`: `umojahub16+linktest1@gmail.com`
+   (production, pre-fix baseline), `umojahub16+phonetest@gmail.com` (local,
+   post-fix), `umojahub16+prodtest@gmail.com` (production, post-fix). All three
+   are plus-addresses of the project's own mailbox. The next `npm run demo` reset
+   clears them.
