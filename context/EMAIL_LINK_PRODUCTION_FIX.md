@@ -349,9 +349,15 @@ confirmed as well as the routing.
 
 ## 13. Android test result
 
-**Not done — this is the one step that cannot be performed from here.** It needs
-a person holding a phone. Two real emails are waiting in `umojahub16@gmail.com`
-to make it a one-minute check; the procedure is in §17.1.
+**Pass — confirmed by the owner on 2026-08-25.** The email was opened on a phone,
+the link was tapped, and UmojaHub loaded.
+
+This is the result the whole fix was for, and it is the only one that could
+settle it. Every other check in this document was performed on the machine that
+generates the links, and that machine is precisely where the defect was
+invisible: `http://localhost:3000` resolved there and nowhere else. A link is
+only right or wrong relative to where it is read, so the test had to be read
+somewhere else.
 
 ## 14. iPhone test result
 
@@ -381,26 +387,8 @@ the deployed application itself (§7), not inferred from configuration.
 
 ## 17. Remaining limitations
 
-1. **The phone test is not done.** It cannot be done from this environment — it
-   needs a person holding a phone. Everything up to it is verified: the links are
-   absolute, `https`, point at the live production domain, are not loopback, and
-   both target routes are served by that deployment and render correctly at phone
-   dimensions.
-
-   **To finish it — open `umojahub16@gmail.com` on an Android phone.** Four
-   emails are waiting, two sent from the local machine and two from production:
-
-   | Subject | Sent from | Tap | Expect |
-   | --- | --- | --- | --- |
-   | UmojaHub — Welcome to UmojaHub | local dev server | **Open UmojaHub** | "Sign in to UmojaHub" at `umoja-hub.vercel.app/auth/login?callbackUrl=%2Fdashboard%2Ffarmer` |
-   | Reset your UmojaHub password | local dev server | **Choose a new password** | "Choose a new password" form at `umoja-hub.vercel.app` |
-
-   The two from the local dev server are the decisive ones: that is the exact
-   path that produced "This site can't be reached". Check the address bar reads
-   `umoja-hub.vercel.app`, never `localhost`. The reset emails expire 30 minutes
-   after they were sent (08:52 and 08:53 UTC on 2026-08-25); if they have lapsed,
-   request a fresh one from `/auth/forgot-password` — the welcome emails do not
-   expire.
+1. ~~The phone test is not done.~~ **Done — see §13.** The reported symptom is
+   confirmed gone on the device it was reported from.
 2. **The fix for the reported symptom is partly configuration.**
    `PUBLIC_SITE_URL` now lives in `.env.local`, which is gitignored — it cannot
    be committed. Anyone cloning this repo onto another machine must set it, or
