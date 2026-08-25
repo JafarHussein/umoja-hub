@@ -763,8 +763,7 @@ roughly 45 route/viewport combinations. The single page error is E-P1-3.
    `organizationName: "NOT APPLICABLE"` and `businessRegistrationNumber: "NOT APPLICABLE"` with
    `verificationStatus: PENDING`. It therefore appears in the **admin buyer verification queue** —
    a screen a panel is likely to be shown — displaying fabricated-looking data. It is the exact
-   artefact of the closed-onboarding-corridor defect recorded in
-   `POST_PRESENTATION_STABILIZATION_AUDIT.md`: the corridor has since been fixed (the
+   artefact of the closed-onboarding-corridor defect: the corridor has since been fixed (the
    `INDIVIDUAL` / `BUSINESS` branch is built and working), but the residue was never cleared.
 2. **The demonstration mix contradicts the vision's emphasis.** 29 of 35 slots and 23 of 26
    demonstrations are `VIDEO_CALL` with Jitsi links. The workflow this hub is built around

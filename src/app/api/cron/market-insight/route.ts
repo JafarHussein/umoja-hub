@@ -9,7 +9,6 @@ import { logger } from '@/lib/utils';
 // POST /api/cron/market-insight — Weekly market insight aggregation
 // Auth: Bearer CRON_SECRET
 // Schedule: Monday 3am UTC (6am EAT)
-// Per BUSINESS_LOGIC.md §10.2
 // ---------------------------------------------------------------------------
 
 function verifyCronSecret(req: NextRequest): boolean {
@@ -53,7 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         dataPointCount: { $sum: 1 },
       },
     },
-    // Only process crop+county pairs with 3+ data points per BUSINESS_LOGIC.md §10.2
+    // Only process crop+county pairs with 3+ data points
     { $match: { dataPointCount: { $gte: 3 } } },
     { $limit: 50 }, // batch size
   ]);

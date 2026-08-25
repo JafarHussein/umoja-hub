@@ -1,6 +1,12 @@
 # 01 — Research Report
 
-**Status:** Draft for approval · **Date:** 2026-07-29 · **Supersedes:** `context/PRICE_INTELLIGENCE_ENGINE_DESIGN.md` (2026-06-22)
+**Status:** Specification for a V2 that has **not been built** · **Date:** 2026-07-29
+
+> This twelve-document package specifies a future version of the price engine. Only the
+> Phase-0 correctness work in §5 was executed. The engine running in production is still
+> the V1 described in `context/PRICE_INTELLIGENCE_ENGINE_DESIGN.md`, which the code in
+> `src/lib/intelligence/` cites and which therefore remains the description of what
+> UmojaHub actually does today. Read these twelve as a plan, not as a system.
 
 This is the first of twelve documents. No V2 feature code is written until the set is approved. The one exception already taken is Phase 0 — a correctness branch described in §5, approved separately because the defects it fixes are live and because external data cannot be joined without it.
 

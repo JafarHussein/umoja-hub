@@ -398,8 +398,8 @@ becomes visible to buyers"*, switches to the buyer, and the produce is not there
 The same gap let a listing detail page advertise stock an order had already taken, and left a
 paused listing on sale.
 
-**The 60-second cache is a deliberate, recorded architectural decision** (`WEBSITE_WEBAPP_BOUNDARY.md`
-§358) and it has been kept. What was missing is the other half of any ISR design: a write must
+**The 60-second cache is a deliberate architectural decision** — anonymous browsing of a listing
+grid is exactly the read that should be served from cache — and it has been kept. What was missing is the other half of any ISR design: a write must
 invalidate the page that reads it.
 
 **Fix:** new `src/lib/foodhub/marketplaceCache.ts` — one `revalidateMarketplace(listingId?)` helper

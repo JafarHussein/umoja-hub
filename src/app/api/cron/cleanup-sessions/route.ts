@@ -8,7 +8,7 @@ import { logger } from '@/lib/utils';
 // POST /api/cron/cleanup-sessions — Nightly session cleanup
 // Auth: Bearer CRON_SECRET
 // Schedule: nightly midnight UTC (3am EAT)
-// Per BUSINESS_LOGIC.md §10.4 — belt-and-suspenders for TTL indexes
+// Belt-and-suspenders for TTL indexes
 // ---------------------------------------------------------------------------
 
 function verifyCronSecret(req: NextRequest): boolean {

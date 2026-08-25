@@ -1,6 +1,5 @@
 /**
- * Farmer Trust Score Calculator
- * Exact formulas per BUSINESS_LOGIC.md §1
+ * Farmer Trust Score Calculator — the four weighted components of the score.
  * Called after every Order completion and Rating submission — never on GET requests.
  */
 

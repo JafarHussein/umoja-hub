@@ -1,8 +1,8 @@
 # Auth & Onboarding Flow V3 — OAuth-first
 
-**Status:** APPROVED by owner 2026-08-03 (chat directive). **Amends
-[AUTH_ONBOARDING_FLOW_V2](AUTH_ONBOARDING_FLOW_V2.md)**, which stays on file as the
-record of the pre-auth draft design it replaces.
+**Status:** APPROVED by owner 2026-08-03 (chat directive). **Supersedes the V2
+pre-auth draft design** (OnboardingDraft before sign-in), which this replaces
+entirely.
 
 This changes **platform logic** (auth, onboarding, RBAC) and the **data model**,
 done under explicit owner direction, as V2 was before it.
@@ -118,9 +118,7 @@ cookie helper. Nothing reads them under V3.
 
 ## 7. Presentation changes
 
-- **Role-card illustrations removed** — see the amendment note in
-  [ILLUSTRATION_PLAN_AUTH_ONBOARDING_V1](ILLUSTRATION_PLAN_AUTH_ONBOARDING_V1.md).
-  Lucide icons at icon weight replace them. Concept illustrations elsewhere in
+- **Role-card illustrations removed.** Lucide icons at icon weight replace them. Concept illustrations elsewhere in
   the funnel (sign-in, verification handoff) are **kept** — those do a job the
   role cards' did not.
 - **Official provider marks** on every OAuth button, so the buttons are

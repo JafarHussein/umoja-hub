@@ -1,6 +1,6 @@
 # Marketplace Design Direction — V1
 
-**Owner-directed (2026-06-17). This REWRITES [05 Marketplace UX Research](05_MARKETPLACE_UX_RESEARCH.md)** — the earlier doc assumed a traditional product-card grid; that assumption is retired. Status: **capture for confirmation.** Governed by the [Foundation](UMOJAHUB_WEBAPP_FOUNDATION_V1.md).
+**Owner-directed (2026-06-17).** This retires the earlier research assumption of a traditional product-card grid. Status: **capture for confirmation.** Governed by the [Foundation](UMOJAHUB_WEBAPP_FOUNDATION_V1.md).
 
 ## Philosophy (the north star)
 
@@ -87,7 +87,7 @@ The experience reads like **making a well-informed sourcing decision**, not soci
 
 ## What this changes downstream
 
-- Rewrites deliverable 05; updates the **IA marketplace section** (Search / Discovery / Post-a-Need, Opportunity Review layer).
+- Updates the **IA marketplace section** (Search / Discovery / Post-a-Need, Opportunity Review layer).
 - Adds to the **trust vocabulary**: `OpportunityCard`, `DeliveryConfidence`, `MarketContext`, `OpportunityReview`.
 - The buyer journey in the forthcoming end-to-end map follows the confidence spine above.
 

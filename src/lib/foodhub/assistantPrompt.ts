@@ -1,7 +1,6 @@
 /**
  * Farm Assistant system prompt builder.
  * Grounds all responses in KEBS/PCPB/KEPHIS/Kenya Veterinary Board standards.
- * Per BUSINESS_LOGIC.md §4.
  */
 
 import { FOODHUB_PLATFORM_KNOWLEDGE } from '@/lib/ai/platformKnowledge';

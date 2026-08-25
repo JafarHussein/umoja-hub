@@ -1,6 +1,5 @@
 /**
  * Price data service — platform premium calculation and weekly price aggregation.
- * Per BUSINESS_LOGIC.md §9 and §10.2.
  */
 
 import { connectDB } from '@/lib/db';
@@ -11,7 +10,6 @@ import { ListingUnit } from '@/types';
 /**
  * Calculates the percentage premium UmojaHub farmers earn vs the middleman benchmark.
  * Returns null when benchmark is zero or undefined.
- * Per BUSINESS_LOGIC.md §9.
  */
 export function calculatePlatformPremium(
   umojaHubAveragePrice: number,
@@ -36,7 +34,6 @@ export interface WeeklyPriceAggregation {
 
 /**
  * Aggregates PriceHistory for a crop+county+unit triple over the last 7 days.
- * Per BUSINESS_LOGIC.md §10.2.
  *
  * `unit` is part of the key, not an afterthought: without it `lowestPrice` and
  * `highestPrice` are a min and a max taken across a bimodal KG/BAG set and are

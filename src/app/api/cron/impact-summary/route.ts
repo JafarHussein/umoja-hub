@@ -13,7 +13,7 @@ import { Role, OrderFulfillmentStatus, ProjectStatus } from '@/types';
 // POST /api/cron/impact-summary — Hourly platform impact summary
 // Auth: Bearer CRON_SECRET
 // Schedule: every hour (0 * * * * in vercel.json)
-// Per BUSINESS_LOGIC.md §10.3 — READ ONLY, single upsert at end
+// READ ONLY, single upsert at end
 // ---------------------------------------------------------------------------
 
 function verifyCronSecret(req: NextRequest): boolean {

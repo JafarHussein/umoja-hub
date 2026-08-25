@@ -1,7 +1,7 @@
 # Escrow Architecture Report — Discovered, Not Invented
 
 **Date**: 2026-06-21
-**Status**: INVESTIGATION COMPLETE — awaiting approval before implementation
+**Status**: **IMPLEMENTED.** The investigation below was approved and built (P0–P5, merged 2026-06-21). Deliverable 4 — the escrow state machine — is the specification `src/lib/foodhub/orderEscrowState.ts` implements, with one state added since: `UNKNOWN`, for a payment M-Pesa could not be asked about. Deliverables 5–10 are a historical build plan and are complete. The current payment and escrow posture, and the honest boundary around it, are stated in `context/payments-research/09_PAYMENT_ARCHITECTURE_AND_PANEL_DEFENCE.md`.
 **Scope**: Food Hub marketplace payments / order lifecycle / settlement
 **Method**: Derived entirely from existing code, models, and architecture docs. No invented behavior. Every claim is cited.
 
