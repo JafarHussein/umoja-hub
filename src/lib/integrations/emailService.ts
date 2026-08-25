@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { logger } from '@/lib/utils';
+import { isLoopbackUrl } from '@/lib/env';
 import { renderLifecycleEmail, type LifecycleEmailParams } from '@/lib/integrations/emailTemplates';
 
 interface ISendEmailResult {
@@ -25,6 +26,34 @@ function getTransporter(): nodemailer.Transporter {
 }
 
 /**
+ * A link inside an email is the one URL this platform emits that is guaranteed
+ * to be opened somewhere else — another device, another network, most often a
+ * phone. A loopback address cannot survive that trip: it resolves on the
+ * machine that sent it and nowhere on earth besides, so the recipient gets
+ * "This site can't be reached" and the workflow the email exists to continue
+ * simply ends.
+ *
+ * This happened, and nothing caught it: the base URL came from NEXTAUTH_URL,
+ * which is http://localhost:3000 during local development because OAuth
+ * requires it to be, and a rehearsal that sends real mail through the real
+ * SMTP account therefore posted loopback links to real inboxes. Every gate was
+ * green throughout, because a link is only wrong relative to where it is read.
+ *
+ * So the check lives here, at the single point where mail leaves the process,
+ * and it is loud. It does not suppress the email: a reset link that reaches the
+ * wrong address is still recoverable by the person who asked for it, whereas an
+ * email that never arrives is not. Set PUBLIC_SITE_URL to fix it.
+ */
+function warnIfUnreachable(link: string | undefined, context: string): void {
+  if (!link || !isLoopbackUrl(link)) return;
+  logger.error(
+    'emailService',
+    'EMAIL_LINK_UNREACHABLE — this email carries a loopback link that no recipient can open. Set PUBLIC_SITE_URL to the public address of this deployment.',
+    { context, link }
+  );
+}
+
+/**
  * True when an SMTP transport is configured. Lifecycle email is a best-effort
  * side effect: when SMTP is absent (CI, local dev without mail, test runs) we
  * skip silently rather than attempting a connection that would hang or error.
@@ -44,6 +73,7 @@ export async function sendLifecycleEmail(
   params: LifecycleEmailParams
 ): Promise<ISendEmailResult> {
   if (!isEmailConfigured()) return { success: false };
+  warnIfUnreachable(params.ctaUrl, 'lifecycle');
   try {
     const from = process.env['SMTP_FROM'] ?? process.env['SMTP_USER'];
     const info = await getTransporter().sendMail({
@@ -60,7 +90,10 @@ export async function sendLifecycleEmail(
   }
 }
 
-export async function sendInstitutionalEmailPin(to: string, pin: string): Promise<ISendEmailResult> {
+export async function sendInstitutionalEmailPin(
+  to: string,
+  pin: string
+): Promise<ISendEmailResult> {
   try {
     const from = process.env['SMTP_FROM'] ?? process.env['SMTP_USER'];
 
@@ -83,6 +116,7 @@ export async function sendPasswordResetEmail(
   to: string,
   resetLink: string
 ): Promise<ISendEmailResult> {
+  warnIfUnreachable(resetLink, 'password-reset');
   try {
     const from = process.env['SMTP_FROM'] ?? process.env['SMTP_USER'];
 

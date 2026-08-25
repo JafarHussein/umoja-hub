@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
 import { connectDB } from '@/lib/db';
 import { passwordResetRequestSchema } from '@/lib/validation/onboardingSchema';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { sendPasswordResetEmail } from '@/lib/integrations/emailService';
 import { handleApiError, logger } from '@/lib/utils';
-import { env } from '@/lib/env';
+import { siteUrl } from '@/lib/env';
 import { UserStatus } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -53,9 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Only credentials-capable, active accounts get a link — but the response is
     // identical regardless, so an attacker cannot distinguish the cases.
     if (user?.hashedPassword && user.status === UserStatus.ACTIVE) {
-      const { default: PasswordResetToken } = await import(
-        '@/lib/models/PasswordResetToken.model'
-      );
+      const { default: PasswordResetToken } = await import('@/lib/models/PasswordResetToken.model');
       const rawToken = randomBytes(32).toString('hex');
       await PasswordResetToken.create({
         tokenHash: sha256(rawToken),
@@ -63,10 +61,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         expiresAt: new Date(Date.now() + RESET_TTL_MS),
       });
 
-      const base = env('NEXTAUTH_URL').replace(/\/$/, '');
-      const link = `${base}/auth/reset-password?token=${rawToken}`;
-      sendPasswordResetEmail(email, link).catch(() => {
-        // Already logged inside emailService.
+      // The canonical public base, never this server's own origin — see
+      // siteUrl(). A reset link is opened on whatever device the mail was read
+      // on, which is very often not the machine that generated it.
+      const link = `${siteUrl()}/auth/reset-password?token=${rawToken}`;
+      // Deferred, not fire-and-forget. An un-awaited promise on a serverless
+      // route is not a background job: the invocation returns and the pending
+      // work is suspended with it. Observed in production on 2026-08-25 — a
+      // reset email did not leave until an unrelated request 63 seconds later
+      // happened to wake the same instance. `after` hands the callback to the
+      // platform, which keeps the invocation alive until it settles, while the
+      // response still returns immediately, so the reply's timing reveals
+      // nothing about whether the address matched an account.
+      after(async () => {
+        await sendPasswordResetEmail(email, link);
       });
       logger.info('auth', 'Password reset link issued', { userId: String(user._id) });
     }

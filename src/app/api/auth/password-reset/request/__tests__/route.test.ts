@@ -8,6 +8,19 @@
 
 import { NextRequest } from 'next/server';
 
+// `after()` hands work to Next's request scope, which a test calling the route
+// handler directly does not have. Running the callback inline keeps the email
+// dispatch observable while leaving the route's real deferral intact.
+jest.mock('next/server', () => {
+  const actual = jest.requireActual('next/server');
+  return {
+    ...actual,
+    after: (fn: () => unknown | Promise<unknown>) => {
+      void fn();
+    },
+  };
+});
+
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
 const mockRateLimit = jest.fn().mockResolvedValue({ allowed: true });
@@ -18,7 +31,7 @@ jest.mock('@/lib/integrations/emailService', () => ({
   sendPasswordResetEmail: (...a: unknown[]) => mockSendReset(...a),
 }));
 
-jest.mock('@/lib/env', () => ({ env: () => 'http://localhost:3000' }));
+jest.mock('@/lib/env', () => ({ siteUrl: () => 'https://umoja-hub.vercel.app' }));
 
 const mockUserFindOne = jest.fn();
 jest.mock('@/lib/models/User.model', () => ({
@@ -90,7 +103,11 @@ describe('POST /api/auth/password-reset/request', () => {
     expect(mockTokenCreate).toHaveBeenCalled();
     expect(mockSendReset).toHaveBeenCalledWith(
       'jane@gmail.com',
-      expect.stringContaining('/auth/reset-password?token=')
+      // Absolute, public and https — the whole point of the fix. A relative or
+      // loopback link is unopenable from the phone the mail is read on.
+      expect.stringMatching(
+        /^https:\/\/umoja-hub\.vercel\.app\/auth\/reset-password\?token=[0-9a-f]{64}$/
+      )
     );
   });
 });

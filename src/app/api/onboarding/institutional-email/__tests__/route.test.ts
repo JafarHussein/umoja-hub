@@ -7,6 +7,19 @@
 
 import { NextRequest } from 'next/server';
 
+// `after()` hands work to Next's request scope, which a test calling the route
+// handler directly does not have. Running the callback inline keeps the email
+// dispatch observable while leaving the route's real deferral intact.
+jest.mock('next/server', () => {
+  const actual = jest.requireActual('next/server');
+  return {
+    ...actual,
+    after: (fn: () => unknown | Promise<unknown>) => {
+      void fn();
+    },
+  };
+});
+
 jest.mock('@/lib/db', () => ({ connectDB: jest.fn().mockResolvedValue(undefined) }));
 
 const mockRateLimit = jest.fn().mockResolvedValue({ allowed: true });
@@ -45,7 +58,9 @@ function postReq(institutionalEmail: string) {
 }
 
 function userLean(value: unknown) {
-  mockUserFindById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(value) }) });
+  mockUserFindById.mockReturnValue({
+    select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(value) }),
+  });
 }
 
 describe('POST /api/onboarding/institutional-email', () => {

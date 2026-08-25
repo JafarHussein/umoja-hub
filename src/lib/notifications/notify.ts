@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { logger } from '@/lib/utils';
+import { siteUrl } from '@/lib/env';
 import { NotificationType, NotificationChannel, Role } from '@/types';
 import type { EmailAudience } from '@/lib/integrations/emailTemplates';
 
@@ -96,9 +97,7 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
   const nextStep = isAdmin ? ADMIN_NEXT_STEP[input.type] : EMAIL_NEXT_STEP[input.type];
   if (nextStep === undefined) return; // type opts out of email
 
-  const { isEmailConfigured, sendLifecycleEmail } = await import(
-    '@/lib/integrations/emailService'
-  );
+  const { isEmailConfigured, sendLifecycleEmail } = await import('@/lib/integrations/emailService');
   if (!isEmailConfigured()) return;
 
   try {
@@ -106,11 +105,15 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
     const user = await User.findById(input.userId).select('email firstName role').lean();
     if (!user?.email) return;
 
-    const base = process.env['NEXTAUTH_URL']?.replace(/\/$/, '') ?? '';
+    // One canonical public base for every outbound link — see siteUrl(). This
+    // used to read NEXTAUTH_URL directly, which is the origin this server
+    // answers on, not the address a recipient can reach: a local rehearsal put
+    // http://localhost:3000 into every real email it sent.
+    const base = siteUrl();
     const path = isAdmin
       ? (ADMIN_PATH[input.type] ?? '/dashboard/admin')
       : dashboardPathFor(user.role ?? null, input.relatedEntity?.kind);
-    const ctaUrl = base ? `${base}${path}` : undefined;
+    const ctaUrl = `${base}${path}`;
 
     await sendLifecycleEmail(user.email, `UmojaHub — ${input.title}`, {
       audience: isAdmin ? 'ADMIN' : 'SUBJECT',
@@ -118,7 +121,11 @@ async function dispatchEmail(input: NotifyInput): Promise<void> {
       heading: input.title,
       intro: input.body ?? input.title,
       ...(nextStep ? { nextStep } : {}),
-      ...(ctaUrl ? { ctaLabel: isAdmin ? 'Open the queue' : 'Open UmojaHub', ctaUrl } : {}),
+      // siteUrl() always resolves, so every lifecycle email now carries its
+      // button. It used to be conditional on a base URL being configured,
+      // which quietly produced a buttonless email rather than a wrong one.
+      ctaLabel: isAdmin ? 'Open the queue' : 'Open UmojaHub',
+      ctaUrl,
     });
   } catch (error) {
     logger.error('notify', 'NOTIFY_EMAIL_FAILED — could not send lifecycle email', {
