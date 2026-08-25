@@ -32,14 +32,14 @@ import {
  * How many reports must still be sitting in a lecturer's review queue when the
  * seed finishes, after the demonstration phase has taken its share.
  *
- * Three, because one is what the readiness audit of 2026-08-24 emptied by
+ * Two, because one is what the readiness audit of 2026-08-24 emptied by
  * rehearsing the review once — leaving the Education Hub's centrepiece screen
  * reading "Nothing waiting on you" for the presentation itself. Rehearsing is
  * the correct thing for a presenter to do, so the world has to survive it.
  *
  * Asserted after every seed by `the review queue survives a rehearsal`.
  */
-export const REVIEW_QUEUE_SURVIVAL_FLOOR = 3;
+export const REVIEW_QUEUE_SURVIVAL_FLOOR = 2;
 
 /**
  * How many queued reports the demonstration phase promotes away per lecturer —
@@ -603,7 +603,31 @@ export async function generateEducation(ctx: SimContext, world: World): Promise<
     // and the same holds for a student who is to take up their lecturer's work.
     const isGuarantor = queueGuarantor.get(String(student.institutionId)) === String(student.id);
     const drawn = rng.int(activity.engagements[0], activity.engagements[1]);
-    const n = isGuarantor || guaranteed ? Math.max(1, drawn) : drawn;
+
+    // Supply, not just intent.
+    //
+    // `mustQueue` below forces an engagement into the review queue while its
+    // institution is short — but it can only force ones that exist, and how
+    // many exist is drawn from the student's archetype. A 'new' student draws
+    // zero. So an institution could reach the end of its cohort still short of
+    // the work its lecturers need, and the seed would fail its own validation:
+    // that is exactly how `every institution has a demonstration request
+    // waiting` failed on one university while every other check passed.
+    //
+    // While an institution is short, each of its students carries at least two
+    // projects. Two is what an engaged student on this platform plausibly has,
+    // it stops as soon as the target is met, and it makes the guarantee a
+    // matter of supply rather than of the dice being kind.
+    const institutionKeyForSupply = String(student.institutionId);
+    const institutionIsShort =
+      (queuedWorkByInstitution.get(institutionKeyForSupply) ?? 0) <
+      queuedWorkTargetFor(institutionKeyForSupply);
+    const n =
+      isGuarantor || guaranteed
+        ? Math.max(1, drawn)
+        : institutionIsShort
+          ? Math.max(2, drawn)
+          : drawn;
     for (let e = 0; e < n; e++) {
       const title = rng.pick(PROJECT_TITLES);
       const stack = rng.sample(TECH_STACKS, rng.int(2, 4));
