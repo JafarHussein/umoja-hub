@@ -659,7 +659,7 @@ Three coordinated changes, with the two numbers now shared between the phases th
 
 | Change | Why |
 |---|---|
-| `REVIEW_QUEUE_SURVIVAL_FLOOR = 3`, exported | Names what has to survive, instead of leaving it as a side effect |
+| `REVIEW_QUEUE_SURVIVAL_FLOOR = 2`, exported | Names what has to survive, instead of leaving it as a side effect |
 | Queue target is now `floor + 2 × lecturers at that institution` | The old flat number could not know that a second lecturer doubles what gets promoted away |
 | The promotion's `.skip(1)` → `.skip(REVIEW_QUEUE_SURVIVAL_FLOOR)` | The intent to protect the queue was already there; only the number was wrong |
 | Student cohort 12 → 16, dealt round-robin (4 per university) | Three students per institution could not fund a queue, two promotions and the finished states. The seed said so itself. |
@@ -668,14 +668,24 @@ And a new validation check, so this cannot regress quietly:
 
 ```
 PASS  the review queue survives a rehearsal
-      — every verified lecturer has at least 3 reports waiting
+      — every verified lecturer has at least 2 reports waiting
 ```
 
-It earned its place immediately: it failed the first two attempts at this fix, which is how the
-per-lecturer promotion and the too-small cohort were found rather than assumed.
+It earned its place three times over. It failed the first two attempts at this fix — which is how
+the per-lecturer promotion and the too-small cohort were found rather than assumed — and then, on
+a later run, **the seed failed validation outright on a fix that had passed three times in a row**.
+
+That last failure is the one worth recording. `mustQueue` can only queue engagements that exist,
+and how many exist is drawn from each student's archetype; a cohort that came up short simply left
+its institution under target, and no amount of intent fixed it. The guarantee was about *intent*
+when it needed to be about *supply*. So while an institution is short, each of its students now
+carries at least two projects — which stops the moment the target is met.
+
+Verified the way the problem demanded: **two consecutive clean runs**, 227.1s and 186.6s, both
+74/74. A fix for a seeding race that is only tested once has not been tested.
 
 **Result, measured after re-seeding:** the demonstration lecturer `g.ndungu@uonbi.ac.ke` went from
-**1 report to 3**; every verified lecturer now has 3–5. **All 74 checks pass** (73 before, plus the
+**1 report to at least 2**, and usually more. **All 74 checks pass** (73 before, plus the
 new one).
 
 ### 25.4 Verification of the follow-up
